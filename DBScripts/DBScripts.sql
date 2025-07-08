@@ -740,3 +740,436 @@ CREATE TABLE hms.AGENT_LOCATION_MAPPING (
         FOREIGN KEY (LOCATION_CODE)
         REFERENCES hms.LOCATION_MASTER (LOCATION_CODE)*/
 );
+
+CREATE TABLE hms.ORG_USER_MAPPING (
+    MAPPING_ID         BIGINT PRIMARY KEY,
+    USER_ID            INTEGER NOT NULL,
+    NODE_ID            INTEGER NOT NULL,
+    HIERARCHY_TYPE_ID  INTEGER NOT NULL,
+    IS_PRIMARY         BOOLEAN NOT NULL,
+    EFFECTIVE_FROM     DATE,
+    EFFECTIVE_TO       DATE,
+    CREATED_BY         VARCHAR(100) NOT NULL,
+    CREATED_DATE       TIMESTAMP NOT NULL,
+    MODIFIED_BY        VARCHAR(100),
+    MODIFIED_DATE      TIMESTAMP,
+    ROWVERSION         INTEGER,
+
+    CONSTRAINT fk_user
+        FOREIGN KEY (USER_ID)
+        REFERENCES hms.USER (USER_ID),
+
+    CONSTRAINT fk_node
+        FOREIGN KEY (NODE_ID)
+        REFERENCES hms.HIERARCHY_NODE (NODE_ID),
+
+    CONSTRAINT fk_hierarchy_type
+        FOREIGN KEY (HIERARCHY_TYPE_ID)
+        REFERENCES hms.HIERARCHY_TYPE (HIERARCHY_TYPE_ID)
+);
+
+CREATE TABLE hms.USER_ACCESS_LOG (
+    LOG_ID            BIGINT PRIMARY KEY,
+    USER_ID           INTEGER NOT NULL,
+    LOGIN_TIMESTAMP   TIMESTAMP NOT NULL,
+    LOGOUT_TIMESTAMP  TIMESTAMP,
+    IP_ADDRESS        VARCHAR(50),
+    DEVICE_INFO       VARCHAR(255),
+    SESSION_ID        VARCHAR(100),
+    STATUS            VARCHAR(20) NOT NULL, -- Expected values: 'SUCCESS', 'FAILURE'
+    FAILURE_REASON    VARCHAR(255),
+    CREATED_DATE      TIMESTAMP NOT NULL,
+
+    CONSTRAINT fk_user
+        FOREIGN KEY (USER_ID)
+        REFERENCES hms.USER (USER_ID)
+);
+
+CREATE TABLE hms.HIERARCHY_ORG_UNIT (
+    ORG_UNIT_ID     BIGINT PRIMARY KEY,
+    NODE_ID         BIGINT NOT NULL,
+    REGION_CODE     VARCHAR(20),
+    ZONE_CODE       VARCHAR(20),
+    BRANCH_CODE     VARCHAR(20),
+    LOCATION_CODE   VARCHAR(20),
+    IS_ACTIVE       BOOLEAN NOT NULL,
+    CREATED_BY      VARCHAR(100) NOT NULL,
+    CREATED_DATE    TIMESTAMP NOT NULL,
+    MODIFIED_BY     VARCHAR(100),
+    MODIFIED_DATE   TIMESTAMP,
+    ROWVERSION      INTEGER,
+
+    CONSTRAINT fk_node
+        FOREIGN KEY (NODE_ID)
+        REFERENCES hms.HIERARCHY_NODE (NODE_ID)
+
+    /*CONSTRAINT fk_region
+        FOREIGN KEY (REGION_CODE)
+        REFERENCES hms.LOCATION_MASTER (LOCATION_CODE),
+
+    CONSTRAINT fk_zone
+        FOREIGN KEY (ZONE_CODE)
+        REFERENCES hms.LOCATION_MASTER (LOCATION_CODE),
+
+    CONSTRAINT fk_branch
+        FOREIGN KEY (BRANCH_CODE)
+        REFERENCES hms.BRANCH_MASTER (BRANCH_CODE),
+
+    CONSTRAINT fk_location
+        FOREIGN KEY (LOCATION_CODE)
+        REFERENCES hms.LOCATION_MASTER (LOCATION_CODE)*/
+);
+
+CREATE TABLE hms.CHANNEL_MASTER (
+    CHANNEL_CODE     VARCHAR(20) PRIMARY KEY,
+    CHANNEL_NAME     VARCHAR(100) NOT NULL,
+    DESCRIPTION      TEXT,
+    IS_ACTIVE        BOOLEAN NOT NULL,
+    CREATED_BY       VARCHAR(100) NOT NULL,
+    CREATED_DATE     TIMESTAMP NOT NULL,
+    MODIFIED_BY      VARCHAR(100),
+    MODIFIED_DATE    TIMESTAMP,
+    ROWVERSION       INTEGER
+);
+
+CREATE TABLE hms.SUBCHANNEL_MASTER (
+    SUBCHANNEL_CODE   VARCHAR(20) PRIMARY KEY,
+    CHANNEL_CODE      VARCHAR(20) NOT NULL,
+    SUBCHANNEL_NAME   VARCHAR(100) NOT NULL,
+    DESCRIPTION       TEXT,
+    IS_ACTIVE         BOOLEAN NOT NULL,
+    CREATED_BY        VARCHAR(100) NOT NULL,
+    CREATED_DATE      TIMESTAMP NOT NULL,
+    MODIFIED_BY       VARCHAR(100),
+    MODIFIED_DATE     TIMESTAMP,
+    ROWVERSION        INTEGER,
+
+    CONSTRAINT fk_channel_code
+        FOREIGN KEY (CHANNEL_CODE)
+        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
+);
+
+CREATE TABLE hms.DESIGNATION_MASTER (
+    DESIGNATION_CODE   VARCHAR(20) PRIMARY KEY,
+    DESIGNATION_NAME   VARCHAR(100) NOT NULL,
+    CHANNEL_CODE       VARCHAR(20),
+    LEVEL              INTEGER,
+    IS_ACTIVE          BOOLEAN NOT NULL,
+    CREATED_BY         VARCHAR(100) NOT NULL,
+    CREATED_DATE       TIMESTAMP NOT NULL,
+    MODIFIED_BY        VARCHAR(100),
+    MODIFIED_DATE      TIMESTAMP,
+    ROWVERSION         INTEGER,
+
+    CONSTRAINT fk_channel_code
+        FOREIGN KEY (CHANNEL_CODE)
+        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
+);
+
+CREATE TABLE hms.ROLE_MASTER (
+    ROLE_CODE        VARCHAR(50) PRIMARY KEY,
+    ROLE_NAME        VARCHAR(100) NOT NULL,
+    DESCRIPTION      TEXT,
+    IS_SYSTEM_ROLE   BOOLEAN NOT NULL,
+    IS_ACTIVE        BOOLEAN NOT NULL,
+    CREATED_BY       VARCHAR(100) NOT NULL,
+    CREATED_DATE     TIMESTAMP NOT NULL,
+    MODIFIED_BY      VARCHAR(100),
+    MODIFIED_DATE    TIMESTAMP,
+    ROWVERSION       INTEGER
+);
+
+CREATE TABLE hms.AGENT_TYPE_MASTER (
+    AGENT_TYPE_CODE         VARCHAR(20) PRIMARY KEY,
+    AGENT_TYPE_NAME         VARCHAR(100) NOT NULL,
+    CHANNEL_CODE            VARCHAR(20),
+    REGULATORY_CLASS        VARCHAR(50),
+    IS_DISTRIBUTION_PARTNER BOOLEAN NOT NULL,
+    IS_ACTIVE               BOOLEAN NOT NULL,
+    CREATED_BY              VARCHAR(100) NOT NULL,
+    CREATED_DATE            TIMESTAMP NOT NULL,
+    MODIFIED_BY             VARCHAR(100),
+    MODIFIED_DATE           TIMESTAMP,
+    ROWVERSION              INTEGER,
+
+    CONSTRAINT fk_agent_type_channel
+        FOREIGN KEY (CHANNEL_CODE)
+        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
+);
+
+CREATE TABLE hms.AGENT_SUB_TYPE_MASTER (
+    AGENT_SUB_TYPE_CODE   VARCHAR(20) PRIMARY KEY,
+    AGENT_SUB_TYPE_NAME   VARCHAR(100) NOT NULL,
+    AGENT_TYPE_CODE       VARCHAR(20),
+    IS_ACTIVE             BOOLEAN NOT NULL,
+    CREATED_BY            VARCHAR(100) NOT NULL,
+    CREATED_DATE          TIMESTAMP NOT NULL,
+    MODIFIED_BY           VARCHAR(100),
+    MODIFIED_DATE         TIMESTAMP,
+    ROWVERSION            INTEGER,
+
+    CONSTRAINT fk_agent_sub_type_to_type
+        FOREIGN KEY (AGENT_TYPE_CODE)
+        REFERENCES hms.AGENT_TYPE_MASTER (AGENT_TYPE_CODE)
+);
+
+CREATE TABLE hms.LOCATION_MASTER (
+    LOCATION_CODE          VARCHAR(20) PRIMARY KEY,
+    LOCATION_NAME          VARCHAR(100) NOT NULL,
+    LOCATION_TYPE          VARCHAR(20) NOT NULL,
+    PARENT_LOCATION_CODE   VARCHAR(20),
+    IS_ACTIVE              BOOLEAN NOT NULL,
+    CREATED_BY             VARCHAR(100) NOT NULL,
+    CREATED_DATE           TIMESTAMP NOT NULL,
+    MODIFIED_BY            VARCHAR(100),
+    MODIFIED_DATE          TIMESTAMP,
+    ROWVERSION             INTEGER,
+
+    CONSTRAINT fk_location_parent
+        FOREIGN KEY (PARENT_LOCATION_CODE)
+        REFERENCES hms.LOCATION_MASTER (LOCATION_CODE)
+);
+
+CREATE TABLE hms.BRANCH_MASTER (
+    BRANCH_CODE       VARCHAR(20) PRIMARY KEY,
+    BRANCH_NAME       VARCHAR(100) NOT NULL,
+    REGION            VARCHAR(50),
+    CHANNEL_CODE      VARCHAR(20),
+    HEAD_AGENT_ID     VARCHAR(50),
+    ADDRESS           TEXT,
+    PHONE_NUMBER      VARCHAR(20),
+    EMAIL_ID          VARCHAR(100),
+    IS_ACTIVE         BOOLEAN NOT NULL,
+    CREATED_BY        VARCHAR(100) NOT NULL,
+    CREATED_DATE      TIMESTAMP NOT NULL,
+    MODIFIED_BY       VARCHAR(100),
+    MODIFIED_DATE     TIMESTAMP,
+    ROWVERSION        INTEGER,
+
+    CONSTRAINT fk_branch_channel
+        FOREIGN KEY (CHANNEL_CODE)
+        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE),
+
+    CONSTRAINT fk_branch_head_agent
+        FOREIGN KEY (HEAD_AGENT_ID)
+        REFERENCES hms.AGENT (AGENT_CODE)
+);
+
+CREATE TABLE hms.DOCUMENT_TYPE_MASTER (
+    DOCUMENT_TYPE_ID        BIGINT PRIMARY KEY,
+    DOCUMENT_TYPE_CODE      VARCHAR(20),
+    DOCUMENT_TYPE_NAME      VARCHAR(100),
+    IS_MANDATORY            BOOLEAN,
+    APPLICABLE_AGENT_TYPE   VARCHAR(50),
+    STATUS                  VARCHAR(10),
+    CREATED_BY              VARCHAR(100),
+    CREATED_DATE            TIMESTAMP,
+    MODIFIED_BY             VARCHAR(100),
+    MODIFIED_DATE           TIMESTAMP,
+    ROWVERSION              INTEGER,
+
+    CONSTRAINT fk_document_agent_type
+        FOREIGN KEY (APPLICABLE_AGENT_TYPE)
+        REFERENCES hms.AGENT_TYPE_MASTER (AGENT_TYPE_CODE)
+);
+
+CREATE TABLE hms.LEARNING_CATALOG_MASTER (
+    LEARNING_CODE      VARCHAR(50) PRIMARY KEY,
+    LEARNING_NAME      VARCHAR(255) NOT NULL,
+    LEARNING_TYPE      VARCHAR(20) NOT NULL, -- TRAINING / CERTIFICATION
+    DURATION           NUMERIC(4,1),          -- e.g., 2.5 hours
+    IS_MANDATORY       BOOLEAN NOT NULL,
+    STATUS             VARCHAR(10) NOT NULL,  -- Active / Inactive
+    CREATED_BY         VARCHAR(100) NOT NULL,
+    CREATED_DATE       TIMESTAMP NOT NULL,
+    MODIFIED_BY        VARCHAR(100),
+    MODIFIED_DATE      TIMESTAMP,
+    ROWVERSION         INTEGER                -- Versioning control
+);
+
+CREATE TABLE hms.AGENT_STATUS_MASTER (
+    STATUS_CODE     VARCHAR(20) PRIMARY KEY,         -- e.g., ACTIVE, TERMINATED
+    STATUS_NAME     VARCHAR(100) NOT NULL,           -- e.g., "Active", "Terminated"
+    IS_ACTIVE       BOOLEAN NOT NULL,                -- Indicates if status is in use
+    CREATED_BY      VARCHAR(100) NOT NULL,           -- Audit field
+    CREATED_DATE    TIMESTAMP NOT NULL,              -- Audit timestamp
+    MODIFIED_BY     VARCHAR(100),                    -- Optional modifier
+    MODIFIED_DATE   TIMESTAMP,                       -- Optional timestamp
+    ROWVERSION      INTEGER                          -- Optional versioning field
+);
+
+CREATE TABLE hms.STATUS_REASON_MASTER (
+    REASON_CODE     VARCHAR(20) PRIMARY KEY,           -- e.g., RESIGNATION, DECEASED
+    REASON_NAME     VARCHAR(100) NOT NULL,             -- Descriptive label
+    STATUS_CODE     VARCHAR(20),                       -- FK to AGENT_STATUS_MASTER.STATUS_CODE
+    IS_ACTIVE       BOOLEAN NOT NULL,                  -- Indicates if active
+    CREATED_BY      VARCHAR(100) NOT NULL,             -- Audit: creator
+    CREATED_DATE    TIMESTAMP NOT NULL,                -- Audit: creation timestamp
+    MODIFIED_BY     VARCHAR(100),                      -- Audit: who last modified
+    MODIFIED_DATE   TIMESTAMP,                         -- Audit: last modification timestamp
+    ROWVERSION      INTEGER,                           -- For version control
+    CONSTRAINT fk_status_code
+        FOREIGN KEY (STATUS_CODE)
+        REFERENCES hms.AGENT_STATUS_MASTER (STATUS_CODE)
+);
+
+CREATE TABLE hms.MOVEMENT_REASON_MASTER (
+    REASON_CODE     VARCHAR(20) PRIMARY KEY,       -- e.g., PROMOTION, TRANSFER
+    REASON_NAME     VARCHAR(100) NOT NULL,         -- Descriptive label
+    IS_ACTIVE       BOOLEAN NOT NULL,              -- Usage flag
+    CREATED_BY      VARCHAR(100) NOT NULL,         -- Audit – creator
+    CREATED_DATE    TIMESTAMP NOT NULL,            -- Audit – creation time
+    MODIFIED_BY     VARCHAR(100),                  -- Audit – last modified by
+    MODIFIED_DATE   TIMESTAMP,                     -- Audit – last modified timestamp
+    ROWVERSION      INTEGER                        -- Version control
+);
+
+CREATE TABLE hms.MARITAL_STATUS_MASTER (
+    MARITAL_STATUS_CODE   VARCHAR(20) PRIMARY KEY,      -- e.g., SINGLE, MARRIED
+    MARITAL_STATUS_NAME   VARCHAR(50) NOT NULL,         -- Human-readable label
+    IS_ACTIVE              BOOLEAN NOT NULL,             -- Usage flag
+    CREATED_BY             VARCHAR(100) NOT NULL,        -- Audit – created by
+    CREATED_DATE           TIMESTAMP NOT NULL,           -- Audit – creation timestamp
+    MODIFIED_BY            VARCHAR(100),                 -- Audit – last modified by
+    MODIFIED_DATE          TIMESTAMP,                    -- Audit – last modification time
+    ROWVERSION             INTEGER                       -- For optimistic concurrency
+);
+
+CREATE TABLE hms.GENDER_MASTER (
+    GENDER_CODE     VARCHAR(10) PRIMARY KEY,         -- e.g., M, F, O
+    GENDER_LABEL    VARCHAR(20) NOT NULL,            -- Full name: Male, Female, Other
+    IS_ACTIVE       BOOLEAN NOT NULL,                -- Active flag
+    CREATED_BY      VARCHAR(100) NOT NULL,           -- Audit: Created by
+    CREATED_DATE    TIMESTAMP NOT NULL,              -- Audit: Created timestamp
+    MODIFIED_BY     VARCHAR(100),                    -- Audit: Modified by
+    MODIFIED_DATE   TIMESTAMP,                       -- Audit: Modified timestamp
+    ROWVERSION      INTEGER                          -- For optimistic concurrency control
+);
+
+CREATE TABLE hms.LICENSE_TYPE_MASTER (
+    LICENSE_TYPE_CODE VARCHAR(20) PRIMARY KEY,       -- e.g., LIFE, GENERAL, COMPOSITE
+    LICENSE_TYPE_NAME VARCHAR(100) NOT NULL,         -- Display name, e.g., Life Insurance
+    DESCRIPTION VARCHAR(255),                         -- Optional description
+    IS_ACTIVE BOOLEAN NOT NULL,                       -- Active flag
+    CREATED_BY VARCHAR(100) NOT NULL,                 -- Audit: created by
+    CREATED_DATE TIMESTAMP NOT NULL,                  -- Audit: creation timestamp
+    MODIFIED_BY VARCHAR(100),                         -- Audit: last modified by
+    MODIFIED_DATE TIMESTAMP,                          -- Audit: last modified timestamp
+    ROWVERSION INTEGER                                -- For optimistic concurrency/versioning
+);
+
+CREATE TABLE hms.PAYMENT_MODE_MASTER (
+    PAYMENT_MODE_CODE VARCHAR(20) PRIMARY KEY,         -- e.g., NEFT, UPI, CHEQUE, WALLET
+    PAYMENT_MODE_NAME VARCHAR(100) NOT NULL,           -- Display label shown on UI
+    DESCRIPTION VARCHAR(255),                          -- Optional usage notes or limitations
+    IS_ACTIVE INTEGER DEFAULT 1 NOT NULL,             -- Indicates if this mode is currently allowed (use NUMBER(1) for BOOLEAN)
+    CREATED_BY VARCHAR(100) NOT NULL,            -- Audit field – who created the record
+    CREATED_DATE TIMESTAMP NOT NULL,                     -- Audit – when record was created
+    MODIFIED_BY VARCHAR(100 ),                     -- Audit – who last modified it
+    MODIFIED_DATE TIMESTAMP,                             -- Audit – when it was modified
+    ROWVERSION INTEGER                              -- For optimistic concurrency control
+);
+
+CREATE TABLE hms.ADDRESS_TYPE_MASTER (
+    ADDRESS_TYPE_CODE VARCHAR(20) PRIMARY KEY,          -- e.g., RES, OFF
+    ADDRESS_TYPE_NAME VARCHAR(100) NOT NULL,            -- Label e.g., Residence, Office
+    DESCRIPTION VARCHAR(255),                           -- Optional notes or clarifications
+    IS_ACTIVE INTEGER DEFAULT 1 NOT NULL,              -- BOOLEAN substitute (1 = true, 0 = false)
+    CREATED_BY VARCHAR(100) NOT NULL,             -- Audit – who created it
+    CREATED_DATE TIMESTAMP NOT NULL,                      -- Audit – when created
+    MODIFIED_BY VARCHAR(100),                      -- Audit – who last updated
+    MODIFIED_DATE TIMESTAMP,                             -- Audit – when last updated
+    ROWVERSION INTEGER                               -- For optimistic locking
+);
+
+CREATE TABLE hms.EMAIL_TYPE_MASTER (
+    EMAIL_TYPE_CODE VARCHAR(20) PRIMARY KEY,          -- e.g., PERSONAL, OFFICIAL
+    EMAIL_TYPE_NAME VARCHAR(100) NOT NULL,             -- Display name e.g., Personal, Official
+    DESCRIPTION VARCHAR(255),                         -- Optional clarification or usage notes
+    IS_ACTIVE INTEGER DEFAULT 1 NOT NULL,             -- BOOLEAN substitute (1 = true, 0 = false)
+    CREATED_BY VARCHAR(100) NOT NULL,            -- Audit – who created the record
+    CREATED_DATE TIMESTAMP NOT NULL,                     -- Audit – when the record was created
+    MODIFIED_BY VARCHAR(100),                     -- Audit – who last modified the record
+    MODIFIED_DATE TIMESTAMP,                            -- Audit – when the record was modified
+    ROWVERSION INTEGER                              -- For optimistic locking/versioning
+);
+
+CREATE TABLE hms.PHONE_TYPE_MASTER (
+    PHONE_TYPE_CODE VARCHAR(20) PRIMARY KEY,         -- e.g., MOBILE, LANDLINE
+    PHONE_TYPE_NAME VARCHAR(100) NOT NULL,           -- Display name e.g., Mobile, Landline
+    DESCRIPTION VARCHAR(255),                         -- Optional notes for internal use
+    IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE,         -- Active flag
+    CREATED_BY VARCHAR(100) NOT NULL,                 -- Who created the record
+    CREATED_DATE TIMESTAMPTZ NOT NULL,                -- When the record was created (with timezone)
+    MODIFIED_BY VARCHAR(100),                          -- Who last modified the record
+    MODIFIED_DATE TIMESTAMPTZ,                         -- When the record was last modified
+    ROWVERSION INTEGER                                -- For optimistic concurrency control
+);
+
+CREATE TABLE hms.STATE_MASTER (
+    STATE_CODE VARCHAR(20) PRIMARY KEY,            -- e.g., MH, KA
+    STATE_NAME VARCHAR(100) NOT NULL,               -- Full state name e.g., Maharashtra
+    COUNTRY_CODE VARCHAR(10),                        -- Optional FK to COUNTRY_MASTER
+    IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE,        -- Whether the state is in use
+    CREATED_BY VARCHAR(100) NOT NULL,                -- Audit field
+    CREATED_DATE TIMESTAMPTZ NOT NULL,               -- Audit timestamp
+    MODIFIED_BY VARCHAR(100),                         -- Audit field
+    MODIFIED_DATE TIMESTAMPTZ,                        -- Audit timestamp
+    ROWVERSION INTEGER                                -- Version control
+);
+
+CREATE TABLE hms.STATUS_CHANGE_REASON_MASTER (
+    REASON_CODE VARCHAR(20) PRIMARY KEY,           -- e.g., RESIGN, DECEASED
+    REASON_NAME VARCHAR(100) NOT NULL,              -- Human-readable reason
+    IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE,        -- Whether the reason is available for use
+    CREATED_BY VARCHAR(100) NOT NULL,                -- Audit
+    CREATED_DATE TIMESTAMPTZ NOT NULL,               -- Audit
+    MODIFIED_BY VARCHAR(100),                         -- Audit
+    MODIFIED_DATE TIMESTAMPTZ,                        -- Audit
+    ROWVERSION INTEGER                                -- Audit / version control
+);
+
+CREATE TABLE hms.MOVEMENT_TYPE_MASTER (
+    TYPE_CODE VARCHAR(20) PRIMARY KEY,          -- e.g., TRANSFER, PROMOTION
+    TYPE_NAME VARCHAR(100) NOT NULL,            -- Movement Type Description
+    IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE,   -- Whether active
+    CREATED_BY VARCHAR(100) NOT NULL,           -- Audit
+    CREATED_DATE TIMESTAMPTZ NOT NULL,          -- Audit
+    MODIFIED_BY VARCHAR(100),                    -- Audit
+    MODIFIED_DATE TIMESTAMPTZ,                   -- Audit
+    ROWVERSION INTEGER                           -- Audit
+);
+
+CREATE TABLE hms.SOURCE_CHANNEL_MASTER (
+    SOURCE_CODE VARCHAR(20) PRIMARY KEY,      -- e.g., REFERRAL, WALKIN
+    SOURCE_NAME VARCHAR(100) NOT NULL,        -- Descriptive label
+    IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE, -- Whether in use
+    CREATED_BY VARCHAR(100) NOT NULL,         -- Audit
+    CREATED_DATE TIMESTAMPTZ NOT NULL,        -- Audit
+    MODIFIED_BY VARCHAR(100),                  -- Audit
+    MODIFIED_DATE TIMESTAMPTZ,                 -- Audit
+    ROWVERSION INTEGER                         -- Audit
+);
+
+CREATE TABLE hms.ACCOUNT_TYPE_MASTER (
+    ACCOUNT_TYPE_CODE VARCHAR(20) PRIMARY KEY,    -- e.g., SAVINGS, CURRENT
+    ACCOUNT_TYPE_NAME VARCHAR(100) NOT NULL,      -- Display label
+    IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE,     -- Active flag
+    CREATED_BY VARCHAR(100) NOT NULL,             -- Audit
+    CREATED_DATE TIMESTAMPTZ NOT NULL,            -- Audit
+    MODIFIED_BY VARCHAR(100),                      -- Audit
+    MODIFIED_DATE TIMESTAMPTZ,                     -- Audit
+    ROWVERSION INTEGER                             -- Audit
+);
+
+CREATE TABLE hms.TRAINING_STATUS_MASTER (
+    STATUS_CODE VARCHAR(20) PRIMARY KEY,         -- e.g., ENROLLED, COMPLETED
+    STATUS_NAME VARCHAR(100) NOT NULL,           -- Description of the training status
+    IS_ACTIVE BOOLEAN NOT NULL DEFAULT TRUE,     -- Whether active
+    CREATED_BY VARCHAR(100) NOT NULL,            -- Audit: who created
+    CREATED_DATE TIMESTAMPTZ NOT NULL,           -- Audit: when created
+    MODIFIED_BY VARCHAR(100),                     -- Audit: who last modified
+    MODIFIED_DATE TIMESTAMPTZ,                    -- Audit: when last modified
+    ROWVERSION INTEGER                            -- Audit: version control
+);
+

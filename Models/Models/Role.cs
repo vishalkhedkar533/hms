@@ -1,32 +1,32 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models
 {
-    [Table("permissions", Schema = "hms")]
-    public class Permission
+    [Table("roles", Schema = "hms")]
+    public class Role
     {
         [Key]
-        [Column("permission_id")]
-        [Required(ErrorMessage = "Permission ID is required.")]
-        // No [DatabaseGenerated] attribute means EF will NOT auto-generate this value
-        public int PermissionId { get; set; }
+        [Column("role_id")]
+        [Required(ErrorMessage = "Role ID is required.")]
+        // No [DatabaseGenerated] means this is manually assigned (not auto-increment)
+        public int RoleId { get; set; }
 
-        [Column("permission_name")]
+        [Column("role_name")]
         [StringLength(100)]
-        [Required(ErrorMessage = "Permission name is required.")]
-        public string PermissionName { get; set; } = null!;
+        [Required(ErrorMessage = "Role name is required.")]
+        public string RoleName { get; set; } = null!;
 
         [Column("description")]
         [StringLength(255)]
         public string? Description { get; set; }
 
-        [Column("module_name")]
-        [StringLength(50)]
-        public string? ModuleName { get; set; }
+        [Column("is_system_role")]
+        [Required(ErrorMessage = "IsSystemRole is required.")]
+        public bool IsSystemRole { get; set; }
 
         [Column("is_active")]
-        [Required(ErrorMessage = "Active status is required.")]
+        [Required(ErrorMessage = "IsActive is required.")]
         public bool IsActive { get; set; }
 
         [Column("created_by")]

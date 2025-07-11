@@ -53,3 +53,7 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /.vs
+/Models/.vs/Models/CopilotIndices/
+/Models/.vs/Models/DesignTimeBuild
+/Models/.vs/Models/FileContentIndex
+/Models/.vs/Models/v17

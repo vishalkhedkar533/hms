@@ -1,0 +1,24 @@
+services:
+  hms.api:
+    image: ${DOCKER_REGISTRY-}hms
+    build:
+      context: .
+      dockerfile: HMS/Dockerfile
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+
+  hms.db:
+    image: postgres:17
+    container_name: hms_docker
+    environment:
+      POSTGRES_USER: neondb_owner
+      POSTGRES_PASSWORD: npg_MPXYuy4jTe1r
+      POSTGRES_DB: neondb
+    ports:
+      - "5432:5432"
+    volumes:
+      - hms_data:/var/lib/postgresql/data
+
+volumes:
+  hms_data:

@@ -42,4 +42,6 @@ namespace HMS.Models
         [Column("MODIFIED_BY")]
         [StringLength(100)]
         [SwaggerSchema("User who last modified the movement reason entry.")]
-        public string? Modified
+        public string? Modified { get; set; }
+    }
+}

@@ -54,4 +54,8 @@ namespace HMS.Models
         public DateTime? ModifiedDate { get; set; }
 
         [Column("ROWVERSION")]
-        [SwaggerSchema("Row version for o]()
+        [ConcurrencyCheck]
+        [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
+        public int? RowVersion { get; set; }
+    }
+}

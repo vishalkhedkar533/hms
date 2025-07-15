@@ -1,0 +1,6 @@
+﻿namespace Models
+{
+    class HmsUsrDashboard
+    {
+    }
+}

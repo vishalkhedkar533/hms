@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models
+namespace HMS.Models
 {
     /*
      * 
@@ -27,32 +28,32 @@ namespace Models
     {
         [Key]
         [Column("MAPPING_ID")]
-        [Required(ErrorMessage = "Mapping ID is required.")]
+        [SwaggerSchema("Mapping ID is required.")]
         public int MappingId { get; set; }
 
         [Column("ROLE_ID")]
-        [Required(ErrorMessage = "Role ID is required.")]
+        [SwaggerSchema("Role ID is required.")]
         public int RoleId { get; set; }
 
         [Column("MENU_ID")]
-        [Required(ErrorMessage = "Menu ID is required.")]
+        [SwaggerSchema("Menu ID is required.")]
         public int MenuId { get; set; }
 
         [Column("IS_VISIBLE")]
-        [Required(ErrorMessage = "IsVisible is required.")]
+        [SwaggerSchema("IsVisible is required.")]
         public bool IsVisible { get; set; }
 
         [Column("IS_ENABLED")]
-        [Required(ErrorMessage = "IsEnabled is required.")]
+        [SwaggerSchema("IsEnabled is required.")]
         public bool IsEnabled { get; set; }
 
         [Column("CREATED_BY")]
         [StringLength(100)]
-        [Required(ErrorMessage = "CreatedBy is required.")]
+        [SwaggerSchema("CreatedBy is required.")]
         public string CreatedBy { get; set; } = null!;
 
         [Column("CREATED_DATE")]
-        [Required(ErrorMessage = "CreatedDate is required.")]
+        [SwaggerSchema("CreatedDate is required.")]
         public DateTime CreatedDate { get; set; }
 
         [Column("MODIFIED_BY")]

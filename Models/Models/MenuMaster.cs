@@ -1,7 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models
+namespace HMS.Models
 {
     /*
      * modelBuilder.Entity<MenuMaster>(entity =>
@@ -21,12 +22,12 @@ namespace Models
     {
         [Key]
         [Column("MENU_ID")]
-        [Required(ErrorMessage = "Menu ID is required.")]
+        [SwaggerSchema("Menu ID is required.")]
         public int MenuId { get; set; }
 
         [Column("MENU_NAME")]
         [StringLength(100)]
-        [Required(ErrorMessage = "Menu name is required.")]
+        [SwaggerSchema("Menu name is required.")]
         public string MenuName { get; set; } = null!;
 
         [Column("PARENT_MENU_ID")]
@@ -48,7 +49,7 @@ namespace Models
 
         [Column("CREATED_BY")]
         [StringLength(100)]
-        [Required(ErrorMessage = "CreatedBy is required.")]
+        [SwaggerSchema("CreatedBy is required.")]
         public string CreatedBy { get; set; } = null!;
 
         [Column("CREATED_DATE")]

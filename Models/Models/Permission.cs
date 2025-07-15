@@ -1,20 +1,21 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using Swashbuckle.AspNetCore.Annotations;
 
-namespace Models
+namespace HMS.Models
 {
     [Table("permissions", Schema = "hms")]
     public class Permission
     {
         [Key]
         [Column("permission_id")]
-        [Required(ErrorMessage = "Permission ID is required.")]
+        [SwaggerSchema("Permission ID is required.")]
         // No [DatabaseGenerated] attribute means EF will NOT auto-generate this value
         public int PermissionId { get; set; }
 
         [Column("permission_name")]
         [StringLength(100)]
-        [Required(ErrorMessage = "Permission name is required.")]
+        [SwaggerSchema("Permission name is required.")]
         public string PermissionName { get; set; } = null!;
 
         [Column("description")]
@@ -26,16 +27,16 @@ namespace Models
         public string? ModuleName { get; set; }
 
         [Column("is_active")]
-        [Required(ErrorMessage = "Active status is required.")]
+        [SwaggerSchema("Active status is required.")]
         public bool IsActive { get; set; }
 
         [Column("created_by")]
         [StringLength(100)]
-        [Required(ErrorMessage = "CreatedBy is required.")]
+        [SwaggerSchema("CreatedBy is required.")]
         public string CreatedBy { get; set; } = null!;
 
         [Column("created_date")]
-        [Required(ErrorMessage = "CreatedDate is required.")]
+        [SwaggerSchema("CreatedDate is required.")]
         public DateTime CreatedDate { get; set; }
 
         [Column("modified_by")]

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models
+namespace HMS.Models
 {
     /*
      *code for AppDbContext.cs
@@ -27,39 +27,39 @@ namespace Models
     {
         [Key]
         [Column("mapping_id")]
-        [Required(ErrorMessage = "Mapping ID is required.")]
+        [SwaggerSchema("Mapping ID is required.")]
         public long MappingId { get; set; }
 
         [Column("user_id")]
-        [Required(ErrorMessage = "User ID is required.")]
+        [SwaggerSchema("User ID is required.")]
         public int UserId { get; set; }
 
         [Column("role_id")]
-        [Required(ErrorMessage = "Role ID is required.")]
+        [SwaggerSchema("Role ID is required.")]
         public int RoleId { get; set; }
 
         [Column("is_primary")]
-        [Required(ErrorMessage = "IsPrimary is required.")]
+        [SwaggerSchema("IsPrimary is required.")]
         public bool IsPrimary { get; set; }
 
         [Column("effective_from", TypeName = "date")]
-        [Required(ErrorMessage = "EffectiveFrom is required.")]
+        [SwaggerSchema("EffectiveFrom is required.")]
         public DateTime EffectiveFrom { get; set; }
 
         [Column("effective_to", TypeName = "date")]
         public DateTime? EffectiveTo { get; set; }
 
         [Column("is_active")]
-        [Required(ErrorMessage = "IsActive is required.")]
+        [SwaggerSchema("IsActive is required.")]
         public bool IsActive { get; set; }
 
         [Column("created_by")]
         [StringLength(100)]
-        [Required(ErrorMessage = "CreatedBy is required.")]
+        [SwaggerSchema("CreatedBy is required.")]
         public string CreatedBy { get; set; } = null!;
 
         [Column("created_date")]
-        [Required(ErrorMessage = "CreatedDate is required.")]
+        [SwaggerSchema("CreatedDate is required.")]
         public DateTime CreatedDate { get; set; }
 
         [Column("modified_by")]

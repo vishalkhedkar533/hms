@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models
+namespace HMS.Models
 {
     [Table("user", Schema = "hms")] // Quoted "user" handled via EF Table attribute
     public class User
@@ -13,12 +13,12 @@ namespace Models
 
         [Column("username")]
         [StringLength(100)]
-        [Required(ErrorMessage = "Username is required.")]
+        [SwaggerSchema("Username is required.")]
         public string Username { get; set; } = null!;
 
         [Column("email_id")]
         [StringLength(150)]
-        [Required(ErrorMessage = "Email ID is required.")]
+        [SwaggerSchema("Email ID is required.")]
         public string EmailId { get; set; } = null!;
 
         [Column("mobile_number")]
@@ -27,7 +27,7 @@ namespace Models
 
         [Column("password")]
         [StringLength(255)]
-        [Required(ErrorMessage = "Password is required.")]
+        [SwaggerSchema("Password is required.")]
         public string Password { get; set; } = null!;
 
         [Column("is_active")]
@@ -43,7 +43,7 @@ namespace Models
 
         [Column("created_by")]
         [StringLength(100)]
-        [Required(ErrorMessage = "CreatedBy is required.")]
+        [SwaggerSchema("CreatedBy is required.")]
         public string CreatedBy { get; set; } = null!;
 
         [Column("created_date")]

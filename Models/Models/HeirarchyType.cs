@@ -17,7 +17,7 @@ namespace HMS.Models
         public int HierarchyTypeId { get; set; }
 
         [Column("HIERARCHY_TYPE_NAME")]
-        [Required(ErrorMessage = "Hierarchy type name is required.")]
+        [SwaggerSchema("Hierarchy type name is required.")]
         [StringLength(100)]
         [SwaggerSchema("Name of the hierarchy type.")]
         public string HierarchyTypeName { get; set; } = null!;

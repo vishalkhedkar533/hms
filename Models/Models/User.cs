@@ -1,4 +1,5 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
+﻿using Models;
+using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -61,5 +62,7 @@ namespace HMS.Models
         [Column("rowversion")]
         [ConcurrencyCheck]
         public int? RowVersion { get; set; }
+        [NotMapped]
+        public HmsDashboard? HmsDashboard { get; set; }
     }
 }

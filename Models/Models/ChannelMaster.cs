@@ -55,5 +55,12 @@ namespace HMS.Models
         [ConcurrencyCheck]
         [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
         public int? RowVersion { get; set; }
+        [NotMapped]
+        public Int64? TotalEntities { get; set; }
+        [NotMapped]
+        public Int64? CreatedEntities { get; set; }
+        [NotMapped]
+        public Int64? TerminatedEntities { get; set; }
+
     }
 }

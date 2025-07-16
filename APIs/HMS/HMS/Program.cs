@@ -92,4 +92,12 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+// ⬅️ Ensure DB is created and migrations applied
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var context = services.GetRequiredService<HMSContext>();
+    context.Database.Migrate();
+}
+
 app.Run();

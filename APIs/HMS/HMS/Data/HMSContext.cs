@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using HMS.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace HMS.Data
 {
@@ -6,9 +7,15 @@ namespace HMS.Data
     {
         public HMSContext (DbContextOptions<HMSContext> options)
             : base(options)
+        { }
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Role> Roles => Set<Role>();
+        public DbSet<UserRoleMapping> UserRoleMappings => Set<UserRoleMapping>();
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            base.OnModelCreating(modelBuilder);
+            // Optionally configure schema explicitly
+            modelBuilder.HasDefaultSchema("hms");
         }
-
-        public DbSet<HMS.Models.User> User { get; set; } = default!;
     }
 }

@@ -10,12 +10,14 @@ namespace HMS
     [Route("api/[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly string _key = "This is my super secret key for JWT";
+        private readonly string _key = "jwt_access_key";
 
         [HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
-            if (request.Username == "admin" && request.Password == "password")
+            if (request.Username == "admin" 
+                && request.Password == "password" 
+                && request.Organisation == "organisation")
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
                 var keyBytes = Encoding.UTF8.GetBytes(_key);
@@ -24,13 +26,14 @@ namespace HMS
                 {
                     Subject = new ClaimsIdentity(new[]
                     {
-                    new Claim(ClaimTypes.Name, request.Username),
-                    new Claim(ClaimTypes.Role, "Admin")
-                }),
+                        new Claim(ClaimTypes.Name, request.Username),
+                        new Claim(ClaimTypes.Role, "Admin")                    
+                    }),
                     Expires = DateTime.UtcNow.AddHours(1),
                     Issuer = "HMS-eARK",
                     Audience = "HMS-eARK",
-                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
+                    SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), 
+                    SecurityAlgorithms.HmacSha256Signature)
                 };
 
                 var token = tokenHandler.CreateToken(tokenDescriptor);
@@ -44,6 +47,7 @@ namespace HMS
 
         public class LoginRequest
         {
+            public string Organisation { get; set; } = "";
             public string Username { get; set; } = "";
             public string Password { get; set; } = "";
         }

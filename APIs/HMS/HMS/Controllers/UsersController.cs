@@ -1,6 +1,7 @@
 ﻿using HMS.Data;
 using HMS.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,88 +19,146 @@ namespace HMS.Controllers
         }
 
         // GET: api/Users
-        [Authorize]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUser()
-        {
-            return await _context.Users.ToListAsync();
-        }
+        //[Authorize]
+        //[HttpGet]
+        //public async Task<ActionResult<IEnumerable<User>>> GetUser()
+        //{
+        //    return await _context.Users.ToListAsync();
+        //}
 
         // GET: api/Users/5
-        [Authorize]
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
-        {
-            var user = await _context.Users.FindAsync(id);
+        //[Authorize]
+        //[HttpGet("{id}")]
+        //public async Task<ActionResult<User>> GetUser(int id)
+        //{
+        //    var user = await _context.Users.FindAsync(id);
 
-            if (user == null)
-            {
-                return NotFound();
-            }
+        //    if (user == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            return user;
-        }
+        //    return user;
+        //}
 
         // PUT: api/Users/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [Authorize]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, User user)
-        {
-            if (id != user.UserId)
-            {
-                return BadRequest();
-            }
+        //[Authorize]
+        //[HttpPut("{id}")]
+        //public async Task<IActionResult> PutUser(int id, User user)
+        //{
+        //    if (id != user.UserId)
+        //    {
+        //        return BadRequest();
+        //    }
 
-            _context.Entry(user).State = EntityState.Modified;
+        //    _context.Entry(user).State = EntityState.Modified;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+        //    try
+        //    {
+        //        await _context.SaveChangesAsync();
+        //    }
+        //    catch (DbUpdateConcurrencyException)
+        //    {
+        //        if (!UserExists(id))
+        //        {
+        //            return NotFound();
+        //        }
+        //        else
+        //        {
+        //            throw;
+        //        }
+        //    }
 
-            return NoContent();
-        }
+        //    return NoContent();
+        //}
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [Authorize]
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        public async Task<ActionResult<User>> CreateUser(User user)
         {
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-
             return CreatedAtAction("GetUser", new { id = user.UserId }, user);
         }
 
-        // DELETE: api/Users/5
         [Authorize]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(int id)
+        [HttpPost("UpdatePassword")]
+        public async Task<ActionResult<User>> UpdatePassword(UpdateUser request)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
+            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
+            if (currentUser == null)
             {
                 return NotFound();
             }
 
-            _context.Users.Remove(user);
+            // Hash the new password securely using BCrypt
+            currentUser.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+
+            // Update the user
+            _context.Users.Update(currentUser);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return AcceptedAtAction("UpdatePassword", new { id = currentUser.UserId }, currentUser);
         }
+        [Authorize]
+        [HttpPost("ActivateDeactivateUser")]
+        public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
+        {
+            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+
+            // Hash the new password securely using BCrypt
+            currentUser.IsActive = request.IsActive;
+
+            // Update the user
+            _context.Users.Update(currentUser);
+            await _context.SaveChangesAsync();
+
+            return AcceptedAtAction(request.IsActive ? "UserActivated": "UserDeActivated", new { id = currentUser.UserId }, currentUser);
+        }
+
+        [Authorize]
+        [HttpPost("LockUnlockUser")]
+        public async Task<ActionResult<User>> LockUnlockUser(UpdateUser request)
+        {
+            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
+            if (currentUser == null)
+            {
+                return NotFound();
+            }
+
+            // Hash the new password securely using BCrypt
+            currentUser.IsLocked = request.IsLocked;
+
+            // Update the user
+            _context.Users.Update(currentUser);
+            await _context.SaveChangesAsync();
+
+            return AcceptedAtAction(request.IsLocked ? "UserLocked" : "UserUnlocked", new { id = currentUser.UserId }, currentUser);
+        }
+
+        // DELETE: api/Users/5
+        //[Authorize]
+        //[HttpDelete("{id}")]
+        //public async Task<IActionResult> DeleteUser(int id)
+        //{
+        //    var user = await _context.Users.FindAsync(id);
+        //    if (user == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    _context.Users.Remove(user);
+        //    await _context.SaveChangesAsync();
+
+        //    return NoContent();
+        //}
 
         private bool UserExists(int id)
         {

@@ -65,4 +65,11 @@ namespace HMS.Models
         [NotMapped]
         public HmsDashboard? HmsDashboard { get; set; }
     }
+    public class UpdateUser
+    {
+        public int UserId { get; set; }
+        public string NewPassword { get; set; } = null!;
+        public bool IsActive { get; set; }
+        public bool IsLocked { get; set; }
+    }
 }

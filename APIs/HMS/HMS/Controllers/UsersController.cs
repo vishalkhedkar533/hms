@@ -86,23 +86,38 @@ namespace HMS.Controllers
 
         [Authorize]
         [HttpPost("UpdatePassword")]
-        public async Task<ActionResult<User>> UpdatePassword(UpdateUser request)
+        public async Task<ActionResult> UpdatePassword(UpdateUser request)
         {
-            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
-            if (currentUser == null)
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
+            if (user == null)
             {
-                return NotFound();
+                return NotFound("User not found.");
             }
 
-            // Hash the new password securely using BCrypt
-            currentUser.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            // Verify old password
+            bool isOldPasswordValid = BCrypt.Net.BCrypt.Verify(request.OldPassword, user.Password);
+            if (!isOldPasswordValid)
+            {
+                return BadRequest("Old password is incorrect.");
+            }
 
-            // Update the user
-            _context.Users.Update(currentUser);
+            // Check if new password is same as old password
+            bool isSamePassword = BCrypt.Net.BCrypt.Verify(request.NewPassword, user.Password);
+            if (isSamePassword)
+            {
+                return BadRequest("New password cannot be the same as the old password.");
+            }
+
+            // Hash and update new password
+            user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            user.ModifiedDate = DateTime.UtcNow;
+            user.PasswordChangedDate = DateTime.UtcNow;
+            _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            return AcceptedAtAction("UpdatePassword", new { id = currentUser.UserId }, currentUser);
+            return Ok("Password updated successfully.");
         }
+
         [Authorize]
         [HttpPost("ActivateDeactivateUser")]
         public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)

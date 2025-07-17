@@ -62,12 +62,15 @@ namespace HMS.Models
         [Column("rowversion")]
         [ConcurrencyCheck]
         public int? RowVersion { get; set; }
+        [Column("password_changed_date")]
+        public DateTime? PasswordChangedDate { get; set; }
         [NotMapped]
         public HmsDashboard? HmsDashboard { get; set; }
     }
     public class UpdateUser
     {
         public int UserId { get; set; }
+        public string OldPassword { get; set; } = null!;
         public string NewPassword { get; set; } = null!;
         public bool IsActive { get; set; }
         public bool IsLocked { get; set; }

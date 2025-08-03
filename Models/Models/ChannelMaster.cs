@@ -61,6 +61,5 @@ namespace HMS.Models
         public Int64? CreatedEntities { get; set; } = 200;
         [NotMapped]
         public Int64? TerminatedEntities { get; set; } = 300;
-
     }
 }

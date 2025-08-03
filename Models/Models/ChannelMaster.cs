@@ -56,11 +56,11 @@ namespace HMS.Models
         [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
         public int? RowVersion { get; set; }
         [NotMapped]
-        public Int64? TotalEntities { get; set; }
+        public Int64? TotalEntities { get; set; } = 100;
         [NotMapped]
-        public Int64? CreatedEntities { get; set; }
+        public Int64? CreatedEntities { get; set; } = 200;
         [NotMapped]
-        public Int64? TerminatedEntities { get; set; }
+        public Int64? TerminatedEntities { get; set; } = 300;
 
     }
 }

@@ -1,0 +1,99 @@
+///////////////Add packages to API project///////////////////////
+
+dotnet add package Serilog.AspNetCore
+dotnet add package Serilog.Sinks.PostgreSQL
+dotnet add package Serilog.Sinks.File
+dotnet add package Serilog.Formatting.Compact
+dotnet add package Serilog.Enrichers.Environment
+dotnet add package Serilog.Enrichers.AspNetCore
+
+/////////////////////PostgreSQL Table Definition (Manual Creation)/////////////////////////
+CREATE TABLE logs (
+    id SERIAL PRIMARY KEY,
+    message TEXT,
+    message_template TEXT,
+    level VARCHAR(50),
+    timestamp TIMESTAMPTZ,
+    exception TEXT,
+    log_event JSONB,
+    user_name TEXT,
+    request_ip TEXT,
+    request_path TEXT
+);
+
+//////////////////////Program.cs Configuration for Serilog//////////////////////////////////
+using Serilog;
+using Serilog.Sinks.PostgreSQL;
+using Serilog.Formatting.Compact;
+
+var builder = WebApplication.CreateBuilder(args);
+
+var columnWriters = new Dictionary<string, ColumnWriterBase>
+{
+    { "message", new RenderedMessageColumnWriter() },
+    { "message_template", new MessageTemplateColumnWriter() },
+    { "level", new LevelColumnWriter(true, NpgsqlTypes.NpgsqlDbType.Varchar) },
+    { "timestamp", new TimestampColumnWriter() },
+    { "exception", new ExceptionColumnWriter() },
+    { "log_event", new LogEventSerializedColumnWriter() },
+    { "user_name", new SinglePropertyColumnWriter("UserName", NpgsqlTypes.NpgsqlDbType.Text, false) },
+    { "request_ip", new SinglePropertyColumnWriter("RequestIP", NpgsqlTypes.NpgsqlDbType.Text, false) },
+    { "request_path", new SinglePropertyColumnWriter("RequestPath", NpgsqlTypes.NpgsqlDbType.Text, false) },
+};
+
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console()
+    .WriteTo.File(new RenderedCompactJsonFormatter(), "Logs/log-.json", rollingInterval: RollingInterval.Day)
+    .WriteTo.PostgreSQL(
+        connectionString: builder.Configuration.GetConnectionString("DefaultConnection"),
+        tableName: "logs",
+        columnWriters: columnWriters,
+        needAutoCreateTable: false // You’ve already created it manually
+    )
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+
+//////////////////////Middleware to Enrich with IP, User, Path/////////////////////////////
+public class RequestEnricherMiddleware
+{
+    private readonly RequestDelegate _next;
+
+    public RequestEnricherMiddleware(RequestDelegate next)
+    {
+        _next = next;
+    }
+
+    public async Task Invoke(HttpContext context)
+    {
+        var user = context.User?.Identity?.Name ?? "anonymous";
+        var ip = context.Connection.RemoteIpAddress?.ToString();
+        var path = context.Request.Path;
+
+        using (Serilog.Context.LogContext.PushProperty("UserName", user))
+        using (Serilog.Context.LogContext.PushProperty("RequestIP", ip))
+        using (Serilog.Context.LogContext.PushProperty("RequestPath", path))
+        {
+            await _next(context);
+        }
+    }
+}
+
+// Extension
+public static class RequestEnricherMiddlewareExtensions
+{
+    public static IApplicationBuilder UseRequestEnricher(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<RequestEnricherMiddleware>();
+    }
+}
+
+
+/////////////And in Program.cs before UseHttpsRedirection():///////////////////////////////////////////
+app.UseRequestEnricher();
+
+/////////////////////////////Example Log Entry in PostgreSQL////////////////////////////////////////
+SELECT * FROM logs ORDER BY timestamp DESC LIMIT 1;
+

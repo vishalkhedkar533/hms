@@ -3,6 +3,7 @@ using HMS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -33,19 +34,21 @@ namespace HMS
             }
 
             // Check if account is locked
-            if (user.LockoutEndTime.HasValue && user.LockoutEndTime > DateTime.UtcNow)
+            if (user.lockoutendtime.HasValue && user.lockoutendtime > DateTime.UtcNow)
             {
-                return Unauthorized($"Account is locked. Try again after {user.LockoutEndTime.Value.ToLocalTime():g}");
+                return Unauthorized($"Account is locked. Try again after {user.lockoutendtime.Value.ToLocalTime():g}");
             }
 
             // Check credentials
             if (!user.IsActive || user.IsLocked || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
             {
-                user.FailedLoginAttempts++;
+                user.failedloginattempts++;
 
-                if (user.FailedLoginAttempts >= 5)
+                if (user.failedloginattempts >= 
+                    int.Parse( _context.apiConfig.FirstOrDefaultAsync(u => u.ConfigKey == ApiConstants.wrong_attempts_allowed)
+                    ?.Result?.ConfigValue ?? "3") )
                 {
-                    user.LockoutEndTime = DateTime.UtcNow.AddMinutes(15); // Lock for 15 minutes
+                    user.lockoutendtime = DateTime.UtcNow.AddMinutes(15); // Lock for 15 minutes
                     user.IsLocked = true; // Optional: depending on your logic
                 }
 
@@ -54,8 +57,8 @@ namespace HMS
             }
 
             // Successful login: reset failed attempts
-            user.FailedLoginAttempts = 0;
-            user.LockoutEndTime = null;
+            user.failedloginattempts = 0;
+            user.lockoutendtime = null;
             user.IsLocked = false;
 
             var roleMapping = await _context.UserRoleMappings

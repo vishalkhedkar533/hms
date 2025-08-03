@@ -75,14 +75,39 @@ namespace HMS.Controllers
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [Authorize]
+        //[Authorize]
         [HttpPost]
+        [HttpPost("CreateUser")]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
+            if (await _context.Users.AnyAsync(u => u.Username == user.Username))
+            {
+                return Conflict("Username already exists.");
+            }
+
+            if (await _context.Users.AnyAsync(u => u.EmailId == user.EmailId))
+            {
+                return Conflict("Email already exists.");
+            }
+
+            // Hash the password using BCrypt
+            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
+            // Set default values
+            user.IsActive = true;
+            user.IsLocked = false;
+            user.CreatedDate = DateTime.UtcNow;
+            user.ModifiedDate = null;
+            user.RowVersion = 1;
+            user.PasswordChangedDate = DateTime.UtcNow;
+            user.failedloginattempts = 0;
+            user.lockoutendtime = null;
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
-            return CreatedAtAction("GetUser", new { id = user.UserId }, user);
-        }
+
+            return Ok(new { message = "User created successfully", user.UserId });
+        }        
 
         [Authorize]
         [HttpPost("UpdatePassword")]

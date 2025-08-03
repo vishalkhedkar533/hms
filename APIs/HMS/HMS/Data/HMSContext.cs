@@ -1,5 +1,6 @@
 ﻿using HMS.Models;
 using Microsoft.EntityFrameworkCore;
+using Models;
 
 namespace HMS.Data
 {
@@ -10,6 +11,7 @@ namespace HMS.Data
         { }
         public DbSet<User> Users => Set<User>();
         public DbSet<Role> Roles => Set<Role>();
+        public DbSet<ApiConfig> apiConfig => Set<ApiConfig>();
         public DbSet<UserRoleMapping> UserRoleMappings => Set<UserRoleMapping>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

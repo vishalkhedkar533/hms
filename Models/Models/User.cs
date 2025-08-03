@@ -67,9 +67,9 @@ namespace HMS.Models
         [NotMapped]
         public HmsDashboard? HmsDashboard { get; set; }
         [Column("failedloginattempts")]
-        public int FailedLoginAttempts { get; set; } = 0;
+        public int failedloginattempts { get; set; } = 0;
         [Column("lockoutendtime")]
-        public DateTime? LockoutEndTime { get; set; } = null;
+        public DateTime? lockoutendtime { get; set; } = null;
     }
     public class UpdateUser
     {

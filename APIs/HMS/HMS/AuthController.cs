@@ -3,6 +3,7 @@ using HMS.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -25,12 +26,40 @@ namespace HMS
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username && u.IsActive && !u.IsLocked);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+            if (user == null)
             {
-                return Unauthorized("Invalid credentials or inactive user.");
+                return Unauthorized("Invalid credentials.");
             }
+
+            // Check if account is locked
+            if (user.lockoutendtime.HasValue && user.lockoutendtime > DateTime.UtcNow)
+            {
+                return Unauthorized($"Account is locked. Try again after {user.lockoutendtime.Value.ToLocalTime():g}");
+            }
+
+            // Check credentials
+            if (!user.IsActive || user.IsLocked || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+            {
+                user.failedloginattempts++;
+
+                if (user.failedloginattempts >= 
+                    int.Parse( _context.apiConfig.FirstOrDefaultAsync(u => u.ConfigKey == ApiConstants.wrong_attempts_allowed)
+                    ?.Result?.ConfigValue ?? "3") )
+                {
+                    user.lockoutendtime = DateTime.UtcNow.AddMinutes(15); // Lock for 15 minutes
+                    user.IsLocked = true; // Optional: depending on your logic
+                }
+
+                await _context.SaveChangesAsync();
+                return Unauthorized("Invalid credentials.");
+            }
+
+            // Successful login: reset failed attempts
+            user.failedloginattempts = 0;
+            user.lockoutendtime = null;
+            user.IsLocked = false;
 
             var roleMapping = await _context.UserRoleMappings
                 .Include(urm => urm.Role)
@@ -43,8 +72,8 @@ namespace HMS
             }
 
             var token = GenerateJwtToken(user, roleMapping.Role.RoleName);
-
             user.LastLoginDate = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
 
             return Ok(new { token });

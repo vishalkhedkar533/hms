@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 
 
 namespace HMS.Controllers
@@ -77,23 +78,40 @@ namespace HMS.Controllers
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 
+        //[Authorize]
         [Authorize]
-        [HttpPost]
         [HttpPost("CreateUser")]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
-            if (!UserNameExists(user.Username))
+            if (await _context.Users.AnyAsync(u => u.Username == user.Username))
             {
-                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
-                return Ok("New user created");// ("GetUser", new { id = user.UserId }, user);
+                return Conflict("Username already exists.");
             }
-            else
+
+            if (await _context.Users.AnyAsync(u => u.EmailId == user.EmailId))
             {
-                return BadRequest("User already exist.");
+                return Conflict("Email already exists.");
             }
-        }
+
+            // Hash the password using BCrypt
+            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+
+            // Set default values
+            user.IsActive = true;
+            user.IsLocked = false;
+            user.CreatedDate = DateTime.UtcNow;
+            user.ModifiedDate = null;
+            user.RowVersion = 1;
+            user.PasswordChangedDate = DateTime.UtcNow;
+            user.failedloginattempts = 0;
+            user.lockoutendtime = null;
+
+            _context.Users.Add(user);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "User created successfully", user.UserId });
+        }        
+
 
         [Authorize]
         [HttpPost("UpdatePassword")]
@@ -168,23 +186,47 @@ namespace HMS.Controllers
 
             return AcceptedAtAction(request.IsLocked ? "UserLocked" : "UserUnlocked", new { id = currentUser.UserId }, currentUser);
         }
+        [Authorize]
+        [HttpPost("GetUserDetails")]
+        public async Task<ActionResult<User>> GetUserDetails([FromBody] User SearchUser)
+        {
+            if (string.IsNullOrWhiteSpace(SearchUser.Username) && 
+                string.IsNullOrWhiteSpace(SearchUser.EmailId) && 
+                string.IsNullOrWhiteSpace(SearchUser.MobileNumber))
+            {
+                return BadRequest("Please provide at least one of: username, emailId, or mobileNumber.");
+            }
 
-        // DELETE: api/Users/5
-        //[Authorize]
-        //[HttpDelete("{id}")]
-        //public async Task<IActionResult> DeleteUser(int id)
-        //{
-        //    var user = await _context.Users.FindAsync(id);
-        //    if (user == null)
-        //    {
-        //        return NotFound();
-        //    }
+            var user = await _context.Users
+                .Where(u =>
+                    (SearchUser.Username != null && u.Username == SearchUser.Username) ||
+                    (SearchUser.EmailId != null && u.EmailId == SearchUser.EmailId) ||
+                    (SearchUser.MobileNumber != null && u.MobileNumber == SearchUser.MobileNumber))
+                .FirstOrDefaultAsync();
 
-        //    _context.Users.Remove(user);
-        //    await _context.SaveChangesAsync();
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
 
-        //    return NoContent();
-        //}
+            // Optional: Avoid returning sensitive data (like password)
+            var result = new
+            {
+                user.UserId,
+                user.Username,
+                user.EmailId,
+                user.MobileNumber,
+                user.IsActive,
+                user.IsLocked,
+                user.LastLoginDate,
+                user.CreatedDate,
+                user.ModifiedDate,
+                user.failedloginattempts,
+                user.lockoutendtime
+            };
+
+            return Ok(result);
+        }
 
         private bool UserExists(int id)
         {

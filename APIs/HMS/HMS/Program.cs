@@ -4,9 +4,13 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
 using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddDbContext<HMSContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("HMSContext") ?? throw new InvalidOperationException("Connection string 'HMSContext' not found.")));
+//PostGre
+builder.Services.AddDbContext<HMSContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("HMSContext") ?? throw new InvalidOperationException("Connection string 'HMSContext' not found.")));
+//Sql
+//builder.Services.AddDbContext<HMSContext>(dbContextOptions => dbContextOptions.UseSqlServer(builder.Configuration["ConnectionStrings:HMSContext"]));
+
 
 // Add services to the container.
 
@@ -88,6 +92,7 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

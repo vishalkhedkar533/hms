@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace HMS.Controllers
 {
     [Route("api/[controller]")]
@@ -75,13 +76,23 @@ namespace HMS.Controllers
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
         [Authorize]
         [HttpPost]
+        [HttpPost("CreateUser")]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction("GetUser", new { id = user.UserId }, user);
+            if (!UserNameExists(user.Username))
+            {
+                user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+                _context.Users.Add(user);
+                await _context.SaveChangesAsync();
+                return Ok("New user created");// ("GetUser", new { id = user.UserId }, user);
+            }
+            else
+            {
+                return BadRequest("User already exist.");
+            }
         }
 
         [Authorize]
@@ -135,7 +146,7 @@ namespace HMS.Controllers
             _context.Users.Update(currentUser);
             await _context.SaveChangesAsync();
 
-            return AcceptedAtAction(request.IsActive ? "UserActivated": "UserDeActivated", new { id = currentUser.UserId }, currentUser);
+            return AcceptedAtAction(request.IsActive ? "UserActivated" : "UserDeActivated", new { id = currentUser.UserId }, currentUser);
         }
 
         [Authorize]
@@ -178,6 +189,11 @@ namespace HMS.Controllers
         private bool UserExists(int id)
         {
             return _context.Users.Any(e => e.UserId == id);
+        }
+
+        private bool UserNameExists(string userName)
+        {
+            return _context.Users.Any(e => e.Username == userName);
         }
     }
 }

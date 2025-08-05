@@ -44,9 +44,9 @@ namespace HMS
             {
                 user.failedloginattempts++;
 
-                if (user.failedloginattempts >= 
-                    int.Parse( _context.apiConfig.FirstOrDefaultAsync(u => u.ConfigKey == ApiConstants.wrong_attempts_allowed)
-                    ?.Result?.ConfigValue ?? "3") )
+                if (user.failedloginattempts >=
+                    int.Parse(_context.apiConfig.FirstOrDefaultAsync(u => u.ConfigKey == ApiConstants.wrong_attempts_allowed)
+                    ?.Result?.ConfigValue ?? _config["DefaultValues:LoginAttempt"].ToString()))
                 {
                     user.lockoutendtime = DateTime.UtcNow.AddMinutes(15); // Lock for 15 minutes
                     user.IsLocked = true; // Optional: depending on your logic

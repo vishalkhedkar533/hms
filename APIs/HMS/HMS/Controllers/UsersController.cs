@@ -14,10 +14,12 @@ namespace HMS.Controllers
     public class UsersController : ControllerBase
     {
         private readonly HMSContext _context;
+        private readonly IConfiguration _config;
 
-        public UsersController(HMSContext context)
+        public UsersController(HMSContext context, IConfiguration config)
         {
             _context = context;
+            _config = config;
         }
 
         // GET: api/Users
@@ -79,7 +81,7 @@ namespace HMS.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 
         //[Authorize]
-        [Authorize]
+        //[Authorize]
         [HttpPost("CreateUser")]
         public async Task<ActionResult<User>> CreateUser(User user)
         {
@@ -110,7 +112,7 @@ namespace HMS.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "User created successfully", user.UserId });
-        }        
+        }
 
 
         [Authorize]
@@ -190,8 +192,8 @@ namespace HMS.Controllers
         [HttpPost("GetUserDetails")]
         public async Task<ActionResult<User>> GetUserDetails([FromBody] User SearchUser)
         {
-            if (string.IsNullOrWhiteSpace(SearchUser.Username) && 
-                string.IsNullOrWhiteSpace(SearchUser.EmailId) && 
+            if (string.IsNullOrWhiteSpace(SearchUser.Username) &&
+                string.IsNullOrWhiteSpace(SearchUser.EmailId) &&
                 string.IsNullOrWhiteSpace(SearchUser.MobileNumber))
             {
                 return BadRequest("Please provide at least one of: username, emailId, or mobileNumber.");

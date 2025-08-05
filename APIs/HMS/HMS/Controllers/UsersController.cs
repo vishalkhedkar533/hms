@@ -115,7 +115,7 @@ namespace HMS.Controllers
         }
 
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPost("UpdatePassword")]
         public async Task<ActionResult> UpdatePassword(UpdateUser request)
         {
@@ -149,7 +149,7 @@ namespace HMS.Controllers
             return Ok("Password updated successfully.");
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPost("ActivateDeactivateUser")]
         public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
         {
@@ -169,7 +169,7 @@ namespace HMS.Controllers
             return AcceptedAtAction(request.IsActive ? "UserActivated" : "UserDeActivated", new { id = currentUser.UserId }, currentUser);
         }
 
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPost("LockUnlockUser")]
         public async Task<ActionResult<User>> LockUnlockUser(UpdateUser request)
         {
@@ -188,7 +188,7 @@ namespace HMS.Controllers
 
             return AcceptedAtAction(request.IsLocked ? "UserLocked" : "UserUnlocked", new { id = currentUser.UserId }, currentUser);
         }
-        [Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPost("GetUserDetails")]
         public async Task<ActionResult<User>> GetUserDetails([FromBody] User SearchUser)
         {

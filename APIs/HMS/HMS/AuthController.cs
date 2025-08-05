@@ -83,6 +83,9 @@ namespace HMS
         {
             var key = _config["Jwt:Key"] ?? "super_secret_jwt_key";
             var keyBytes = Encoding.UTF8.GetBytes(key);
+            var issuer = _config["Jwt:Issuer"];
+            var audience = _config["Jwt:Audience"];
+            int expiresTime = int.TryParse(_config["Jwt:ExpiresTime"], out var time) ? time : 60; // Default to 60 minutes if not set
 
             var claims = new[]
             {
@@ -94,9 +97,9 @@ namespace HMS
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
-                Expires = DateTime.UtcNow.AddHours(1),
-                Issuer = "myapi",
-                Audience = "myapi",
+                Expires = DateTime.UtcNow.AddMinutes(expiresTime),
+                Issuer = issuer,
+                Audience = audience,
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(keyBytes), SecurityAlgorithms.HmacSha256Signature)
             };
 

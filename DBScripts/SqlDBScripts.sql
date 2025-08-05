@@ -1173,12 +1173,4 @@ CREATE TABLE hms.TRAINING_STATUS_MASTER (
     ROWVERSION INTEGER                            -- Audit: version control
 );
 
-
 ALTER TABLE hms.User Add COLUMN password_changed_date timestamp with time zone;
-
-CREATE TABLE IF NOT EXISTS hms."api_config"
-(
-    config_key VARCHAR(50) PRIMARY KEY,
-    config_value VARCHAR(20) NOT NULL
-);
-

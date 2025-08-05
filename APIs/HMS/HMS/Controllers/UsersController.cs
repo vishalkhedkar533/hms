@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 
+
 namespace HMS.Controllers
 {
     [Route("api/[controller]")]
@@ -76,6 +77,7 @@ namespace HMS.Controllers
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
         //[Authorize]
         [Authorize]
         [HttpPost("CreateUser")]
@@ -109,6 +111,7 @@ namespace HMS.Controllers
 
             return Ok(new { message = "User created successfully", user.UserId });
         }        
+
 
         [Authorize]
         [HttpPost("UpdatePassword")]
@@ -161,7 +164,7 @@ namespace HMS.Controllers
             _context.Users.Update(currentUser);
             await _context.SaveChangesAsync();
 
-            return AcceptedAtAction(request.IsActive ? "UserActivated": "UserDeActivated", new { id = currentUser.UserId }, currentUser);
+            return AcceptedAtAction(request.IsActive ? "UserActivated" : "UserDeActivated", new { id = currentUser.UserId }, currentUser);
         }
 
         [Authorize]
@@ -228,6 +231,11 @@ namespace HMS.Controllers
         private bool UserExists(int id)
         {
             return _context.Users.Any(e => e.UserId == id);
+        }
+
+        private bool UserNameExists(string userName)
+        {
+            return _context.Users.Any(e => e.Username == userName);
         }
     }
 }

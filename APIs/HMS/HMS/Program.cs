@@ -16,6 +16,7 @@ builder.Services.AddDbContext<HMSContext>(options => options.UseNpgsql(builder.C
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddSwaggerGen(options =>
 {
     // Basic OpenAPI info
@@ -70,9 +71,9 @@ builder.Services.AddAuthentication("Bearer")
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "HMS-eARK",
-            ValidAudience = "HMS-eARK",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("3RV5tgb^&*()"))
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
         };
     });
 

@@ -81,7 +81,7 @@ namespace HMS.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 
         //[Authorize]
-        //[Authorize]
+        [Authorize(Roles = "Admin")]
         [HttpPost("CreateUser")]
         public async Task<ActionResult<User>> CreateUser(User user)
         {

@@ -14,6 +14,6 @@ namespace Models
         public Int64? LicenseExpiringIn30Months { get; set; } = 80;
         public Int64? CertificateExpiringIn30Months { get; set; } = 90;
         public Int64? MBGCriteriaNotMet { get; set; } = 100;
-        public List<ChannelMaster>? ChannelMasters { get; set; } = new List<ChannelMaster>()
+        public List<ChannelMaster>? ChannelMasters { get; set; } = new List<ChannelMaster>();
     }
 }

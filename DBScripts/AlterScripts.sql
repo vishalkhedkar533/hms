@@ -1,3 +1,26 @@
 ALTER TABLE hms."user"
 ADD COLUMN "FailedLoginAttempts" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN "LockoutEndTime" TIMESTAMP WITH TIME ZONE;
+-- 1. Add IS_ACTIVE
+ALTER TABLE hms."agent_movement_history"
+ADD COLUMN "IS_ACTIVE" BOOLEAN NOT NULL DEFAULT TRUE;
+
+-- 2. Add APPROVED_BY
+ALTER TABLE hms."agent_movement_history"
+ADD COLUMN "APPROVED_BY" VARCHAR(100);
+
+-- 3. Add APPROVED_DATE
+ALTER TABLE hms."agent_movement_history"
+ADD COLUMN "APPROVED_DATE" TIMESTAMP;
+
+-- 4. Add REJECTED_BY
+ALTER TABLE hms."agent_movement_history"
+ADD COLUMN "REJECTED_BY" VARCHAR(100);
+
+-- 5. Add REJECTED_DATE
+ALTER TABLE hms."agent_movement_history"
+ADD COLUMN "REJECTED_DATE" TIMESTAMP;
+
+-- 6. Add STATUS
+ALTER TABLE hms."agent_movement_history"
+ADD COLUMN "STATUS" VARCHAR(20) NOT NULL DEFAULT 'Pending';

@@ -13,6 +13,8 @@ namespace HMS.Data
         public DbSet<Role> Roles => Set<Role>();
         public DbSet<ApiConfig> apiConfig => Set<ApiConfig>();
         public DbSet<UserRoleMapping> UserRoleMappings => Set<UserRoleMapping>();
+        public DbSet<AgentMovementHistory> agentMovementHistory => Set<AgentMovementHistory>();
+        public DbSet<Agent> agent => Set<Agent>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

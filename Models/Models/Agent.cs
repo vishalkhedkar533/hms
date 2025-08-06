@@ -204,5 +204,9 @@ namespace HMS.Models
         [ForeignKey(nameof(SupervisorCode))]
         [SwaggerSchema("Reference to the supervisor agent.")]
         public Agent? Supervisor { get; set; }
+        [Required]
+        [Column("IS_ACTIVE")]
+        [SwaggerSchema("Indicates whether the agent is currently active.")]
+        public bool IsActive { get; set; } = true;
     }
 }

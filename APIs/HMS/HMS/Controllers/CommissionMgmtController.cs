@@ -15,8 +15,8 @@ namespace HMS.Controllers
             _context = context;
             _config = config;
         }
-        [HttpPost("Request")]
-        public async Task<IActionResult> RequestTermination([FromBody] CommissionMgmtDashboardDTO commissionMgmtDashboardDTO)
+        [HttpPost("Dashboard")]
+        public async Task<IActionResult> Dashboard([FromBody] CommissionMgmtDashboardDTO commissionMgmtDashboardDTO)
         {
             CommissionMgmtDashboard commissionMgmtDashboard = new CommissionMgmtDashboard();
             return Ok(commissionMgmtDashboard);

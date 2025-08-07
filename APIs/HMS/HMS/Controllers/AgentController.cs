@@ -205,7 +205,7 @@ namespace HMS.Controllers
 
             return CreatedAtAction(nameof(GetAgentMovementById), new { id = movement.MovementId }, movement);
         }
-        public async Task<IActionResult> GetAgentMovementById(long id)
+        private async Task<IActionResult> GetAgentMovementById(long id)
         {
             var movement = await _context.agentMovementHistory
                                          .Include(m => m.Agent)

@@ -10,10 +10,8 @@ using System;
 namespace HMS.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
     public class AgentController : ControllerBase
     {
-
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
         public AgentController(HMSContext context, IConfiguration config)
@@ -21,7 +19,8 @@ namespace HMS.Controllers
             _context = context;
             _config = config;
         }
-        [HttpPost("Request")]
+        [HttpPost("Termination/Request")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RequestTermination([FromBody] AgentTerminationRequest request)
         {
             request.Status = "Pending";
@@ -32,7 +31,8 @@ namespace HMS.Controllers
 
             return Ok(new { message = "Termination request submitted." });
         }
-        [HttpPost("Approve/{requestId}")]
+        [HttpPost("Termination/Approve/{requestId}")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ApproveTermination(int requestId)
         {
             var username = HttpContext?.User?.Identity?.Name;
@@ -68,8 +68,7 @@ namespace HMS.Controllers
 
             return Ok(new { message = "Termination approved and agent soft-deleted." });
         }
-
-        [HttpPost("Reject/{requestId}")]
+        [HttpPost("Termination/Reject/{requestId}")]
         public async Task<IActionResult> RejectTermination(int requestId, [FromBody] string? reason)
         {
             var username = HttpContext?.User?.Identity?.Name;
@@ -103,7 +102,7 @@ namespace HMS.Controllers
             return Ok(new { message = "Termination rejected." });
         }
         [Authorize(Roles = "Admin")]
-        [HttpPost("Approve/{movementId}")]
+        [HttpPost("Movement/Approve/{movementId}")]
         public async Task<IActionResult> ApproveMovement(long movementId, [FromQuery] string approverUserId)
         {
             var newMovement = await _context.agentMovementHistory
@@ -145,7 +144,7 @@ namespace HMS.Controllers
             return Ok(new { message = "Agent movement approved." });
         }
         [Authorize(Roles = "Admin")]
-        [HttpPost("Reject/{movementId}")]
+        [HttpPost("Movement/Reject/{movementId}")]
         public async Task<IActionResult> RejectMovement(long movementId, [FromQuery] string rejectorUserId)
         {
             var movement = await _context.agentMovementHistory
@@ -173,8 +172,8 @@ namespace HMS.Controllers
             return Ok(new { message = "Agent movement rejected." });
         }
         [Authorize(Roles = "Admin")]
-        [HttpPost("CreateAgentMovement")]
-        public async Task<IActionResult> CreateAgentMovement([FromBody] AgentMovementHistory movement)
+        [HttpPost("Movement/Request")]
+        public async Task<IActionResult> RequestAgentMovement([FromBody] AgentMovementHistory movement)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -205,6 +204,8 @@ namespace HMS.Controllers
 
             return CreatedAtAction(nameof(GetAgentMovementById), new { id = movement.MovementId }, movement);
         }
+        [HttpGet("{id}")]
+        [Authorize]
         private async Task<IActionResult> GetAgentMovementById(long id)
         {
             var movement = await _context.agentMovementHistory
@@ -255,6 +256,5 @@ namespace HMS.Controllers
 
             return entries;
         }
-
     }
 }

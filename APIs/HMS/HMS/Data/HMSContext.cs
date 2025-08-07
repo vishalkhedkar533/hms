@@ -63,7 +63,7 @@ namespace HMS.Data
 
                 entity.HasOne(e => e.Supervisor)
                       .WithMany()
-                      .HasForeignKey(e => e.SupervisorCode)
+                      .HasForeignKey(e => e.Supervisor_Id)
                       .HasConstraintName("fk_supervisor")
                       .OnDelete(DeleteBehavior.SetNull);
             });

@@ -7,11 +7,11 @@ namespace Models
     }
     public class CommissionMgmtDashboard
     {
-        public IndividualCommCharges individualCommCharges = new IndividualCommCharges();
-        public BulkCommUpdates bulkCommUpdates = new BulkCommUpdates();
-        public RejectedCommRequest rejectedCommRequest = new RejectedCommRequest();
-        public List<CurrentBusinessCycle> currentBusinessCycles = new List<CurrentBusinessCycle>();
-        public List<Channel> channels = new List<Channel>();
+        public IndividualCommCharges individualCommCharges { get; set; } = new IndividualCommCharges();
+        public BulkCommUpdates bulkCommUpdates { get; set; } = new BulkCommUpdates();
+        public RejectedCommRequest rejectedCommRequest { get; set; } = new RejectedCommRequest();
+        public List<CurrentBusinessCycle> currentBusinessCycles { get; set; } = new List<CurrentBusinessCycle>();
+        public List<Channel> channels { get; set; } = new List<Channel>();
     }
     public class IndividualCommCharges 
     {

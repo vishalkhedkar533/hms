@@ -133,9 +133,9 @@ namespace HMS.Models
         public string? StaffCode { get; set; }
 
         [StringLength(50)]
-        [Column("SUPERVISOR_CODE")]
+        [Column("Supervisor_Id")]
         [SwaggerSchema("Code of the supervising agent.")]
-        public string? SupervisorCode { get; set; }
+        public int? Supervisor_Id { get; set; }
 
         [Column("CONTRACTED_DATE", TypeName = "date")]
         [SwaggerSchema("Date the agent was contracted.")]
@@ -201,8 +201,12 @@ namespace HMS.Models
         public int? RowVersion { get; set; }
 
         // Navigation property
-        [ForeignKey(nameof(SupervisorCode))]
+        [ForeignKey(nameof(Supervisor_Id))]
         [SwaggerSchema("Reference to the supervisor agent.")]
         public Agent? Supervisor { get; set; }
+        [Required]
+        [Column("IS_ACTIVE")]
+        [SwaggerSchema("Indicates whether the agent is currently active.")]
+        public bool IsActive { get; set; } = true;
     }
 }

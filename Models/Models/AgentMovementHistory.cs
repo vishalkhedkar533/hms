@@ -109,6 +109,31 @@ namespace HMS.Models
         [ConcurrencyCheck]
         [SwaggerSchema("Concurrency token.")]
         public int? RowVersion { get; set; }
+        [Column("IS_ACTIVE")]
+        [SwaggerSchema("Indicates if the movement is active.")]
+        public bool IsActive { get; set; } = true;
+        [StringLength(100)]
+        [Column("APPROVED_BY")]
+        [SwaggerSchema("User ID of the approver.")]
+        public string? ApprovedBy { get; set; }
+
+        [Column("APPROVED_DATE")]
+        [SwaggerSchema("Timestamp of approval.")]
+        public DateTime? ApprovedDate { get; set; }
+
+        [StringLength(100)]
+        [Column("REJECTED_BY")]
+        [SwaggerSchema("User ID of the rejector.")]
+        public string? RejectedBy { get; set; }
+
+        [Column("REJECTED_DATE")]
+        [SwaggerSchema("Timestamp of rejection.")]
+        public DateTime? RejectedDate { get; set; }
+        [StringLength(20)]
+
+        [Column("STATUS")]
+        [SwaggerSchema("Approval status: Pending, Approved, Rejected")]
+        public string Status { get; set; } = "Pending";
 
         // Navigation properties
         [SwaggerSchema("Reference to the agent.")]
@@ -121,5 +146,6 @@ namespace HMS.Models
         [ForeignKey(nameof(NewSupervisorCode))]
         [SwaggerSchema("Reference to new supervisor agent.")]
         public Agent? NewSupervisor { get; set; }
+
     }
 }

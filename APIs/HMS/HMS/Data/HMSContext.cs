@@ -17,6 +17,7 @@ namespace HMS.Data
         public DbSet<AgentTerminationRequest> AgentTerminationRequest => Set<AgentTerminationRequest>();
         public DbSet<Agent> agent => Set<Agent>();
         public DbSet<AgentAuditTrail> AgentAuditTrail => Set<AgentAuditTrail>();
+        public DbSet<RoleMenuMapping> RoleMenuMapping => Set<RoleMenuMapping>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

@@ -18,9 +18,9 @@ namespace HMS.Data
         public DbSet<Agent> agent => Set<Agent>();
         public DbSet<AgentAuditTrail> AgentAuditTrail => Set<AgentAuditTrail>();
 
-        public DbSet<HmsDashboard> hmsDashboard => Set<HmsDashboard>();
-        //public DbSet<ChannelDetails> channelDetails => Set<ChannelDetails>();
-        //public DbSet<StatusDetails> statusDetails => Set<StatusDetails>();
+        public DbSet<HMSDashboard> HMSDashboard => Set<HMSDashboard>();
+        public DbSet<ChannelDetails> ChannelDetails => Set<ChannelDetails>();
+        public DbSet<StatusDetails> StatusDetails => Set<StatusDetails>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -71,7 +71,10 @@ namespace HMS.Data
                       .HasConstraintName("fk_supervisor")
                       .OnDelete(DeleteBehavior.SetNull);
             });
+            
+
             modelBuilder.HasDefaultSchema("hms");
+
         }
     }
 }

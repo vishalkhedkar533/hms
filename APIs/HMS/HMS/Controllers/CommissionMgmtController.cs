@@ -1,6 +1,7 @@
 ﻿using HMS.Data;
 using Microsoft.AspNetCore.Mvc;
 using Models;
+using Newtonsoft.Json;
 
 namespace HMS.Controllers
 {
@@ -37,7 +38,7 @@ namespace HMS.Controllers
                 },
                 CreatedBy = "CreatedBy"
             };
-            return Ok(commissionMgmtDashboard);
+            return Ok(JsonConvert.SerializeObject(commissionMgmtDashboard));
         }
     }
 }

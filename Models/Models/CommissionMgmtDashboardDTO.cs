@@ -35,18 +35,18 @@ namespace Models
        public string RejectionReason { get; set; } = string.Empty;
        public DateTime RejectionOn { get; set; } = DateTime.MinValue;
     }
-    public class CurrentBusinessCycle 
-    {
-        public string Cycle {  get; set; } = string.Empty;
-        public Int64 Revenue { get; set; } = 100000;
-        public Int64 Commssion { get; set; } = 10000;
-        public Int32 Percentage { get; set; } = 15;
-    }
-    public class Channel
-    {
-        public string Reason { get; set; } = string.Empty;
-        public Int64 Period_00_06_Months { get; set; } = 100000;
-        public Int64 Period_07_12_Months { get; set; } = 200000;
-        public Int64 Period_13_Onwards_Months { get; set; } = 300000;
-    }
+    //public class CurrentBusinessCycle 
+    //{
+    //    public string Cycle {  get; set; } = string.Empty;
+    //    public Int64 Revenue { get; set; } = 100000;
+    //    public Int64 Commssion { get; set; } = 10000;
+    //    public Int32 Percentage { get; set; } = 15;
+    //}
+    //public class Channel
+    //{
+    //    public string Reason { get; set; } = string.Empty;
+    //    public Int64 Period_00_06_Months { get; set; } = 100000;
+    //    public Int64 Period_07_12_Months { get; set; } = 200000;
+    //    public Int64 Period_13_Onwards_Months { get; set; } = 300000;
+    //}
 }

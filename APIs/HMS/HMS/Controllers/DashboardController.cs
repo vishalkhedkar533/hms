@@ -17,11 +17,12 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-
-        public DashboardController(HMSContext context, IConfiguration config)
+        private readonly ILogger<DashboardController> _logger;
+        public DashboardController(HMSContext context, IConfiguration config, ILogger<DashboardController> logger)
         {
             _context = context;
             _config = config;
+            _logger = logger;
         }
 
         // GET: api/<DashboardController>
@@ -29,43 +30,67 @@ namespace HMS.Controllers
         [HttpGet("GetDashboard")]
         public async Task<ActionResult> GetDashboard(Int32? UserId)
         {
+            _logger.LogInformation("Seri Log is Working");
             var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == UserId);
             if (user == null)
             {
+                _logger.LogError(UserId + " User not found.");
                 return NotFound("User not found.");
             }
 
-            if (await _context.hmsDashboard.AnyAsync(u => u.UserId == UserId))
+            HMSDashboard hmsrecord = await _context.HMSDashboard.FirstOrDefaultAsync(x => x.UserId == UserId);
+
+            if (hmsrecord == null)
             {
-                return Conflict("User data is not available.");
+                _logger.LogError("HMSDashboard data not found for UserId: {UserId}", UserId);
+                return NotFound("HMSDashboard data not found for UserId: " + UserId.ToString());
             }
 
+            //var filteredList = await _context.ChannelDetails.Where(y => y.UserId == UserId) .ToListAsync();
 
-            HmsDashboard hmsDashboard = new HmsDashboard();
+            //int totalCount = _context.ChannelDetails.Count();
 
-            //ChannelDetails channelDetails = new ChannelDetails();
-            //channelDetails.ChannelId = 1;
-            //channelDetails.ChannelName = "Digital Banking";
-            //channelDetails.TotalEntities = 12;
-            //channelDetails.Created = 10;
-            //channelDetails.Terminated = 2;
-            //hmsDashboard.channelDetails.Add(channelDetails);
+            //var channelDetails1 = await _context.ChannelDetails.FirstOrDefaultAsync(y => y.UserId == UserId);
 
-            //StatusDetails statusDetails = new StatusDetails();
-            //statusDetails.StatusName = "Code Movement";
-            //statusDetails.PendingItem = 10;
-            //statusDetails.LastUpdated = "2 hours ago";
-            //statusDetails.Priority = "High";
-            //hmsDashboard.statusDetails.Add(statusDetails);
+            //List<ChannelDetails> channelDetails = _context.ChannelDetails.Where(y => y.UserId == UserId).ToList();
 
-            return Ok(hmsDashboard);
+            //  await _context.ChannelDetails.Select(y => y.UserId == UserId).ToList();
+
+            //hmsrecord.channelDetails = channelDetails;
+
+            //int totalCount = _context.StatusDetails.Count();
+            //StatusDetails statusDetails = await _context.StatusDetails.FirstOrDefaultAsync(y => y.UserId == UserId);
+
+
+
+            HMSDashboard hmsDashboard = new HMSDashboard();
+
+            ChannelDetails channelDetails = new ChannelDetails();
+            channelDetails.UserId = 1;
+            channelDetails.ChannelId = 1;
+            channelDetails.ChannelName = "Digital Banking";
+            channelDetails.TotalEntities = 12;
+            channelDetails.Created = 10;
+            channelDetails.Terminated = 2;
+            hmsrecord.channelDetails.Add(channelDetails);
+
+            StatusDetails statusDetails = new StatusDetails();
+            statusDetails.UserId = 1;
+            statusDetails.StatusId = 1;
+            statusDetails.StatusName = "Code Movement";
+            statusDetails.PendingItem = 10;
+            statusDetails.LastUpdated = "2 hours ago";
+            statusDetails.Priority = "High";
+            hmsrecord.statusDetails.Add(statusDetails);
+
+            return Ok(hmsrecord);
         }
 
         //[Authorize(Roles = "Admin")]
         [HttpGet("GetCommissionDashboard")]
-        public async Task<ActionResult> GetCommissionDashboard(string userName)
+        public async Task<ActionResult> GetCommissionDashboard(Int32? UserId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == userName);
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == UserId);
             if (user == null)
             {
                 return NotFound("User not found.");

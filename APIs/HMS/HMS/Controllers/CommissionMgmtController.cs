@@ -1,6 +1,7 @@
 ﻿using HMS.Data;
 using Microsoft.AspNetCore.Mvc;
 using Models;
+using Newtonsoft.Json;
 
 namespace HMS.Controllers
 {
@@ -42,7 +43,7 @@ namespace HMS.Controllers
                     TotalRecords = 1000,
                 }
             };
-            return Ok(commissionMgmtDashboard);
+            return Ok(JsonConvert.SerializeObject(commissionMgmtDashboard));
         }
     }
 }

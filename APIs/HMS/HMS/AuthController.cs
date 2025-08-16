@@ -1,5 +1,6 @@
 ﻿using HMS.Data;
 using HMS.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace HMS
+namespace HMS.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -24,6 +25,7 @@ namespace HMS
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
@@ -61,17 +63,21 @@ namespace HMS
             user.lockoutendtime = null;
             user.IsLocked = false;
 
-            var roleMapping = await _context.UserRoleMappings
-                .Include(urm => urm.Role)
-                .Where(urm => urm.UserId == user.UserId && urm.IsActive && urm.IsPrimary)
-                .FirstOrDefaultAsync();
+            var roleNames = await _context.UserRoleMappings
+                .Where(urm => urm.UserId == user.UserId
+                              && urm.IsActive
+                              && (urm.EffectiveTo == null || urm.EffectiveTo >= DateTime.Today)
+                              && urm.EffectiveFrom <= DateTime.Today)
+                .Select(urm => urm.Role.RoleName) // assumes Role table has RoleName
+                .Distinct()
+                .ToListAsync();
 
-            if (roleMapping?.Role == null)
+            if (roleNames == null)
             {
                 return Unauthorized("User has no active primary role.");
             }
 
-            var token = GenerateJwtToken(user, roleMapping.Role.RoleName);
+            var token = GenerateJwtToken(user, roleNames);
             user.LastLoginDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -79,7 +85,7 @@ namespace HMS
             return Ok(new { token });
         }
 
-        private string GenerateJwtToken(User user, string roleName)
+        private string GenerateJwtToken(User user, List<string> roleNames)
         {
             var key = _config["Jwt:Key"] ?? "super_secret_jwt_key";
             var keyBytes = Encoding.UTF8.GetBytes(key);
@@ -87,13 +93,20 @@ namespace HMS
             var audience = _config["Jwt:Audience"];
             int expiresTime = int.TryParse(_config["Jwt:ExpiresTime"], out var time) ? time : 60; // Default to 60 minutes if not set
 
-            var claims = new[]
-            {
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            new Claim(ClaimTypes.Role, roleName)
-        };
+            //var claims = new[]
+            //{
+            //    new Claim(ClaimTypes.Name, user.Username),
+            //    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            //    new Claim(ClaimTypes.Role, roleName)
+            //};
+            var claims = new List<Claim>{
+                //new Claim(ClaimTypes.Name, user.Username)
+                new Claim(ClaimTypes.NameIdentifier, user.Username), // 👈 Store UserId here
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
 
+            // Add role claims
+            claims.AddRange(roleNames.Select(role => new Claim(ClaimTypes.Role, role)));
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
@@ -111,7 +124,6 @@ namespace HMS
         {
             public string Username { get; set; } = string.Empty;
             public string Password { get; set; } = string.Empty;
-            public string Organisation { get; set; } = string.Empty;
         }
     }
 }

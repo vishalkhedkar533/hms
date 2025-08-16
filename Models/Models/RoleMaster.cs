@@ -11,11 +11,11 @@ namespace HMS.Models
     public class RoleMaster
     {
         [Key]
-        [Column("ROLE_CODE")]
+        [Column("ROLE_ID")]
         [StringLength(50)]
-        [SwaggerSchema("Primary key: role code.")]
-        public string RoleCode { get; set; } = null!;
-
+        [SwaggerSchema("Primary key: role id")]
+        public Int64 ROLE_ID { get; set; }
+    
         [Required]
         [Column("ROLE_NAME")]
         [StringLength(100)]

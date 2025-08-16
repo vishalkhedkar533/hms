@@ -1,11 +1,9 @@
-﻿using Azure.Core;
-using HMS.Data;
+﻿using HMS.Data;
 using HMS.Models;
+using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
 using Models;
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -25,9 +23,10 @@ namespace HMS.Controllers
             _logger = logger;
         }
 
-        // GET: api/<DashboardController>
-        //[Authorize(Roles = "Admin")]
+        // GET: api/<DashboardController>        
         [HttpGet("GetDashboard")]
+        [Authorize]
+        [MenuAuthorize(1002)]
         public async Task<ActionResult> GetDashboard(Int32? UserId)
         {
             _logger.LogInformation("Seri Log is Working");

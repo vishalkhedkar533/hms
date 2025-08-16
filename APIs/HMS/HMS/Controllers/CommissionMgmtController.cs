@@ -1,4 +1,6 @@
 ﻿using HMS.Data;
+using HMS.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Newtonsoft.Json;
@@ -18,6 +20,8 @@ namespace HMS.Controllers
         }
         //public async Task<ActionResult<User>> CreateUser(User user)
         [HttpPost("Dashboard")]
+        [Authorize]
+        [MenuAuthorize(1001)]
         public ActionResult<CommissionMgmtDashboard> Dashboard([FromBody] CommissionMgmtDashboardDTO commissionMgmtDashboardDTO)
         {
             CommissionMgmtDashboard commissionMgmtDashboard = new CommissionMgmtDashboard

@@ -1,5 +1,6 @@
 ﻿using HMS.Data;
 using HMS.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,7 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace HMS
+namespace HMS.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -24,6 +25,7 @@ namespace HMS
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
@@ -98,7 +100,9 @@ namespace HMS
             //    new Claim(ClaimTypes.Role, roleName)
             //};
             var claims = new List<Claim>{
-                new Claim(ClaimTypes.Name, user.Username)
+                //new Claim(ClaimTypes.Name, user.Username)
+                new Claim(ClaimTypes.NameIdentifier, user.Username), // 👈 Store UserId here
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
             // Add role claims
@@ -120,7 +124,6 @@ namespace HMS
         {
             public string Username { get; set; } = string.Empty;
             public string Password { get; set; } = string.Empty;
-            public string Organisation { get; set; } = string.Empty;
         }
     }
 }

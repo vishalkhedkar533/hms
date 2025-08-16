@@ -1,4 +1,5 @@
 ﻿using HMS.Data;
+using HMS.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -7,11 +8,17 @@ using System.Reflection;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-//PostGre
-builder.Services.AddDbContext<HMSContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("HMSContext") ?? throw new InvalidOperationException("Connection string 'HMSContext' not found.")));
-//Sql
-//builder.Services.AddDbContext<HMSContext>(dbContextOptions => dbContextOptions.UseSqlServer(builder.Configuration["ConnectionStrings:HMSContext"]));
 
+// ----------------------------
+// Postgres DbContext
+// ----------------------------
+builder.Services.AddDbContext<HMSContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("HMSContext")
+        ?? throw new InvalidOperationException("Connection string 'HMSContext' not found.")));
+
+// ----------------------------
+// Serilog
+// ----------------------------
 var logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
@@ -19,29 +26,26 @@ var logger = new LoggerConfiguration()
 builder.Logging.ClearProviders();
 builder.Logging.AddSerilog(logger);
 
-// Add services to the container.
-
+// ----------------------------
+// Controllers
+// ----------------------------
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
 
-
-
+// ----------------------------
+// Swagger / OpenAPI
+// ----------------------------
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    // Basic OpenAPI info
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "HMS APIs",
         Version = "v1",
         Description = "APIs for HMS",
-        Contact = new OpenApiContact
-        {
-            Name = "NVK",
-            Email = "NVK@gmail.com"
-        }
+        Contact = new OpenApiContact { Name = "NVK", Email = "NVK@gmail.com" }
     });
-    // 🔐 Define JWT Bearer Authentication
+
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -49,29 +53,28 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter 'Bearer' [space] and then your valid token.\n\nExample: Bearer 12345abcdef"
+        Description = "Enter 'Bearer' [space] and then your valid token."
     });
 
-    // 🔐 Add global security requirement
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
-            new string[] {}
+            Array.Empty<string>()
         }
     });
-    // Enable XML comments
+
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     options.IncludeXmlComments(xmlPath);
 });
+
+// ----------------------------
+// JWT Authentication
+// ----------------------------
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
@@ -83,37 +86,33 @@ builder.Services.AddAuthentication("Bearer")
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]))
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "super_secret_key"))
         };
     });
 
 builder.Services.AddAuthorization();
 
+// ----------------------------
+// Register MenuAuthorizeFilter for DI
+// ----------------------------
+//builder.Services.AddScoped<MenuAuthorizeFilter>();
 
 var app = builder.Build();
-// Enable Swagger UI in all environments
+
+// Swagger
 app.UseSwagger();
-app.UseSwaggerUI(options =>
+app.UseSwaggerUI(c =>
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-    options.RoutePrefix = string.Empty; // Serves Swagger at app root (/)
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "HMS API V1");
+    c.RoutePrefix = string.Empty;
 });
 
-// Configure the HTTP request pipeline.
-
+// Middleware
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-// ⬅️ Ensure DB is created and migrations applied
-//using (var scope = app.Services.CreateScope())
-//{
-//    var services = scope.ServiceProvider;
-//    var context = services.GetRequiredService<HMSContext>();
-//    context.Database.Migrate();
-//}
 
 app.Run();

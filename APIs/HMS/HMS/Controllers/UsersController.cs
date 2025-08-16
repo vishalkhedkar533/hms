@@ -3,8 +3,6 @@ using HMS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-
-
 namespace HMS.Controllers
 {
     [Route("api/[controller]")]
@@ -13,13 +11,11 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-
         public UsersController(HMSContext context, IConfiguration config)
         {
             _context = context;
             _config = config;
         }
-
         //[Authorize]
         //[Authorize(Roles = "Admin")]
         [HttpPost("CreateUser")]
@@ -53,8 +49,6 @@ namespace HMS.Controllers
 
             return Ok(new { message = "User created successfully", user.UserId });
         }
-
-
         [Authorize(Roles = "Admin")]
         [HttpPost("UpdatePassword")]
         public async Task<ActionResult> UpdatePassword(UpdateUser request)
@@ -88,7 +82,6 @@ namespace HMS.Controllers
 
             return Ok("Password updated successfully.");
         }
-
         [Authorize(Roles = "Admin")]
         [HttpPost("ActivateDeactivateUser")]
         public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
@@ -108,7 +101,6 @@ namespace HMS.Controllers
 
             return AcceptedAtAction(request.IsActive ? "UserActivated" : "UserDeActivated", new { id = currentUser.UserId }, currentUser);
         }
-
         [Authorize(Roles = "Admin")]
         [HttpPost("LockUnlockUser")]
         public async Task<ActionResult<User>> LockUnlockUser(UpdateUser request)
@@ -169,18 +161,14 @@ namespace HMS.Controllers
 
             return Ok(result);
         }
-
         private bool UserExists(int id)
         {
             return _context.Users.Any(e => e.UserId == id);
         }
-
         private bool UserNameExists(string userName)
         {
             return _context.Users.Any(e => e.Username == userName);
         }
-
-
         // GET: api/Users
         //[Authorize]
         //[HttpGet]
@@ -238,6 +226,5 @@ namespace HMS.Controllers
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-
     }
 }

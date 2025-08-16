@@ -65,7 +65,7 @@ namespace HMS.Models
         [Column("password_changed_date")]
         public DateTime? PasswordChangedDate { get; set; }
         [NotMapped]
-        public HmsDashboard? HmsDashboard { get; set; } = new HmsDashboard();
+        public HMSDashboard? HmsDashboard { get; set; } = new HMSDashboard();
         [Column("failedloginattempts")]
         public int failedloginattempts { get; set; } = 0;
         [Column("lockoutendtime")]

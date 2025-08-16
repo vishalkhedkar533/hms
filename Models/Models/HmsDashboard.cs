@@ -1,19 +1,59 @@
-﻿using HMS.Models;
+﻿using Models;
+using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models
+namespace HMS.Models
 {
-    public class HmsDashboard
+  
+    [Table("hmsdashboard", Schema = "hms")] // Quoted "HMSDashboard" handled via EF Table attribute
+    public class HMSDashboard
     {
-        public Int64? TotalEntitiesCount { get; set; } = 10;
-        public Int64? TotalEntitiesThisMonth { get; set; } = 20;
-        public Int64? EntitiesCreatedThisMonth { get; set; } = 30;
-        public Int64? EntitiesCreatedPrevMonth { get; set; } = 40;
-        public Int64? EntitiesTerminatedThisMonth { get; set; } = 50;
-        public Int64? EntitiesTerminatedPrevMonth { get; set; } = 60;
-        public Int64? EntitiesNetThisMonth { get; set; } = 70;
-        public Int64? LicenseExpiringIn30Months { get; set; } = 80;
-        public Int64? CertificateExpiringIn30Months { get; set; } = 90;
-        public Int64? MBGCriteriaNotMet { get; set; } = 100;
-        public List<ChannelMaster>? ChannelMasters { get; set; } = new List<ChannelMaster>();
+        [Key]
+        [Column("UserId")]
+        public int UserId { get; set; }
+        [Column("TotalEntitiesCount")]
+         
+        public double? TotalEntitiesCount { get; set; } = 0;
+        [Column("TotalEntitiesThisMonth")]
+        public double? TotalEntitiesThisMonth { get; set; } = 0;
+        [Column("EntitiesCreatedThisMonth")]
+        public double? EntitiesCreatedThisMonth { get; set; } = 0;
+        [Column("EntitiesCreatedPrevMonth")]
+        public double? EntitiesCreatedPrevMonth { get; set; } = 0;
+        [Column("EntitiesTerminatedThisMonth")]
+        public double? EntitiesTerminatedThisMonth { get; set; } = 0;
+        [Column("EntitiesTerminatedPrevMonth")]
+        public double? EntitiesTerminatedPrevMonth { get; set; } = 0;
+        [Column("EntitiesNetThisMonth")]
+        public double? EntitiesNetThisMonth { get; set; } = 0;
+        [Column("LicenseExpiringIn30Months")]
+        public double? LicenseExpiringIn30Months { get; set; } = 0;
+        [Column("CertificateExpiringIn30Months")]
+        public double? CertificateExpiringIn30Months { get; set; } = 0;
+        [Column("MBGCriteriaNotMet")]
+        public double? MBGCriteriaNotMet { get; set; } = 0;
+
+        public List<ChannelDetails>? channelDetails { get; set; } = new List<ChannelDetails>();
+        public List<StatusDetails>? statusDetails { get; set; } = new List<StatusDetails>();
+    }
+
+    [Table("statusdetails", Schema = "hms")] // Quoted "HMSDashboard" handled via EF Table attribute
+    public class StatusDetails
+    {
+
+        [Key]
+        [Column("statusUserId")]
+        public int UserId { get; set; }
+        [Column("StatusId")]
+        public Int64? StatusId { get; set; }
+        [Column("StatusName")]
+        public string? StatusName { get; set; } 
+        [Column("PendingItem")]
+        public Int64? PendingItem { get; set; } = 0;
+        [Column("LastUpdated")]
+        public string? LastUpdated { get; set; } 
+        [Column("Priority")]
+        public string? Priority { get; set; } 
     }
 }

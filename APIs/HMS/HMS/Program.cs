@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Serilog;
 using System.Reflection;
 using System.Text;
 
@@ -11,11 +12,20 @@ builder.Services.AddDbContext<HMSContext>(options => options.UseNpgsql(builder.C
 //Sql
 //builder.Services.AddDbContext<HMSContext>(dbContextOptions => dbContextOptions.UseSqlServer(builder.Configuration["ConnectionStrings:HMSContext"]));
 
+var logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .CreateLogger();
+builder.Logging.ClearProviders();
+builder.Logging.AddSerilog(logger);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+
+
+
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddSwaggerGen(options =>
 {

@@ -21,6 +21,7 @@ namespace HMS.Data
         public DbSet<HMSDashboard> HMSDashboard => Set<HMSDashboard>();
         public DbSet<ChannelDetails> ChannelDetails => Set<ChannelDetails>();
         public DbSet<StatusDetails> StatusDetails => Set<StatusDetails>();
+        public DbSet<RoleMenuMapping> RoleMenuMapping => Set<RoleMenuMapping>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

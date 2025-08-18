@@ -1,4 +1,6 @@
 ﻿using HMS.Data;
+using HMS.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Newtonsoft.Json;
@@ -18,25 +20,32 @@ namespace HMS.Controllers
         }
         //public async Task<ActionResult<User>> CreateUser(User user)
         [HttpPost("Dashboard")]
-        public async Task<ActionResult<CommissionMgmtDashboard>> Dashboard([FromBody] CommissionMgmtDashboardDTO commissionMgmtDashboardDTO)
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public ActionResult<CommissionMgmtDashboard> Dashboard([FromBody] CommissionMgmtDashboardDTO commissionMgmtDashboardDTO)
         {
-            CommissionMgmtDashboard commissionMgmtDashboard = new CommissionMgmtDashboard();
-            commissionMgmtDashboard.bulkCommUpdates = new BulkCommUpdates();
-            commissionMgmtDashboard.bulkCommUpdates.TotalRecords = 10000;
-            commissionMgmtDashboard.bulkCommUpdates.BranchMaster = new Models.BranchMaster
+            CommissionMgmtDashboard commissionMgmtDashboard = new CommissionMgmtDashboard
             {
-                Address = "Branch Address",
-                BranchCode = "BR-1",
-                BranchName ="Branch Name",
-                ChannelCode ="Channel Code",
-                ChannelMaster = new Models.ChannelMaster {
-                    ChannelCode ="Channel Code",
-                    ChannelName ="ChannelName",
-                    CreatedBy = "CreatedBy",
-                    CreatedDate = DateTime.Now,
-                    CreatedEntities = 10
-                },
-                CreatedBy = "CreatedBy"
+                bulkCommUpdates = new BulkCommUpdates
+                {
+                    BranchMaster = new Models.BranchMaster
+                    {
+                        Address = "Branch Address",
+                        BranchCode = "BR-1",
+                        BranchName = "Branch Name",
+                        ChannelCode = "Channel Code",
+                        ChannelMaster = new Models.ChannelMaster
+                        {
+                            ChannelCode = "Channel Code",
+                            ChannelName = "ChannelName",
+                            CreatedBy = "CreatedBy",
+                            CreatedDate = DateTime.Now,
+                            CreatedEntities = 10
+                        },
+                    },
+                    RequestDate = DateTime.Now,
+                    TotalRecords = 1000,
+                }
             };
             return Ok(JsonConvert.SerializeObject(commissionMgmtDashboard));
         }

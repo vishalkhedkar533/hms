@@ -1,10 +1,11 @@
-﻿using HMS.Data;
+﻿using AutoMapper;
+using HMS.Data;
+using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
-using System;
+using Models.DTO;
 
 namespace HMS.Controllers
 {
@@ -13,10 +14,12 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-        public AgentController(HMSContext context, IConfiguration config)
+        private readonly IMapper _mapper;
+        public AgentController(HMSContext context, IConfiguration config, IMapper mapper)
         {
             _context = context;
             _config = config;
+            _mapper = mapper;
         }
         [HttpPost("Termination/Request")]
         [Authorize(Roles = "Admin")]
@@ -254,6 +257,34 @@ namespace HMS.Controllers
             }
 
             return entries;
+        }
+
+        [HttpPost]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> CreateAgent([FromBody] AgentDto agentDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var agent = _mapper.Map<Agent>(agentDto);
+            agent.CreatedDate = DateTime.UtcNow;  // set server timestamp
+            agent.IsActive = true;                // default active
+
+            _context.Agents.Add(agent);
+            await _context.SaveChangesAsync();
+
+            var result = _mapper.Map<AgentDto>(agent);
+            return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
+        }
+        [HttpGet("{id:int}")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<AgentDto>> GetAgentById(int id)
+        {
+            var agent = await _context.Agents.FindAsync(id);
+            if (agent == null)
+                return NotFound();
+
+            return _mapper.Map<AgentDto>(agent);
         }
     }
 }

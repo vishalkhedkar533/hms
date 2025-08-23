@@ -21,6 +21,7 @@ namespace HMS.Data
         public DbSet<ChannelDetails> ChannelDetails => Set<ChannelDetails>();
         public DbSet<StatusDetails> StatusDetails => Set<StatusDetails>();
         public DbSet<RoleMenuMapping> RoleMenuMapping => Set<RoleMenuMapping>();
+        public DbSet<Agent> Agents { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -61,17 +62,33 @@ namespace HMS.Data
 
             modelBuilder.Entity<Agent>(entity =>
             {
-                entity.ToTable("AGENT", "hms");
+                entity.ToTable("agent", "hms");
 
                 entity.HasIndex(e => e.AgentCode).IsUnique();
 
                 entity.HasOne(e => e.Supervisor)
                       .WithMany()
-                      .HasForeignKey(e => e.Supervisor_Id)
+                      .HasForeignKey(e => e.SupervisorId)
                       .HasConstraintName("fk_supervisor")
                       .OnDelete(DeleteBehavior.SetNull);
             });
-            
+
+            modelBuilder.Entity<RoleMenuMapping>(entity =>
+            {
+                entity.ToTable("role_menu_mapping", "hms");
+
+                entity.HasOne(rmm => rmm.Role)
+                      .WithMany()
+                      .HasForeignKey(rmm => rmm.RoleId)
+                      .HasConstraintName("fk_role")
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(rmm => rmm.Menu)
+                      .WithMany()
+                      .HasForeignKey(rmm => rmm.MenuId)
+                      .HasConstraintName("fk_menu")
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
             modelBuilder.HasDefaultSchema("hms");
 

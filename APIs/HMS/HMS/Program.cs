@@ -1,7 +1,9 @@
 ﻿using HMS.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Models.Mapping;
 using Serilog;
 using System.Reflection;
 using System.Text;
@@ -23,6 +25,8 @@ var logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .CreateLogger();
 builder.Logging.ClearProviders();
+// Replace this line:
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AgentProfile>());
 builder.Logging.AddSerilog(logger);
 
 // ----------------------------

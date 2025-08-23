@@ -1,10 +1,9 @@
 ﻿using HMS.Data;
-using HMS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Models;
+using Models.DB;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;

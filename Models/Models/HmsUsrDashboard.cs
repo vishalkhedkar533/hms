@@ -1,6 +1,0 @@
-﻿namespace Models
-{
-    class HmsUsrDashboard
-    {
-    }
-}

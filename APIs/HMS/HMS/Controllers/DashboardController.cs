@@ -1,10 +1,9 @@
 ﻿using HMS.Data;
-using HMS.Models;
 using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Models;
+using Models.DB;
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace HMS.Controllers

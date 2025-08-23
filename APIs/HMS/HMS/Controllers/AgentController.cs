@@ -1,10 +1,9 @@
 ﻿using HMS.Data;
-using HMS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Models;
+using Models.DB;
 using System;
 
 namespace HMS.Controllers

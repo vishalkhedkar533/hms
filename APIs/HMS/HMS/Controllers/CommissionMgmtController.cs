@@ -2,7 +2,7 @@
 using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Models;
+using Models.DB;
 using Newtonsoft.Json;
 
 namespace HMS.Controllers

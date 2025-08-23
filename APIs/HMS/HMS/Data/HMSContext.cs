@@ -1,6 +1,5 @@
-﻿using HMS.Models;
-using Microsoft.EntityFrameworkCore;
-using Models;
+﻿using Microsoft.EntityFrameworkCore;
+using Models.DB;
 
 namespace HMS.Data
 {

@@ -99,8 +99,8 @@ namespace HMS.Controllers
             //    new Claim(ClaimTypes.Role, roleName)
             //};
             var claims = new List<Claim>{
-                //new Claim(ClaimTypes.Name, user.Username)
-                new Claim(ClaimTypes.NameIdentifier, user.Username), // 👈 Store UserId here
+               new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()), // 👈 Store UserId here
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 

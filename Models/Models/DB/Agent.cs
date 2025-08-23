@@ -7,7 +7,7 @@ namespace Models.DB
     /*
      * modelBuilder.Entity<Agent>(entity =>
 {
-    entity.ToTable("AGENT", "hms");
+    entity.ToTable("agent", "hms");
 
     entity.HasIndex(e => e.AgentCode).IsUnique();
 
@@ -19,194 +19,158 @@ namespace Models.DB
 });
 
      */
-    [Table("AGENT", Schema = "hms")]
+    [Table("agent", Schema = "hms")] // ✅ lowercase to match DB
     public class Agent
     {
         [Key]
-        [Column("AGENT_ID")]
+        [Column("agent_id")] // ✅ lowercase
         [SwaggerSchema("Primary key for the agent.")]
         public int AgentId { get; set; }
 
         [Required]
         [StringLength(50)]
-        [Column("AGENT_CODE")]
+        [Column("agent_code")]
         [SwaggerSchema("Unique code identifying the agent.")]
         public string AgentCode { get; set; } = null!;
 
         [StringLength(20)]
-        [Column("AGENT_TYPE_CODE")]
-        [SwaggerSchema("Agent type code.")]
+        [Column("agent_type_code")]
         public string? AgentTypeCode { get; set; }
 
         [StringLength(20)]
-        [Column("AGENT_SUB_TYPE_CODE")]
-        [SwaggerSchema("Agent sub-type code.")]
+        [Column("agent_sub_type_code")]
         public string? AgentSubTypeCode { get; set; }
 
         [StringLength(150)]
-        [Column("AGENT_NAME")]
-        [SwaggerSchema("Full name or registered name of the agent.")]
+        [Column("agent_name")]
         public string? AgentName { get; set; }
 
         [StringLength(300)]
-        [Column("BUSINESS_NAME")]
-        [SwaggerSchema("Business or trade name of the agent.")]
+        [Column("business_name")]
         public string? BusinessName { get; set; }
 
         [StringLength(150)]
-        [Column("FIRST_NAME")]
-        [SwaggerSchema("First name of the agent.")]
+        [Column("first_name")]
         public string? FirstName { get; set; }
 
         [StringLength(150)]
-        [Column("MIDDLE_NAME")]
-        [SwaggerSchema("Middle name of the agent.")]
+        [Column("middle_name")]
         public string? MiddleName { get; set; }
 
         [StringLength(150)]
-        [Column("LAST_NAME")]
-        [SwaggerSchema("Last name of the agent.")]
+        [Column("last_name")]
         public string? LastName { get; set; }
 
         [StringLength(20)]
-        [Column("PREFIX")]
-        [SwaggerSchema("Name prefix (e.g., Mr., Dr.).")]
+        [Column("prefix")]
         public string? Prefix { get; set; }
 
         [StringLength(20)]
-        [Column("SUFFIX")]
-        [SwaggerSchema("Name suffix (e.g., Jr., Sr.).")]
+        [Column("suffix")]
         public string? Suffix { get; set; }
 
         [StringLength(10)]
-        [Column("GENDER")]
-        [SwaggerSchema("Gender of the agent.")]
+        [Column("gender")]
         public string? Gender { get; set; }
 
-        [Column("DOB", TypeName = "date")]
-        [SwaggerSchema("Date of birth of the agent.")]
+        [Column("dob", TypeName = "date")]
         public DateTime? DOB { get; set; }
 
         [StringLength(40)]
-        [Column("NATIONALITY")]
-        [SwaggerSchema("Nationality of the agent.")]
+        [Column("nationality")]
         public string? Nationality { get; set; }
 
         [StringLength(20)]
-        [Column("MARITAL_STATUS_CODE")]
-        [SwaggerSchema("Marital status code.")]
+        [Column("marital_status_code")]
         public string? MaritalStatusCode { get; set; }
 
         [StringLength(22)]
-        [Column("PREFERRED_LANGUAGE")]
-        [SwaggerSchema("Preferred communication language.")]
+        [Column("preferred_language")]
         public string? PreferredLanguage { get; set; }
 
         [StringLength(20)]
-        [Column("CHANNEL_CODE")]
-        [SwaggerSchema("Channel code the agent belongs to.")]
+        [Column("channel_code")]
         public string? ChannelCode { get; set; }
 
         [StringLength(20)]
-        [Column("SUB_CHANNEL_CODE")]
-        [SwaggerSchema("Sub-channel code.")]
+        [Column("sub_channel_code")]
         public string? SubChannelCode { get; set; }
 
         [StringLength(20)]
-        [Column("DESIGNATION_CODE")]
-        [SwaggerSchema("Designation code of the agent.")]
+        [Column("designation_code")]
         public string? DesignationCode { get; set; }
 
         [StringLength(20)]
-        [Column("AGENT_LEVEL")]
-        [SwaggerSchema("Agent level or hierarchy.")]
+        [Column("agent_level")]
         public string? AgentLevel { get; set; }
 
         [StringLength(20)]
-        [Column("LOCATION_CODE")]
-        [SwaggerSchema("Location code assigned to the agent.")]
+        [Column("location_code")]
         public string? LocationCode { get; set; }
 
         [StringLength(20)]
-        [Column("STAFF_CODE")]
-        [SwaggerSchema("Staff code if applicable.")]
+        [Column("staff_code")]
         public string? StaffCode { get; set; }
 
-        [StringLength(50)]
-        [Column("Supervisor_Id")]
-        [SwaggerSchema("Code of the supervising agent.")]
-        public int? Supervisor_Id { get; set; }
+        [Column("supervisor_id")] // ✅ matches DB
+        public int? SupervisorId { get; set; }
 
-        [Column("CONTRACTED_DATE", TypeName = "date")]
-        [SwaggerSchema("Date the agent was contracted.")]
+        [Column("contracted_date", TypeName = "date")]
         public DateTime? ContractedDate { get; set; }
 
         [StringLength(20)]
-        [Column("AGENT_STATUS_CODE")]
-        [SwaggerSchema("Current status code of the agent.")]
+        [Column("agent_status_code")]
         public string? AgentStatusCode { get; set; }
 
-        [Column("STATUS_DATE", TypeName = "date")]
-        [SwaggerSchema("Date when the current status was set.")]
+        [Column("status_date", TypeName = "date")]
         public DateTime? StatusDate { get; set; }
 
         [Required]
-        [Column("IS_LICENSED")]
-        [SwaggerSchema("Indicates whether the agent is licensed.")]
+        [Column("is_licensed")]
         public bool IsLicensed { get; set; }
 
         [StringLength(40)]
-        [Column("PAN_NUMBER")]
-        [SwaggerSchema("PAN number (tax identifier).")]
+        [Column("pan_number")]
         public string? PanNumber { get; set; }
 
         [StringLength(40)]
-        [Column("AADHAAR_NUMBER")]
-        [SwaggerSchema("Aadhaar number (national ID).")]
+        [Column("aadhaar_number")]
         public string? AadhaarNumber { get; set; }
 
         [StringLength(40)]
-        [Column("IRDA_LICENSE_NUMBER")]
-        [SwaggerSchema("IRDA license number.")]
+        [Column("irda_license_number")]
         public string? IrdaLicenseNumber { get; set; }
 
         [StringLength(100)]
-        [Column("GST_NUMBER")]
-        [SwaggerSchema("GST registration number.")]
+        [Column("gst_number")]
         public string? GstNumber { get; set; }
 
         [Required]
         [StringLength(100)]
-        [Column("CREATED_BY")]
-        [SwaggerSchema("User who created the agent record.")]
+        [Column("created_by")]
         public string CreatedBy { get; set; } = null!;
 
         [Required]
-        [Column("CREATED_DATE")]
-        [SwaggerSchema("Date and time the record was created.")]
+        [Column("created_date")]
         public DateTime CreatedDate { get; set; }
 
         [StringLength(100)]
-        [Column("MODIFIED_BY")]
-        [SwaggerSchema("User who last modified the record.")]
+        [Column("modified_by")]
         public string? ModifiedBy { get; set; }
 
-        [Column("MODIFIED_DATE")]
-        [SwaggerSchema("Timestamp of the last modification.")]
+        [Column("modified_date")]
         public DateTime? ModifiedDate { get; set; }
 
-        [Column("ROWVERSION")]
+        [Column("rowversion")]
         [ConcurrencyCheck]
-        [SwaggerSchema("Used for optimistic concurrency control.")]
         public int? RowVersion { get; set; }
 
-        // Navigation property
-        [ForeignKey(nameof(Supervisor_Id))]
-        [SwaggerSchema("Reference to the supervisor agent.")]
-        public Agent? Supervisor { get; set; }
         [Required]
-        [Column("IS_ACTIVE")]
-        [SwaggerSchema("Indicates whether the agent is currently active.")]
+        [Column("is_active")]
         public bool IsActive { get; set; } = true;
+
+        // 🔗 Navigation property
+        [ForeignKey(nameof(SupervisorId))]
+        public Agent? Supervisor { get; set; }
     }
 }

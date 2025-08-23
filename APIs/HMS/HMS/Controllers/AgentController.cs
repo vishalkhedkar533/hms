@@ -10,13 +10,14 @@ using Models.DTO;
 namespace HMS.Controllers
 {
     [ApiController]
+    [Route("api/[controller]")]
     public class AgentController : ControllerBase
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
         public AgentController(HMSContext context, IConfiguration config, IMapper mapper)
-        {
+            {
             _context = context;
             _config = config;
             _mapper = mapper;
@@ -259,7 +260,7 @@ namespace HMS.Controllers
             return entries;
         }
 
-        [HttpPost]
+        [HttpPost("Create")]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> CreateAgent([FromBody] AgentDto agentDto)
         {

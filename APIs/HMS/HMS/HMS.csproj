@@ -31,6 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
     <ProjectReference Include="..\..\..\CommonLibrary\Communication\Communication.csproj" />
     <ProjectReference Include="..\..\..\Models\Models\Models.csproj" />
   </ItemGroup>

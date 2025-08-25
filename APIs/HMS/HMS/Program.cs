@@ -1,15 +1,27 @@
-﻿using HMS.Data;
+﻿using CommonLibrary;
+using HMS.Data;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Models.Mapping;
 using Serilog;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+// Load configs automatically
+// - appsettings.json
+// - appsettings.{Environment}.json
+// - environment variables
+// - command line args
 
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
 // ----------------------------
 // Postgres DbContext
 // ----------------------------
@@ -25,7 +37,6 @@ var logger = new LoggerConfiguration()
     .Enrich.FromLogContext()
     .CreateLogger();
 builder.Logging.ClearProviders();
-// Replace this line:
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AgentProfile>());
 builder.Logging.AddSerilog(logger);
 
@@ -38,6 +49,7 @@ builder.Services.AddControllers();
 // Swagger / OpenAPI
 // ----------------------------
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -72,7 +84,10 @@ builder.Services.AddSwaggerGen(options =>
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    options.IncludeXmlComments(xmlPath);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
 });
 
 // ----------------------------
@@ -97,13 +112,71 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization();
 
 // ----------------------------
-// Register MenuAuthorizeFilter for DI
+// Per-User Rate Limiting (Partitioned by JWT Claim)
 // ----------------------------
-//builder.Services.AddScoped<MenuAuthorizeFilter>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("PerUser", httpContext =>
+    {
+        // Use NameIdentifier (mapped to "sub" in JWT) if available, else IP
+        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                     ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,                    // max 5 requests
+            Window = TimeSpan.FromSeconds(10),  // per 10s
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        });
+    });
+
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync("Rate limit exceeded. Try again later.", token);
+    };
+});
 
 var app = builder.Build();
+app.UseMiddleware<WhitelistHeadersMiddleware>();
+app.Use(async (context, next) =>
+{
+    await next();
 
+    var allowedResponseHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Content-Type",
+        //"Authorization", // rarely needed but kept if token passthrough is required
+        //"Cache-Control",
+        //"Pragma",
+        //"Expires",
+        //"Content-Length",
+        "Transfer-Encoding",
+        "Date",
+        "Server",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Headers",
+        "Access-Control-Allow-Methods",
+        "Access-Control-Expose-Headers"
+    };
+
+    var headersToRemove = context.Response.Headers
+        .Where(h => !allowedResponseHeaders.Contains(h.Key))
+        .Select(h => h.Key)
+        .ToList();
+
+    foreach (var header in headersToRemove)
+    {
+        context.Response.Headers.Remove(header);
+    }
+});
+
+
+// ----------------------------
 // Swagger
+// ----------------------------
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -111,11 +184,17 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty;
 });
 
+// ----------------------------
 // Middleware
+// ----------------------------
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
-app.MapControllers();
+// ----------------------------
+// Controllers
+// ----------------------------
+app.MapControllers().RequireRateLimiting("PerUser");
 
-app.Run();
+await app.RunAsync();

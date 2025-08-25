@@ -16,13 +16,11 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-
         public AuthController(HMSContext context, IConfiguration config)
         {
             _context = context;
             _config = config;
         }
-
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -83,7 +81,6 @@ namespace HMS.Controllers
 
             return Ok(new { token });
         }
-
         private string GenerateJwtToken(User user, List<string> roleNames)
         {
             var key = _config["Jwt:Key"] ?? "super_secret_jwt_key";
@@ -92,20 +89,18 @@ namespace HMS.Controllers
             var audience = _config["Jwt:Audience"];
             int expiresTime = int.TryParse(_config["Jwt:ExpiresTime"], out var time) ? time : 60; // Default to 60 minutes if not set
 
-            //var claims = new[]
-            //{
-            //    new Claim(ClaimTypes.Name, user.Username),
-            //    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-            //    new Claim(ClaimTypes.Role, roleName)
-            //};
-            var claims = new List<Claim>{
-               new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()), // 👈 Store UserId here
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            var claims = new List<Claim>
+            {
+                // Standard claims
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),   // 👈 JWT standard "sub"
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),     // 👈 .NET convention
+                new Claim(ClaimTypes.Name, user.Username),                        // Username
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Unique token ID
             };
 
             // Add role claims
             claims.AddRange(roleNames.Select(role => new Claim(ClaimTypes.Role, role)));
+
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
@@ -118,7 +113,6 @@ namespace HMS.Controllers
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
         }
-
         public class LoginRequest
         {
             public string Username { get; set; } = string.Empty;

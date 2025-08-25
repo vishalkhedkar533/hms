@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
+using Models.DTO;
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace HMS.Controllers
@@ -23,43 +24,43 @@ namespace HMS.Controllers
         }
 
         // GET: api/<DashboardController>        
-        [HttpGet("GetDashboard")]
+        [HttpPost("GetDashboard")]
         [Authorize]
         [MenuAuthorize(1002)]
-        public async Task<ActionResult> GetDashboard(Int32? UserId)
+        public async Task<ActionResult> GetDashboard([FromBody] FetchUserInfo fetchUserInfo)
         {
             _logger.LogInformation("Seri Log is Working");
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == UserId);
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);
             if (user == null)
             {
-                _logger.LogError(UserId + " User not found.");
+                _logger.LogError(fetchUserInfo.UserId + " User not found.");
                 return NotFound("User not found.");
             }
 
-            HMSDashboard hmsrecord = await _context.HMSDashboard.FirstOrDefaultAsync(x => x.UserId == UserId);
+            HMSDashboard hmsrecord = await _context.HMSDashboard.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);
 
             if (hmsrecord == null)
             {
-                _logger.LogError("HMSDashboard data not found for UserId: {UserId}", UserId);
-                return NotFound("HMSDashboard data not found for UserId: " + UserId.ToString());
+                //_logger.LogError("HMSDashboard data not found for UserId: {UserId}", fetchUserInfo.UserId);
+                //return NotFound("HMSDashboard data not found for UserId: " + fetchUserInfo.UserId.ToString());
+                _context.HMSDashboard.Add(new HMSDashboard
+                {
+                    UserId = fetchUserInfo.UserId.Value,
+                    CertificateExpiringIn30Months = 0,
+                    EntitiesCreatedPrevMonth = 0,
+                    EntitiesCreatedThisMonth = 0,
+                    EntitiesTerminatedPrevMonth = 0,
+                    EntitiesNetThisMonth    = 0,
+                    EntitiesTerminatedThisMonth = 0,
+                    LicenseExpiringIn30Months= 0,
+                    MBGCriteriaNotMet = 0,
+                    TotalEntitiesCount= 0,
+                    TotalEntitiesThisMonth= 0,
+                    channelDetails = new List<ChannelDetails>(),
+                    statusDetails = new List<StatusDetails>()
+                });
+                _context.SaveChangesAsync();
             }
-
-            //var filteredList = await _context.ChannelDetails.Where(y => y.UserId == UserId) .ToListAsync();
-
-            //int totalCount = _context.ChannelDetails.Count();
-
-            //var channelDetails1 = await _context.ChannelDetails.FirstOrDefaultAsync(y => y.UserId == UserId);
-
-            //List<ChannelDetails> channelDetails = _context.ChannelDetails.Where(y => y.UserId == UserId).ToList();
-
-            //  await _context.ChannelDetails.Select(y => y.UserId == UserId).ToList();
-
-            //hmsrecord.channelDetails = channelDetails;
-
-            //int totalCount = _context.StatusDetails.Count();
-            //StatusDetails statusDetails = await _context.StatusDetails.FirstOrDefaultAsync(y => y.UserId == UserId);
-
-
 
             HMSDashboard hmsDashboard = new HMSDashboard();
 
@@ -85,10 +86,10 @@ namespace HMS.Controllers
         }
 
         //[Authorize(Roles = "Admin")]
-        [HttpGet("GetCommissionDashboard")]
-        public async Task<ActionResult> GetCommissionDashboard(Int32? UserId)
+        [HttpPost("GetCommissionDashboard")]
+        public async Task<ActionResult> GetCommissionDashboard([FromBody] FetchUserInfo fetchUserInfo)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == UserId);
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);
             if (user == null)
             {
                 return NotFound("User not found.");

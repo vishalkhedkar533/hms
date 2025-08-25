@@ -1,5 +1,4 @@
-﻿using Models;
-using Swashbuckle.AspNetCore.Annotations;
+﻿using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -70,13 +69,5 @@ namespace Models.DB
         public int failedloginattempts { get; set; } = 0;
         [Column("lockoutendtime")]
         public DateTime? lockoutendtime { get; set; } = null;
-    }
-    public class UpdateUser
-    {
-        public int UserId { get; set; }
-        public string OldPassword { get; set; } = null!;
-        public string NewPassword { get; set; } = null!;
-        public bool IsActive { get; set; }
-        public bool IsLocked { get; set; }
     }
 }

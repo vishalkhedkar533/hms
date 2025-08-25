@@ -1,4 +1,5 @@
-﻿using HMS.Data;
+﻿using CommonLibrary;
+using HMS.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -139,6 +140,39 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+app.UseMiddleware<WhitelistHeadersMiddleware>();
+app.Use(async (context, next) =>
+{
+    await next();
+
+    var allowedResponseHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Content-Type",
+        //"Authorization", // rarely needed but kept if token passthrough is required
+        //"Cache-Control",
+        //"Pragma",
+        //"Expires",
+        //"Content-Length",
+        "Transfer-Encoding",
+        "Date",
+        "Server",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Headers",
+        "Access-Control-Allow-Methods",
+        "Access-Control-Expose-Headers"
+    };
+
+    var headersToRemove = context.Response.Headers
+        .Where(h => !allowedResponseHeaders.Contains(h.Key))
+        .Select(h => h.Key)
+        .ToList();
+
+    foreach (var header in headersToRemove)
+    {
+        context.Response.Headers.Remove(header);
+    }
+});
+
 
 // ----------------------------
 // Swagger

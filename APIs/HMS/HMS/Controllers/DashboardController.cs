@@ -41,8 +41,25 @@ namespace HMS.Controllers
 
             if (hmsrecord == null)
             {
-                _logger.LogError("HMSDashboard data not found for UserId: {UserId}", fetchUserInfo.UserId);
-                return NotFound("HMSDashboard data not found for UserId: " + fetchUserInfo.UserId.ToString());
+                //_logger.LogError("HMSDashboard data not found for UserId: {UserId}", fetchUserInfo.UserId);
+                //return NotFound("HMSDashboard data not found for UserId: " + fetchUserInfo.UserId.ToString());
+                _context.HMSDashboard.Add(new HMSDashboard
+                {
+                    UserId = fetchUserInfo.UserId.Value,
+                    CertificateExpiringIn30Months = 0,
+                    EntitiesCreatedPrevMonth = 0,
+                    EntitiesCreatedThisMonth = 0,
+                    EntitiesTerminatedPrevMonth = 0,
+                    EntitiesNetThisMonth    = 0,
+                    EntitiesTerminatedThisMonth = 0,
+                    LicenseExpiringIn30Months= 0,
+                    MBGCriteriaNotMet = 0,
+                    TotalEntitiesCount= 0,
+                    TotalEntitiesThisMonth= 0,
+                    channelDetails = new List<ChannelDetails>(),
+                    statusDetails = new List<StatusDetails>()
+                });
+                _context.SaveChangesAsync();
             }
 
             HMSDashboard hmsDashboard = new HMSDashboard();

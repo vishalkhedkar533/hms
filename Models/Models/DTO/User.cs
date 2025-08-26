@@ -8,7 +8,7 @@
         public bool IsActive { get; set; }
         public bool IsLocked { get; set; }
     }
-    public class FetchUserInfo 
+    public class FetchUserDashboard
     {
         public int? UserId { get; set; }
     }

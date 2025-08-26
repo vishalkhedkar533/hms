@@ -28,7 +28,7 @@ namespace HMS.Controllers
         [HttpPost("GetDashboard")]
         [Authorize]
         [MenuAuthorize(1002)]
-        public async Task<ActionResult> GetDashboard([FromBody] FetchUserInfo fetchUserInfo)
+        public async Task<ActionResult> GetDashboard([FromBody] FetchUserDashboard fetchUserInfo)
         {
             HMSResponse hmsResponse = new HMSResponse();
             _logger.LogInformation("Seri Log is Working");
@@ -100,7 +100,7 @@ namespace HMS.Controllers
         [HttpPost("GetCommissionDashboard")]
         [Authorize]
         [MenuAuthorize(1003)]
-        public async Task<ActionResult> GetCommissionDashboard([FromBody] FetchUserInfo fetchUserInfo)
+        public async Task<ActionResult> GetCommissionDashboard([FromBody] FetchUserDashboard fetchUserInfo)
         {
             var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);
             if (user == null)

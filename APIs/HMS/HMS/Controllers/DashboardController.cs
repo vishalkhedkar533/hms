@@ -87,6 +87,8 @@ namespace HMS.Controllers
 
         //[Authorize(Roles = "Admin")]
         [HttpPost("GetCommissionDashboard")]
+        [Authorize]
+        [MenuAuthorize(1003)]
         public async Task<ActionResult> GetCommissionDashboard([FromBody] FetchUserInfo fetchUserInfo)
         {
             var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);

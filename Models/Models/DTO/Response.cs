@@ -1,4 +1,6 @@
-﻿namespace Models.DTO
+﻿using Models.DB;
+
+namespace Models.DTO
 {
     public class HMSResponse
     {
@@ -15,6 +17,7 @@
     public class HMSResponseBody 
     {
         public LoginResponse? loginResponse { get; set; } = null;
+        public HMSDashboard? hmsDashboard { get; set; } = null;
     }
 
     public class LoginResponse

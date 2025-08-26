@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.HMSConsts;
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace HMS.Controllers
@@ -29,6 +30,7 @@ namespace HMS.Controllers
         [MenuAuthorize(1002)]
         public async Task<ActionResult> GetDashboard([FromBody] FetchUserInfo fetchUserInfo)
         {
+            HMSResponse hmsResponse = new HMSResponse();
             _logger.LogInformation("Seri Log is Working");
             var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);
             if (user == null)
@@ -62,8 +64,6 @@ namespace HMS.Controllers
                 _context.SaveChangesAsync();
             }
 
-            HMSDashboard hmsDashboard = new HMSDashboard();
-
             ChannelDetails channelDetails = new ChannelDetails();
             channelDetails.UserId = 1;
             channelDetails.ChannelId = 1;
@@ -82,7 +82,18 @@ namespace HMS.Controllers
             statusDetails.Priority = "High";
             hmsrecord.statusDetails.Add(statusDetails);
 
-            return Ok(hmsrecord);
+            hmsResponse.responseHeader = new HMSResponseHeader
+            {
+                ErrorCode = CommonConstants.SUCCESS,
+                ErrorMessage = await _context.errorMaster
+                .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+                .Select(x => x.ErrorMsg)
+                .FirstOrDefaultAsync() ?? "Undefined Error Message"
+            };
+
+            hmsResponse.responseBody.hmsDashboard = hmsrecord;
+
+            return Ok(hmsResponse);
         }
 
         //[Authorize(Roles = "Admin")]

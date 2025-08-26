@@ -1,4 +1,4 @@
-﻿namespace Models.Consts
+﻿namespace Models.HMSConsts
 {
     public static class LoginConstants //10x series
     {
@@ -8,6 +8,6 @@
     }
     public static class CommonConstants //11x series
     {
-        public const int SUCCESS = 1001;
+        public const int SUCCESS = 1101;
     }
 }

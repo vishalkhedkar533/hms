@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Models.Consts;
+using Models.HMSConsts;
 using Models.DB;
 using Models.DTO;
 using System.IdentityModel.Tokens.Jwt;
@@ -28,6 +28,8 @@ namespace HMS.Controllers
         public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
             HMSResponse response = new HMSResponse();
+            var handler = new JwtSecurityTokenHandler();
+            DateTimeOffset expTime = DateTimeOffset.UtcNow;
             string errorMsg = string.Empty;
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
 
@@ -119,7 +121,17 @@ namespace HMS.Controllers
                 .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
                 .Select(x => x.ErrorMsg)
                 .FirstOrDefaultAsync() ?? "Undefined Message";
-            response.responseBody.loginResponse = new LoginResponse { Token = token };
+            var jwtToken = handler.ReadJwtToken(token);
+            var expClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "exp")?.Value;
+            if (expClaim != null)
+            {
+                expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)).UtcDateTime;
+            }
+            response.responseBody.loginResponse = new LoginResponse { Token = token, 
+                Expiration = expTime.LocalDateTime,
+                UserId = user.UserId,
+                Username  = user.Username
+            };
             return Ok(response);
         }
         private string GenerateJwtToken(User user, List<string> roleNames)

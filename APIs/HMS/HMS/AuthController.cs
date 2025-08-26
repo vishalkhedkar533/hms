@@ -114,8 +114,13 @@ namespace HMS.Controllers
             user.LastLoginDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-
-            return Ok(new { token });
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = await _context.errorMaster
+                .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+                .Select(x => x.ErrorMsg)
+                .FirstOrDefaultAsync() ?? "Undefined Message";
+            response.responseBody.loginResponse = new LoginResponse { Token = token };
+            return Ok(response);
         }
         private string GenerateJwtToken(User user, List<string> roleNames)
         {

@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Models.Consts;
 using Models.DB;
+using Models.DTO;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -23,19 +25,33 @@ namespace HMS.Controllers
         }
         [HttpPost("login")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] LoginRequest request)
+        public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
+            HMSResponse response = new HMSResponse();
+            string errorMsg = string.Empty;
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
 
             if (user == null)
             {
-                return Unauthorized("Invalid credentials.");
+                errorMsg = await _context.errorMaster
+                    .Where(x => x.ErrorId == LoginConstants.INVALID_CREDENTIALS && x.Area == "LoginConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                response.responseHeader.ErrorCode = LoginConstants.INVALID_CREDENTIALS;
+                response.responseHeader.ErrorMessage = errorMsg;
+                return Unauthorized(response);
             }
 
             // Check if account is locked
             if (user.lockoutendtime.HasValue && user.lockoutendtime > DateTime.UtcNow)
             {
-                return Unauthorized($"Account is locked. Try again after {user.lockoutendtime.Value.ToLocalTime():g}");
+                errorMsg = await _context.errorMaster.
+                    Where(x => x.ErrorId == LoginConstants.ACCOUNT_LOCKED && x.Area == "LoginConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                response.responseHeader.ErrorCode = LoginConstants.ACCOUNT_LOCKED;
+                response.responseHeader.ErrorMessage = string.Format( errorMsg, user.lockoutendtime.Value.ToLocalTime());
+                return Unauthorized(response);
             }
 
             // Check credentials
@@ -43,16 +59,29 @@ namespace HMS.Controllers
             {
                 user.failedloginattempts++;
 
-                if (user.failedloginattempts >=
-                    int.Parse(_context.apiConfig.FirstOrDefaultAsync(u => u.ConfigKey == ApiConstants.wrong_attempts_allowed)
-                    ?.Result?.ConfigValue ?? _config["DefaultValues:LoginAttempt"].ToString()))
+                var allowedAttemptsConfig = await _context.apiConfig
+                    .Where(u => u.ConfigKey == ApiConstants.wrong_attempts_allowed)
+                    .Select(u => u.ConfigValue)
+                    .FirstOrDefaultAsync();
+
+                int allowedAttempts = int.TryParse(allowedAttemptsConfig, out var val)
+                    ? val
+                    : int.Parse(_config["DefaultValues:LoginAttempt"] ?? "3");
+
+                if (user.failedloginattempts >= allowedAttempts)
                 {
                     user.lockoutendtime = DateTime.UtcNow.AddMinutes(15); // Lock for 15 minutes
                     user.IsLocked = true; // Optional: depending on your logic
                 }
 
                 await _context.SaveChangesAsync();
-                return Unauthorized("Invalid credentials.");
+                errorMsg = await _context.errorMaster
+                    .Where(x => x.ErrorId == LoginConstants.INVALID_CREDENTIALS && x.Area == "LoginConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                response.responseHeader.ErrorCode = LoginConstants.INVALID_CREDENTIALS;
+                response.responseHeader.ErrorMessage = errorMsg;
+                return Unauthorized(response);
             }
 
             // Successful login: reset failed attempts
@@ -65,13 +94,20 @@ namespace HMS.Controllers
                               && urm.IsActive
                               && (urm.EffectiveTo == null || urm.EffectiveTo >= DateTime.Today)
                               && urm.EffectiveFrom <= DateTime.Today)
-                .Select(urm => urm.Role.RoleName) // assumes Role table has RoleName
+                .Select(urm => urm.Role != null ? urm.Role.RoleName : null)
+                .Where(roleName => roleName != null)
                 .Distinct()
                 .ToListAsync();
 
-            if (roleNames == null)
+            if (roleNames == null || !roleNames.Any())
             {
-                return Unauthorized("User has no active primary role.");
+                errorMsg = await _context.errorMaster
+                    .Where(x => x.ErrorId == LoginConstants.NO_ACTIVE_PRIMARY_ROLE && x.Area == "LoginConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                response.responseHeader.ErrorCode = LoginConstants.NO_ACTIVE_PRIMARY_ROLE;
+                response.responseHeader.ErrorMessage = errorMsg;
+                return Unauthorized(response);
             }
 
             var token = GenerateJwtToken(user, roleNames);
@@ -112,11 +148,6 @@ namespace HMS.Controllers
 
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
-        }
-        public class LoginRequest
-        {
-            public string Username { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
         }
     }
 }

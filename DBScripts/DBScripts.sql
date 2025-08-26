@@ -1233,3 +1233,11 @@ CREATE TABLE hms."agent_audit" (
     "NEW_STATUS" VARCHAR(20),
     "REMARKS" TEXT
 );
+
+CREATE TABLE hms.errorMaster (
+	error_id int4 NOT NULL,
+	area varchar(50) NOT NULL,
+    error_msg varchar(1000) NOT NULL);
+
+CREATE UNIQUE INDEX ux_errormaster_errorid_area 
+    ON hms.errorMaster(error_id, area);

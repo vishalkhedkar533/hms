@@ -1,44 +1,82 @@
 ﻿using CommonLibrary;
 using HMS.Data;
+using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Models.Mapping;
-using Serilog;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
-// Load configs automatically
-// - appsettings.json
-// - appsettings.{Environment}.json
-// - environment variables
-// - command line args
+// ----------------------------
+// JWT Authentication
+// ----------------------------
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var refreshSeconds = builder.Configuration.GetValue<int>("LoggingFilter:RefreshSeconds", 30);
+var batchSize = builder.Configuration.GetValue<int>("LoggingFilter:batchSize", 5);
+var flushInterval = builder.Configuration.GetValue<int>("LoggingFilter:flushInterval", 5);
 
-builder.Configuration
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-    .AddEnvironmentVariables();
+
+// ----------------------------
+// Shared logging infrastructure
+// ----------------------------
+var logChannel = Channel.CreateUnbounded<AppLogEntry>();
+var filterState = new AppLogFilterState();
+var pgConnection = builder.Configuration.GetConnectionString("HMSContext")!;
+
 // ----------------------------
 // Postgres DbContext
 // ----------------------------
 builder.Services.AddDbContext<HMSContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("HMSContext")
-        ?? throw new InvalidOperationException("Connection string 'HMSContext' not found.")));
+    options.UseNpgsql(pgConnection));
 
 // ----------------------------
-// Serilog
+// AutoMapper
 // ----------------------------
-var logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.FromLogContext()
-    .CreateLogger();
-builder.Logging.ClearProviders();
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AgentProfile>());
-builder.Logging.AddSerilog(logger);
+
+// ----------------------------
+// HttpContextAccessor
+// ----------------------------
+builder.Services.AddHttpContextAccessor();
+
+// ----------------------------
+// Logging: Clear default, add custom provider
+// ----------------------------
+builder.Logging.ClearProviders();
+builder.Services.AddSingleton(logChannel);
+builder.Services.AddSingleton(filterState);
+
+// Register custom logger provider
+builder.Services.AddSingleton<ILoggerProvider>(sp =>
+    new AppLogLoggerProvider(
+        sp.GetRequiredService<Channel<AppLogEntry>>(),
+        sp.GetRequiredService<AppLogFilterState>(),
+        sp.GetRequiredService<IHttpContextAccessor>()
+    ));
+
+// ----------------------------
+// Background services
+// ----------------------------
+// Refresh filter from DB
+builder.Services.AddHostedService(sp =>
+    new AppLogFilterRefresher(
+        sp.GetRequiredService<AppLogFilterState>(),
+        pgConnection, refreshSeconds
+    )
+);
+
+// Flush logs to DB
+builder.Services.AddHostedService(sp =>
+    new AppLogBackgroundService(
+        sp.GetRequiredService<Channel<AppLogEntry>>(),
+        pgConnection, batchSize, flushInterval
+    )
+);
 
 // ----------------------------
 // Controllers
@@ -48,8 +86,6 @@ builder.Services.AddControllers();
 // ----------------------------
 // Swagger / OpenAPI
 // ----------------------------
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -90,9 +126,6 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
-// ----------------------------
-// JWT Authentication
-// ----------------------------
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
@@ -112,21 +145,20 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization();
 
 // ----------------------------
-// Per-User Rate Limiting (Partitioned by JWT Claim)
+// Rate Limiting
 // ----------------------------
 builder.Services.AddRateLimiter(options =>
 {
     options.AddPolicy("PerUser", httpContext =>
     {
-        // Use NameIdentifier (mapped to "sub" in JWT) if available, else IP
         var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? httpContext.Connection.RemoteIpAddress?.ToString()
                      ?? "anonymous";
 
         return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 5,                    // max 5 requests
-            Window = TimeSpan.FromSeconds(10),  // per 10s
+            PermitLimit = 5,
+            Window = TimeSpan.FromSeconds(10),
             QueueLimit = 0,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst
         });
@@ -140,39 +172,15 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+// ----------------------------
+// Middleware
+// ----------------------------
 app.UseMiddleware<WhitelistHeadersMiddleware>();
-app.Use(async (context, next) =>
-{
-    await next();
-
-    var allowedResponseHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        "Content-Type",
-        //"Authorization", // rarely needed but kept if token passthrough is required
-        //"Cache-Control",
-        //"Pragma",
-        //"Expires",
-        //"Content-Length",
-        "Transfer-Encoding",
-        "Date",
-        "Server",
-        "Access-Control-Allow-Origin",
-        "Access-Control-Allow-Headers",
-        "Access-Control-Allow-Methods",
-        "Access-Control-Expose-Headers"
-    };
-
-    var headersToRemove = context.Response.Headers
-        .Where(h => !allowedResponseHeaders.Contains(h.Key))
-        .Select(h => h.Key)
-        .ToList();
-
-    foreach (var header in headersToRemove)
-    {
-        context.Response.Headers.Remove(header);
-    }
-});
-
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
 
 // ----------------------------
 // Swagger
@@ -185,16 +193,18 @@ app.UseSwaggerUI(c =>
 });
 
 // ----------------------------
-// Middleware
-// ----------------------------
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.UseRateLimiter();
-
-// ----------------------------
 // Controllers
 // ----------------------------
 app.MapControllers().RequireRateLimiting("PerUser");
 
+// ----------------------------
+// Test logging
+// ----------------------------
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Application started and custom logger initialized.");
+logger.LogError("Test error to ensure background service picks it up.");
+
+// ----------------------------
+// Run app
+// ----------------------------
 await app.RunAsync();

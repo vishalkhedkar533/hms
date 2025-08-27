@@ -29,7 +29,7 @@ namespace HMS.Controllers
         [Authorize]
         [MenuAuthorize(1002)]
         public async Task<ActionResult> GetDashboard([FromBody] FetchUserDashboard fetchUserInfo)
-        {
+        {            
             HMSResponse hmsResponse = new HMSResponse();
             _logger.LogInformation("Seri Log is Working");
             var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);

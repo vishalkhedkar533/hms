@@ -1,14 +1,16 @@
 ﻿using CommonLibrary;
 using HMS.Data;
+using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Models.Mapping;
-using Serilog;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.RateLimiting;
+using static HMS.Logging.AppLogLogger;
 
 var builder = WebApplication.CreateBuilder(args);
 // Load configs automatically
@@ -16,6 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 // - appsettings.{Environment}.json
 // - environment variables
 // - command line args
+var logChannel = Channel.CreateUnbounded<AppLogEntry>();
+var filterState = new AppLogFilterState();
+var pgConnection = builder.Configuration.GetConnectionString("HMSContext")!;
 
 builder.Configuration
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -32,14 +37,29 @@ builder.Services.AddDbContext<HMSContext>(options =>
 // ----------------------------
 // Serilog
 // ----------------------------
-var logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.FromLogContext()
-    .CreateLogger();
+//var logger = new LoggerConfiguration()
+//    .ReadFrom.Configuration(builder.Configuration)
+//    .Enrich.FromLogContext()
+//    .CreateLogger();
 builder.Logging.ClearProviders();
 builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AgentProfile>());
-builder.Logging.AddSerilog(logger);
+//builder.Logging.AddSerilog(logger);
+// Register HttpContextAccessor
+builder.Services.AddHttpContextAccessor();
 
+// Logger provider with automatic UserId/UserName capture
+builder.Services.AddSingleton<ILoggerProvider>(sp =>
+    new AppLogLoggerProvider(logChannel, filterState, sp.GetRequiredService<IHttpContextAccessor>()));
+
+// Background services
+builder.Services.AddHostedService(sp => new AppLogBackgroundService(logChannel, pgConnection));
+builder.Services.AddHostedService(sp => new AppLogFilterRefresher(filterState, pgConnection));
+builder.Services.AddHostedService(sp =>
+    new AppLogBackgroundService(
+        sp.GetRequiredService<Channel<AppLogEntry>>(),
+        pgConnection
+    )
+);
 // ----------------------------
 // Controllers
 // ----------------------------

@@ -1241,3 +1241,39 @@ CREATE TABLE hms.errorMaster (
 
 CREATE UNIQUE INDEX ux_errormaster_errorid_area 
     ON hms.errorMaster(error_id, area);
+
+CREATE TABLE hms."applog" (
+    "Id" BIGSERIAL PRIMARY KEY,
+    "Timestamp" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "LogLevel" VARCHAR(20) NOT NULL,
+    "Message" TEXT NOT NULL,
+    "Exception" TEXT NULL,
+    "UserId" VARCHAR(100) NULL,
+    "UserName" VARCHAR(200) NULL,
+    "SourceFile" VARCHAR(500) NULL,
+    "SourceLine" INT NULL,
+    "SourceMember" VARCHAR(200) NULL,
+    "Category" VARCHAR(200) NULL,
+    "StackTrace" TEXT NULL,
+    "JobName" VARCHAR(200) NULL
+);
+
+CREATE INDEX idx_applog_loglevel ON hms."applog"("LogLevel");
+CREATE INDEX idx_applog_jobname  ON hms."applog"("JobName");
+
+CREATE TABLE hms.applog_filter_policy (
+  id              SERIAL PRIMARY KEY,
+  minimum_level   VARCHAR(20) NOT NULL DEFAULT 'Information',
+  excluded_categories TEXT[]   NOT NULL DEFAULT '{}',
+  updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+CREATE TABLE hms.applog_filter_policy (
+  id              SERIAL PRIMARY KEY,
+  minimum_level   VARCHAR(20) NOT NULL DEFAULT 'Information',
+  excluded_categories TEXT[]   NOT NULL DEFAULT '{}',
+  updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
+);
+
+INSERT INTO hms.applog_filter_policy (minimum_level, excluded_categories)
+VALUES ('Information', ARRAY['Microsoft', 'System.Net.Http']);

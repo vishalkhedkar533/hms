@@ -1,14 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Npgsql;
 using System.Data;
-using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Channels;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Npgsql;
 
 namespace HMS.Logging
 {

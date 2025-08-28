@@ -96,12 +96,12 @@ namespace HMS.Controllers
                 };
 
                 hmsResponse.responseBody.hmsDashboard = hmsrecord;
-                throw new InvalidOperationException("Something went wrong");
+                //throw new InvalidOperationException("Something went wrong");
                 return Ok(hmsResponse);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ErrorTest endpoint failed");
+                //_logger.LogError(ex, "ErrorTest endpoint failed");
                 return StatusCode(500, "Error logged");
             }            
         }

@@ -35,7 +35,7 @@ namespace HMS.Controllers
             HMSResponse hmsResponse = new HMSResponse();
             try
             {
-                _logger.LogInformation("Seri Log is Working");
+                
                 var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == fetchUserInfo.UserId);
                 if (user == null)
                 {

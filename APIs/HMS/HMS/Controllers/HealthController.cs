@@ -25,9 +25,10 @@ namespace HMS.Controllers
         [MenuAuthorize(1002)]
         public async Task<IActionResult> Check()
         {
-
             try
             {
+                //_logger.LogInformation("Information Log is Working");
+                //_logger.LogWarning("Warning Log is Working");
                 await _context.agent.FindAsync(-1000);
                 return Ok(new
                 {

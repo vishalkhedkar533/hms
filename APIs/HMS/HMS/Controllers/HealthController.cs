@@ -20,15 +20,15 @@ namespace HMS.Controllers
             _logger = logger;
         }
 
-        [HttpPost]
+        [HttpPost("Check")]
         [Authorize]
         [MenuAuthorize(1002)]
         public async Task<IActionResult> Check()
         {
             try
             {
-                //_logger.LogInformation("Information Log is Working");
-                //_logger.LogWarning("Warning Log is Working");
+                _logger.LogInformation("Information Log is Working");
+                _logger.LogWarning("Warning Log is Working");
                 await _context.agent.FindAsync(-1000);
                 return Ok(new
                 {
@@ -39,7 +39,7 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Health check failed at {UtcNow}", DateTime.UtcNow);
+                _logger.LogError(ex, "Health check failed at {UtcNow} Exception {message}", DateTime.UtcNow, ex.Message);
                 return StatusCode(503, new
                 {
                     status = "Unhealthy",

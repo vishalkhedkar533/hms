@@ -196,7 +196,7 @@ namespace HMS.Logging
             {
                 Connection = conn,
                 Transaction = tx,
-                CommandText = @"INSERT INTO hms.applog
+                CommandText = @"INSERT INTO applogs.applog
     (""Timestamp"", ""LogLevel"", ""Message"", ""Exception"", ""UserId"", ""UserName"", 
      ""SourceFile"", ""SourceLine"", ""SourceMember"", ""Category"", ""StackTrace"", ""JobName"")
     VALUES
@@ -263,7 +263,7 @@ namespace HMS.Logging
                     await conn.OpenAsync(stoppingToken);
 
                     await using var cmd = new NpgsqlCommand(
-                        "SELECT minimum_level, excluded_categories FROM hms.applog_filter_policy ORDER BY updated_at DESC LIMIT 1",
+                        "SELECT minimum_level, excluded_categories FROM applogs.applog_filter_policy ORDER BY updated_at DESC LIMIT 1",
                         conn);
 
                     await using var reader = await cmd.ExecuteReaderAsync(stoppingToken);

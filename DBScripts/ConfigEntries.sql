@@ -6,9 +6,6 @@ insert into hms.errorMaster (error_id,area,error_msg) values (1002, 'LoginConsta
 insert into hms.errorMaster (error_id,area,error_msg) values (1003, 'LoginConstants', 'User has no active primary role.' );
 insert into hms.errorMaster (error_id,area,error_msg) values (1101, 'Common', 'Success' );
 
-INSERT INTO hms.applog_filter_policy (minimum_level, excluded_categories)
-VALUES ('Information', ARRAY['Microsoft', 'System.Net.Http']);
 
-UPDATE hms.applog_filter_policy
-SET excluded_categories = ARRAY['Microsoft', 'System.Net.Http', 'Microsoft.EntityFrameworkCore.Database.Command']
-WHERE id = 1;
+INSERT INTO applogs.applog_filter_policy (minimum_level, excluded_categories)
+VALUES ('Information', ARRAY['Microsoft', 'System.Net.Http', 'Microsoft.EntityFrameworkCore.Database.Command']);

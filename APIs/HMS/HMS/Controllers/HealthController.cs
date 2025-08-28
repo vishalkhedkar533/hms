@@ -20,7 +20,7 @@ namespace HMS.Controllers
             _logger = logger;
         }
 
-        [HttpPost]
+        [HttpPost("Check")]
         [Authorize]
         [MenuAuthorize(1002)]
         public async Task<IActionResult> Check()
@@ -39,7 +39,7 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Health check failed at {UtcNow}", DateTime.UtcNow);
+                _logger.LogError(ex, "Health check failed at {UtcNow} Exception {message}", DateTime.UtcNow, ex.Message);
                 return StatusCode(503, new
                 {
                     status = "Unhealthy",

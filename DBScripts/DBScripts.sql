@@ -1278,9 +1278,6 @@ CREATE TABLE hms.applog_filter_policy (
 INSERT INTO hms.applog_filter_policy (minimum_level, excluded_categories)
 VALUES ('Information', ARRAY['Microsoft', 'System.Net.Http']);
 
-DROP TABLE hms.applog;
-DROP TABLE hms.applog_filter_policy;
-
 CREATE SCHEMA applogs;
 CREATE TABLE applogs."applog" (
     "Id" BIGSERIAL PRIMARY KEY,
@@ -1308,3 +1305,5 @@ CREATE TABLE applogs.applog_filter_policy (
   updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now()
 );
 
+DROP TABLE hms.applog;
+DROP TABLE hms.applog_filter_policy;

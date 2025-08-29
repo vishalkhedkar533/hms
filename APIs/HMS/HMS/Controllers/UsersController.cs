@@ -1,8 +1,9 @@
 ﻿using HMS.Data;
-using HMS.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Models.DB;
+using Models.DTO;
 namespace HMS.Controllers
 {
     [Route("api/[controller]")]

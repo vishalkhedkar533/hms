@@ -1,30 +1,82 @@
-﻿using HMS.Data;
-using HMS.Security;
+﻿using CommonLibrary;
+using HMS.Data;
+using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Serilog;
+using Models.Mapping;
 using System.Reflection;
+using System.Security.Claims;
 using System.Text;
+using System.Threading.Channels;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+// ----------------------------
+// JWT Authentication
+// ----------------------------
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var refreshSeconds = builder.Configuration.GetValue<int>("LoggingFilter:RefreshSeconds", 30);
+var batchSize = builder.Configuration.GetValue<int>("LoggingFilter:batchSize", 5);
+var flushInterval = builder.Configuration.GetValue<int>("LoggingFilter:flushInterval", 5);
+
+
+// ----------------------------
+// Shared logging infrastructure
+// ----------------------------
+var logChannel = Channel.CreateUnbounded<AppLogEntry>();
+var filterState = new AppLogFilterState();
+var pgConnection = builder.Configuration.GetConnectionString("HMSContext")!;
 
 // ----------------------------
 // Postgres DbContext
 // ----------------------------
 builder.Services.AddDbContext<HMSContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("HMSContext")
-        ?? throw new InvalidOperationException("Connection string 'HMSContext' not found.")));
+    options.UseNpgsql(pgConnection));
 
 // ----------------------------
-// Serilog
+// AutoMapper
 // ----------------------------
-var logger = new LoggerConfiguration()
-    .ReadFrom.Configuration(builder.Configuration)
-    .Enrich.FromLogContext()
-    .CreateLogger();
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AgentProfile>());
+
+// ----------------------------
+// HttpContextAccessor
+// ----------------------------
+builder.Services.AddHttpContextAccessor();
+
+// ----------------------------
+// Logging: Clear default, add custom provider
+// ----------------------------
 builder.Logging.ClearProviders();
-builder.Logging.AddSerilog(logger);
+builder.Services.AddSingleton(logChannel);
+builder.Services.AddSingleton(filterState);
+
+// Register custom logger provider
+builder.Services.AddSingleton<ILoggerProvider>(sp =>
+    new AppLogLoggerProvider(
+        sp.GetRequiredService<Channel<AppLogEntry>>(),
+        sp.GetRequiredService<AppLogFilterState>(),
+        sp.GetRequiredService<IHttpContextAccessor>()
+    ));
+
+// ----------------------------
+// Background services
+// ----------------------------
+// Refresh filter from DB
+builder.Services.AddHostedService(sp =>
+    new AppLogFilterRefresher(
+        sp.GetRequiredService<AppLogFilterState>(),
+        pgConnection, refreshSeconds
+    )
+);
+
+// Flush logs to DB
+builder.Services.AddHostedService(sp =>
+    new AppLogBackgroundService(
+        sp.GetRequiredService<Channel<AppLogEntry>>(),
+        pgConnection, batchSize, flushInterval
+    )
+);
 
 // ----------------------------
 // Controllers
@@ -34,7 +86,6 @@ builder.Services.AddControllers();
 // ----------------------------
 // Swagger / OpenAPI
 // ----------------------------
-var jwtSettings = builder.Configuration.GetSection("Jwt");
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -69,12 +120,12 @@ builder.Services.AddSwaggerGen(options =>
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    options.IncludeXmlComments(xmlPath);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
 });
 
-// ----------------------------
-// JWT Authentication
-// ----------------------------
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
     {
@@ -94,13 +145,46 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization();
 
 // ----------------------------
-// Register MenuAuthorizeFilter for DI
+// Rate Limiting
 // ----------------------------
-//builder.Services.AddScoped<MenuAuthorizeFilter>();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("PerUser", httpContext =>
+    {
+        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                     ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                     ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromSeconds(10),
+            QueueLimit = 0,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+        });
+    });
+
+    options.OnRejected = async (context, token) =>
+    {
+        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+        await context.HttpContext.Response.WriteAsync("Rate limit exceeded. Try again later.", token);
+    };
+});
 
 var app = builder.Build();
 
+// ----------------------------
+// Middleware
+// ----------------------------
+app.UseMiddleware<WhitelistHeadersMiddleware>();
+app.UseHttpsRedirection();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseRateLimiter();
+
+// ----------------------------
 // Swagger
+// ----------------------------
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -108,11 +192,19 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = string.Empty;
 });
 
-// Middleware
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
+// ----------------------------
+// Controllers
+// ----------------------------
+app.MapControllers().RequireRateLimiting("PerUser");
 
-app.MapControllers();
+// ----------------------------
+// Test logging
+// ----------------------------
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("Application started and custom logger initialized.");
+logger.LogError("Test error to ensure background service picks it up.");
 
-app.Run();
+// ----------------------------
+// Run app
+// ----------------------------
+await app.RunAsync();

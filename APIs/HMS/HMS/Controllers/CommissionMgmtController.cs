@@ -2,7 +2,7 @@
 using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Models;
+using Models.DB;
 using Newtonsoft.Json;
 
 namespace HMS.Controllers
@@ -28,13 +28,13 @@ namespace HMS.Controllers
             {
                 bulkCommUpdates = new BulkCommUpdates
                 {
-                    BranchMaster = new Models.BranchMaster
+                    BranchMaster = new Models.DB.BranchMaster
                     {
                         Address = "Branch Address",
                         BranchCode = "BR-1",
                         BranchName = "Branch Name",
                         ChannelCode = "Channel Code",
-                        ChannelMaster = new Models.ChannelMaster
+                        ChannelMaster = new Models.DB.ChannelMaster
                         {
                             ChannelCode = "Channel Code",
                             ChannelName = "ChannelName",

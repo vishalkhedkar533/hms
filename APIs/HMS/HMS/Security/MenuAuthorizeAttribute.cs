@@ -1,8 +1,6 @@
-﻿using HMS.Controllers;
-using HMS.Data;
+﻿using HMS.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace HMS.Security
@@ -15,7 +13,6 @@ namespace HMS.Security
             Arguments = new object[] { menuId }; // Pass menuId explicitly
         }
     }
-
     public class MenuAuthorizeFilter : IAuthorizationFilter
     {
         private readonly int _menuId;

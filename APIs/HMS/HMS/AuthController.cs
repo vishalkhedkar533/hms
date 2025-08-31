@@ -27,7 +27,7 @@ namespace HMS.Controllers
         [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
-            HMSResponse response = new HMSResponse();
+            HmsResponse response = new HmsResponse();
             var handler = new JwtSecurityTokenHandler();
             DateTimeOffset expTime = DateTimeOffset.UtcNow;
             string errorMsg = string.Empty;

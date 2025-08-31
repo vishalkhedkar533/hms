@@ -10,4 +10,8 @@
     {
         public const int SUCCESS = 1101;
     }
+    public static class AgentConstants //12x series
+    {
+        public const int AGENT_NOTFOUND = 1201;
+    }
 }

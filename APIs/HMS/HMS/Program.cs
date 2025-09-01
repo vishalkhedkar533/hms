@@ -1,4 +1,5 @@
 ﻿using CommonLibrary;
+using Communication;
 using HMS.Data;
 using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +52,12 @@ builder.Logging.ClearProviders();
 builder.Services.AddSingleton(logChannel);
 builder.Services.AddSingleton(filterState);
 
+// Register MailTemplateService with ContentRootPath
+builder.Services.AddSingleton<MailTemplateService>(sp =>
+{
+    var env = sp.GetRequiredService<IWebHostEnvironment>();
+    return new MailTemplateService(env.ContentRootPath);
+});
 // Register custom logger provider
 builder.Services.AddSingleton<ILoggerProvider>(sp =>
     new AppLogLoggerProvider(

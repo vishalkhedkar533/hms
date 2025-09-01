@@ -1,12 +1,14 @@
-﻿using HMS.Data;
+﻿using Communication;
+using HMS.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Models.HMSConsts;
 using Models.DB;
 using Models.DTO;
+using Models.HMSConsts;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
 
@@ -18,10 +20,12 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-        public AuthController(HMSContext context, IConfiguration config)
+        private readonly MailTemplateService _templateService;
+        public AuthController(HMSContext context, IConfiguration config, MailTemplateService templateService)
         {
             _context = context;
             _config = config;
+            _templateService = templateService;
         }
         [HttpPost("login")]
         [AllowAnonymous]
@@ -171,6 +175,12 @@ namespace HMS.Controllers
         public async Task<ActionResult> GetOTP_To_UnLock([FromBody] LoginRequest request)
         {
             HmsResponse response = new HmsResponse();
+            EmailService emailService = new EmailService(_config);
+            var message = new MailMessage("donotreply@hms.com", request.Username);
+            message.Subject = "Account Locked";
+            message.Body = _templateService.GetTemplate("accountlocked.html");
+            message.IsBodyHtml = true;
+            await emailService.SendEmailAsync(message);
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
             response.responseHeader.ErrorMessage = await _context.errorMaster
                 .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")

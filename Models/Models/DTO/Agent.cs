@@ -1,4 +1,7 @@
-﻿namespace Models.DTO
+﻿using Models.DB;
+using CommonLibrary;
+
+namespace Models.DTO
 {
     public class AgentDto
     {
@@ -29,7 +32,7 @@
         public string? AgentStatusCode { get; set; }
         public DateTime? StatusDate { get; set; }
         public bool IsLicensed { get; set; }
-        public string? PanNumber { get; set; }
+        public string? MaskedPanNumber { get; set; }
         public string? AadhaarNumber { get; set; }
         public string? IrdaLicenseNumber { get; set; }
         public string? GstNumber { get; set; }
@@ -39,5 +42,54 @@
         public DateTime? ModifiedDate { get; set; }
         public int? RowVersion { get; set; }
         public bool IsActive { get; set; } = true;
+        public string? PanNumber { get;  set; }
+    }
+
+    public static class AgentMapper
+    {
+        public static AgentDto ToDto(Agent agent)
+        {
+            return new AgentDto
+            {
+                AgentId = agent.AgentId,
+                AgentCode = agent.AgentCode,
+                AgentName = agent.AgentName,
+                AgentTypeCode = agent.AgentTypeCode,
+                AgentSubTypeCode = agent.AgentSubTypeCode,
+                BusinessName = agent.BusinessName,
+                FirstName = agent.FirstName,
+                MiddleName = agent.MiddleName,
+                LastName = agent.LastName,
+                Prefix = agent.Prefix,
+                Suffix = agent.Suffix,
+                SubChannelCode = agent.SubChannelCode,
+                ChannelCode = agent.ChannelCode,
+                AadhaarNumber = agent.AadhaarNumber,
+                IrdaLicenseNumber = agent.IrdaLicenseNumber,
+                GstNumber = agent.GstNumber,
+                AgentLevel = agent.AgentLevel,
+                DesignationCode = agent.DesignationCode,    
+                LocationCode = agent.LocationCode,
+                StaffCode = agent.StaffCode,
+                Supervisor_Id = agent.SupervisorId,
+                AgentStatusCode = agent.AgentStatusCode,
+                StatusDate = agent.StatusDate,
+                IsLicensed = agent.IsLicensed,
+                CreatedBy = agent.CreatedBy,
+                CreatedDate = agent.CreatedDate,
+                ModifiedBy = agent.ModifiedBy,
+                ModifiedDate = agent.ModifiedDate,
+                RowVersion = agent.RowVersion,
+                IsActive = agent.IsActive,
+                DOB = agent.DOB,
+                ContractedDate = agent.ContractedDate,
+                Gender = agent.Gender,
+                MaritalStatusCode = agent.MaritalStatusCode,
+                Nationality = agent.Nationality,
+                PreferredLanguage = agent.PreferredLanguage,
+                MaskedPanNumber = MaskingHelper.MaskPan(agent.PanNumber),
+                PanNumber = string.Empty
+            };
+        }
     }
 }

@@ -30,7 +30,7 @@ namespace HMS.Controllers
         [MenuAuthorize(1002)]
         public async Task<ActionResult> GetDashboard([FromBody] FetchUserDashboard fetchUserInfo)
         {            
-            HMSResponse hmsResponse = new HMSResponse();
+            HmsResponse hmsResponse = new HmsResponse();
             try
             {
                 
@@ -84,7 +84,7 @@ namespace HMS.Controllers
                 statusDetails.Priority = "High";
                 hmsrecord.statusDetails.Add(statusDetails);
 
-                hmsResponse.responseHeader = new HMSResponseHeader
+                hmsResponse.responseHeader = new HmsSResponseHeader
                 {
                     ErrorCode = CommonConstants.SUCCESS,
                     ErrorMessage = await _context.errorMaster

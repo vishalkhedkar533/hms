@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure;
 using HMS.Data;
 using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -6,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.HMSConsts;
+using System.Collections.Generic;
 
 namespace HMS.Controllers
 {
@@ -260,6 +263,67 @@ namespace HMS.Controllers
             return entries;
         }
 
+        [HttpPost("Search")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> Search([FromBody] AgentDto agentDto)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            List < AgentDto > agents = new List<AgentDto>();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (string.IsNullOrWhiteSpace(agentDto.AgentCode) &&
+            string.IsNullOrWhiteSpace(agentDto.AgentName) &&
+            string.IsNullOrWhiteSpace(agentDto.PanNumber) &&
+            string.IsNullOrWhiteSpace(agentDto.ChannelCode) &&
+            string.IsNullOrWhiteSpace(agentDto.SubChannelCode))
+            {
+                throw new ArgumentException("At least one search parameter must be provided.");
+            }
+
+            var query = _context.Agents.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
+            {
+                query = query.Where(a => a.AgentCode == agentDto.AgentCode);
+            }
+            else if (!string.IsNullOrWhiteSpace(agentDto.AgentName))
+            {
+                query = query.Where(a => a.AgentName == agentDto.AgentName);
+            }
+            else if (!string.IsNullOrWhiteSpace(agentDto.PanNumber))
+            {
+                query = query.Where(a => a.PanNumber == agentDto.PanNumber);
+            }
+            else if (!string.IsNullOrWhiteSpace(agentDto.ChannelCode))
+            {
+                query = query.Where(a => a.ChannelCode == agentDto.ChannelCode);
+            }
+            else if (!string.IsNullOrWhiteSpace(agentDto.SubChannelCode))
+            {
+                query = query.Where(a => a.SubChannelCode == agentDto.SubChannelCode);
+            }
+            Agent? agent = await query.FirstOrDefaultAsync();
+            if (agent != null)
+            { 
+                agents.Add(AgentMapper.ToDto(agent));
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "LoginConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                hMSResponse.responseBody.agents = agents;
+            }
+            else
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+            }
+            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+        }
         [HttpPost("Create")]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> CreateAgent([FromBody] AgentDto agentDto)

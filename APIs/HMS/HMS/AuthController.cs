@@ -166,5 +166,17 @@ namespace HMS.Controllers
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
         }
+        [HttpPost("GetOTP_To_UnLock")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetOTP_To_UnLock([FromBody] LoginRequest request)
+        {
+            HmsResponse response = new HmsResponse();
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = await _context.errorMaster
+                .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+                .Select(x => x.ErrorMsg)
+                .FirstOrDefaultAsync() ?? "Undefined Message";
+            return Ok(response);
+        }
     }
 }

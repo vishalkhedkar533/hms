@@ -78,6 +78,12 @@ namespace HMS.Controllers
                 {
                     user.lockoutendtime = DateTime.UtcNow.AddMinutes(15); // Lock for 15 minutes
                     user.IsLocked = true; // Optional: depending on your logic
+                    EmailService emailService = new EmailService(_config);
+                    var message = new MailMessage("donotreply@hms.com", request.Username);
+                    message.Subject = "Account Locked";
+                    message.Body = _templateService.GetTemplate("accountlocked.html");
+                    message.IsBodyHtml = true;
+                    await emailService.SendEmailAsync(message);
                 }
 
                 await _context.SaveChangesAsync();
@@ -175,12 +181,7 @@ namespace HMS.Controllers
         public async Task<ActionResult> GetOTP_To_UnLock([FromBody] LoginRequest request)
         {
             HmsResponse response = new HmsResponse();
-            EmailService emailService = new EmailService(_config);
-            var message = new MailMessage("donotreply@hms.com", request.Username);
-            message.Subject = "Account Locked";
-            message.Body = _templateService.GetTemplate("accountlocked.html");
-            message.IsBodyHtml = true;
-            await emailService.SendEmailAsync(message);
+
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
             response.responseHeader.ErrorMessage = await _context.errorMaster
                 .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")

@@ -179,6 +179,7 @@ namespace HMS.Controllers
             var message = new MailMessage("donotreply@hms.com", request.Username);
             message.Subject = "Account Locked";
             message.Body = _templateService.GetTemplate("accountlocked.html");
+            message.IsBodyHtml = true;
             await emailService.SendEmailAsync(message);
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
             response.responseHeader.ErrorMessage = await _context.errorMaster

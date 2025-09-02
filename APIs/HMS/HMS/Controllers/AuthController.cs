@@ -1,12 +1,15 @@
-﻿using HMS.Data;
+﻿using CommonLibrary;
+using Communication;
+using HMS.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Models.HMSConsts;
 using Models.DB;
 using Models.DTO;
+using Models.HMSConsts;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Mail;
 using System.Security.Claims;
 using System.Text;
 
@@ -18,10 +21,12 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-        public AuthController(HMSContext context, IConfiguration config)
+        private readonly FileService _fileService;
+        public AuthController(HMSContext context, IConfiguration config, FileService fileService)
         {
             _context = context;
             _config = config;
+            _fileService = fileService;
         }
         [HttpPost("login")]
         [AllowAnonymous]
@@ -74,6 +79,12 @@ namespace HMS.Controllers
                 {
                     user.lockoutendtime = DateTime.UtcNow.AddMinutes(15); // Lock for 15 minutes
                     user.IsLocked = true; // Optional: depending on your logic
+                    EmailService emailService = new EmailService(_config);
+                    var message = new MailMessage("donotreply@hms.com", request.Username);
+                    message.Subject = "Account Locked";
+                    message.Body = _fileService.GetTemplate(Path.Combine("Templates", "Mail"), "accountlocked.html");
+                    message.IsBodyHtml = true;
+                    await emailService.SendEmailAsync(message);
                 }
 
                 await _context.SaveChangesAsync();
@@ -165,6 +176,19 @@ namespace HMS.Controllers
 
             var tokenHandler = new JwtSecurityTokenHandler();
             return tokenHandler.WriteToken(tokenHandler.CreateToken(tokenDescriptor));
+        }
+        [HttpPost("GetOTP_To_UnLock")]
+        [AllowAnonymous]
+        public async Task<ActionResult> GetOTP_To_UnLock([FromBody] LoginRequest request)
+        {
+            HmsResponse response = new HmsResponse();
+
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = await _context.errorMaster
+                .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+                .Select(x => x.ErrorMsg)
+                .FirstOrDefaultAsync() ?? "Undefined Message";
+            return Ok(response);
         }
     }
 }

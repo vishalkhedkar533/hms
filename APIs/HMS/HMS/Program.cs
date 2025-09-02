@@ -1,4 +1,5 @@
 ﻿using CommonLibrary;
+using Communication;
 using HMS.Data;
 using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,22 @@ using System.Threading.Channels;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure CORS to allow only your frontend + Swagger UI
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendAndSwagger", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000"   // React dev server
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // keep only if using cookies/auth headers
+    });
+});
+//"http://localhost:4200",   // Angular dev server
+//"https://localhost:5001"   // Swagger UI (adjust to your HTTPS port)
 // ----------------------------
 // JWT Authentication
 // ----------------------------
@@ -51,6 +68,12 @@ builder.Logging.ClearProviders();
 builder.Services.AddSingleton(logChannel);
 builder.Services.AddSingleton(filterState);
 
+// Register MailTemplateService with ContentRootPath
+builder.Services.AddSingleton<FileService>(sp =>
+{
+    var env = sp.GetRequiredService<IWebHostEnvironment>();
+    return new FileService(env.ContentRootPath);
+});
 // Register custom logger provider
 builder.Services.AddSingleton<ILoggerProvider>(sp =>
     new AppLogLoggerProvider(

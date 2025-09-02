@@ -36,4 +36,16 @@
     <ProjectReference Include="..\..\..\Models\Models\Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Templates\Mail\accountlocked.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\Mail\email.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\Mail\otp.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -18,22 +18,6 @@ namespace Communication
      */
 
 
-    /*
-     * Sample Code
-     var message = new MailMessage("no-reply@yourdomain.com", user.EmailId)
-{
-    Subject = "Password Changed",
-    Body = "Your password was changed successfully.",
-    IsBodyHtml = false
-};
-
-var success = await _emailService.SendEmailAsync(message);
-
-if (!success)
-{
-    // Optionally log or alert on failure
-}
-     */
     public class EmailService
     {
         private readonly SmtpClient _smtpClient;
@@ -65,3 +49,11 @@ if (!success)
         }
     }
 }
+
+/* Sample Code*/
+// EmailService emailService = new EmailService(_config);
+//var message = new MailMessage("donotreply@hms.com", request.Username);
+//message.Subject = "Account Locked";
+//message.Body = _templateService.GetTemplate("accountlocked.html");
+//message.IsBodyHtml = true;
+//await emailService.SendEmailAsync(message);

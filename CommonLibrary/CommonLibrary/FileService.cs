@@ -14,7 +14,7 @@
 
         public string GetTemplate(string fileFolder, string fileName)
         {
-            string filePath = Path.Combine(_templateRoot, "Templates", "Mail", fileName);
+            string filePath = Path.Combine(_templateRoot, fileFolder, fileName);
 
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"Template not found: {filePath}");

@@ -5,3 +5,8 @@ https://www.figma.com/proto/lFwcE4mH5giEkRzddPeunD/HIrechy?node-id=136-6172&t=BE
 
 List of screens
 https://docs.google.com/presentation/d/1ViseawFat6jJ5TDIhBRer5ZB2Bvv8Unu2PZvCvye0LQ/edit?slide=id.p#slide=id.p
+
+
+https://hrmadmin.netlify.app/dashboard
+
+https://hrmadmin.netlify.app/dashboard/code-movement

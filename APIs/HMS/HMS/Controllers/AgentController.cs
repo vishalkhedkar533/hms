@@ -25,6 +25,7 @@ namespace HMS.Controllers
             _config = config;
             _mapper = mapper;
         }
+
         [HttpPost("Termination/Request")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RequestTermination([FromBody] AgentTerminationRequest request)
@@ -351,5 +352,18 @@ namespace HMS.Controllers
 
             return _mapper.Map<AgentDto>(agent);
         }
+
+        #region Agent Details
+        [HttpPost("AgetList")]
+        //[MenuAuthorize(1001)]
+        public async Task<ActionResult<AgentDto>> AgetList([FromBody] int userid)
+        {
+            var agent = await _context.Agents.FindAsync(userid);
+            if (agent == null)
+                return NotFound();
+
+            return _mapper.Map<AgentDto>(agent);
+        }
+        #endregion
     }
 }

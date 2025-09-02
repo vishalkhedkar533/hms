@@ -201,6 +201,7 @@ var app = builder.Build();
 // ----------------------------
 app.UseMiddleware<WhitelistHeadersMiddleware>();
 app.UseHttpsRedirection();
+app.UseCors("FrontendAndSwagger");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();

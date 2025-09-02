@@ -23,7 +23,8 @@ namespace HMS.Data
         public DbSet<RoleMenuMapping> RoleMenuMapping => Set<RoleMenuMapping>();
         public DbSet<Agent> Agents { get; set; } = null!;
         public DbSet<ErrorMaster> errorMaster => Set<ErrorMaster>();
-
+        public DbSet<ChannelMaster> ChannelMaster => Set<ChannelMaster>();
+        public DbSet<SubchannelMaster> SubchannelMaster => Set<SubchannelMaster>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

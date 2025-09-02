@@ -42,7 +42,7 @@ namespace Models.DTO
         public DateTime? ModifiedDate { get; set; }
         public int? RowVersion { get; set; }
         public bool IsActive { get; set; } = true;
-        public string? PanNumber { get;  set; }
+        public string? PanNumber { get; set; }
     }
 
     public static class AgentMapper
@@ -68,7 +68,7 @@ namespace Models.DTO
                 IrdaLicenseNumber = agent.IrdaLicenseNumber,
                 GstNumber = agent.GstNumber,
                 AgentLevel = agent.AgentLevel,
-                DesignationCode = agent.DesignationCode,    
+                DesignationCode = agent.DesignationCode,
                 LocationCode = agent.LocationCode,
                 StaffCode = agent.StaffCode,
                 Supervisor_Id = agent.SupervisorId,
@@ -90,6 +90,14 @@ namespace Models.DTO
                 MaskedPanNumber = MaskingHelper.MaskPan(agent.PanNumber),
                 PanNumber = string.Empty
             };
+        }
+    }
+
+    public class AgentListRequest
+    {
+        public string userid
+        {
+            get; set;
         }
     }
 }

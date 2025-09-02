@@ -1,10 +1,10 @@
-﻿namespace Communication
+﻿namespace CommonLibrary
 {
-    public class MailTemplateService
+    public class FileService
     {
         private readonly string _templateRoot;
 
-        public MailTemplateService(string templateRoot)
+        public FileService(string templateRoot)
         {
             if (string.IsNullOrWhiteSpace(templateRoot))
                 throw new ArgumentNullException(nameof(templateRoot));
@@ -12,7 +12,7 @@
             _templateRoot = templateRoot;
         }
 
-        public string GetTemplate(string fileName)
+        public string GetTemplate(string fileFolder, string fileName)
         {
             string filePath = Path.Combine(_templateRoot, "Templates", "Mail", fileName);
 

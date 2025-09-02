@@ -1,4 +1,5 @@
-﻿using Communication;
+﻿using CommonLibrary;
+using Communication;
 using HMS.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,12 +21,12 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-        private readonly MailTemplateService _templateService;
-        public AuthController(HMSContext context, IConfiguration config, MailTemplateService templateService)
+        private readonly FileService _fileService;
+        public AuthController(HMSContext context, IConfiguration config, FileService fileService)
         {
             _context = context;
             _config = config;
-            _templateService = templateService;
+            _fileService = fileService;
         }
         [HttpPost("login")]
         [AllowAnonymous]
@@ -81,7 +82,7 @@ namespace HMS.Controllers
                     EmailService emailService = new EmailService(_config);
                     var message = new MailMessage("donotreply@hms.com", request.Username);
                     message.Subject = "Account Locked";
-                    message.Body = _templateService.GetTemplate("accountlocked.html");
+                    message.Body = _fileService.GetTemplate(Path.Combine("Templates", "Mail"), "accountlocked.html");
                     message.IsBodyHtml = true;
                     await emailService.SendEmailAsync(message);
                 }

@@ -69,10 +69,10 @@ builder.Services.AddSingleton(logChannel);
 builder.Services.AddSingleton(filterState);
 
 // Register MailTemplateService with ContentRootPath
-builder.Services.AddSingleton<MailTemplateService>(sp =>
+builder.Services.AddSingleton<FileService>(sp =>
 {
     var env = sp.GetRequiredService<IWebHostEnvironment>();
-    return new MailTemplateService(env.ContentRootPath);
+    return new FileService(env.ContentRootPath);
 });
 // Register custom logger provider
 builder.Services.AddSingleton<ILoggerProvider>(sp =>

@@ -5,7 +5,7 @@
     <!-- Ensures correct rendering on mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Your Email</title>
+    <title>OTP</title>
 
     <!-- Preheader text (inbox preview) -->
     <meta name="description" content="Short preview of your email…">
@@ -134,7 +134,7 @@
 <body id="body" class="bg-body" bgcolor="#f3f5f9" style="background:#f3f5f9; margin:0; padding:0;">
     <!-- Preheader (hidden in body, shown in inbox preview) -->
     <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
-        Short preview text that appears next to the subject line.
+        OTP
     </div>
 
     <!-- Full-Width Wrapper -->
@@ -143,119 +143,41 @@
             <td align="center" style="padding:24px 12px;">
                 <!-- 600px Container -->
                 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="container" style="width:600px; max-width:600px; background:#ffffff; border-radius:14px; overflow:hidden;">
-                    <!-- Header / Logo -->
-                    <tr>
-                        <td align="center" bgcolor="#0f62fe" style="padding:24px;">
-                            <a href="https://example.com" target="_blank">
-                                <img src="https://via.placeholder.com/140x40?text=LOGO" width="140" height="40" alt="Company" style="height:auto;">
-                            </a>
-                        </td>
-                    </tr>
-
-                    <!-- Hero Image -->
-                    <tr>
-                        <td align="center" style="background:#ffffff;">
-                            <img src="https://via.placeholder.com/1200x480" width="600" alt="Hero image" style="width:100%; max-width:600px; height:auto;">
-                        </td>
-                    </tr>
-
                     <!-- Main Copy -->
                     <tr>
                         <td class="px-sm p-sm fallback-font text" style="padding:24px 32px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#2b2f36; font-size:16px; line-height:24px;">
-                            <h1 class="h1" style="margin:0 0 12px; font-size:28px; line-height:36px; font-weight:700; color:#111318;">Welcome to Our Newsletter</h1>
-                            <p style="margin:0 0 16px;">Hi {{FirstName}},</p>
+                            <p style="margin:0 0 16px;">Dear User,</p>
                             <p style="margin:0 0 16px;">
-                                Thanks for joining us! This template is built for **email client compatibility** and **mobile responsiveness**. Replace text, images, and links with your content and you’re good to go.
+                                OTP to Reset your password is {{OTP}}.
                             </p>
-                            <ul style="margin:0 0 16px 18px; padding:0;">
-                                <li>Responsive down to 320px</li>
-                                <li>Bulletproof CTA button for Outlook</li>
-                                <li>Dark-mode friendly</li>
-                            </ul>
+                            <p style="margin:0 0 16px;">
+                                If you have not attempted to reset the password, please contact the admin.
+                            </p>
                         </td>
                     </tr>
-
                     <!-- Callout Card -->
                     <tr>
                         <td class="px-sm" style="padding:0 32px 24px;">
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="card" style="background:#f7f9fc; border-radius:12px;">
                                 <tr>
                                     <td class="p-sm fallback-font text" style="padding:18px 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#2b2f36; font-size:15px; line-height:22px;">
-                                        <strong class="h2" style="display:block; font-size:20px; line-height:28px; margin:0 0 6px;">What’s next?</strong>
-                                        Explore features, manage your preferences, or get in touch with support.
+                                        <strong class="h2" style="display:block; font-size:20px; line-height:28px; margin:0 0 6px;">Not Able to log/reset password?</strong>
+                                        Please reach us helpdesk@hms.com or 9833985555
                                     </td>
                                 </tr>
                             </table>
                         </td>
                     </tr>
-
-                    <!-- CTA Button (Bulletproof with VML for Outlook) -->
-                    <tr>
-                        <td align="center" style="padding:4px 32px 28px;">
-                            <!--[if mso]>
-                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="https://example.com/get-started" style="height:44px;v-text-anchor:middle;width:220px;" arcsize="12%" stroke="f" fillcolor="#0f62fe">
-                              <w:anchorlock/>
-                              <center style="color:#ffffff; font-family:Arial, sans-serif; font-size:16px; font-weight:bold;">Get Started</center>
-                            </v:roundrect>
-                            <![endif]-->
-                            <!--[if !mso]><!-- -->
-                            <a class="btn" href="https://example.com/get-started" target="_blank"
-                               style="background:#0f62fe; border-radius:8px; padding:12px 20px; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:15px; font-weight:700; color:#ffffff; display:inline-block;">
-                                Get Started
-                            </a>
-                            <!--<![endif]-->
-                        </td>
-                    </tr>
-
                     <!-- Divider -->
                     <tr>
                         <td style="padding:0 32px;">
                             <hr style="border:none; border-top:1px solid #e6e9ef; margin:0;">
                         </td>
                     </tr>
-
-                    <!-- Two Columns (stack on mobile) -->
-                    <tr>
-                        <td class="px-sm" style="padding:24px 32px 8px;">
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                                <tr>
-                                    <td class="stack fallback-font text" width="50%" valign="top" style="padding-right:12px; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#2b2f36; font-size:15px; line-height:22px;">
-                                        <strong style="display:block; margin:0 0 6px;">Feature A</strong>
-                                        Short description of a feature or update.
-                                    </td>
-                                    <td class="stack fallback-font text" width="50%" valign="top" style="padding-left:12px; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#2b2f36; font-size:15px; line-height:22px;">
-                                        <strong style="display:block; margin:0 0 6px;">Feature B</strong>
-                                        Another succinct highlight with value.
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-
-                    <!-- Footer -->
-                    <tr>
-                        <td class="p-sm fallback-font muted" align="center" bgcolor="#ffffff" style="padding:24px 24px 28px; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#6a7280; font-size:12px; line-height:18px;">
-                            You’re receiving this because you subscribed to updates from <a href="https://example.com" target="_blank" style="color:#6a7280; text-decoration:underline;">Example Inc.</a><br>
-                            123 Business Street, City, Country<br><br>
-                            <a href="{{unsubscribe_link}}" target="_blank" style="color:#6a7280; text-decoration:underline;">Unsubscribe</a> ·
-                            <a href="https://example.com/preferences" target="_blank" style="color:#6a7280; text-decoration:underline;">Manage preferences</a>
-                        </td>
-                    </tr>
                 </table>
-
-                <!-- Legal/Alt Footer -->
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="container" style="width:600px; max-width:600px; margin-top:12px;">
-                    <tr>
-                        <td class="fallback-font muted" align="center" style="font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#8b93a1; font-size:11px; line-height:16px;">
-                            © {{Year}} Example Inc. All rights reserved.
-                        </td>
-                    </tr>
-                </table>
-
             </td>
         </tr>
     </table>
-
     <!-- Gmail iOS right gutter fix -->
     <div style="display:none; white-space:nowrap; font:15px monospace; line-height:0;">&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</div>
 </body>

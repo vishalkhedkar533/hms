@@ -9,6 +9,7 @@ using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Collections.Generic;
+using System.Threading.Channels;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -43,10 +44,9 @@ namespace HMS.Controllers
 
         [HttpPost("SubchannelMaster")]
         //[MenuAuthorize(1001)]
-        public async Task<ActionResult<SubchannelMaster>> SubchannelMaster([FromBody] string Channelid)
+        public async Task<ActionResult<SubchannelMaster>> SubchannelMaster([FromBody] string ChannelCode)
         {
-            var subchannelMaster = await _context.SubchannelMaster.Select(u => u.ChannelCode == Channelid).ToListAsync();
-
+            var subchannelMaster = await _context.SubchannelMaster.Where(u => u.ChannelCode == ChannelCode).ToListAsync();
             if (subchannelMaster == null)
                 return NotFound();
 

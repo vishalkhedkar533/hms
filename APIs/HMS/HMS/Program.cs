@@ -19,9 +19,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendAndSwagger", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:3000"   // React dev server
-            )
+        policy.WithOrigins("*")   // React dev server
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // keep only if using cookies/auth headers

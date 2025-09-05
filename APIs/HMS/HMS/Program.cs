@@ -14,21 +14,34 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Configure CORS to allow only your frontend + Swagger UI
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("FrontendAndSwagger", policy =>
+    options.AddPolicy("AllowLocalhost3000", policy =>
     {
-        //policy.WithOrigins("*")   // React dev server
-        //    .AllowAnyHeader()
-        //    .AllowAnyMethod()
-        //    .AllowCredentials(); // keep only if using cookies/auth headers
         policy.AllowAnyOrigin()
               .AllowAnyHeader()
               .AllowAnyMethod();
-
     });
 });
+
+
+
+//// Configure CORS to allow only your frontend + Swagger UI
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("FrontendAndSwagger", policy =>
+//    {
+//        policy.WithOrigins("http://localhost:3000/")   // React dev server
+//            .AllowAnyHeader()
+//            .AllowAnyMethod()
+//            .AllowCredentials(); // keep only if using cookies/auth headers
+//        //policy.AllowAnyOrigin()
+//        //      .AllowAnyHeader()
+//        //      .AllowAnyMethod();
+
+//    });
+//});
 //"http://localhost:4200",   // Angular dev server
 //"https://localhost:5001"   // Swagger UI (adjust to your HTTPS port)
 // ----------------------------
@@ -162,8 +175,7 @@ builder.Services.AddAuthentication("Bearer")
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "super_secret_key"))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? "super_secret_key"))
         };
     });
 
@@ -203,9 +215,16 @@ var app = builder.Build();
 // ----------------------------
 app.UseMiddleware<WhitelistHeadersMiddleware>();
 app.UseHttpsRedirection();
-app.UseCors("FrontendAndSwagger");
+//app.UseCors("FrontendAndSwagger");
+
+app.UseRouting();
+app.UseCors("AllowLocalhost3000");
+app.MapControllers();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
+
 app.UseRateLimiter();
 
 // ----------------------------
@@ -221,7 +240,7 @@ app.UseSwaggerUI(c =>
 // ----------------------------
 // Controllers
 // ----------------------------
-app.MapControllers().RequireRateLimiting("PerUser");
+//app.MapControllers().RequireRateLimiting("PerUser");
 
 // ----------------------------
 // Test logging

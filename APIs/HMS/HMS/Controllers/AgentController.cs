@@ -356,13 +356,14 @@ namespace HMS.Controllers
         #region Agent Details
         [HttpPost("AgetList")]
         //[MenuAuthorize(1001)]
-        public async Task<ActionResult<AgentDto>> AgetList([FromBody] int userid)
+        public async Task<ActionResult<AgentDto>> AgetList([FromBody] string AgentCode)
         {
-            var agent = await _context.Agents.FindAsync(userid);
+            var agent = await _context.Agents.Where(u => u.AgentCode == AgentCode).ToListAsync();
+           // var agent = await _context.Agents.FindAsync(userid);
             if (agent == null)
                 return NotFound();
 
-            return _mapper.Map<AgentDto>(agent);
+            return Ok(agent); ;
         }
         #endregion
     }

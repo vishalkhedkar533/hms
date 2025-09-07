@@ -5,12 +5,13 @@ namespace HMS.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class CacheController : ControllerBase
+    //Use this controllers to read master and keep this in cache
+    public class AppMastersController : ControllerBase
     {
         private readonly GenericCacheService _cacheService;
         private readonly IConfiguration _configuration;
 
-        public CacheController(GenericCacheService cacheService, IConfiguration configuration)
+        public AppMastersController(GenericCacheService cacheService, IConfiguration configuration)
         {
             _cacheService = cacheService;
             _configuration = configuration;

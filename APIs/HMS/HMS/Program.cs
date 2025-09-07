@@ -1,11 +1,13 @@
 ﻿using CommonLibrary;
 using Communication;
+using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Models.Mapping;
+using Npgsql;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -24,8 +26,7 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-
-
+builder.Services.AddMemoryCache();
 
 //// Configure CORS to allow only your frontend + Swagger UI
 //builder.Services.AddCors(options =>
@@ -96,7 +97,15 @@ builder.Services.AddSingleton<ILoggerProvider>(sp =>
         sp.GetRequiredService<AppLogFilterState>(),
         sp.GetRequiredService<IHttpContextAccessor>()
     ));
+// Generic cache service
+builder.Services.AddScoped<NpgsqlConnection>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var conn = new NpgsqlConnection(config.GetConnectionString("HMSContext"));
+    return conn;
+});
 
+builder.Services.AddScoped<GenericCacheService>();
 // ----------------------------
 // Background services
 // ----------------------------
@@ -115,6 +124,7 @@ builder.Services.AddHostedService(sp =>
         pgConnection, batchSize, flushInterval
     )
 );
+builder.Services.AddHostedService<CacheRefreshBackgroundService>();
 
 // ----------------------------
 // Controllers

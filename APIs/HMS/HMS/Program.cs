@@ -101,7 +101,7 @@ builder.Services.AddSingleton<ILoggerProvider>(sp =>
 builder.Services.AddScoped<NpgsqlConnection>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
-    var conn = new NpgsqlConnection(config.GetConnectionString("Postgres"));
+    var conn = new NpgsqlConnection(config.GetConnectionString("HMSContext"));
     return conn;
 });
 

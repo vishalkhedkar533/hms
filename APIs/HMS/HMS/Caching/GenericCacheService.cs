@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+using System.Data;
 using System.Text.RegularExpressions;
 using Dapper;
 using Microsoft.Extensions.Caching.Memory;
@@ -81,7 +82,7 @@ namespace HMS.Caching
             {
                 string sql = $"SELECT * FROM {QuoteIdentifier(schema)}.{QuoteIdentifier(table)}";
 
-                if (_connection.State != ConnectionState.Connected)
+                if (_connection.State != ConnectionState.Open)
                     await _connection.OpenAsync();
 
                 records = await _connection.QueryAsync(sql);

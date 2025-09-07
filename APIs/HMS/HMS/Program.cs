@@ -1,5 +1,6 @@
 ﻿using CommonLibrary;
 using Communication;
+using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -24,8 +25,7 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod();
     });
 });
-
-
+builder.Services.AddMemoryCache();
 
 //// Configure CORS to allow only your frontend + Swagger UI
 //builder.Services.AddCors(options =>
@@ -96,7 +96,8 @@ builder.Services.AddSingleton<ILoggerProvider>(sp =>
         sp.GetRequiredService<AppLogFilterState>(),
         sp.GetRequiredService<IHttpContextAccessor>()
     ));
-
+// Generic cache service
+builder.Services.AddScoped<GenericCacheService>();
 // ----------------------------
 // Background services
 // ----------------------------
@@ -115,6 +116,7 @@ builder.Services.AddHostedService(sp =>
         pgConnection, batchSize, flushInterval
     )
 );
+builder.Services.AddHostedService<CacheRefreshBackgroundService>();
 
 // ----------------------------
 // Controllers

@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Models.Mapping;
+using Npgsql;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
@@ -97,6 +98,13 @@ builder.Services.AddSingleton<ILoggerProvider>(sp =>
         sp.GetRequiredService<IHttpContextAccessor>()
     ));
 // Generic cache service
+builder.Services.AddScoped<NpgsqlConnection>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var conn = new NpgsqlConnection(config.GetConnectionString("Postgres"));
+    return conn;
+});
+
 builder.Services.AddScoped<GenericCacheService>();
 // ----------------------------
 // Background services

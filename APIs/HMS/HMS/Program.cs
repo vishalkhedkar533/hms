@@ -108,9 +108,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowedSites",
         policy =>
         {
+
             policy.WithOrigins(builder.Configuration.GetValue<string>("CORS:AllowedSites", string.Empty).Split(';')) // allow only this origin
                   .AllowAnyHeader()
-                  .AllowAnyMethod();
+                  .AllowAnyMethod()
+                  .AllowCredentials();
         });
 });
 
@@ -206,16 +208,14 @@ var app = builder.Build();
 // ----------------------------
 // Middleware
 // ----------------------------
-app.UseMiddleware<WhitelistHeadersMiddleware>();
 app.UseHttpsRedirection();
 app.UseRouting();
 // Enable CORS before MapControllers
 app.UseCors("AllowedSites"); 
-app.MapControllers();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseMiddleware<WhitelistHeadersMiddleware>();
 
 app.UseRateLimiter();
 

@@ -19,14 +19,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendAndSwagger", policy =>
     {
-        //policy.WithOrigins("*")   // React dev server
-        //    .AllowAnyHeader()
-        //    .AllowAnyMethod()
-        //    .AllowCredentials(); // keep only if using cookies/auth headers
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-
+        policy
+            .WithOrigins("http://localhost:3000") // React dev server
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials()
+            .SetIsOriginAllowed(_ => true); // optional fallback for dev
     });
 });
 //"http://localhost:4200",   // Angular dev server

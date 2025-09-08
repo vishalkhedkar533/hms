@@ -232,7 +232,7 @@ app.UseSwaggerUI(c =>
 // ----------------------------
 // Controllers
 // ----------------------------
-//app.MapControllers().RequireRateLimiting("PerUser");
+app.MapControllers().RequireRateLimiting("PerUser");
 
 // ----------------------------
 // Test logging

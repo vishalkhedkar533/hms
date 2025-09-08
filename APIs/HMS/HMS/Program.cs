@@ -1,5 +1,4 @@
 ﻿using CommonLibrary;
-using Communication;
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
@@ -16,35 +15,8 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost3000", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
 builder.Services.AddMemoryCache();
 
-//// Configure CORS to allow only your frontend + Swagger UI
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("FrontendAndSwagger", policy =>
-//    {
-//        policy.WithOrigins("http://localhost:3000/")   // React dev server
-//            .AllowAnyHeader()
-//            .AllowAnyMethod()
-//            .AllowCredentials(); // keep only if using cookies/auth headers
-//        //policy.AllowAnyOrigin()
-//        //      .AllowAnyHeader()
-//        //      .AllowAnyMethod();
-
-//    });
-//});
-//"http://localhost:4200",   // Angular dev server
-//"https://localhost:5001"   // Swagger UI (adjust to your HTTPS port)
 // ----------------------------
 // JWT Authentication
 // ----------------------------
@@ -130,6 +102,19 @@ builder.Services.AddHostedService<CacheRefreshBackgroundService>();
 // Controllers
 // ----------------------------
 builder.Services.AddControllers();
+// Configure CORS policy
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowedSites",
+        policy =>
+        {
+
+            policy.WithOrigins(builder.Configuration.GetValue<string>("CORS:AllowedSites", string.Empty).Split(';')) // allow only this origin
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+});
 
 // ----------------------------
 // Swagger / OpenAPI
@@ -223,17 +208,14 @@ var app = builder.Build();
 // ----------------------------
 // Middleware
 // ----------------------------
-app.UseMiddleware<WhitelistHeadersMiddleware>();
 app.UseHttpsRedirection();
-//app.UseCors("FrontendAndSwagger");
-
 app.UseRouting();
-app.UseCors("AllowLocalhost3000");
-app.MapControllers();
+// Enable CORS before MapControllers
+app.UseCors("AllowedSites"); 
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseMiddleware<WhitelistHeadersMiddleware>();
 
 app.UseRateLimiter();
 
@@ -250,7 +232,7 @@ app.UseSwaggerUI(c =>
 // ----------------------------
 // Controllers
 // ----------------------------
-//app.MapControllers().RequireRateLimiting("PerUser");
+app.MapControllers().RequireRateLimiting("PerUser");
 
 // ----------------------------
 // Test logging

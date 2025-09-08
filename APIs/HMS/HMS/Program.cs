@@ -12,18 +12,30 @@ using System.Text;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
 
-var builder = WebApplication.CreateBuilder(args);
 
+
+var MyAllowSpecificOrigins = "_AllowLocalhost3000";
+
+var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost3000", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy =>
+                      {
+                          policy.WithOrigins("*").AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+                      });
 });
+
+//builder.Services.AddCors(options =>
+//{
+//    options.AddPolicy("AllowLocalhost3000", policy =>
+//    {
+//        policy.AllowAnyOrigin()
+//              .AllowAnyHeader()
+//              .AllowAnyMethod();
+//    });
+//});
 
 
 
@@ -218,8 +230,10 @@ app.UseHttpsRedirection();
 //app.UseCors("FrontendAndSwagger");
 
 app.UseRouting();
-app.UseCors("AllowLocalhost3000");
 app.MapControllers();
+app.UseCors(MyAllowSpecificOrigins);
+//app.UseCors("AllowLocalhost3000");
+
 
 app.UseAuthentication();
 app.UseAuthorization();

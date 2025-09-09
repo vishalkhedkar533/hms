@@ -1,43 +1,32 @@
 ﻿using CommonLibrary;
 using Communication;
+using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Models.Mapping;
+using Npgsql;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Channels;
 using System.Threading.RateLimiting;
 
-
-
-var MyAllowSpecificOrigins = "_AllowLocalhost3000";
-
 var builder = WebApplication.CreateBuilder(args);
+
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy =>
-                      {
-                          policy.WithOrigins("*").AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-                      });
+    options.AddPolicy("AllowLocalhost3000", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
 });
-
-//builder.Services.AddCors(options =>
-//{
-//    options.AddPolicy("AllowLocalhost3000", policy =>
-//    {
-//        policy.AllowAnyOrigin()
-//              .AllowAnyHeader()
-//              .AllowAnyMethod();
-//    });
-//});
-
-
+builder.Services.AddMemoryCache();
 
 //// Configure CORS to allow only your frontend + Swagger UI
 //builder.Services.AddCors(options =>
@@ -108,7 +97,15 @@ builder.Services.AddSingleton<ILoggerProvider>(sp =>
         sp.GetRequiredService<AppLogFilterState>(),
         sp.GetRequiredService<IHttpContextAccessor>()
     ));
+// Generic cache service
+builder.Services.AddScoped<NpgsqlConnection>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var conn = new NpgsqlConnection(config.GetConnectionString("HMSContext"));
+    return conn;
+});
 
+builder.Services.AddScoped<GenericCacheService>();
 // ----------------------------
 // Background services
 // ----------------------------
@@ -127,6 +124,7 @@ builder.Services.AddHostedService(sp =>
         pgConnection, batchSize, flushInterval
     )
 );
+builder.Services.AddHostedService<CacheRefreshBackgroundService>();
 
 // ----------------------------
 // Controllers
@@ -230,10 +228,8 @@ app.UseHttpsRedirection();
 //app.UseCors("FrontendAndSwagger");
 
 app.UseRouting();
+app.UseCors("AllowLocalhost3000");
 app.MapControllers();
-app.UseCors(MyAllowSpecificOrigins);
-//app.UseCors("AllowLocalhost3000");
-
 
 app.UseAuthentication();
 app.UseAuthorization();

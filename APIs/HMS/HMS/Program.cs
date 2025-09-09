@@ -1,7 +1,4 @@
 ﻿using CommonLibrary;
-
-using Communication;
-
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
@@ -20,18 +17,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMemoryCache();
 
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowLocalhost3000", policy =>
-    {
-        policy.AllowAnyOrigin()
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-builder.Services.AddMemoryCache();
-
 // ----------------------------
 // JWT Authentication
 // ----------------------------
@@ -39,7 +24,6 @@ var jwtSettings = builder.Configuration.GetSection("Jwt");
 var refreshSeconds = builder.Configuration.GetValue<int>("LoggingFilter:RefreshSeconds", 30);
 var batchSize = builder.Configuration.GetValue<int>("LoggingFilter:batchSize", 5);
 var flushInterval = builder.Configuration.GetValue<int>("LoggingFilter:flushInterval", 5);
-
 
 // ----------------------------
 // Shared logging infrastructure

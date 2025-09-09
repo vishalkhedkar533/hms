@@ -181,7 +181,7 @@ builder.Services.AddAuthorization();
 // ----------------------------
 builder.Services.AddRateLimiter(options =>
 {
-    options.AddPolicy("PerUser", httpContext =>
+    options.AddPolicy("RateLimitPerUser", httpContext =>
     {
         var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
                      ?? httpContext.Connection.RemoteIpAddress?.ToString()
@@ -232,7 +232,7 @@ app.UseSwaggerUI(c =>
 // ----------------------------
 // Controllers
 // ----------------------------
-app.MapControllers().RequireRateLimiting("PerUser");
+app.MapControllers().RequireRateLimiting("RateLimitPerUser");
 
 // ----------------------------
 // Test logging

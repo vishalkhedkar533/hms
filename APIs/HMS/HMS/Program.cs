@@ -1,4 +1,7 @@
 ﻿using CommonLibrary;
+
+using Communication;
+
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
@@ -15,6 +18,18 @@ using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddMemoryCache();
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost3000", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 builder.Services.AddMemoryCache();
 
 // ----------------------------

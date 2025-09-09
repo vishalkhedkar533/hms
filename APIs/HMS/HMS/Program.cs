@@ -25,7 +25,6 @@ var refreshSeconds = builder.Configuration.GetValue<int>("LoggingFilter:RefreshS
 var batchSize = builder.Configuration.GetValue<int>("LoggingFilter:batchSize", 5);
 var flushInterval = builder.Configuration.GetValue<int>("LoggingFilter:flushInterval", 5);
 
-
 // ----------------------------
 // Shared logging infrastructure
 // ----------------------------

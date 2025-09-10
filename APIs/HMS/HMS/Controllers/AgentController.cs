@@ -266,10 +266,10 @@ namespace HMS.Controllers
 
         [HttpPost("Search")]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> Search([FromBody] AgentDto agentDto)
+        public async Task<IActionResult> Search([FromBody] SearchAgent agentDto)
         {
             HmsResponse hMSResponse = new HmsResponse();
-            List < AgentDto > agents = new List<AgentDto>();
+            List <AgentDto> agents = new List<AgentDto>();
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
@@ -277,7 +277,9 @@ namespace HMS.Controllers
             string.IsNullOrWhiteSpace(agentDto.AgentName) &&
             string.IsNullOrWhiteSpace(agentDto.PanNumber) &&
             string.IsNullOrWhiteSpace(agentDto.ChannelCode) &&
-            string.IsNullOrWhiteSpace(agentDto.SubChannelCode))
+            string.IsNullOrWhiteSpace(agentDto.SubChannelCode) &&
+            string.IsNullOrWhiteSpace(agentDto.MobileNo) &&
+            string.IsNullOrWhiteSpace(agentDto.Email))
             {
                 throw new ArgumentException("At least one search parameter must be provided.");
             }
@@ -303,6 +305,14 @@ namespace HMS.Controllers
             else if (!string.IsNullOrWhiteSpace(agentDto.SubChannelCode))
             {
                 query = query.Where(a => a.SubChannelCode == agentDto.SubChannelCode);
+            }
+            else if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
+            {
+                query = query.Where(a => a.MobileNo == agentDto.MobileNo);
+            }
+            else if (!string.IsNullOrWhiteSpace(agentDto.Email))
+            {
+                query = query.Where(a => a.Email == agentDto.Email);
             }
             Agent? agent = await query.FirstOrDefaultAsync();
             if (agent != null)

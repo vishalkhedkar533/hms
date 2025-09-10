@@ -18,7 +18,7 @@ namespace HMS.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    
+
     public class AuthController : ControllerBase
     {
         private readonly HMSContext _context;
@@ -60,7 +60,7 @@ namespace HMS.Controllers
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
                 response.responseHeader.ErrorCode = LoginConstants.ACCOUNT_LOCKED;
-                response.responseHeader.ErrorMessage = string.Format( errorMsg, user.lockoutendtime.Value.ToLocalTime());
+                response.responseHeader.ErrorMessage = string.Format(errorMsg, user.lockoutendtime.Value.ToLocalTime());
                 return Unauthorized(response);
             }
 
@@ -141,10 +141,12 @@ namespace HMS.Controllers
             {
                 expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)).UtcDateTime;
             }
-            response.responseBody.loginResponse = new LoginResponse { Token = token, 
+            response.responseBody.loginResponse = new LoginResponse
+            {
+                Token = token,
                 Expiration = expTime.LocalDateTime,
                 UserId = user.UserId,
-                Username  = user.Username
+                Username = user.Username
             };
             return Ok(response);
         }
@@ -184,13 +186,85 @@ namespace HMS.Controllers
         [AllowAnonymous]
         public async Task<ActionResult> GetOTP_To_UnLock([FromBody] LoginRequest request)
         {
-            HmsResponse response = new HmsResponse();
+            OtpResponse response = new OtpResponse();
 
-            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-            response.responseHeader.ErrorMessage = await _context.errorMaster
-                .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
-                .Select(x => x.ErrorMsg)
-                .FirstOrDefaultAsync() ?? "Undefined Message";
+            User user = await _context.Users.Where(u => u.Username == request.Username).FirstOrDefaultAsync();
+            if (user != null)
+            {
+                if (user.failedloginattempts >= 5 || user.IsLocked)
+                {
+                    Random rnd = new Random();
+                    string otp = rnd.Next(1000, 9999).ToString();
+                    EmailService emailService = new EmailService(_config);
+                    var message = new MailMessage("donotreply@hms.com", user.EmailId);
+                    message.Subject = "OTP - Account Unlocked";
+                    message.Body = _fileService.GetTemplate(Path.Combine("Templates", "Mail"), "otp.html").Replace("{{OTP}}", otp).Replace("{{User}}", user.Username);
+                    message.IsBodyHtml = true;
+                    await emailService.SendEmailAsync(message);
+                    response.responseBody = new OtpResponseBody
+                    {
+                        username = user.Username,
+                        otp = otp
+                    };
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "An OTP has been sent to your registered email address. Please check your email to proceed with unlocking your account.";
+                }
+                else
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "The user account is currently active and accessible.";
+                }
+            }
+            else
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "No matching user record was found in the system.";
+            }
+
+
+            //response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            //response.responseHeader.ErrorMessage = await _context.errorMaster
+            //    .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+            //    .Select(x => x.ErrorMsg)
+            //    .FirstOrDefaultAsync() ?? "Undefined Message";
+            return Ok(response);
+        }
+
+        [HttpPost("ConfirmOTP_To_UnLock")]
+        [AllowAnonymous]
+        public async Task<ActionResult> ConfirmOTP_To_UnLock([FromBody] LoginRequest request)
+        {
+            HmsResponse response = new HmsResponse();
+            User user = await _context.Users.Where(u => u.Username == request.Username).FirstOrDefaultAsync();
+            if (user != null)
+            {
+                if (user.failedloginattempts >= 5 || user.IsLocked)
+                {
+                    user.IsLocked = false;
+                    user.IsActive = true;
+                    user.failedloginattempts = 0;
+                    user.ModifiedDate = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    EmailService emailService = new EmailService(_config);
+                    var message = new MailMessage("donotreply@hms.com", user.EmailId);
+                    message.Subject = "Account Unlocked";
+                    message.Body = _fileService.GetTemplate(Path.Combine("Templates", "Mail"), "accountunlocked.html").Replace("{{User}}", user.Username);
+                    message.IsBodyHtml = true;
+                    await emailService.SendEmailAsync(message);
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Your account has been successfully unlocked. You can now log in using your credentials.";
+                }
+                else
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "The user account is currently active and accessible.";
+                }
+            }
+            else
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "No matching user record was found in the system.";
+            }
             return Ok(response);
         }
     }

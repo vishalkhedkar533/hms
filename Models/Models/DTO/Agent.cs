@@ -43,6 +43,8 @@ namespace Models.DTO
         public int? RowVersion { get; set; }
         public bool IsActive { get; set; } = true;
         public string? PanNumber { get; set; }
+        public string? Email { get; set; }
+        public string? MobileNo { get; set; }
     }
 
     public static class AgentMapper
@@ -88,7 +90,9 @@ namespace Models.DTO
                 Nationality = agent.Nationality,
                 PreferredLanguage = agent.PreferredLanguage,
                 MaskedPanNumber = MaskingHelper.MaskPan(agent.PanNumber),
-                PanNumber = string.Empty
+                PanNumber = string.Empty,
+                Email = agent.Email,
+                MobileNo = agent.MobileNo
             };
         }
     }

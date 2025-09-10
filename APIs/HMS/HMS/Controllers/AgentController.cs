@@ -354,12 +354,25 @@ namespace HMS.Controllers
         }
 
         #region Agent Details
-        [HttpPost("AgetList")]
-        //[MenuAuthorize(1001)]
-        public async Task<ActionResult<AgentDto>> AgetList([FromBody] string AgentCode)
+        [HttpGet("AgentList")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<AgentDto>> AgetList()
+        {
+            //var agent = await _context.Agents.Where(u => u.AgentCode == AgentCode).ToListAsync();
+            var agent = await _context.Agents.ToListAsync();
+            // var agent = await _context.Agents.FindAsync(userid);
+            if (agent == null)
+                return NotFound();
+
+            return Ok(agent); ;
+        }
+        [HttpGet("AgentByCode")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<AgentDto>> GetAgentByCode(string AgentCode)
         {
             var agent = await _context.Agents.Where(u => u.AgentCode == AgentCode).ToListAsync();
-           // var agent = await _context.Agents.FindAsync(userid);
+            //var agent = await _context.Agents.ToListAsync();
+            // var agent = await _context.Agents.FindAsync(userid);
             if (agent == null)
                 return NotFound();
 

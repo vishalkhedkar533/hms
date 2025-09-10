@@ -5,7 +5,7 @@
     <!-- Ensures correct rendering on mobile -->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>OTP</title>
+    <title>Account Locked</title>
 
     <!-- Preheader text (inbox preview) -->
     <meta name="description" content="Short preview of your email…">
@@ -134,7 +134,7 @@
 <body id="body" class="bg-body" bgcolor="#f3f5f9" style="background:#f3f5f9; margin:0; padding:0;">
     <!-- Preheader (hidden in body, shown in inbox preview) -->
     <div style="display:none; max-height:0; overflow:hidden; mso-hide:all;">
-        OTP
+        Account Unlocked
     </div>
 
     <!-- Full-Width Wrapper -->
@@ -146,13 +146,28 @@
                     <!-- Main Copy -->
                     <tr>
                         <td class="px-sm p-sm fallback-font text" style="padding:24px 32px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color:#2b2f36; font-size:16px; line-height:24px;">
+                            <h1 class="h1" style="margin:0 0 12px; font-size:28px; line-height:36px; font-weight:700; color:#111318;"> Account Unlocked</h1>
                             <p style="margin:0 0 16px;">Dear {{User}},</p>
                             <p style="margin:0 0 16px;">
-                                OTP to Reset your password is {{OTP}}.
+                                Please Note: Your HMS application account has been successfully unlocked. You may now proceed with accessing and using your account as usual.
                             </p>
-                            <p style="margin:0 0 16px;">
-                                If you have not attempted to reset the password, please contact the admin.
-                            </p>
+                        </td>
+                    </tr>
+                    <!-- CTA Button (Bulletproof with VML for Outlook) -->
+                    <tr>
+                        <td align="center" style="padding:4px 32px 28px;">
+                            <!--[if mso]>
+                            <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" href="https://example.com/get-started" style="height:44px;v-text-anchor:middle;width:220px;" arcsize="12%" stroke="f" fillcolor="#0f62fe">
+                              <w:anchorlock/>
+                              <center style="color:#ffffff; font-family:Arial, sans-serif; font-size:16px; font-weight:bold;">Get Started</center>
+                            </v:roundrect>
+                            <![endif]-->
+                            <!--[if !mso]><!-- -->
+                            <!-- <a class="btn" href="https://example.com/get-started" target="_blank" -->
+                            <!-- style="background:#0f62fe; border-radius:8px; padding:12px 20px; font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:15px; font-weight:700; color:#ffffff; display:inline-block;"> -->
+                            <!-- Reset Password -->
+                            <!-- </a> -->
+                            <!--<![endif]-->
                         </td>
                     </tr>
                     <!-- Callout Card -->

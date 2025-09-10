@@ -169,6 +169,13 @@ namespace Models.DB
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
 
+        [StringLength(50)]
+        [Column("email")]
+        public string? Email { get; set; }
+        [StringLength(20)]
+        [Column("mobileno")]
+        public string? MobileNo { get; set; }
+
         // 🔗 Navigation property
         [ForeignKey(nameof(SupervisorId))]
         public Agent? Supervisor { get; set; }

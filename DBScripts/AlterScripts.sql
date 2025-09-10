@@ -42,3 +42,7 @@ ALTER TABLE hms.agent ALTER COLUMN agent_id DROP DEFAULT;
 
 -- Attach identity (auto-increment) to existing column
 ALTER TABLE hms.agent ALTER COLUMN agent_id ADD GENERATED ALWAYS AS IDENTITY;
+
+ALTER TABLE hms.agent
+ADD COLUMN Email VARCHAR(50),
+ADD COLUMN MobileNo VARCHAR(20);

@@ -9,6 +9,7 @@
     public static class CommonConstants //11x series
     {
         public const int SUCCESS = 1101;
+        public const int FAILED = 4001;
     }
     public static class AgentConstants //12x series
     {

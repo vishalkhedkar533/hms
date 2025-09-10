@@ -29,4 +29,16 @@ namespace Models.DTO
         public string? Username { get; set; }
         public string? Role { get; set; }
     }
+
+    public class OtpResponse
+    {
+        public HmsSResponseHeader responseHeader { get; set; } = new HmsSResponseHeader();
+        public OtpResponseBody responseBody { get; set; } = new OtpResponseBody();
+    }
+    public class OtpResponseBody
+    {
+        public string username { get; set; }
+        public string otp { get; set; }
+        
+    }
 }

@@ -265,7 +265,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Search")]
-        //[MenuAuthorize(1001)]
+        [MenuAuthorize(1001)]
         public async Task<IActionResult> Search([FromBody] SearchAgent agentDto)
         {
             HmsResponse hMSResponse = new HmsResponse();

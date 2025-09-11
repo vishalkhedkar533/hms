@@ -107,12 +107,14 @@ namespace Models.DTO
 
     public class SearchAgent
     {
-        public string AgentCode { get; set; } = null!;
-        public string? AgentName { get; set; }
-        public string? ChannelCode { get; set; }
-        public string? SubChannelCode { get; set; }
-        public string? PanNumber { get; set; }
-        public string? Email { get; set; }
-        public string? MobileNo { get; set; }
+        public string? SearchCondition { get; set; }
+        public string? Zone { get; set; }
+        //public string AgentCode { get; set; } = null!;
+        //public string? AgentName { get; set; }
+        //public string? ChannelCode { get; set; }
+        //public string? SubChannelCode { get; set; }
+        //public string? PanNumber { get; set; }
+        //public string? Email { get; set; }
+        //public string? MobileNo { get; set; }
     }
 }

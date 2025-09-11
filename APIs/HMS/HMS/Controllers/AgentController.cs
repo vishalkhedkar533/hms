@@ -20,7 +20,7 @@ namespace HMS.Controllers
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
         public AgentController(HMSContext context, IConfiguration config, IMapper mapper)
-            {
+        {
             _context = context;
             _config = config;
             _mapper = mapper;
@@ -269,60 +269,78 @@ namespace HMS.Controllers
         public async Task<IActionResult> Search([FromBody] SearchAgent agentDto)
         {
             HmsResponse hMSResponse = new HmsResponse();
-            List <AgentDto> agents = new List<AgentDto>();
+            List<AgentDto> agents = new List<AgentDto>();
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (string.IsNullOrWhiteSpace(agentDto.AgentCode) &&
-            string.IsNullOrWhiteSpace(agentDto.AgentName) &&
-            string.IsNullOrWhiteSpace(agentDto.PanNumber) &&
-            string.IsNullOrWhiteSpace(agentDto.ChannelCode) &&
-            string.IsNullOrWhiteSpace(agentDto.SubChannelCode) &&
-            string.IsNullOrWhiteSpace(agentDto.MobileNo) &&
-            string.IsNullOrWhiteSpace(agentDto.Email))
+            if (string.IsNullOrWhiteSpace(agentDto.SearchCondition) &&
+            string.IsNullOrWhiteSpace(agentDto.Zone))
             {
                 throw new ArgumentException("At least one search parameter must be provided.");
             }
-
             var query = _context.Agents.AsQueryable();
+            if (!string.IsNullOrWhiteSpace(agentDto.SearchCondition))
+            {
+                query = query.Where(a => a.AgentCode == agentDto.SearchCondition ||
+                                         a.AgentName == agentDto.SearchCondition ||
+                                         a.PanNumber == agentDto.SearchCondition ||
+                                         a.ChannelCode == agentDto.SearchCondition ||
+                                         a.SubChannelCode == agentDto.SearchCondition ||
+                                         a.MobileNo == agentDto.SearchCondition ||
+                                         a.Email == agentDto.SearchCondition);
+            }
 
-            if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
-            {
-                query = query.Where(a => a.AgentCode == agentDto.AgentCode);
-            }
-            else if (!string.IsNullOrWhiteSpace(agentDto.AgentName))
-            {
-                query = query.Where(a => a.AgentName == agentDto.AgentName);
-            }
-            else if (!string.IsNullOrWhiteSpace(agentDto.PanNumber))
-            {
-                query = query.Where(a => a.PanNumber == agentDto.PanNumber);
-            }
-            else if (!string.IsNullOrWhiteSpace(agentDto.ChannelCode))
-            {
-                query = query.Where(a => a.ChannelCode == agentDto.ChannelCode);
-            }
-            else if (!string.IsNullOrWhiteSpace(agentDto.SubChannelCode))
-            {
-                query = query.Where(a => a.SubChannelCode == agentDto.SubChannelCode);
-            }
-            else if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
-            {
-                query = query.Where(a => a.MobileNo == agentDto.MobileNo);
-            }
-            else if (!string.IsNullOrWhiteSpace(agentDto.Email))
-            {
-                query = query.Where(a => a.Email == agentDto.Email);
-            }
+            //if (string.IsNullOrWhiteSpace(agentDto.AgentCode) &&
+            //string.IsNullOrWhiteSpace(agentDto.AgentName) &&
+            //string.IsNullOrWhiteSpace(agentDto.PanNumber) &&
+            //string.IsNullOrWhiteSpace(agentDto.ChannelCode) &&
+            //string.IsNullOrWhiteSpace(agentDto.SubChannelCode) &&
+            //string.IsNullOrWhiteSpace(agentDto.MobileNo) &&
+            //string.IsNullOrWhiteSpace(agentDto.Email))
+            //{
+            //    throw new ArgumentException("At least one search parameter must be provided.");
+            //}
+
+            //var query = _context.Agents.AsQueryable();
+
+            //if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
+            //{
+            //    query = query.Where(a => a.AgentCode == agentDto.AgentCode);
+            //}
+            //else if (!string.IsNullOrWhiteSpace(agentDto.AgentName))
+            //{
+            //    query = query.Where(a => a.AgentName == agentDto.AgentName);
+            //}
+            //else if (!string.IsNullOrWhiteSpace(agentDto.PanNumber))
+            //{
+            //    query = query.Where(a => a.PanNumber == agentDto.PanNumber);
+            //}
+            //else if (!string.IsNullOrWhiteSpace(agentDto.ChannelCode))
+            //{
+            //    query = query.Where(a => a.ChannelCode == agentDto.ChannelCode);
+            //}
+            //else if (!string.IsNullOrWhiteSpace(agentDto.SubChannelCode))
+            //{
+            //    query = query.Where(a => a.SubChannelCode == agentDto.SubChannelCode);
+            //}
+            //else if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
+            //{
+            //    query = query.Where(a => a.MobileNo == agentDto.MobileNo);
+            //}
+            //else if (!string.IsNullOrWhiteSpace(agentDto.Email))
+            //{
+            //    query = query.Where(a => a.Email == agentDto.Email);
+            //}
             Agent? agent = await query.FirstOrDefaultAsync();
             if (agent != null)
-            { 
+            {
                 agents.Add(AgentMapper.ToDto(agent));
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
-                    .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "LoginConstants")
-                    .Select(x => x.ErrorMsg)
-                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                //await _context.errorMaster
+                //    .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "LoginConstants")
+                //    .Select(x => x.ErrorMsg)
+                //    .FirstOrDefaultAsync() ?? "Undefined Error Message";
                 hMSResponse.responseBody.agents = agents;
             }
             else

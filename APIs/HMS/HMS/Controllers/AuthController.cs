@@ -2,6 +2,7 @@
 using Communication;
 using HMS.Data;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -17,6 +18,7 @@ namespace HMS.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    
     public class AuthController : ControllerBase
     {
         private readonly HMSContext _context;
@@ -30,6 +32,7 @@ namespace HMS.Controllers
         }
         [HttpPost("login")]
         [AllowAnonymous]
+        //[EnableCors("AllowLocalhost3000")]
         public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
             HmsResponse response = new HmsResponse();

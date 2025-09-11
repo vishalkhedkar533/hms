@@ -191,29 +191,21 @@ namespace HMS.Controllers
             User user = await _context.Users.Where(u => u.Username == request.Username).FirstOrDefaultAsync();
             if (user != null)
             {
-                if (user.failedloginattempts >= 5 || user.IsLocked)
+                Random rnd = new Random();
+                string otp = rnd.Next(1000, 9999).ToString();
+                EmailService emailService = new EmailService(_config);
+                var message = new MailMessage("donotreply@hms.com", user.EmailId);
+                message.Subject = "OTP - Account Unlocked";
+                message.Body = _fileService.GetTemplate(Path.Combine("Templates", "Mail"), "otp.html").Replace("{{OTP}}", otp).Replace("{{User}}", user.Username);
+                message.IsBodyHtml = true;
+                await emailService.SendEmailAsync(message);
+                response.responseBody = new OtpResponseBody
                 {
-                    Random rnd = new Random();
-                    string otp = rnd.Next(1000, 9999).ToString();
-                    EmailService emailService = new EmailService(_config);
-                    var message = new MailMessage("donotreply@hms.com", user.EmailId);
-                    message.Subject = "OTP - Account Unlocked";
-                    message.Body = _fileService.GetTemplate(Path.Combine("Templates", "Mail"), "otp.html").Replace("{{OTP}}", otp).Replace("{{User}}", user.Username);
-                    message.IsBodyHtml = true;
-                    await emailService.SendEmailAsync(message);
-                    response.responseBody = new OtpResponseBody
-                    {
-                        username = user.Username,
-                        otp = otp
-                    };
-                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                    response.responseHeader.ErrorMessage = "An OTP has been sent to your registered email address. Please check your email to proceed with unlocking your account.";
-                }
-                else
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                    response.responseHeader.ErrorMessage = "The user account is currently active and accessible.";
-                }
+                    username = user.Username,
+                    otp = otp
+                };
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "An OTP has been sent to your registered email address. Please check your email to proceed with unlocking your account.";
             }
             else
             {

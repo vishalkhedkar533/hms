@@ -1307,3 +1307,4 @@ CREATE TABLE applogs.applog_filter_policy (
 
 DROP TABLE hms.applog;
 DROP TABLE hms.applog_filter_policy;
+

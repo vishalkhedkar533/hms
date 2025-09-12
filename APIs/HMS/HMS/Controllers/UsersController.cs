@@ -50,11 +50,11 @@ namespace HMS.Controllers
 
             return Ok(new { message = "User created successfully", user.UserId });
         }
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         [HttpPost("UpdatePassword")]
         public async Task<ActionResult> UpdatePassword(UpdateUser request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
             if (user == null)
             {
                 return NotFound("User not found.");
@@ -87,7 +87,7 @@ namespace HMS.Controllers
         [HttpPost("ActivateDeactivateUser")]
         public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
         {
-            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
+            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
             if (currentUser == null)
             {
                 return NotFound();
@@ -106,7 +106,7 @@ namespace HMS.Controllers
         [HttpPost("LockUnlockUser")]
         public async Task<ActionResult<User>> LockUnlockUser(UpdateUser request)
         {
-            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.UserId == request.UserId);
+            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
             if (currentUser == null)
             {
                 return NotFound();

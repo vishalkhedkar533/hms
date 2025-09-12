@@ -370,7 +370,7 @@ namespace HMS.Controllers
             var result = _mapper.Map<AgentDto>(agent);
             return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
         }
-        [HttpGet("{id:int}")]
+        [HttpPost("{id:int}")]
         [MenuAuthorize(1001)]
         public async Task<ActionResult<AgentDto>> GetAgentById(int id)
         {
@@ -382,7 +382,7 @@ namespace HMS.Controllers
         }
 
         #region Agent Details
-        [HttpGet("AgentList")]
+        [HttpPost("AgentList")]
         [MenuAuthorize(1001)]
         public async Task<ActionResult<AgentDto>> AgetList()
         {
@@ -394,7 +394,7 @@ namespace HMS.Controllers
 
             return Ok(agent); ;
         }
-        [HttpGet("AgentByCode")]
+        [HttpPost("AgentByCode")]
         [MenuAuthorize(1001)]
         public async Task<ActionResult<AgentDto>> GetAgentByCode(string AgentCode)
         {

@@ -9,12 +9,19 @@ import { authStore } from '@/store/authStore'
 import { BiSearch } from 'react-icons/bi'
 import { useAuth } from '@/hooks/useAuth'
 import ZoneList from '@/components/dashboard/ZoneList'
+import DataTable from '@/components/table/DataTable'
+import { tableData } from '@/utils/utilities'
+import { Link, useNavigate } from '@tanstack/react-router'
 
 export default function SearchInterface() {
   const [searchQuery, setSearchQuery] = useState('')
-  const { user } = useAuth() 
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [selectedZone, setSelectedZone] = useState('All Zone')
-
+  const [isShowtable, setisShowtable] = useState(false)
+  const handleClick = (agentid: string) => {
+    navigate({ to: '/search/$agentId', params: { agentId: agentid } })
+  }
   const moduleCards = [
     {
       id: 'hms',
@@ -52,7 +59,22 @@ export default function SearchInterface() {
       isActive: false,
     },
   ]
-
+  const columns = [
+    {
+      header: 'Agent ID',
+      accessor: (row: any) => (
+        <span
+          onClick={() => handleClick(row.agentid)}
+          className="text-blue-700 underline font-medium cursor-pointer"
+        >
+          {row.agentid}
+        </span>
+      ),
+    },
+    { header: 'Requested By', accessor: 'requestedby' },
+    { header: 'Date', accessor: 'date' },
+    { header: 'Current Branch', accessor: 'currentBranch' },
+  ]
   return (
     <Card>
       <CardContent>
@@ -67,7 +89,7 @@ export default function SearchInterface() {
               system.
             </p>
             <p className="text-sm text-gray-500">
-              Powered by :- {user ? user.username :' Not Logged In'}
+              Powered by :- {user ? user.username : ' Not Logged In'}
             </p>
           </div>
           <div className=" flex justify-center  gap-4">
@@ -83,13 +105,18 @@ export default function SearchInterface() {
                 placeholder="Search by Agent Code, Name, Mobile Number, Email, PAN"
                 className="w-full !pl-10 !pr-[9rem] !py-5 "
               />
-                <div className="absolute  inset-y-0 right-1 pl-3 flex items-center">
-              <Button variant="blue" onClick={()=>showToast("info",'hitt')} className='px-10' size='sm'>
-                Search
-              </Button>
+              <div className="absolute  inset-y-0 right-1 pl-3 flex items-center">
+                <Button
+                  variant="blue"
+                  onClick={() => setisShowtable(!isShowtable)}
+                  className="px-10"
+                  size="sm"
+                >
+                  Search
+                </Button>
               </div>
             </div>
-               <ZoneList/>
+            <ZoneList />
           </div>
 
           {/* Module Cards */}
@@ -110,16 +137,15 @@ export default function SearchInterface() {
                         {module.title}
                       </span>
                     </div>
-                    <IoIosArrowRoundForward
-                      className={`h-6 w-6 `}
-                    />
+                    <IoIosArrowRoundForward className={`h-6 w-6 `} />
                   </div>
                 </div>
               )
             })}
           </div>
-
-        
+        </div>
+        <div className={`mt-5 px-20 ${isShowtable ? 'block' : 'hidden'}`}>
+          <DataTable columns={columns} data={tableData} />
         </div>
       </CardContent>
     </Card>

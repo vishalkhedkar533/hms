@@ -192,6 +192,7 @@ namespace HMS.Controllers
 
             if (user != null)
             {
+
                 bool isOldPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.Password);
                 if (!isOldPasswordValid)
                 {
@@ -199,6 +200,7 @@ namespace HMS.Controllers
                 }
                 //if (user.failedloginattempts >= 5 || user.IsLocked)
                 //{
+
                 Random rnd = new Random();
                 string otp = rnd.Next(1000, 9999).ToString();
                 EmailService emailService = new EmailService(_config);
@@ -214,12 +216,7 @@ namespace HMS.Controllers
                 };
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "An OTP has been sent to your registered email address. Please check your email to proceed with unlocking your account.";
-                //}
-                //else
-                //{
-                //    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                //    response.responseHeader.ErrorMessage = "The user account is currently active and accessible.";
-                //}
+
             }
             else
             {

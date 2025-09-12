@@ -1,0 +1,15 @@
+{
+  "ConnectionStringKey": "HMSContext",
+  "Entities": {
+    "Agent": {
+      "Insert": {
+        "Function": "hms.insert_agent",
+        "Script": "SELECT * FROM hms.insert_agent(@AgentCode, @AgentTypeCode, @AgentSubTypeCode, @AgentName, @BusinessName, @FirstName, @MiddleName, @LastName, @Prefix, @Suffix, @Gender, @Dob, @Nationality, @MaritalStatusCode, @PreferredLanguage, @ChannelCode, @SubChannelCode, @DesignationCode, @AgentLevel, @LocationCode, @StaffCode, @SupervisorCode, @ContractedDate, @AgentStatusCode, @StatusDate, @IsLicensed, @PanNumber, @AadhaarNumber, @IrdaLicenseNumber, @GstNumber, @Email, @MobileNo, @CreatedBy)"
+      },
+      "Search": {
+        "Function": "hms.search_agents",
+        "Script": "SELECT * FROM hms.search_agents(@AgentName, @Email, @MobileNo, @PanNumber, @AadhaarNumber, @IrdaLicenseNumber, @GstNumber, @PageNo, @PageSize, @SortColumn, @SortDirection)"
+      }
+    }
+  }
+}

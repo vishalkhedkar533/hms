@@ -2,6 +2,7 @@
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
+using HMS.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -61,6 +62,7 @@ builder.Services.AddSingleton<FileService>(sp =>
     var env = sp.GetRequiredService<IWebHostEnvironment>();
     return new FileService(env.ContentRootPath);
 });
+
 // Register custom logger provider
 builder.Services.AddSingleton<ILoggerProvider>(sp =>
     new AppLogLoggerProvider(
@@ -68,19 +70,40 @@ builder.Services.AddSingleton<ILoggerProvider>(sp =>
         sp.GetRequiredService<AppLogFilterState>(),
         sp.GetRequiredService<IHttpContextAccessor>()
     ));
-// Generic cache service
+
+// ----------------------------
+// Database Connections
+// ----------------------------
+// PostgreSQL
 builder.Services.AddScoped<NpgsqlConnection>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
-    var conn = new NpgsqlConnection(config.GetConnectionString("HMSContext"));
-    return conn;
+    return new NpgsqlConnection(config.GetConnectionString("HMSContext"));
 });
 
+// Oracle
+//builder.Services.AddScoped<OracleConnection>(sp =>
+//{
+//    var config = sp.GetRequiredService<IConfiguration>();
+//    return new OracleConnection(config.GetConnectionString("OracleContext"));
+//});
+
+// SQL Server
+//builder.Services.AddScoped<SqlConnection>(sp =>
+//{
+//    var config = sp.GetRequiredService<IConfiguration>();
+//    return new SqlConnection(config.GetConnectionString("SqlServerContext"));
+//});
+
+// ----------------------------
+// Services
+// ----------------------------
 builder.Services.AddScoped<GenericCacheService>();
+builder.Services.AddScoped<DatabaseService>(); // ✅ new consolidated service
+
 // ----------------------------
 // Background services
 // ----------------------------
-// Refresh filter from DB
 builder.Services.AddHostedService(sp =>
     new AppLogFilterRefresher(
         sp.GetRequiredService<AppLogFilterState>(),
@@ -88,7 +111,6 @@ builder.Services.AddHostedService(sp =>
     )
 );
 
-// Flush logs to DB
 builder.Services.AddHostedService(sp =>
     new AppLogBackgroundService(
         sp.GetRequiredService<Channel<AppLogEntry>>(),
@@ -101,17 +123,19 @@ builder.Services.AddHostedService<CacheRefreshBackgroundService>();
 // Controllers
 // ----------------------------
 builder.Services.AddControllers();
+
 // Configure CORS policy
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowedSites",
         policy =>
         {
-
-            policy.WithOrigins(builder.Configuration.GetValue<string>("CORS:AllowedSites", string.Empty).Split(';')) // allow only this origin
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
+            policy.WithOrigins(
+                builder.Configuration.GetValue<string>("CORS:AllowedSites", string.Empty).Split(';')
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
         });
 });
 
@@ -209,13 +233,10 @@ var app = builder.Build();
 // ----------------------------
 app.UseHttpsRedirection();
 app.UseRouting();
-// Enable CORS before MapControllers
-app.UseCors("AllowedSites"); 
-
+app.UseCors("AllowedSites");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<WhitelistHeadersMiddleware>();
-
 app.UseRateLimiter();
 
 // ----------------------------

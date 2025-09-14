@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HMS.Controllers
 {
@@ -270,6 +271,14 @@ namespace HMS.Controllers
         [MenuAuthorize(1001)]
         public async Task<IActionResult> Search([FromBody] SearchAgent agentDto)
         {
+            /*
+            curl--location 'http://localhost:5234/api/agent/search' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer ' \
+            --data '{
+              "agentName": "shyam"
+            }'
+            */
             HmsResponse hMSResponse = new HmsResponse();
             List<AgentDto> agents = new List<AgentDto>();
             if (!ModelState.IsValid)

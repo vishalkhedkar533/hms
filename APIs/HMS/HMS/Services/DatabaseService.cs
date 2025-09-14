@@ -22,7 +22,7 @@ namespace HMS.Services
             // Detect provider (PostgreSQL / MSSQL / Oracle)
             _provider = _config.GetValue<string>("DatabaseProvider") ?? "PostgreSQL";
 
-            var mappingFile = Path.Combine(AppContext.BaseDirectory, $"mappings.{_provider.ToLower()}.json");
+            var mappingFile = Path.Combine(AppContext.BaseDirectory,"Mappings", $"mappings.{_provider.ToLower()}.json");
             if (!File.Exists(mappingFile))
                 throw new FileNotFoundException("Database mapping file not found.", mappingFile);
 

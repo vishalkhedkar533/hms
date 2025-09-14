@@ -6,8 +6,8 @@ CREATE OR REPLACE FUNCTION hms.search_agents(
     p_aadhaar_number VARCHAR DEFAULT NULL,
     p_irda_license_number VARCHAR DEFAULT NULL,
     p_gst_number VARCHAR DEFAULT NULL,
-    p_page_number INT DEFAULT 1,
-    p_page_size INT DEFAULT 10,
+    p_page_number BIGINT DEFAULT 1,
+    p_page_size BIGINT DEFAULT 10,
     p_sort_column VARCHAR DEFAULT 'agent_id',
     p_sort_direction VARCHAR DEFAULT 'ASC'
 )
@@ -28,7 +28,15 @@ AS $$
 BEGIN
     RETURN QUERY
     WITH filtered AS (
-        SELECT a.*
+        SELECT a.agent_id,
+               a.agent_code,
+               a.agent_name,
+               a.email,
+               a.mobileno,
+               a.pan_number,
+               a.aadhaar_number,
+               a.irda_license_number,
+               a.gst_number
         FROM hms.agent a
         WHERE (p_agent_name IS NULL OR a.agent_name ILIKE '%' || p_agent_name || '%')
           AND (p_email IS NULL OR a.email ILIKE '%' || p_email || '%')
@@ -41,18 +49,25 @@ BEGIN
     counted AS (
         SELECT COUNT(*) AS total_count FROM filtered
     )
-    SELECT f.agent_id, f.agent_code, f.agent_name, f.email, f.mobileno,
-           f.pan_number, f.aadhaar_number, f.irda_license_number, f.gst_number,
+    SELECT f.agent_id,
+           f.agent_code,
+           f.agent_name,
+           f.email,
+           f.mobileno,
+           f.pan_number,
+           f.aadhaar_number,
+           f.irda_license_number,
+           f.gst_number,
            c.total_count
     FROM filtered f
     CROSS JOIN counted c
     ORDER BY
-        CASE WHEN p_sort_column = 'agent_id' AND p_sort_direction = 'ASC'  THEN f.agent_id END ASC,
-        CASE WHEN p_sort_column = 'agent_id' AND p_sort_direction = 'DESC' THEN f.agent_id END DESC,
-        CASE WHEN p_sort_column = 'agent_name' AND p_sort_direction = 'ASC'  THEN f.agent_name END ASC,
-        CASE WHEN p_sort_column = 'agent_name' AND p_sort_direction = 'DESC' THEN f.agent_name END DESC,
-        CASE WHEN p_sort_column = 'email' AND p_sort_direction = 'ASC'  THEN f.email END ASC,
-        CASE WHEN p_sort_column = 'email' AND p_sort_direction = 'DESC' THEN f.email END DESC
+        CASE WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'ASC'  THEN f.agent_id END ASC,
+        CASE WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'DESC' THEN f.agent_id END DESC,
+        CASE WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'ASC'  THEN f.agent_name END ASC,
+        CASE WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'DESC' THEN f.agent_name END DESC,
+        CASE WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'ASC'  THEN f.email END ASC,
+        CASE WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'DESC' THEN f.email END DESC
     OFFSET (p_page_number - 1) * p_page_size
     LIMIT p_page_size;
 END;

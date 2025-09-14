@@ -38,6 +38,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="Mappings\mappings.postgresql.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Templates\Mail\accountlocked.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

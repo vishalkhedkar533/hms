@@ -1,14 +1,15 @@
 ﻿using AutoMapper;
-using Azure;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
-using System.Collections.Generic;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HMS.Controllers
 {
@@ -19,11 +20,13 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
-        public AgentController(HMSContext context, IConfiguration config, IMapper mapper)
+        private readonly DatabaseService _db;
+        public AgentController(HMSContext context, IConfiguration config, IMapper mapper, DatabaseService db)
         {
             _context = context;
             _config = config;
             _mapper = mapper;
+            _db = db;
         }
 
         [HttpPost("Termination/Request")]
@@ -268,80 +271,54 @@ namespace HMS.Controllers
         [MenuAuthorize(1001)]
         public async Task<IActionResult> Search([FromBody] SearchAgent agentDto)
         {
+            /*
+            curl--location 'http://localhost:5234/api/agent/search' \
+            --header 'Content-Type: application/json' \
+            --header 'Authorization: Bearer ' \
+            --data '{
+              "agentName": "shyam"
+            }'
+            */
             HmsResponse hMSResponse = new HmsResponse();
             List<AgentDto> agents = new List<AgentDto>();
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
-            if (string.IsNullOrWhiteSpace(agentDto.SearchCondition) &&
-            string.IsNullOrWhiteSpace(agentDto.Zone))
+            
+            var agentDtos = await _db.ExecuteQueryAsync<AgentDto>(
+                "Agent",
+                "Search",
+                new
+                {
+                    p_agent_name = agentDto.AgentName,
+                    p_email = agentDto.Email,
+                    p_mobileno = agentDto.MobileNo,
+                    p_pan_number = agentDto.PanNumber,
+                    p_aadhaar_number = agentDto.AadhaarNumber,
+                    p_irda_license_number = agentDto.IrdaLicenseNumber,
+                    p_gst_number = agentDto.GstNumber,
+                    p_page_number = agentDto.PageNo,
+                    p_page_size = agentDto.PageSize,
+                    p_sort_column = agentDto.SortColumn,
+                    p_sort_direction = agentDto.SortDirection
+                });
+            /*
+             *     p_agent_name VARCHAR DEFAULT NULL,
+    p_email VARCHAR DEFAULT NULL,
+    p_mobileno VARCHAR DEFAULT NULL,
+    p_pan_number VARCHAR DEFAULT NULL,
+    p_aadhaar_number VARCHAR DEFAULT NULL,
+    p_irda_license_number VARCHAR DEFAULT NULL,
+    p_gst_number VARCHAR DEFAULT NULL,
+    p_page_number INT DEFAULT 1,
+    p_page_size INT DEFAULT 10,
+    p_sort_column VARCHAR DEFAULT 'agent_id',
+    p_sort_direction VARCHAR DEFAULT 'ASC'
+             */
+            if (agentDtos != null)
             {
-                throw new ArgumentException("At least one search parameter must be provided.");
-            }
-            var query = _context.Agents.AsQueryable();
-            if (!string.IsNullOrWhiteSpace(agentDto.SearchCondition))
-            {
-                query = query.Where(a => a.AgentCode == agentDto.SearchCondition ||
-                                         a.AgentName == agentDto.SearchCondition ||
-                                         a.PanNumber == agentDto.SearchCondition ||
-                                         a.ChannelCode == agentDto.SearchCondition ||
-                                         a.SubChannelCode == agentDto.SearchCondition ||
-                                         a.MobileNo == agentDto.SearchCondition ||
-                                         a.Email == agentDto.SearchCondition);
-            }
-
-            //if (string.IsNullOrWhiteSpace(agentDto.AgentCode) &&
-            //string.IsNullOrWhiteSpace(agentDto.AgentName) &&
-            //string.IsNullOrWhiteSpace(agentDto.PanNumber) &&
-            //string.IsNullOrWhiteSpace(agentDto.ChannelCode) &&
-            //string.IsNullOrWhiteSpace(agentDto.SubChannelCode) &&
-            //string.IsNullOrWhiteSpace(agentDto.MobileNo) &&
-            //string.IsNullOrWhiteSpace(agentDto.Email))
-            //{
-            //    throw new ArgumentException("At least one search parameter must be provided.");
-            //}
-
-            //var query = _context.Agents.AsQueryable();
-
-            //if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
-            //{
-            //    query = query.Where(a => a.AgentCode == agentDto.AgentCode);
-            //}
-            //else if (!string.IsNullOrWhiteSpace(agentDto.AgentName))
-            //{
-            //    query = query.Where(a => a.AgentName == agentDto.AgentName);
-            //}
-            //else if (!string.IsNullOrWhiteSpace(agentDto.PanNumber))
-            //{
-            //    query = query.Where(a => a.PanNumber == agentDto.PanNumber);
-            //}
-            //else if (!string.IsNullOrWhiteSpace(agentDto.ChannelCode))
-            //{
-            //    query = query.Where(a => a.ChannelCode == agentDto.ChannelCode);
-            //}
-            //else if (!string.IsNullOrWhiteSpace(agentDto.SubChannelCode))
-            //{
-            //    query = query.Where(a => a.SubChannelCode == agentDto.SubChannelCode);
-            //}
-            //else if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
-            //{
-            //    query = query.Where(a => a.MobileNo == agentDto.MobileNo);
-            //}
-            //else if (!string.IsNullOrWhiteSpace(agentDto.Email))
-            //{
-            //    query = query.Where(a => a.Email == agentDto.Email);
-            //}
-            Agent? agent = await query.FirstOrDefaultAsync();
-            if (agent != null)
-            {
-                agents.Add(AgentMapper.ToDto(agent));
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                //await _context.errorMaster
-                //    .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "LoginConstants")
-                //    .Select(x => x.ErrorMsg)
-                //    .FirstOrDefaultAsync() ?? "Undefined Error Message";
-                hMSResponse.responseBody.agents = agents;
+                hMSResponse.responseBody.agents = agentDtos.ToList();
             }
             else
             {
@@ -351,7 +328,7 @@ namespace HMS.Controllers
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
             }
-            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+            return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
         [HttpPost("Create")]
         [MenuAuthorize(1001)]

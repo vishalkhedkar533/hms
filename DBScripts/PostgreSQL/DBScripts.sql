@@ -1307,3 +1307,29 @@ CREATE TABLE applogs.applog_filter_policy (
 
 DROP TABLE hms.applog;
 DROP TABLE hms.applog_filter_policy;
+
+
+
+-- Index for searching by agent_name (case-insensitive)
+CREATE INDEX idx_agent_name ON hms.agent (LOWER(agent_name));
+
+-- Index for searching by email (case-insensitive)
+CREATE INDEX idx_agent_email ON hms.agent (LOWER(email));
+
+-- Index for searching by mobile no (exact match)
+CREATE INDEX idx_agent_mobileno ON hms.agent (mobileno);
+
+-- Index for searching by PAN (exact match)
+CREATE INDEX idx_agent_pan ON hms.agent (pan_number);
+
+-- Index for searching by Aadhaar (exact match)
+CREATE INDEX idx_agent_aadhaar ON hms.agent (aadhaar_number);
+
+-- Index for searching by IRDA license (exact match)
+CREATE INDEX idx_agent_irda ON hms.agent (irda_license_number);
+
+-- Index for searching by GST number (exact match)
+CREATE INDEX idx_agent_gst ON hms.agent (gst_number);
+
+-- Optional: Index to speed up ordering by created_date (useful if frequently sorted by date)
+CREATE INDEX idx_agent_created_date ON hms.agent (created_date DESC);

@@ -279,23 +279,27 @@ namespace HMS.Controllers
               "agentName": "shyam"
             }'
             */
+
+            if (agentDto.PageNo == 0)
+            {
+                agentDto.PageNo = 1;
+            }
+            if (agentDto.PageSize == 0)
+            {
+                agentDto.PageSize = 10;
+            }
             HmsResponse hMSResponse = new HmsResponse();
-            List<AgentDto> agents = new List<AgentDto>();
+            // List<AgentDto> agents = new List<AgentDto>();
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-            
-            var agentDtos = await _db.ExecuteQueryAsync<AgentDto>(
+
+            var agentDtos = await _db.ExecuteQueryAsync<AgentDtoResponse>(
                 "Agent",
-                "Search",
+                "Search1",
                 new
                 {
-                    p_agent_name = agentDto.AgentName,
-                    p_email = agentDto.Email,
-                    p_mobileno = agentDto.MobileNo,
-                    p_pan_number = agentDto.PanNumber,
-                    p_aadhaar_number = agentDto.AadhaarNumber,
-                    p_irda_license_number = agentDto.IrdaLicenseNumber,
-                    p_gst_number = agentDto.GstNumber,
+                    p_searchcondition = agentDto.SearchCondition,
+                    p_zone = agentDto.Zone,
                     p_page_number = agentDto.PageNo,
                     p_page_size = agentDto.PageSize,
                     p_sort_column = agentDto.SortColumn,
@@ -347,11 +351,12 @@ namespace HMS.Controllers
             var result = _mapper.Map<AgentDto>(agent);
             return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
         }
-        [HttpPost("{id:int}")]
+        [HttpPost("AgentById")]
+        //[HttpPost("{id:int}")]
         [MenuAuthorize(1001)]
-        public async Task<ActionResult<AgentDto>> GetAgentById(int id)
+        public async Task<ActionResult<AgentDto>> GetAgentById(SearchAgent agentDto)
         {
-            var agent = await _context.Agents.FindAsync(id);
+            var agent = await _context.Agents.FindAsync(agentDto.AgentId);
             if (agent == null)
                 return NotFound();
 
@@ -373,9 +378,9 @@ namespace HMS.Controllers
         }
         [HttpPost("AgentByCode")]
         [MenuAuthorize(1001)]
-        public async Task<ActionResult<AgentDto>> GetAgentByCode(string AgentCode)
+        public async Task<ActionResult<AgentDto>> GetAgentByCode(SearchAgent agentDto)
         {
-            var agent = await _context.Agents.Where(u => u.AgentCode == AgentCode).ToListAsync();
+            var agent = await _context.Agents.Where(u => u.AgentCode == agentDto.AgentCode).ToListAsync();
             //var agent = await _context.Agents.ToListAsync();
             // var agent = await _context.Agents.FindAsync(userid);
             if (agent == null)

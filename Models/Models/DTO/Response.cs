@@ -18,7 +18,8 @@ namespace Models.DTO
     {
         public LoginResponse? loginResponse { get; set; } = null;
         public HMSDashboard? hmsDashboard { get; set; } = null;
-        public List<AgentDto>? agents { get; set; } = null;
+        public List<AgentDtoResponse>? agents { get; set; } = null;
+        //public List<AgentDto>? agents { get; set; } = null;
     }
 
     public class LoginResponse

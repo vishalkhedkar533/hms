@@ -1,42 +1,40 @@
-CREATE OR REPLACE FUNCTION hms.search_agents(
-    p_agent_name VARCHAR DEFAULT NULL,
-    p_email VARCHAR DEFAULT NULL,
-    p_mobileno VARCHAR DEFAULT NULL,
-    p_pan_number VARCHAR DEFAULT NULL,
-    p_aadhaar_number VARCHAR DEFAULT NULL,
-    p_irda_license_number VARCHAR DEFAULT NULL,
-    p_gst_number VARCHAR DEFAULT NULL,
-    p_page_number BIGINT DEFAULT 1,
-    p_page_size BIGINT DEFAULT 10,
-    p_sort_column VARCHAR DEFAULT 'agent_id',
-    p_sort_direction VARCHAR DEFAULT 'ASC'
-)
-RETURNS TABLE (
-    agent_id INT,
-    agent_code VARCHAR,
-    agent_name VARCHAR,
-    email VARCHAR,
-    mobileno VARCHAR,
-    pan_number VARCHAR,
-    aadhaar_number VARCHAR,
-    irda_license_number VARCHAR,
-    gst_number VARCHAR,
-    total_count INT
-)
-LANGUAGE plpgsql
-AS $$
+-- DROP FUNCTION hms.search_agents(varchar, varchar, varchar, varchar, varchar, varchar, varchar, int8, int8, varchar, varchar);
+CREATE OR REPLACE FUNCTION hms.search_agents (
+  p_agent_name character varying DEFAULT NULL::character varying,
+  p_email character varying DEFAULT NULL::character varying,
+  p_mobileno character varying DEFAULT NULL::character varying,
+  p_pan_number character varying DEFAULT NULL::character varying,
+  p_aadhaar_number character varying DEFAULT NULL::character varying,
+  p_irda_license_number character varying DEFAULT NULL::character varying,
+  p_gst_number character varying DEFAULT NULL::character varying,
+  p_page_number bigint DEFAULT 1,
+  p_page_size bigint DEFAULT 10,
+  p_sort_column character varying DEFAULT 'agent_id'::character varying,
+  p_sort_direction character varying DEFAULT 'ASC'::character varying
+) RETURNS TABLE (
+  agent_id integer,
+  agent_code character varying,
+  agent_name character varying,
+  email character varying,
+  mobileno character varying,
+  pan_number character varying,
+  aadhaar_number character varying,
+  irda_license_number character varying,
+  gst_number character varying,
+  total_count integer
+) LANGUAGE plpgsql AS $function$
 BEGIN
     RETURN QUERY
     WITH filtered AS (
-        SELECT a.agent_id,
-               a.agent_code,
-               a.agent_name,
-               a.email,
-               a.mobileno,
-               a.pan_number,
-               a.aadhaar_number,
-               a.irda_license_number,
-               a.gst_number
+        SELECT a.agent_id::INT,
+               a.agent_code::VARCHAR,
+               a.agent_name::VARCHAR,
+               a.email::VARCHAR,
+               a.mobileno::VARCHAR,
+               a.pan_number::VARCHAR,
+               a.aadhaar_number::VARCHAR,
+               a.irda_license_number::VARCHAR,
+               a.gst_number::VARCHAR
         FROM hms.agent a
         WHERE (p_agent_name IS NULL OR a.agent_name ILIKE '%' || p_agent_name || '%')
           AND (p_email IS NULL OR a.email ILIKE '%' || p_email || '%')
@@ -47,7 +45,7 @@ BEGIN
           AND (p_gst_number IS NULL OR a.gst_number ILIKE '%' || p_gst_number || '%')
     ),
     counted AS (
-        SELECT COUNT(*) AS total_count FROM filtered
+        SELECT COUNT(*)::INT AS total_count FROM filtered
     )
     SELECT f.agent_id,
            f.agent_code,
@@ -62,13 +60,31 @@ BEGIN
     FROM filtered f
     CROSS JOIN counted c
     ORDER BY
-        CASE WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'ASC'  THEN f.agent_id END ASC,
-        CASE WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'DESC' THEN f.agent_id END DESC,
-        CASE WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'ASC'  THEN f.agent_name END ASC,
-        CASE WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'DESC' THEN f.agent_name END DESC,
-        CASE WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'ASC'  THEN f.email END ASC,
-        CASE WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'DESC' THEN f.email END DESC
-    OFFSET (p_page_number - 1) * p_page_size
-    LIMIT p_page_size;
+        CASE 
+            WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'ASC' THEN f.agent_id
+            ELSE NULL
+        END ASC,
+        CASE 
+            WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'DESC' THEN f.agent_id
+            ELSE NULL
+        END DESC,
+        CASE 
+            WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'ASC' THEN f.agent_name
+            ELSE NULL
+        END ASC,
+        CASE 
+            WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'DESC' THEN f.agent_name
+            ELSE NULL
+        END DESC,
+        CASE 
+            WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'ASC' THEN f.email
+            ELSE NULL
+        END ASC,
+        CASE 
+            WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'DESC' THEN f.email
+            ELSE NULL
+        END DESC
+    OFFSET ((p_page_number - 1) * p_page_size)::INT
+    LIMIT p_page_size::INT;
 END;
-$$;
+$function$;

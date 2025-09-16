@@ -293,7 +293,7 @@ namespace HMS.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var agentDtos = await _db.ExecuteQueryAsync<AgentDtoResponse>(
+            var agentDtos = await _db.ExecuteQueryAsync<AgentDto>(
                 "Agent",
                 "Search1",
                 new
@@ -354,39 +354,115 @@ namespace HMS.Controllers
         [HttpPost("AgentById")]
         //[HttpPost("{id:int}")]
         [MenuAuthorize(1001)]
-        public async Task<ActionResult<AgentDto>> GetAgentById(SearchAgent agentDto)
+        public async Task<IActionResult> GetAgentById(SearchAgent agentDto)
         {
-            var agent = await _context.Agents.FindAsync(agentDto.AgentId);
-            if (agent == null)
-                return NotFound();
+            HmsResponse hMSResponse = new HmsResponse();
 
-            return _mapper.Map<AgentDto>(agent);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            List<AgentDto> agents = new List<AgentDto>();
+            var agent = await _context.Agents.FindAsync(agentDto.AgentId);
+
+            if (agent != null)
+            {
+                AgentDto agentDto1 = _mapper.Map<AgentDto>(agent);
+                agents.Add(agentDto1);
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.agents = agents;// agent.ToList();
+            }
+            else
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+            }
+            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+
+
+            //if (agent == null)
+            //    return NotFound();
+
+            //return _mapper.Map<AgentDto>(agent);
         }
 
         #region Agent Details
         [HttpPost("AgentList")]
         [MenuAuthorize(1001)]
-        public async Task<ActionResult<AgentDto>> AgetList()
+        public async Task<IActionResult> AgetList()
         {
-            //var agent = await _context.Agents.Where(u => u.AgentCode == AgentCode).ToListAsync();
-            var agent = await _context.Agents.ToListAsync();
-            // var agent = await _context.Agents.FindAsync(userid);
-            if (agent == null)
-                return NotFound();
+            HmsResponse hMSResponse = new HmsResponse();
 
-            return Ok(agent); ;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            List<AgentDto> agents = new List<AgentDto>();
+            var agent = await _context.Agents.ToListAsync();
+
+            if (agent != null)
+            {
+                agents = _mapper.Map<List<AgentDto>>(agent);
+                //agents.Add(agentDto1);
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.agents = agents;// agent.ToList();
+            }
+            else
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+            }
+            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+
+            //var agent = await _context.Agents.Where(u => u.AgentCode == AgentCode).ToListAsync();
+            //var agent = await _context.Agents.ToListAsync();
+            //// var agent = await _context.Agents.FindAsync(userid);
+            //if (agent == null)
+            //    return NotFound();
+
+            //return Ok(agent); ;
         }
         [HttpPost("AgentByCode")]
         [MenuAuthorize(1001)]
-        public async Task<ActionResult<AgentDto>> GetAgentByCode(SearchAgent agentDto)
+        public async Task<IActionResult> GetAgentByCode(SearchAgent agentDto)
         {
-            var agent = await _context.Agents.Where(u => u.AgentCode == agentDto.AgentCode).ToListAsync();
-            //var agent = await _context.Agents.ToListAsync();
-            // var agent = await _context.Agents.FindAsync(userid);
-            if (agent == null)
-                return NotFound();
 
-            return Ok(agent); ;
+            HmsResponse hMSResponse = new HmsResponse();
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            List<AgentDto> agents = new List<AgentDto>();
+            var agent = await _context.Agents.Where(u => u.AgentCode == agentDto.AgentCode).ToListAsync();
+
+            if (agent != null)
+            {
+                AgentDto agentDto1 = _mapper.Map<AgentDto>(agent);
+                agents.Add(agentDto1);
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.agents = agents;// agent.ToList();
+            }
+            else
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+            }
+            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+
+            //var agent = await _context.Agents.Where(u => u.AgentCode == agentDto.AgentCode).ToListAsync();
+            ////var agent = await _context.Agents.ToListAsync();
+            //// var agent = await _context.Agents.FindAsync(userid);
+            //if (agent == null)
+            //    return NotFound();
+
+            //return Ok(agent); ;
         }
         #endregion
     }

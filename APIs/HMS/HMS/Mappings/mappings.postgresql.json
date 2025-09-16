@@ -11,8 +11,8 @@
         "Script": "SELECT * FROM hms.search_agents( @p_agent_name, @p_email, @p_mobileno, @p_pan_number, @p_aadhaar_number, @p_irda_license_number, @p_gst_number, @p_page_number, @p_page_size, @p_sort_column, @p_sort_direction)"
       },
       "Search1": {
-        "Function": "hms.search_agents1",
-        "Script": "SELECT * from hms.search_agents1(@p_searchcondition,@p_zone, @p_page_number, @p_page_size, @p_sort_column, @p_sort_direction)"
+        "Function": "hms.get_agentSearch",
+        "Script": "SELECT * from hms.get_agentSearch(@p_searchcondition,@p_zone, @p_page_number, @p_page_size, @p_sort_column, @p_sort_direction)"
       }
     }
   }

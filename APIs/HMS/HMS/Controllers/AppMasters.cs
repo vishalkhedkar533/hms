@@ -22,6 +22,8 @@ namespace HMS.Controllers
         [HttpPost("get/{schema}/{table}")]
         public async Task<IActionResult> GetRecords(string schema, string table)
         {
+            if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
+
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
 
             var result = await _cacheService.GetRecordsAsync(schema, table, refreshInterval);
@@ -33,6 +35,8 @@ namespace HMS.Controllers
         [HttpPost("refresh/{schema}/{table}")]
         public async Task<IActionResult> Refresh(string schema, string table)
         {
+            if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
+
             var result = await _cacheService.RefreshCacheAsync(schema, table);
             return Ok(result);
         }
@@ -42,6 +46,7 @@ namespace HMS.Controllers
         [HttpPost("evict/{schema}/{table}")]
         public IActionResult Evict(string schema, string table)
         {
+            if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
             _cacheService.EvictCache(schema, table);
             return Ok($"Cache for {schema}.{table} evicted.");
         }
@@ -51,6 +56,7 @@ namespace HMS.Controllers
         [HttpPost("evict/schema/{schema}")]
         public IActionResult EvictSchema(string schema)
         {
+            if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
             _cacheService.EvictSchema(schema);
             return Ok($"All cache entries for schema {schema} evicted.");
         }
@@ -60,8 +66,11 @@ namespace HMS.Controllers
         [HttpPost("refresh/schema/{schema}")]
         public async Task<IActionResult> RefreshSchema(string schema)
         {
+            if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
             await _cacheService.RefreshSchemaAsync(schema);
             return Ok($"Schema {schema} refreshed.");
         }
+
+        private bool IsValidSchema(string schema) => string.Equals(schema, "hmsmaster", StringComparison.OrdinalIgnoreCase);
     }
 }

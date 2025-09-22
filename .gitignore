@@ -58,15 +58,18 @@ nunit-*.xml
 
 
 #frontend
-UI/node_modules
-UI/.DS_Store
-UI/dist
-UI/dist-ssr
-UI/*.local
-UI/count.txt
-UI/.env
-UI/.nitro
-UI/.tanstack
-UI/.output
-UI/.vinxi
-UI/todos.json
+UI/Admin-ui/node_modules
+UI/Admin-ui/.DS_Store
+UI/Admin-ui/dist
+UI/Admin-ui/dist-ssr
+UI/Admin-ui/*.local
+UI/Admin-ui/count.txt
+UI/Admin-ui/.env
+UI/Admin-ui/.nitro
+UI/Admin-ui/.tanstack
+UI/Admin-ui/.output
+UI/Admin-ui/.vinxi
+UI/Admin-ui/todos.json
+
+#node-proxy
+UI/node-proxy/node_modules

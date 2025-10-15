@@ -1,4 +1,5 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
+﻿using Models.DTO;
+using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -84,5 +85,39 @@ namespace Models.DB
         // Navigation property
         [SwaggerSchema("Reference to the associated agent.")]
         public Agent? Agent { get; set; }
+    }
+
+    public class DtoAgentLicense
+    {
+        public int? AgentId { get; set; } = 0;
+        public string? LicenseNo { get; set; } = null;
+        public string? LicenseTypeCode { get; set; } = null;
+        public DateTime? EffectiveFromDate { get; set; }
+        public DateTime? EffectiveToDate { get; set; }
+        public string? LicenseStatus { get; set; }
+        public string? CreatedBy { get; set; } = null;
+        //public DateTime? CreatedDate { get; set; }
+        public string? ModifiedBy { get; set; }
+        //public DateTime? ModifiedDate { get; set; }
+        public int? RowVersion { get; set; }
+
+    }
+
+    public class DtoAgentLicenseRes
+    {
+        public int? AgentLicenseId { get; set; } = 0;
+       
+    }
+
+    public class AgnetLicenseResponse
+    {
+        public HmsSResponseHeader responseHeader { get; set; } = new HmsSResponseHeader();
+        public AgnetLicenseResponseBody responseBody { get; set; } = new AgnetLicenseResponseBody();
+    }
+    public class AgnetLicenseResponseBody
+    {
+        public LoginResponse? loginResponse { get; set; } = null;
+        public HMSDashboard? hmsDashboard { get; set; } = null;
+        public List<DtoAgentLicenseRes>  agnetLicense { get; set; } = null;
     }
 }

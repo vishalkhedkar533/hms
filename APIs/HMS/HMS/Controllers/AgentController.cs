@@ -436,15 +436,27 @@ namespace HMS.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
             List<AgentDto> agents = new List<AgentDto>();
-            var agent = await _context.Agents.Where(u => u.AgentCode == agentDto.AgentCode).ToListAsync();
+            //var agent = await _context.Agents.FindAsync(agentDto.AgentCode);
+            var agent = await _context.Agents.Where(u => u.AgentCode.ToUpper() == agentDto.AgentCode.ToUpper()).ToListAsync();
 
             if (agent != null)
             {
-                AgentDto agentDto1 = _mapper.Map<AgentDto>(agent);
-                agents.Add(agentDto1);
-                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                hMSResponse.responseBody.agents = agents;// agent.ToList();
+                if (agent.Count > 0)
+                {
+                    AgentDto agentDto1 = _mapper.Map<AgentDto>(agent[0]);
+                    agents.Add(agentDto1);
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.agents = agents;// agent.ToList();
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                }
             }
             else
             {
@@ -464,6 +476,50 @@ namespace HMS.Controllers
 
             //return Ok(agent); ;
         }
+        #endregion
+        #region Agent save details
+
+        [HttpPost("SaveAgentlicense")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> SaveAgentlicense([FromBody] DtoAgentLicense agentLicense)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+            AgnetLicenseResponse hMSResponse = new AgnetLicenseResponse();
+            var agentDtos = await _db.ExecuteQueryAsync<DtoAgentLicenseRes>(
+              "Agent",
+              "SaveAgentlicense",
+              new
+              {
+                  p_agent_id = agentLicense.AgentId,
+                  p_license_no = agentLicense.LicenseNo,
+                  p_license_type_code = agentLicense.LicenseTypeCode,
+                  p_effective_from_date = agentLicense.EffectiveFromDate,// DateTime.Today.ToString("yyyy/MM/dd"),
+                  p_created_by = agentLicense.CreatedBy,
+                  p_effective_to_date = agentLicense.EffectiveToDate,// DateTime.Today.ToString("yyyy/MM/dd"),
+                  p_license_status = agentLicense.LicenseStatus,
+                  p_modified_by = agentLicense.ModifiedBy,
+                  p_rowversion = agentLicense.RowVersion
+              });
+
+            if (agentDtos != null)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.agnetLicense = agentDtos.ToList();
+            }
+            else
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+            }
+            return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+
+        }
+
         #endregion
     }
 }

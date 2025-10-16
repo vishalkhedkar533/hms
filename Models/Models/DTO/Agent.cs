@@ -45,6 +45,8 @@ namespace Models.DTO
         public string? PanNumber { get; set; }
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
+        public List<AgentDto>? Supervisors { get; set; }
+        public List<AgentDto>? Reportees { get; set; }
     }
 
     public static class AgentMapper
@@ -124,7 +126,7 @@ namespace Models.DTO
         public Int64? PageSize { get; set; }
         public string? SortColumn { get; set; }
         public string? SortDirection { get; set; }
-
+        public bool FetchHierarchy { get; set; } = false;
     }
 
     public class AgentDtoResponse

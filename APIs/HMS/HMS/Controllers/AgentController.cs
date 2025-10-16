@@ -364,16 +364,12 @@ namespace HMS.Controllers
             AgentDto agentDTO = new AgentDto();
             IQueryable <Agent> agent = _context.Agents;
 
-            if (searchAgent.AgentId ==null)
+            if (searchAgent.AgentId != null)
             {
-                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
-                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
-                    .Select(x => x.ErrorMsg)
-                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
-                return NotFound(hMSResponse);
+                //filter agent if agent is specified
+                //else fetch all
+                agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
             }
-            agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
             var agentEntity = await agent.FirstOrDefaultAsync();
             if (agentEntity != null)
             {

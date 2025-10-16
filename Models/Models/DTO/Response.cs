@@ -22,19 +22,6 @@ namespace Models.DTO
         public List<AgentDto>? agents { get; set; } = null;
     }
 
-    public class HmsHierarchyResponse
-    {
-        public HmsSResponseHeader responseHeader { get; set; } = new HmsSResponseHeader();
-        public HmsHierarchyResponseBody responseBody { get; set; } = new HmsHierarchyResponseBody();
-    }
-
-    public class HmsHierarchyResponseBody
-    {
-        public AgentDto? currentAgent { get; set; }
-        public List<AgentDto> parents { get; set; } = new();
-        public List<AgentDto> children { get; set; } = new();
-    }
-
     public class LoginResponse
     {
         public string? Token { get; set; }

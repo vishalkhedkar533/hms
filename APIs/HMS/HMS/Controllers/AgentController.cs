@@ -361,17 +361,23 @@ namespace HMS.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
             List<AgentDto> agents = new List<AgentDto>();
-            AgentDto agentDTO = new();
+            AgentDto agentDTO = new AgentDto();
             IQueryable <Agent> agent = _context.Agents;
 
             if (searchAgent.AgentId ==null)
             {
-                agent.Where(x => x.AgentId.Equals(searchAgent.AgentId));
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
             }
-
-            if (agent != null)
+            agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
+            var agentEntity = await agent.FirstOrDefaultAsync();
+            if (agentEntity != null)
             {
-                agentDTO = _mapper.Map<AgentDto>(agent);
+                agentDTO = _mapper.Map<AgentDto>(agentEntity);
                 if (searchAgent.FetchHierarchy)
                 {
                     //where the agent is the supervisor
@@ -409,7 +415,7 @@ namespace HMS.Controllers
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
             }
-            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+            return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
 
         }
 
@@ -459,9 +465,20 @@ namespace HMS.Controllers
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            if (string.IsNullOrEmpty(agentDto.AgentCode))
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
+            }
+            
             List<AgentDto> agents = new List<AgentDto>();
             var AgentId = await _context.Agents
-                .Where(u => u.AgentCode.Equals( agentDto.AgentCode,StringComparison.OrdinalIgnoreCase))
+                .Where(u => u.AgentCode.ToUpper() == agentDto.AgentCode.ToUpper())
                 .Select(x=> x.AgentId)
                 .FirstOrDefaultAsync();
             agentDto.AgentId = AgentId;

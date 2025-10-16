@@ -369,6 +369,7 @@ namespace HMS.Controllers
                 //filter agent if agent is specified
                 //else fetch all
                 agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
+                searchAgent.FetchHierarchy = false;
             }
             var agentEntity = await agent.ToListAsync();
             if (agentEntity != null)

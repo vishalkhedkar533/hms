@@ -370,7 +370,7 @@ namespace HMS.Controllers
                 //else fetch all
                 agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
             }
-            var agentEntity = await agent.FirstOrDefaultAsync();
+            var agentEntity = await agent.ToListAsync();
             if (agentEntity != null)
             {
                 agentDTO = _mapper.Map<AgentDto>(agentEntity);

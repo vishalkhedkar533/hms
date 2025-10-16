@@ -388,6 +388,54 @@ namespace HMS.Controllers
             //return _mapper.Map<AgentDto>(agent);
         }
 
+        [HttpPost("AgentWithHierarchy")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetAgentWithHierarchy(SearchAgent agentDto)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            HmsHierarchyResponse hMSResponse = new HmsHierarchyResponse(); 
+            
+            var currentAgent = await _context.Agents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.AgentId == agentDto.AgentId);
+
+            if (currentAgent == null)
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
+            }
+
+            AgentDto currentAgentDto = _mapper.Map<AgentDto>(currentAgent);
+
+            var parentAgents = await (
+                from h in _context.AgentHierarchies.AsNoTracking()
+                join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
+                where h.AgentId == agentDto.AgentId
+                select a
+            ).ToListAsync();
+
+            var childAgents = await (
+                from h in _context.AgentHierarchies.AsNoTracking()
+                join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
+                where h.SupervisorCode == agentDto.AgentId
+                select a
+            ).ToListAsync();
+
+            List<AgentDto> parents = _mapper.Map<List<AgentDto>>(parentAgents);
+            List<AgentDto> children = _mapper.Map<List<AgentDto>>(childAgents);
+
+            hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+            hMSResponse.responseBody.currentAgent = currentAgentDto;
+            hMSResponse.responseBody.children = children;
+            hMSResponse.responseBody.parents = parents;
+            return Ok(hMSResponse);
+        }
+
         #region Agent Details
         [HttpPost("AgentList")]
         [MenuAuthorize(1001)]

@@ -366,13 +366,13 @@ namespace HMS.Controllers
 
             if (agent != null)
             {
-
+                agentDTO = _mapper.Map<AgentDto>(agent);
                 if (searchAgent.FetchHierarchy)
                 {
                     //where the agent is the supervisor
                     var reportees = await (
                         from h in _context.AgentHierarchies.AsNoTracking()
-                        join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
+                        join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
                         where h.SupervisorCode == searchAgent.AgentId
                         select a
                     ).ToListAsync();
@@ -380,15 +380,14 @@ namespace HMS.Controllers
                     //where the agent is the reportee
                     var supervisors = await (
                         from h in _context.AgentHierarchies.AsNoTracking()
-                        join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
+                        join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
                         where h.AgentId == searchAgent.AgentId
                         select a
                     ).ToListAsync();
 
                     List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);
                     List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(reportees);
-
-                    agentDTO = _mapper.Map<AgentDto>(agent);
+              
                     agentDTO.Supervisors = supervisorsDTO;
                     agentDTO.Reportees = reporteesDTO;
                 }

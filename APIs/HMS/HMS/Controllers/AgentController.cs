@@ -390,7 +390,7 @@ namespace HMS.Controllers
 
         [HttpPost("AgentWithHierarchy")]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetAgentWithHierarchy(SearchAgent agentDto)
+        public async Task<IActionResult> AgentWithHierarchy(SearchAgent agentDto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
             HmsHierarchyResponse hMSResponse = new HmsHierarchyResponse(); 
@@ -411,14 +411,16 @@ namespace HMS.Controllers
 
             AgentDto currentAgentDto = _mapper.Map<AgentDto>(currentAgent);
 
-            var parentAgents = await (
+            //where the agent is the supervisor
+            var childAgents = await (
                 from h in _context.AgentHierarchies.AsNoTracking()
                 join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
                 where h.AgentId == agentDto.AgentId
                 select a
             ).ToListAsync();
 
-            var childAgents = await (
+            //where the agent is the reportee
+            var parentAgents = await (
                 from h in _context.AgentHierarchies.AsNoTracking()
                 join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
                 where h.SupervisorCode == agentDto.AgentId

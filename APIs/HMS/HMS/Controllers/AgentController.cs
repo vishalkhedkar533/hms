@@ -351,69 +351,73 @@ namespace HMS.Controllers
             var result = _mapper.Map<AgentDto>(agent);
             return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
         }
+
         [HttpPost("AgentById")]
         //[HttpPost("{id:int}")]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
+            if (!ModelState.IsValid) 
+                return BadRequest(ModelState);
+
             HmsResponse hMSResponse = new HmsResponse();
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-            List<AgentDto> agents = new List<AgentDto>();
-            AgentDto agentDTO = new AgentDto();
-            IQueryable <Agent> agent = _context.Agents;
-
-            if (searchAgent.AgentId != null)
-            {
-                //filter agent if agent is specified
-                //else fetch all
-                agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
-                searchAgent.FetchHierarchy = false;
-            }
-            var agentEntity = await agent.ToListAsync();
-            if (agentEntity != null)
-            {
-                agentDTO = _mapper.Map<AgentDto>(agentEntity);
-                if (searchAgent.FetchHierarchy)
-                {
-                    //where the agent is the supervisor
-                    var reportees = await (
-                        from h in _context.AgentHierarchies.AsNoTracking()
-                        join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
-                        where h.SupervisorCode == searchAgent.AgentId
-                        select a
-                    ).ToListAsync();
-
-                    //where the agent is the reportee
-                    var supervisors = await (
-                        from h in _context.AgentHierarchies.AsNoTracking()
-                        join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
-                        where h.AgentId == searchAgent.AgentId
-                        select a
-                    ).ToListAsync();
-
-                    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);
-                    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(reportees);
-              
-                    agentDTO.Supervisors = supervisorsDTO;
-                    agentDTO.Reportees = reporteesDTO;
-                }
-                agents.Add(agentDTO);
-                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                hMSResponse.responseBody.agents = agents;
-            }
-            else
+            if (!searchAgent.AgentId.HasValue)
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
                 hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
             }
-            return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
 
+            var agent = await _context.Agents
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.AgentId == searchAgent.AgentId.Value);
+
+            if (agent == null)
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
+            }
+
+            var agentDTO = _mapper.Map<AgentDto>(agent);
+            if (searchAgent.FetchHierarchy)
+            {
+                //where the agent is the supervisor
+                var reportees = await _context.AgentHierarchies
+                    .AsNoTracking()
+                    .Where(h => h.SupervisorCode == searchAgent.AgentId.Value)
+                    .Join(_context.Agents.AsNoTracking(),
+                          h => h.AgentId,
+                          a => a.AgentId,
+                          (h, a) => a)
+                    .ToListAsync();
+
+                //where the agent is the reportee
+                var supervisors = await _context.AgentHierarchies
+                    .AsNoTracking()
+                    .Where(h => h.AgentId == searchAgent.AgentId.Value)
+                    .Join(_context.Agents.AsNoTracking(),
+                          h => h.SupervisorCode,
+                          a => a.AgentId,
+                          (h, a) => a)
+                    .ToListAsync();
+
+                agentDTO.Supervisors = _mapper.Map<List<AgentDto>>(supervisors);
+                agentDTO.Reportees = _mapper.Map<List<AgentDto>>(reportees);
+            }
+
+            hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+            hMSResponse.responseBody.agents = new List<AgentDto>{agentDTO};
+
+            return Ok(hMSResponse);
         }
 
         #region Agent Details

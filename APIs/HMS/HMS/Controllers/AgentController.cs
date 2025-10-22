@@ -396,12 +396,19 @@ namespace HMS.Controllers
                         select a
                     ).ToListAsync();
 
+
                     List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);
                     List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(reportees);
-              
+
                     agentDTO.Supervisors = supervisorsDTO;
                     agentDTO.Reportees = reporteesDTO;
                 }
+                var auditTrail = await _context.AgentAuditTrail
+                    .Where(a => a.AgentId == searchAgent.AgentId)
+                    .ToListAsync();
+
+                List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
+                agentDTO.agentAuditTrail = agentAuditTrailDTOs;
                 agents.Add(agentDTO);
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";

@@ -47,6 +47,7 @@ namespace Models.DTO
         public string? MobileNo { get; set; }
         public List<AgentDto>? Supervisors { get; set; }
         public List<AgentDto>? Reportees { get; set; }
+        public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
     }
 
     public static class AgentMapper

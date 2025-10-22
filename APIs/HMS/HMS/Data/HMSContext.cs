@@ -55,7 +55,7 @@ namespace HMS.Data
 
             modelBuilder.Entity<AgentAuditTrail>(entity =>
             {
-                entity.ToTable("AGENT_AUDIT_TRAIL", "hms");
+                entity.ToTable("agent_audit_trail", "hms");
 
                 entity.HasOne(e => e.Agent)
                       .WithMany()

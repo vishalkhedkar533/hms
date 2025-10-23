@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;

@@ -380,14 +380,13 @@ namespace HMS.Controllers
 
                 agentDTO = _mapper.Map<AgentDto>(agentEntity);
                 #region getSupervisors
-
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Agent",
                     "get_agent_supervisors",
                     new{
                         p_agent_id = searchAgent.AgentId
                     });
-
+                
                 if (!string.IsNullOrEmpty( stringResponse.FirstOrDefault()))
                 {
                     List<AgentHeirarchyDto> agentHeirarchyDtos = JsonConvert.DeserializeObject<List<AgentHeirarchyDto>>(

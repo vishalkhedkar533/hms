@@ -377,54 +377,61 @@ namespace HMS.Controllers
             var agentEntity = await agent.FirstOrDefaultAsync();
             if (agentEntity != null)
             {
-                Newtonsoft.Json.JsonSerializerSettings settings = new Newtonsoft.Json.JsonSerializerSettings
-                {
-                    NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore,
-                    MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore,
-                    ContractResolver = new CamelCasePropertyNamesContractResolver()
-                };
+
+                agentDTO = _mapper.Map<AgentDto>(agentEntity);
+                #region getSupervisors
+
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Agent",
-                    "get_agent_hierarchy_json",
+                    "get_agent_supervisors",
                     new{
                         p_agent_id = searchAgent.AgentId
                     });
 
-                List<AgentHeirarchyDto> agentHeirarchyDtos = JsonConvert.DeserializeObject<List<AgentHeirarchyDto>>(stringResponse.FirstOrDefault());
+                if (!string.IsNullOrEmpty( stringResponse.FirstOrDefault()))
+                {
+                    List<AgentHeirarchyDto> agentHeirarchyDtos = JsonConvert.DeserializeObject<List<AgentHeirarchyDto>>(
+                        stringResponse.FirstOrDefault(), 
+                        new Newtonsoft.Json.JsonSerializerSettings
+                        {
+                            NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore,
+                            MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
+                    agentDTO.agentHeirarchy = agentHeirarchyDtos;
+                }
+                #endregion getSupervisors
+                if (searchAgent.FetchHierarchy)
+                {
+                    //where the agent is the supervisor
+                    var reportees = await (
+                        from h in _context.AgentHierarchies.AsNoTracking()
+                        join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
+                        where h.SupervisorCode == searchAgent.AgentId
+                        select a
+                    ).ToListAsync();
+
+                    //where the agent is the reportee
+                    var supervisors = await (
+                        from h in _context.AgentHierarchies.AsNoTracking()
+                        join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
+                        where h.AgentId == searchAgent.AgentId
+                        select a
+                    ).ToListAsync();
 
 
-                //agentDTO = _mapper.Map<AgentDto>(agentEntity);
-                //if (searchAgent.FetchHierarchy)
-                //{
-                //    //where the agent is the supervisor
-                //    var reportees = await (
-                //        from h in _context.AgentHierarchies.AsNoTracking()
-                //        join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
-                //        where h.SupervisorCode == searchAgent.AgentId
-                //        select a
-                //    ).ToListAsync();
+                    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);
+                    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(reportees);
 
-                //    //where the agent is the reportee
-                //    var supervisors = await (
-                //        from h in _context.AgentHierarchies.AsNoTracking()
-                //        join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
-                //        where h.AgentId == searchAgent.AgentId
-                //        select a
-                //    ).ToListAsync();
+                    agentDTO.Supervisors = supervisorsDTO;
+                    agentDTO.Reportees = reporteesDTO;
+                }
+                var auditTrail = await _context.AgentAuditTrail
+                    .Where(a => a.AgentId == searchAgent.AgentId)
+                    .ToListAsync();
 
-
-                //    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);
-                //    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(reportees);
-
-                //    agentDTO.Supervisors = supervisorsDTO;
-                //    agentDTO.Reportees = reporteesDTO;
-                //}
-                //var auditTrail = await _context.AgentAuditTrail
-                //    .Where(a => a.AgentId == searchAgent.AgentId)
-                //    .ToListAsync();
-
-                //List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
-                //agentDTO.agentAuditTrail = agentAuditTrailDTOs;
+                List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
+                agentDTO.agentAuditTrail = agentAuditTrailDTOs;
                 agents.Add(agentDTO);
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";

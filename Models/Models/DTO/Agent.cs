@@ -50,9 +50,10 @@ namespace Models.DTO
         public string? PanNumber { get; set; }
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
-        public List<AgentDto>? supervisors { get; set; }
+        public List<AgentDto>? Supervisors { get; set; }
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
+        public List<AgentHeirarchyDto> agentHeirarchy { get; set; }
     }
     public static class AgentMapper
     {

@@ -2,14 +2,14 @@
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
-using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace HMS.Controllers
 {

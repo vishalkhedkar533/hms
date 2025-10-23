@@ -11,4 +11,11 @@ namespace Models.Mapping
             CreateMap<AgentDto, Agent>().ReverseMap();
         }
     }
+    public class AuditTrailProfile: Profile 
+    {
+        public AuditTrailProfile()
+        {
+            CreateMap<AgentAuditTrailDTO, AgentAuditTrail>().ReverseMap();
+        }
+    }
 }

@@ -1,8 +1,13 @@
-﻿using Models.DB;
-using CommonLibrary;
+﻿using CommonLibrary;
+using Models.DB;
 
 namespace Models.DTO
 {
+    public class AgentHeirarchyDto
+    {
+        public int? AgentId { get; set; }
+        public AgentHeirarchyDto? Supervisors { get; set; }
+    }
     public class AgentDto
     {
         public int AgentId { get; set; }
@@ -45,11 +50,10 @@ namespace Models.DTO
         public string? PanNumber { get; set; }
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
-        public List<AgentDto>? Supervisors { get; set; }
+        public List<AgentDto>? supervisors { get; set; }
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
     }
-
     public static class AgentMapper
     {
         public static AgentDto ToDto(Agent agent)
@@ -173,6 +177,6 @@ namespace Models.DTO
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
         public int? total_count { get; set; }
-        
+
     }
 }

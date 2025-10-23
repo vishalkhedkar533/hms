@@ -17,6 +17,10 @@
       "SaveAgentlicense": {
         "Function": "hms.insert_agent_license",
         "Script": "SELECT * from hms.insert_agent_license (@p_agent_id, @p_license_no, @p_license_type_code, @p_effective_from_date, @p_created_by,@p_effective_to_date,@p_license_status,@p_modified_by,@p_rowversion)"
+      },
+      "get_agent_hierarchy_json": {
+        "Function": "hms.get_agent_supervisors",
+        "Script": "SELECT hms.get_agent_supervisors(@p_agent_id)"
       }
     }
   }

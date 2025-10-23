@@ -68,7 +68,9 @@ namespace HMS.Services
                 var script = GetScript(entity, action);
                 using var conn = CreateConnection();
                 await conn.OpenAsync(); //works since DbConnection exposes it
-                return await conn.QueryAsync<T>(script, parameters, commandType: CommandType.Text);
+                var result = await conn.QueryAsync<T>(script, parameters, commandType: CommandType.Text);
+                //var result = await conn.QueryAsync<T>(script, parameters, commandType: CommandType.Text);
+                return result;
             }
             catch (Exception ex)
             {
@@ -88,47 +90,5 @@ namespace HMS.Services
             await conn.OpenAsync(); // ✅ async open works here too
             return await conn.ExecuteScalarAsync<T>(script, parameters, commandType: CommandType.Text);
         }
-
-
-        public async Task<List<DtoAgentLicenseRes>> SaveAgentLicenseAsync(DtoAgentLicense agentLicense)
-        {
-            var result = new List<DtoAgentLicenseRes>();
-            //using var conn = CreateConnection();
-            string connString = _connectionString;// "Host=localhost;Port=5432;Username=postgres;Password=yourpassword;Database=yourdb";
-
-            using var conn = new NpgsqlConnection(connString);
-            await conn.OpenAsync();
-
-            using var cmd1 = new NpgsqlCommand("SELECT * FROM Agent.SaveAgentlicense(@p_agent_id, @p_license_no, @p_license_type_code, @p_effective_from_date, @p_created_by, @p_effective_to_date, @p_license_status, @p_modified_by, @p_rowversion)", conn);
-
-            cmd1.Parameters.Add(new NpgsqlParameter("p_agent_id", NpgsqlDbType.Integer) { Value = 1 });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_license_no", NpgsqlDbType.Text) { Value = "ADASD1221" });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_license_type_code", NpgsqlDbType.Text) { Value = "DL" });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_effective_from_date", NpgsqlDbType.Date) { Value = DateTime.Today });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_created_by", NpgsqlDbType.Text) { Value = "System" });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_effective_to_date", NpgsqlDbType.Date) { Value = DateTime.Today });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_license_status", NpgsqlDbType.Text) { Value = "A" });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_modified_by", NpgsqlDbType.Text) { Value = "System" });
-            cmd1.Parameters.Add(new NpgsqlParameter("p_rowversion", NpgsqlDbType.Integer) { Value = 1 });
-
-            using var reader = await cmd1.ExecuteReaderAsync();
-
-            while (await reader.ReadAsync())
-            {
-                var dto = new DtoAgentLicenseRes
-                {
-                    // Map your columns here
-                    //LicenseId = reader.GetInt32(reader.GetOrdinal("license_id")),
-                    //LicenseNo = reader.GetString(reader.GetOrdinal("license_no")),
-                    //Status = reader.GetString(reader.GetOrdinal("license_status")),
-                    // Add other fields as needed
-                };
-
-                result.Add(dto);
-            }
-
-            return result;
-        }
-
     }
 }

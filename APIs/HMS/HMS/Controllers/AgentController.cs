@@ -389,7 +389,7 @@ namespace HMS.Controllers
                 
                 if (!string.IsNullOrEmpty( stringResponse.FirstOrDefault()))
                 {
-                    List<AgentHeirarchyDto> agentHeirarchyDtos = JsonConvert.DeserializeObject<List<AgentHeirarchyDto>>(
+                    List<PeopleHeirarchyDto> agentHeirarchyDtos = JsonConvert.DeserializeObject<List<PeopleHeirarchyDto>>(
                         stringResponse.FirstOrDefault(), 
                         new Newtonsoft.Json.JsonSerializerSettings
                         {
@@ -397,27 +397,87 @@ namespace HMS.Controllers
                             MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore,
                             ContractResolver = new CamelCasePropertyNamesContractResolver()
                         });
-                    agentDTO.agentHeirarchy = agentHeirarchyDtos;
+                    agentDTO.peopleHeirarchy = agentHeirarchyDtos;
                 }
                 #endregion getSupervisors
                 if (searchAgent.FetchHierarchy)
                 {
                     //where the agent is the supervisor
-                    var reportees = await (
-                        from h in _context.AgentHierarchies.AsNoTracking()
-                        join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
-                        where h.SupervisorCode == searchAgent.AgentId
-                        select a
-                    ).ToListAsync();
+                    //var reportees = await (
+                    //    from h in _context.AgentHierarchies.AsNoTracking()
+                    //    join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
+                    //    where h.SupervisorCode == searchAgent.AgentId
+                    //    select a
+                    //).ToListAsync();
 
-                    //where the agent is the reportee
-                    var supervisors = await (
-                        from h in _context.AgentHierarchies.AsNoTracking()
-                        join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
-                        where h.AgentId == searchAgent.AgentId
-                        select a
-                    ).ToListAsync();
+                    ////where the agent is the reportee
+                    //var supervisors = await (
+                    //    from h in _context.AgentHierarchies.AsNoTracking()
+                    //    join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
+                    //    where h.AgentId == searchAgent.AgentId
+                    //    select a
+                    //).ToListAsync();
 
+                    List<AgentDto> supervisors = new List<AgentDto>();
+                    supervisors.Add(new AgentDto
+                    {
+                        AgentId = 10
+                        ,
+                        FirstName = "S FirstName"
+                        ,
+                        MiddleName = "S Middle Name"
+                        ,
+                        LastName = "S Last Name"
+                        ,
+                        PanNumber = "AAHJP2222J"
+                        ,
+                        aadhaar_number = "123456789876"
+                    });
+                    supervisors.Add(new AgentDto
+                    {
+                        AgentId = 11
+                        ,
+                        FirstName = "S1 FirstName"
+                        ,
+                        MiddleName = "S1 Middle Name"
+                        ,
+                        LastName = "S1 Last Name"
+                        ,
+                        PanNumber = "AAHJP3333J"
+                        ,
+                        aadhaar_number = "789556789876"
+                    });
+
+                    List<AgentDto> reportees = new List<AgentDto>();
+                    supervisors.Add(new AgentDto
+                    {
+                        AgentId = 10
+                        ,
+                        FirstName = "R FirstName"
+                        ,
+                        MiddleName = "R Middle Name"
+                        ,
+                        LastName = "R Last Name"
+                        ,
+                        PanNumber = "AAHJP5555J"
+                        ,
+                        aadhaar_number = "987654321234"
+                    });
+
+                    supervisors.Add(new AgentDto
+                    {
+                        AgentId = 12
+    ,
+                        FirstName = "R1 FirstName"
+    ,
+                        MiddleName = "R2 Middle Name"
+    ,
+                        LastName = "R3 Last Name"
+    ,
+                        PanNumber = "BBKJY4444K"
+    ,
+                        aadhaar_number = "258954321234"
+                    });
 
                     List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);
                     List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(reportees);

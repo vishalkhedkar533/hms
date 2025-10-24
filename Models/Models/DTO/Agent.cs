@@ -3,10 +3,14 @@ using Models.DB;
 
 namespace Models.DTO
 {
-    public class AgentHeirarchyDto
+    public class PeopleHeirarchyDto
     {
         public int? AgentId { get; set; }
-        public AgentHeirarchyDto? Supervisors { get; set; }
+        public string AgentCode { get; set; } = null!;
+        public string? FirstName { get; set; }
+        public string? MiddleName { get; set; }
+        public string? LastName { get; set; }
+        public PeopleHeirarchyDto? Supervisors { get; set; }
     }
     public class AgentDto
     {
@@ -53,7 +57,7 @@ namespace Models.DTO
         public List<AgentDto>? Supervisors { get; set; }
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
-        public List<AgentHeirarchyDto> agentHeirarchy { get; set; }
+        public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
     }
     public static class AgentMapper
     {

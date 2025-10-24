@@ -421,7 +421,7 @@ namespace HMS.Controllers
                     List<AgentDto> supervisors = new List<AgentDto>();
                     supervisors.Add(new AgentDto
                     {
-                        AgentId = 10
+                        AgentId = 5
                         ,
                         FirstName = "S FirstName"
                         ,
@@ -435,7 +435,7 @@ namespace HMS.Controllers
                     });
                     supervisors.Add(new AgentDto
                     {
-                        AgentId = 11
+                        AgentId = 7
                         , FirstName = "S1 FirstName"
                         , MiddleName = "S1 Middle Name"
                         , LastName = "S1 Last Name"
@@ -446,7 +446,7 @@ namespace HMS.Controllers
                     List<AgentDto> reportees = new List<AgentDto>();
                     reportees.Add(new AgentDto
                     {
-                        AgentId = 10
+                        AgentId = 4
                         , FirstName = "R FirstName"
                         , MiddleName = "R Middle Name"
                         , LastName = "R Last Name"
@@ -456,7 +456,7 @@ namespace HMS.Controllers
 
                     reportees.Add(new AgentDto
                     {
-                        AgentId = 12
+                        AgentId = 6
                         , FirstName = "R1 FirstName"
                         , MiddleName = "R1 Middle Name"
                         , LastName = "R2 Last Name"

@@ -436,47 +436,32 @@ namespace HMS.Controllers
                     supervisors.Add(new AgentDto
                     {
                         AgentId = 11
-                        ,
-                        FirstName = "S1 FirstName"
-                        ,
-                        MiddleName = "S1 Middle Name"
-                        ,
-                        LastName = "S1 Last Name"
-                        ,
-                        PanNumber = "AAHJP3333J"
-                        ,
-                        aadhaar_number = "789556789876"
+                        , FirstName = "S1 FirstName"
+                        , MiddleName = "S1 Middle Name"
+                        , LastName = "S1 Last Name"
+                        , PanNumber = "AAHJP3333J"
+                        , aadhaar_number = "789556789876"
                     });
 
                     List<AgentDto> reportees = new List<AgentDto>();
-                    supervisors.Add(new AgentDto
+                    reportees.Add(new AgentDto
                     {
                         AgentId = 10
-                        ,
-                        FirstName = "R FirstName"
-                        ,
-                        MiddleName = "R Middle Name"
-                        ,
-                        LastName = "R Last Name"
-                        ,
-                        PanNumber = "AAHJP5555J"
-                        ,
-                        aadhaar_number = "987654321234"
+                        , FirstName = "R FirstName"
+                        , MiddleName = "R Middle Name"
+                        , LastName = "R Last Name"
+                        , PanNumber = "AAHJP5555J"
+                        , aadhaar_number = "987654321234"
                     });
 
-                    supervisors.Add(new AgentDto
+                    reportees.Add(new AgentDto
                     {
                         AgentId = 12
-    ,
-                        FirstName = "R1 FirstName"
-    ,
-                        MiddleName = "R2 Middle Name"
-    ,
-                        LastName = "R3 Last Name"
-    ,
-                        PanNumber = "BBKJY4444K"
-    ,
-                        aadhaar_number = "258954321234"
+                        , FirstName = "R1 FirstName"
+                        , MiddleName = "R1 Middle Name"
+                        , LastName = "R2 Last Name"
+                        , PanNumber = "BBKJY4444K"
+                        , aadhaar_number = "258954321234"
                     });
 
                     List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);

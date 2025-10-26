@@ -377,7 +377,6 @@ namespace HMS.Controllers
             var agentEntity = await agent.FirstOrDefaultAsync();
             if (agentEntity != null)
             {
-
                 agentDTO = _mapper.Map<AgentDto>(agentEntity);
                 #region getSupervisors
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
@@ -421,7 +420,6 @@ namespace HMS.Controllers
                     List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(immediateSupervisors);
                     List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(immediateReportees);
 
-
                     agentDTO.Supervisors = supervisorsDTO;
                     agentDTO.Reportees = reporteesDTO;
                 }
@@ -445,7 +443,6 @@ namespace HMS.Controllers
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
             }
             return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
-
         }
 
         #region Agent Details

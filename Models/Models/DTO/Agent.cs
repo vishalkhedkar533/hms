@@ -1,8 +1,19 @@
-﻿using Models.DB;
-using CommonLibrary;
+﻿using CommonLibrary;
+using Models.DB;
 
 namespace Models.DTO
 {
+    public class PeopleHeirarchyDto
+    {
+        public int? AgentId { get; set; }
+        public long? HierarchyId { get; set; }
+        public string? AgentCode { get; set; } = null!;
+        public string? FirstName { get; set; }
+        public string? MiddleName { get; set; }
+        public string? LastName { get; set; }
+        public PeopleHeirarchyDto? Supervisors { get; set; }
+        public string? HierarchyPath { get; set; } = string.Empty;
+    }
     public class AgentDto
     {
         public int AgentId { get; set; }
@@ -45,8 +56,11 @@ namespace Models.DTO
         public string? PanNumber { get; set; }
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
+        public List<AgentDto>? Supervisors { get; set; }
+        public List<AgentDto>? Reportees { get; set; }
+        public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
+        public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
     }
-
     public static class AgentMapper
     {
         public static AgentDto ToDto(Agent agent)
@@ -124,7 +138,7 @@ namespace Models.DTO
         public Int64? PageSize { get; set; }
         public string? SortColumn { get; set; }
         public string? SortDirection { get; set; }
-
+        public bool FetchHierarchy { get; set; } = false;
     }
 
     public class AgentDtoResponse
@@ -170,6 +184,6 @@ namespace Models.DTO
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
         public int? total_count { get; set; }
-        
+
     }
 }

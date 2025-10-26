@@ -22,6 +22,7 @@ namespace HMS.Data
         public DbSet<StatusDetails> StatusDetails => Set<StatusDetails>();
         public DbSet<RoleMenuMapping> RoleMenuMapping => Set<RoleMenuMapping>();
         public DbSet<Agent> Agents { get; set; } = null!;
+        public DbSet<AgentHierarchy> AgentHierarchies { get; set; }
         public DbSet<ErrorMaster> errorMaster => Set<ErrorMaster>();
         public DbSet<ChannelMaster> ChannelMaster => Set<ChannelMaster>();
         public DbSet<SubchannelMaster> SubchannelMaster => Set<SubchannelMaster>();
@@ -54,7 +55,7 @@ namespace HMS.Data
 
             modelBuilder.Entity<AgentAuditTrail>(entity =>
             {
-                entity.ToTable("AGENT_AUDIT_TRAIL", "hms");
+                entity.ToTable("agent_audit_trail", "hms");
 
                 entity.HasOne(e => e.Agent)
                       .WithMany()

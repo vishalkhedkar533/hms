@@ -16,64 +16,64 @@ namespace Models.DB
           .OnDelete(DeleteBehavior.Cascade);
 });
      */
-    [Table("AGENT_HIERARCHY", Schema = "hms")]
+    [Table("agent_hierarchy", Schema = "hms")]
     public class AgentHierarchy
     {
         [Key]
-        [Column("HIERARCHY_ID")]
+        [Column("hierarchy_id")]
         [SwaggerSchema("Primary key for the agent hierarchy record.")]
         public long HierarchyId { get; set; }
 
         [Required]
-        [Column("AGENT_ID")]
+        [Column("agent_id")]
         [SwaggerSchema("Reference to the agent.")]
         public int AgentId { get; set; }
 
         [Required]
-        [Column("SUPERVISOR_CODE")]
+        [Column("supervisor_code")]
         [SwaggerSchema("Code of the supervisor.")]
         public int SupervisorCode { get; set; }
 
         [Required]
-        [Column("EFFECTIVE_FROM_DATE", TypeName = "date")]
+        [Column("effective_from_date", TypeName = "date")]
         [SwaggerSchema("Date from which the hierarchy record is effective.")]
         public DateTime EffectiveFromDate { get; set; }
 
-        [Column("EFFECTIVE_TO_DATE", TypeName = "date")]
+        [Column("effective_to_date", TypeName = "date")]
         [SwaggerSchema("Date until which the hierarchy record is effective.")]
         public DateTime? EffectiveToDate { get; set; }
 
         [StringLength(20)]
-        [Column("CHANNEL_CODE")]
+        [Column("channel_code")]
         [SwaggerSchema("Channel code associated with the hierarchy.")]
         public string? ChannelCode { get; set; }
 
         [StringLength(20)]
-        [Column("DESIGNATION_CODE")]
+        [Column("designation_code")]
         [SwaggerSchema("Designation code for the agent.")]
         public string? DesignationCode { get; set; }
 
         [Required]
         [StringLength(100)]
-        [Column("CREATED_BY")]
+        [Column("created_by")]
         [SwaggerSchema("User who created the record.")]
         public string CreatedBy { get; set; } = null!;
 
         [Required]
-        [Column("CREATED_DATE")]
+        [Column("created_date")]
         [SwaggerSchema("Timestamp when the record was created.")]
         public DateTime CreatedDate { get; set; }
 
         [StringLength(100)]
-        [Column("MODIFIED_BY")]
+        [Column("modified_by")]
         [SwaggerSchema("User who last modified the record.")]
         public string? ModifiedBy { get; set; }
 
-        [Column("MODIFIED_DATE")]
+        [Column("modified_date")]
         [SwaggerSchema("Timestamp of the last modification.")]
         public DateTime? ModifiedDate { get; set; }
 
-        [Column("ROWVERSION")]
+        [Column("rowversion")]
         [ConcurrencyCheck]
         [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
         public int? RowVersion { get; set; }

@@ -46,3 +46,21 @@ ALTER TABLE hms.agent ALTER COLUMN agent_id ADD GENERATED ALWAYS AS IDENTITY;
 ALTER TABLE hms.agent
 ADD COLUMN Email VARCHAR(50),
 ADD COLUMN MobileNo VARCHAR(20);
+
+ALTER TABLE hms.hierarchy_node 
+ALTER COLUMN node_id 
+ADD GENERATED ALWAYS AS IDENTITY;
+
+
+ALTER TABLE hms.agent_hierarchy 
+add CONSTRAINT fk_supervisor
+        FOREIGN KEY (SUPERVISOR_CODE)
+        REFERENCES hms.AGENT (AGENT_ID)
+        ON DELETE cascade;
+
+CREATE EXTENSION IF NOT EXISTS ltree;
+
+ALTER TABLE hms.agent_hierarchy
+ADD COLUMN hierarchy_path LTREE;
+
+SELECT * FROM pg_available_extensions WHERE name = 'ltree';

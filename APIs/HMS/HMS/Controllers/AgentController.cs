@@ -1,15 +1,15 @@
-﻿using AutoMapper;
+using AutoMapper;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
-using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace HMS.Controllers
 {
@@ -354,22 +354,85 @@ namespace HMS.Controllers
         [HttpPost("AgentById")]
         //[HttpPost("{id:int}")]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetAgentById(SearchAgent agentDto)
+        public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
             HmsResponse hMSResponse = new HmsResponse();
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
             List<AgentDto> agents = new List<AgentDto>();
-            var agent = await _context.Agents.FindAsync(agentDto.AgentId);
+            AgentDto agentDTO = new AgentDto();
+            IQueryable <Agent> agent = _context.Agents;
 
-            if (agent != null)
+            if (searchAgent.AgentId ==null)
             {
-                AgentDto agentDto1 = _mapper.Map<AgentDto>(agent);
-                agents.Add(agentDto1);
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
+            }
+            agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
+            var agentEntity = await agent.FirstOrDefaultAsync();
+            if (agentEntity != null)
+            {
+                agentDTO = _mapper.Map<AgentDto>(agentEntity);
+                #region getSupervisors
+                var stringResponse = await _db.ExecuteQueryAsync<string>(
+                    "Agent",
+                    "get_agent_supervisors",
+                    new{
+                        p_agent_id = searchAgent.AgentId
+                    });
+                
+                if (!string.IsNullOrEmpty( stringResponse.FirstOrDefault()))
+                {
+                    List<PeopleHeirarchyDto> agentHeirarchyDtos = JsonConvert.DeserializeObject<List<PeopleHeirarchyDto>>(
+                        stringResponse.FirstOrDefault(), 
+                        new Newtonsoft.Json.JsonSerializerSettings
+                        {
+                            NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore,
+                            MissingMemberHandling = Newtonsoft.Json.MissingMemberHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
+                    agentDTO.peopleHeirarchy = agentHeirarchyDtos;
+                }
+                #endregion getSupervisors
+                if (searchAgent.FetchHierarchy)
+                {
+                    var immediateSupervisors = await _db.ExecuteQueryAsync<AgentDto>(
+                        "Agent",
+                        "get_immediate_supervisors",
+                        new
+                        {
+                            p_agent_id = searchAgent.AgentId
+                        });
+
+                    var immediateReportees = await _db.ExecuteQueryAsync<AgentDto>(
+                        "Agent",
+                        "get_immediate_reportees",
+                        new
+                        {
+                            p_agent_id = searchAgent.AgentId
+                        });
+
+                    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(immediateSupervisors);
+                    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(immediateReportees);
+
+                    agentDTO.Supervisors = supervisorsDTO;
+                    agentDTO.Reportees = reporteesDTO;
+                }
+                var auditTrail = await _context.AgentAuditTrail
+                    .Where(a => a.AgentId == searchAgent.AgentId)
+                    .ToListAsync();
+
+                List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
+                agentDTO.agentAuditTrail = agentAuditTrailDTOs;
+                agents.Add(agentDTO);
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                hMSResponse.responseBody.agents = agents;// agent.ToList();
+                hMSResponse.responseBody.agents = agents;
             }
             else
             {
@@ -379,13 +442,7 @@ namespace HMS.Controllers
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
             }
-            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
-
-
-            //if (agent == null)
-            //    return NotFound();
-
-            //return _mapper.Map<AgentDto>(agent);
+            return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
 
         #region Agent Details
@@ -430,51 +487,28 @@ namespace HMS.Controllers
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetAgentByCode(SearchAgent agentDto)
         {
-
             HmsResponse hMSResponse = new HmsResponse();
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-            List<AgentDto> agents = new List<AgentDto>();
-            //var agent = await _context.Agents.FindAsync(agentDto.AgentCode);
-            var agent = await _context.Agents.Where(u => u.AgentCode.ToUpper() == agentDto.AgentCode.ToUpper()).ToListAsync();
 
-            if (agent != null)
-            {
-                if (agent.Count > 0)
-                {
-                    AgentDto agentDto1 = _mapper.Map<AgentDto>(agent[0]);
-                    agents.Add(agentDto1);
-                    hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                    hMSResponse.responseBody.agents = agents;// agent.ToList();
-                }
-                else
-                {
-                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
-                        .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
-                        .Select(x => x.ErrorMsg)
-                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
-                }
-            }
-            else
+            if (string.IsNullOrEmpty(agentDto.AgentCode))
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
                 hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
             }
-            return agent == null ? NotFound(hMSResponse) : Ok(hMSResponse);
-
-            //var agent = await _context.Agents.Where(u => u.AgentCode == agentDto.AgentCode).ToListAsync();
-            ////var agent = await _context.Agents.ToListAsync();
-            //// var agent = await _context.Agents.FindAsync(userid);
-            //if (agent == null)
-            //    return NotFound();
-
-            //return Ok(agent); ;
+            
+            List<AgentDto> agents = new List<AgentDto>();
+            var AgentId = await _context.Agents
+                .Where(u => u.AgentCode.ToUpper() == agentDto.AgentCode.ToUpper())
+                .Select(x=> x.AgentId)
+                .FirstOrDefaultAsync();
+            agentDto.AgentId = AgentId;
+            return await GetAgentById(agentDto);
         }
         #endregion
         #region Agent save details

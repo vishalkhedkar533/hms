@@ -6,11 +6,13 @@ namespace Models.DTO
     public class PeopleHeirarchyDto
     {
         public int? AgentId { get; set; }
-        public string AgentCode { get; set; } = null!;
+        public long? HierarchyId { get; set; }
+        public string? AgentCode { get; set; } = null!;
         public string? FirstName { get; set; }
         public string? MiddleName { get; set; }
         public string? LastName { get; set; }
         public PeopleHeirarchyDto? Supervisors { get; set; }
+        public string? HierarchyPath { get; set; } = string.Empty;
     }
     public class AgentDto
     {

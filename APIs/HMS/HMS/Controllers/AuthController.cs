@@ -140,12 +140,17 @@ namespace HMS.Controllers
             {
                 expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)).UtcDateTime;
             }
+            bool Encrypt_Api_Calls = (await _context.apiConfig
+                    .Where(u => u.ConfigKey == ApiConstants.encrypt_api_calls)
+                    .Select(u => u.ConfigValue)
+                    .FirstOrDefaultAsync() ?? "1").Equals("1") ;
             response.responseBody.loginResponse = new LoginResponse
             {
                 Token = token,
                 Expiration = expTime.LocalDateTime,
                 UserId = user.UserId,
-                Username = user.Username
+                Username = user.Username,
+                Encrypt_Api_Calls = Encrypt_Api_Calls
             };
             return Ok(response);
         }

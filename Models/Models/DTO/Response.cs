@@ -1,4 +1,5 @@
 ﻿using Models.DB;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DTO
 {
@@ -29,6 +30,8 @@ namespace Models.DTO
         public int UserId { get; set; }
         public string? Username { get; set; }
         public string? Role { get; set; }
+        public bool? Encrypt_Api_Calls { get; set; } = false;
+
     }
 
     public class OtpResponse

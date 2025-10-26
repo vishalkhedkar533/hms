@@ -402,7 +402,7 @@ namespace HMS.Controllers
                 #endregion getSupervisors
                 if (searchAgent.FetchHierarchy)
                 {
-                    var immediateSupervisors = await _db.ExecuteQueryAsync<PeopleHeirarchyDto>(
+                    var immediateSupervisors = await _db.ExecuteQueryAsync<AgentDto>(
                         "Agent",
                         "get_immediate_supervisors",
                         new
@@ -410,7 +410,7 @@ namespace HMS.Controllers
                             p_agent_id = searchAgent.AgentId
                         });
 
-                    var immediateReportees = await _db.ExecuteQueryAsync<PeopleHeirarchyDto>(
+                    var immediateReportees = await _db.ExecuteQueryAsync<AgentDto>(
                         "Agent",
                         "get_immediate_reportees",
                         new
@@ -418,8 +418,8 @@ namespace HMS.Controllers
                             p_agent_id = searchAgent.AgentId
                         });
 
-                    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(_context.agent.Where(x => immediateSupervisors.Select(x => x.AgentId).ToList().Contains(x.AgentId)));
-                    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(_context.agent.Where(x => immediateReportees.Select(x => x.AgentId).ToList().Contains(x.AgentId)));
+                    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(immediateSupervisors);
+                    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(immediateReportees);
 
 
                     agentDTO.Supervisors = supervisorsDTO;

@@ -64,33 +64,46 @@ namespace HMS.Services
         /// </summary>
         private string CastLtreeColumnsToText(string script)
         {
-            // Split SQL into SELECT ... FROM ... parts to cast only SELECT expressions
+            // Extract SELECT ... FROM part
             var selectMatch = Regex.Match(script, @"(?is)^(\s*SELECT\s+)(.+?)(\s+FROM\s+)", RegexOptions.IgnoreCase);
-
-            if (!selectMatch.Success)
-                return script; // not a standard select query
+            if (!selectMatch.Success) return script;
 
             var selectClause = selectMatch.Groups[2].Value;
 
-            // Replace ltree column names like hierarchy_path, path, ltree_path in SELECT list only
-            var regex = new Regex(@"\b([\w]+\.)?(hierarchy_path|ltree_path|path)\b(?!\s*\()", RegexOptions.IgnoreCase);
-            var modifiedSelect = regex.Replace(selectClause, m =>
-            {
-                var token = m.Value;
-                if (token.Contains("::text"))
-                    return token;
-                return $"{token}::text";
-            });
+            // Split the SELECT clause by commas to handle each column separately
+            var columns = selectClause.Split(',')
+                .Select(c =>
+                {
+                    var trimmed = c.Trim();
 
-            // Rebuild SQL with modified SELECT part
-            var result = script.Substring(0, selectMatch.Groups[1].Index)
-                + selectMatch.Groups[1].Value
-                + modifiedSelect
-                + selectMatch.Groups[3].Value
-                + script.Substring(selectMatch.Groups[3].Index + selectMatch.Groups[3].Length);
+                    // Check if the column already has ::text or is an alias (AS ...)
+                    if (trimmed.Contains("::text", StringComparison.OrdinalIgnoreCase) ||
+                        Regex.IsMatch(trimmed, @"\s+AS\s+", RegexOptions.IgnoreCase))
+                    {
+                        return trimmed;
+                    }
 
-            return result;
+                    // Check if the column name matches ltree columns
+                    var colRegex = new Regex(@"\b([\w]+\.)?(hierarchy_path|ltree_path|path)\b", RegexOptions.IgnoreCase);
+                    if (colRegex.IsMatch(trimmed))
+                    {
+                        return colRegex.Replace(trimmed, m => $"{m.Value}::text");
+                    }
+
+                    return trimmed;
+                });
+
+            var modifiedSelect = string.Join(", ", columns);
+
+            // Rebuild the SQL
+            return script.Substring(0, selectMatch.Groups[1].Index)
+                   + selectMatch.Groups[1].Value
+                   + modifiedSelect
+                   + selectMatch.Groups[3].Value
+                   + script.Substring(selectMatch.Groups[3].Index + selectMatch.Groups[3].Length);
         }
+
+
 
         public async Task<IEnumerable<T>> ExecuteQueryAsync<T>(string entity, string action, object parameters)
         {

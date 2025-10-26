@@ -402,70 +402,25 @@ namespace HMS.Controllers
                 #endregion getSupervisors
                 if (searchAgent.FetchHierarchy)
                 {
-                    //where the agent is the supervisor
-                    //var reportees = await (
-                    //    from h in _context.AgentHierarchies.AsNoTracking()
-                    //    join a in _context.Agents.AsNoTracking() on h.AgentId equals a.AgentId
-                    //    where h.SupervisorCode == searchAgent.AgentId
-                    //    select a
-                    //).ToListAsync();
+                    var immediateSupervisors = await _db.ExecuteQueryAsync<PeopleHeirarchyDto>(
+                        "Agent",
+                        "get_immediate_supervisors",
+                        new
+                        {
+                            p_agent_id = searchAgent.AgentId
+                        });
 
-                    ////where the agent is the reportee
-                    //var supervisors = await (
-                    //    from h in _context.AgentHierarchies.AsNoTracking()
-                    //    join a in _context.Agents.AsNoTracking() on h.SupervisorCode equals a.AgentId
-                    //    where h.AgentId == searchAgent.AgentId
-                    //    select a
-                    //).ToListAsync();
+                    var immediateReportees = await _db.ExecuteQueryAsync<PeopleHeirarchyDto>(
+                        "Agent",
+                        "get_immediate_reportees",
+                        new
+                        {
+                            p_agent_id = searchAgent.AgentId
+                        });
 
-                    List<AgentDto> supervisors = new List<AgentDto>();
-                    supervisors.Add(new AgentDto
-                    {
-                        AgentId = 5
-                        ,
-                        FirstName = "S FirstName"
-                        ,
-                        MiddleName = "S Middle Name"
-                        ,
-                        LastName = "S Last Name"
-                        ,
-                        PanNumber = "AAHJP2222J"
-                        ,
-                        aadhaar_number = "123456789876"
-                    });
-                    supervisors.Add(new AgentDto
-                    {
-                        AgentId = 7
-                        , FirstName = "S1 FirstName"
-                        , MiddleName = "S1 Middle Name"
-                        , LastName = "S1 Last Name"
-                        , PanNumber = "AAHJP3333J"
-                        , aadhaar_number = "789556789876"
-                    });
+                    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(_context.agent.Where(x => immediateSupervisors.Select(x => x.AgentId).ToList().Contains(x.AgentId)));
+                    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(_context.agent.Where(x => immediateReportees.Select(x => x.AgentId).ToList().Contains(x.AgentId)));
 
-                    List<AgentDto> reportees = new List<AgentDto>();
-                    reportees.Add(new AgentDto
-                    {
-                        AgentId = 4
-                        , FirstName = "R FirstName"
-                        , MiddleName = "R Middle Name"
-                        , LastName = "R Last Name"
-                        , PanNumber = "AAHJP5555J"
-                        , aadhaar_number = "987654321234"
-                    });
-
-                    reportees.Add(new AgentDto
-                    {
-                        AgentId = 6
-                        , FirstName = "R1 FirstName"
-                        , MiddleName = "R1 Middle Name"
-                        , LastName = "R2 Last Name"
-                        , PanNumber = "BBKJY4444K"
-                        , aadhaar_number = "258954321234"
-                    });
-
-                    List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(supervisors);
-                    List<AgentDto> reporteesDTO = _mapper.Map<List<AgentDto>>(reportees);
 
                     agentDTO.Supervisors = supervisorsDTO;
                     agentDTO.Reportees = reporteesDTO;

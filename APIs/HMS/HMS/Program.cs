@@ -42,7 +42,11 @@ builder.Services.AddDbContext<HMSContext>(options =>
 // ----------------------------
 // AutoMapper
 // ----------------------------
-builder.Services.AddAutoMapper(cfg => cfg.AddProfile<AgentProfile>());
+builder.Services.AddAutoMapper(cfg =>
+{
+    cfg.AddProfile<AgentProfile>();
+    cfg.AddProfile<AuditTrailProfile>();
+});
 
 // ----------------------------
 // HttpContextAccessor

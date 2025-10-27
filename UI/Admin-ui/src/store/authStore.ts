@@ -9,7 +9,7 @@ export interface AuthState {
 }
 
 function getInitialState(): AuthState {
-  return {token:'mytoken', user: {name: 'Demo User'}}; // default for testing
+  // return {token:'mytoken', user: {name: 'Demo User'}}; // default for testing
   const saved = storage.get(TOKEN_KEY)
   if (saved) {
     try {
@@ -26,20 +26,3 @@ function getInitialState(): AuthState {
 }
 
 export const authStore = new Store<AuthState>(getInitialState())
-
-export const authActions = {
-  login: (data: any) => {
-    storage.set(TOKEN_KEY, JSON.stringify(data))
-    authStore.setState({
-      token: data.token,
-      user: data,
-    })
-  },
-  logout: () => {
-    storage.remove(TOKEN_KEY)
-    authStore.setState({
-      token: null,
-      user: null,
-    })
-  },
-}

@@ -1,13 +1,13 @@
 export const TOKEN_KEY = 'auth_token'
 export const APIRoutes = {
-  // BASEURL:"/api/",
-  BASEURL: process.env.REACT_API_URL || "http://localhost:5000/",
-    PROXY:"api/proxy" ,
-    CHUNKS:"getHRMChunks" ,
-  // BASEURL:"http://ezytek1706-003-site1.rtempurl.com/api/",
-  LOGIN: 'Auth/Login',
-  AGENTSEARCH: 'Agent/Search',
-  AGENTBYCODE: '/Agent/AgentByCode',
+  // BASEURL:"https://hrmadmin-nodeproxxy.onrender.com/",
+  BASEURL: import.meta.env.VITE_API_URL,
+  PROXY: 'api/proxy',
+  CHUNKS: 'getHRMChunks',
+  SEARCH: 'search',
+  SEARCHBYCODE: 'searchbycode',
+  LOGIN: 'login',
+  AGENTBYID: 'Agentbyid',
 }
 
 export const LoginConstants = {

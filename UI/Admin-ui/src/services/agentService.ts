@@ -1,6 +1,6 @@
 // src/services/authService.ts
+import { callApi } from './apiService'
 import { APIRoutes } from './constant'
-import { apiClient } from './apiClient'
 import type { ILoginResponseBody } from '@/models/authentication'
 import type { ApiResponse } from '@/models/api'
 import type {
@@ -10,7 +10,11 @@ import type {
 
 export const agentService = {
   search: (data: IAgentSearchRequest) =>
-    apiClient.post<ApiResponse<ILoginResponseBody>>(APIRoutes.AGENTSEARCH, data),
+    callApi<ApiResponse<ILoginResponseBody>>(APIRoutes.SEARCH, [data]),
   searchbycode: (data: IAgentSearchByCodeRequest) =>
-    apiClient.post<ApiResponse<ILoginResponseBody>>(`${APIRoutes.AGENTBYCODE}`, data),
+    callApi<ApiResponse<ILoginResponseBody>>(APIRoutes.SEARCHBYCODE, [data]),
+  fetchAgentHierarchy: async (data: IAgentSearchByCodeRequest) => {
+    const response = await callApi<ApiResponse<ILoginResponseBody>>(APIRoutes.AGENTBYID, [data])
+    return response.responseBody?.agents?.[0] || null
+  },
 }

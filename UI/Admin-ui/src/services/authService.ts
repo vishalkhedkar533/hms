@@ -1,11 +1,15 @@
 // src/services/authService.ts
-import { apiClient } from './apiClient'
+import { callApi } from './apiService'
 import { APIRoutes } from './constant'
-import type { IHRMChunks, ILoginRequest,  ILoginResponseBody } from '@/models/authentication'
+import type {
+  IHRMChunks,
+  ILoginRequest,
+  ILoginResponseBody,
+} from '@/models/authentication'
 import type { ApiResponse } from '@/models/api'
 
 export const authService = {
   login: (data: ILoginRequest) =>
-    apiClient.post<ApiResponse<ILoginResponseBody>>(APIRoutes.LOGIN, data),
-
+    callApi<ApiResponse<ILoginResponseBody>>(APIRoutes.LOGIN, [data]),
+ 
 }

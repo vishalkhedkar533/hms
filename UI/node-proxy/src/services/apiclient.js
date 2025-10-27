@@ -8,11 +8,11 @@ const api = axios.create({
   validateStatus: () => true, // so 400/401 don't throw
 });
 
-// 🔹 Generic request wrapper with encryption/decryption
+//  Generic request wrapper with encryption/decryption
 const request = async (method, url, data, config = {}) => {
   try {
     // Encrypt payload if data is provided
-    const payload = data ? { data: JSON.stringify(data) } : undefined;
+    const payload = data ? data: undefined;
 
     // Forward Authorization header if exists
     const headers = {

@@ -1,20 +1,20 @@
 import React, { useCallback, useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
-import Button from '@/components/ui/button'
+import { BiSearch } from 'react-icons/bi'
 import { MdMonitor } from 'react-icons/md'
 import { IoIosArrowRoundForward } from 'react-icons/io'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import type { IAgent } from '@/models/agent'
+import { Card, CardContent } from '@/components/ui/card'
+import Button from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { showToast } from '@/components/ui/Toast'
-import { authStore } from '@/store/authStore'
-import { BiSearch } from 'react-icons/bi'
+import { showToast } from '@/components/ui/sonner'
 import { useAuth } from '@/hooks/useAuth'
 import ZoneList from '@/components/dashboard/ZoneList'
 import DataTable from '@/components/table/DataTable'
-import { Link, useNavigate } from '@tanstack/react-router'
 import { agentService } from '@/services/agentService'
 import { AgentConstants, CommonConstants } from '@/services/constant'
-import { useQuery } from '@tanstack/react-query'
-import {  IAgent } from '@/models/agent'
+import { NOTIFICATION_CONSTANTS } from '@/utils/constant'
 
 export default function SearchInterface() {
   const [searchQuery, setSearchQuery] = useState('')
@@ -98,20 +98,20 @@ export default function SearchInterface() {
       throw new Error(errorMessage || 'Unexpected error occurred')
     }
   }, [searchQuery, selectedZone])
-const handleSearch = () => {
-  if (!searchQuery.trim()) {
-    showToast('error','Please enter a search value')
-    return
+  const handleSearch = () => {
+    if (!searchQuery.trim()) {
+      showToast(NOTIFICATION_CONSTANTS.ERROR, 'Please enter a search value')
+      return
+    }
+    refetch()
   }
-  refetch()
-}
   const { data, error, isFetching, refetch } = useQuery({
     queryKey: ['agents', searchQuery, selectedZone],
     queryFn: fetchAgents,
     enabled: false,
     retry: false,
     networkMode: 'offlineFirst',
-     refetchOnWindowFocus: false
+    refetchOnWindowFocus: false,
   })
 
   return (

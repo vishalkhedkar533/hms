@@ -1,5 +1,7 @@
 ﻿using CommonLibrary;
+using Microsoft.Extensions.FileSystemGlobbing;
 using Models.DB;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Models.DTO
 {
@@ -60,6 +62,12 @@ namespace Models.DTO
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
         public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
+        public string CandidateType = "Corporate";
+        public string ApplicationDocketNo = "AppDoc001";
+        public string Title = "Mr.";
+        public string Father_Husband_Nm = "Father_Husband_Nm";
+        public string Channel_Name = "Channel_Name";
+        public string Sub_Channel = "Sub_Channel";
     }
     public static class AgentMapper
     {

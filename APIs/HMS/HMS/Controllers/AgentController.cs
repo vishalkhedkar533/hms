@@ -508,6 +508,7 @@ namespace HMS.Controllers
                 .Select(x=> x.AgentId)
                 .FirstOrDefaultAsync();
             agentDto.AgentId = AgentId;
+            agentDto.FetchHierarchy = true;
             return await GetAgentById(agentDto);
         }
         #endregion

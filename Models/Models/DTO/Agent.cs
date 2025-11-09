@@ -1,7 +1,7 @@
 ﻿using CommonLibrary;
-using Microsoft.Extensions.FileSystemGlobbing;
 using Models.DB;
-using static System.Net.Mime.MediaTypeNames;
+using System.Net.Sockets;
+using System.Runtime.ConstrainedExecution;
 
 namespace Models.DTO
 {
@@ -37,6 +37,7 @@ namespace Models.DTO
         public string? ChannelCode { get; set; }
         public string? SubChannelCode { get; set; }
         public string? DesignationCode { get; set; }
+        public string? Designation { get; set; }
         public string? AgentLevel { get; set; }
         public string? LocationCode { get; set; }
         public string? StaffCode { get; set; }
@@ -55,9 +56,6 @@ namespace Models.DTO
         public DateTime? ModifiedDate { get; set; }
         public int? RowVersion { get; set; }
         public bool IsActive { get; set; } = true;
-        public string? PanNumber { get; set; }
-        public string? Email { get; set; }
-        public string? MobileNo { get; set; }
         public List<AgentDto>? Supervisors { get; set; }
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
@@ -68,56 +66,99 @@ namespace Models.DTO
         public string Father_Husband_Nm = "Father_Husband_Nm";
         public string Channel_Name = "Channel_Name";
         public string Sub_Channel = "Sub_Channel";
-    }
-    public static class AgentMapper
-    {
-        public static AgentDto ToDto(Agent agent)
+        public string EmployeeCode ="EMP001";
+        public DateTime? StartDate = DateTime.Now;
+        public bool? PanAadharLinkFlag = false;
+        public bool? Sec206abFlag = false;
+        public List<Nominee> nominees = new List<Nominee>();
+        public string? PackageID { get; set; }
+        public PersonalInfo ? personalInfo { get; set; } = new PersonalInfo() 
         {
-            return new AgentDto
-            {
-                AgentId = agent.AgentId,
-                AgentCode = agent.AgentCode,
-                AgentName = agent.AgentName,
-                AgentTypeCode = agent.AgentTypeCode,
-                AgentSubTypeCode = agent.AgentSubTypeCode,
-                BusinessName = agent.BusinessName,
-                FirstName = agent.FirstName,
-                MiddleName = agent.MiddleName,
-                LastName = agent.LastName,
-                Prefix = agent.Prefix,
-                Suffix = agent.Suffix,
-                SubChannelCode = agent.SubChannelCode,
-                ChannelCode = agent.ChannelCode,
-                aadhaar_number = agent.AadhaarNumber,
-                IrdaLicenseNumber = agent.IrdaLicenseNumber,
-                GstNumber = agent.GstNumber,
-                AgentLevel = agent.AgentLevel,
-                DesignationCode = agent.DesignationCode,
-                LocationCode = agent.LocationCode,
-                StaffCode = agent.StaffCode,
-                Supervisor_Id = agent.SupervisorId,
-                AgentStatusCode = agent.AgentStatusCode,
-                StatusDate = agent.StatusDate,
-                IsLicensed = agent.IsLicensed,
-                CreatedBy = agent.CreatedBy,
-                CreatedDate = agent.CreatedDate,
-                ModifiedBy = agent.ModifiedBy,
-                ModifiedDate = agent.ModifiedDate,
-                RowVersion = agent.RowVersion,
-                IsActive = agent.IsActive,
-                DOB = agent.DOB,
-                ContractedDate = agent.ContractedDate,
-                Gender = agent.Gender,
-                MaritalStatusCode = agent.MaritalStatusCode,
-                Nationality = agent.Nationality,
-                PreferredLanguage = agent.PreferredLanguage,
-                MaskedPanNumber = MaskingHelper.MaskPan(agent.PanNumber),
-                PanNumber = string.Empty,
-                Email = agent.Email,
-                MobileNo = agent.MobileNo
-            };
-        }
+            DateOfBirth = DateTime.Now
+            , Email = "anc@gmail.com"
+            , FirstName = "FirstName"
+            , Id = 0
+            , LastName = "LastName"
+            , MobileNo = "9833982266"
+            , BloodGroup = "O -ve"
+            , PanNumber= "ERTYU4444K" 
+        };
+        public string? CommissionClass { get; set; }
+        public string? TaxStatus { get; set; }
+        public string? StateEid { get; set; }
+        public BankAccount bankAccount { get; set; } = new BankAccount() 
+        {
+            AccountHolderName = "AccountHolderName",
+            AccountNumber = "1234567890",
+            IFSC = "IFSC0001"
+        };
+        public int? OccupationCode { get; set; }
+        public String Occupation { get; set; }
+        public string URN { get; set; }
+        public string AdditionalComment { get; set; }
+        public DateTime? AppointmentDate  { get ;set; }
+        public DateTime? IncorporationDate  { get ;set; }
+        public string? CnctPersonDesig { get; set; }
+        public string? CnctPersonMobileNo { get; set; }
+        public string? CnctPersonEmail { get; set; }
+        public string? CnctPersonName { get; set; }
+        public string? AgentTypeCategory { get; set; }
+        public string? AgentClassification  { get; set; }
+        public string? CMSAgentType { get; set; }
+        public List<BankAccount>? bankAccounts { get; set; }
+        public string? ServiceTaxNo { get; set; }
+        public Address? PermanentAddres = new Address();
+        public Address? MailingAddres = new Address();
     }
+    //public static class AgentMapper
+    //{
+    //    public static AgentDto ToDto(Agent agent)
+    //    {
+    //        return new AgentDto
+    //        {
+    //            AgentId = agent.AgentId,
+    //            AgentCode = agent.AgentCode,
+    //            AgentName = agent.AgentName,
+    //            AgentTypeCode = agent.AgentTypeCode,
+    //            AgentSubTypeCode = agent.AgentSubTypeCode,
+    //            BusinessName = agent.BusinessName,
+    //            FirstName = agent.FirstName,
+    //            MiddleName = agent.MiddleName,
+    //            LastName = agent.LastName,
+    //            Prefix = agent.Prefix,
+    //            Suffix = agent.Suffix,
+    //            SubChannelCode = agent.SubChannelCode,
+    //            ChannelCode = agent.ChannelCode,
+    //            aadhaar_number = agent.AadhaarNumber,
+    //            IrdaLicenseNumber = agent.IrdaLicenseNumber,
+    //            GstNumber = agent.GstNumber,
+    //            AgentLevel = agent.AgentLevel,
+    //            DesignationCode = agent.DesignationCode,
+    //            LocationCode = agent.LocationCode,
+    //            StaffCode = agent.StaffCode,
+    //            Supervisor_Id = agent.SupervisorId,
+    //            AgentStatusCode = agent.AgentStatusCode,
+    //            StatusDate = agent.StatusDate,
+    //            IsLicensed = agent.IsLicensed,
+    //            CreatedBy = agent.CreatedBy,
+    //            CreatedDate = agent.CreatedDate,
+    //            ModifiedBy = agent.ModifiedBy,
+    //            ModifiedDate = agent.ModifiedDate,
+    //            RowVersion = agent.RowVersion,
+    //            IsActive = agent.IsActive,
+    //            DOB = agent.DOB,
+    //            ContractedDate = agent.ContractedDate,
+    //            Gender = agent.Gender,
+    //            MaritalStatusCode = agent.MaritalStatusCode,
+    //            Nationality = agent.Nationality,
+    //            PreferredLanguage = agent.PreferredLanguage,
+    //            MaskedPanNumber = MaskingHelper.MaskPan(agent.PanNumber),
+    //            //PanNumber = string.Empty,
+    //            //Email = agent.Email,
+    //            //MobileNo = agent.MobileNo
+    //        };
+    //    }
+    //}
 
     public class AgentListRequest
     {

@@ -373,8 +373,7 @@ namespace HMS.Controllers
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
                 return NotFound(hMSResponse);
             }
-            agent = agent.Where(x => x.AgentId == searchAgent.AgentId);
-            var agentEntity = await agent.FirstOrDefaultAsync();
+            var agentEntity = agent.Where(x => x.AgentId == searchAgent.AgentId).FirstOrDefaultAsync();
             if (agentEntity != null)
             {
                 agentDTO = _mapper.Map<AgentDto>(agentEntity);

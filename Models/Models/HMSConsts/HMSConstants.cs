@@ -15,4 +15,10 @@
     {
         public const int AGENT_NOTFOUND = 1201;
     }
+    public static class AddressTypeConstants //12x series
+    {
+        public const int PERMANENT = 1301;
+        public const int CORRESPONDENCE_1 = 1302;
+        public const int CORRESPONDENCE_2 = 1303;
+    }
 }

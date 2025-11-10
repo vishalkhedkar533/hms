@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR.Protocol;
-using Models.HMSConsts;
+using Models.Enums;
 using System.Runtime.InteropServices;
 
 namespace Models.DB

@@ -1,4 +1,4 @@
-﻿namespace Models.HMSConsts
+﻿namespace Models.Enums
 {
     public enum AddressType
     {

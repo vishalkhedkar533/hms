@@ -1,4 +1,4 @@
-﻿using Models.HMSConsts;
+﻿using Models.Enums;
 
 namespace Models.DB
 {

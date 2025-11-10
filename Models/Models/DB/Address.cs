@@ -1,11 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Models.HMSConsts;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
-
     [Index(nameof(RefKey), nameof(RefType), nameof(AddressType), IsUnique = true)]
     [Table("Address", Schema = "hms")]
     public class Address

@@ -1333,3 +1333,22 @@ CREATE INDEX idx_agent_gst ON hms.agent (gst_number);
 
 -- Optional: Index to speed up ordering by created_date (useful if frequently sorted by date)
 CREATE INDEX idx_agent_created_date ON hms.agent (created_date DESC);
+
+CREATE TABLE hms."Address" (
+    "AddressID" BIGINT PRIMARY KEY,
+    "AddressType" INTEGER NOT NULL DEFAULT 0,
+    "RefKey" INTEGER NOT NULL DEFAULT 0,
+    "RefType" INTEGER,
+    "AddressLine1" VARCHAR(255) NOT NULL,
+    "AddressLine2" VARCHAR(255),
+    "AddressLine3" VARCHAR(255),
+    "City" VARCHAR(100) NOT NULL,
+    "State" VARCHAR(100),
+    "Country" VARCHAR(100),
+    "PIN" VARCHAR(20),
+    "Landmark" VARCHAR(255)
+);
+
+ALTER TABLE hms."Address"
+ADD CONSTRAINT uq_address_refkey_reftype_addresstype
+UNIQUE ("RefKey", "RefType", "AddressType");

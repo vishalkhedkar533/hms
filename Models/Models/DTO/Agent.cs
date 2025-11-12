@@ -92,7 +92,7 @@ namespace Models.DTO
         public DateTime? IncorporationDate = DateTime.Now;
         public string? CnctPersonDesig = "Designation";
         public string? CnctPersonMobileNo = "9833982266";
-        public string? CnctPersonEmail = "contactperson@gmail.com"
+        public string? CnctPersonEmail = "contactperson@gmail.com";
         public string? CnctPersonName = "Contact Person Name";
         public string? AgentTypeCategory = "AgentTypeCategory";
         public string? AgentClassification = "AgentClassification";

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -15,14 +16,14 @@ namespace Models.DB
         [Required]
         [StringLength(50)]
         [Column(TypeName = "varchar(50)")]
-        public int AddressType { get; set; } //enum AddressType
+        public AddressType AddressType { get; set; } //enum AddressType
 
         [Required]
         [Column(TypeName = "integer")]
         public int RefKey { get; set; } = 0;
 
         [Column(TypeName = "integer")]
-        public int? RefType { get; set; }//enum RefType
+        public ReferenceType? RefernceType { get; set; }//enum RefType
 
         [Required]
         [StringLength(255)]

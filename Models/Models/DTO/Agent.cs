@@ -1,4 +1,5 @@
 ﻿using Models.DB;
+using Models.Enums;
 
 namespace Models.DTO
 {
@@ -63,49 +64,71 @@ namespace Models.DTO
         public string Father_Husband_Nm = "Father_Husband_Nm";
         public string Channel_Name = "Channel_Name";
         public string Sub_Channel = "Sub_Channel";
-        public string EmployeeCode ="EMP001";
+        public string EmployeeCode = "EMP001";
         public DateTime? StartDate = DateTime.Now;
         public bool? PanAadharLinkFlag = false;
         public bool? Sec206abFlag = false;
         public List<Nominee> nominees = new List<Nominee>();
         public string? PackageID { get; set; }
-        public PersonalInfo ? personalInfo { get; set; } = new PersonalInfo() 
+        public PersonalInfo? personalInfo { get; set; } = new PersonalInfo()
         {
-            DateOfBirth = DateTime.Now
-            , Email = "anc@gmail.com"
-            , FirstName = "FirstName"
-            , Id = 0
-            , LastName = "LastName"
-            , MobileNo = "9833982266"
-            , BloodGroup = "O -ve"
-            , PanNumber= "ERTYU4444K" 
+            DateOfBirth = DateTime.Now,
+            Email = "anc@gmail.com",
+            FirstName = "FirstName",
+            Id = 0,
+            LastName = "LastName",
+            MobileNo = "9833982266",
+            BloodGroup = "O -ve",
+            PanNumber = "ERTYU4444K"
         };
-        public string? CommissionClass { get; set; }
-        public string? TaxStatus { get; set; }
-        public string? StateEid { get; set; }
-        public BankAccount bankAccount { get; set; } = new BankAccount() 
-        {
+        public string? CommissionClass = "CommissionClass";
+        public string? TaxStatus = "TaxStatus";
+        public string? StateEid = "StateEid";
+        public int? OccupationCode = 0;
+        public String? Occupation = "Occupation";
+        public string? URN = "URN";
+        public string? AdditionalComment = "AdditionalComment";
+        public DateTime? AppointmentDate = DateTime.Now;
+        public DateTime? IncorporationDate = DateTime.Now;
+        public string? CnctPersonDesig = "Designation";
+        public string? CnctPersonMobileNo = "9833982266";
+        public string? CnctPersonEmail = "contactperson@gmail.com"
+        public string? CnctPersonName = "Contact Person Name";
+        public string? AgentTypeCategory = "AgentTypeCategory";
+        public string? AgentClassification = "AgentClassification";
+        public string? CMSAgentType = "CMSAgentType";
+        public List<BankAccount>? bankAccounts = new() {
+            new BankAccount() {
             AccountHolderName = "AccountHolderName",
             AccountNumber = "1234567890",
-            IFSC = "IFSC0001"
+            AccountType = Enums.BankAccType.Savings,
+            BankName = "Bank Name",
+            BranchName = "Branch Name",
+            ActiveSince = DateTime.Now,
+            FactoringHouse = "FactoringHouse",
+            Id = 1000,
+            IFSC = "123456789",
+            MICR = "789563231",
+            preferredPaymentMode = Enums.PreferredPaymentMode.Wallet
+        }
         };
-        public int? OccupationCode { get; set; }
-        public String Occupation { get; set; }
-        public string URN { get; set; }
-        public string AdditionalComment { get; set; }
-        public DateTime? AppointmentDate  { get ;set; }
-        public DateTime? IncorporationDate  { get ;set; }
-        public string? CnctPersonDesig { get; set; }
-        public string? CnctPersonMobileNo { get; set; }
-        public string? CnctPersonEmail { get; set; }
-        public string? CnctPersonName { get; set; }
-        public string? AgentTypeCategory { get; set; }
-        public string? AgentClassification  { get; set; }
-        public string? CMSAgentType { get; set; }
-        public List<BankAccount>? bankAccounts { get; set; }
-        public string? ServiceTaxNo { get; set; }
-        public Address? PermanentAddres = new Address();
-        public Address? MailingAddres = new Address();
+        public string? ServiceTaxNo = "456789123";
+        public Address? PermanentAddres = new Address()
+        {
+            AddressID = 1000,
+            AddressLine1 = "Perm Address Line 1",
+            AddressLine2 = "Perm Address Line 2",
+            AddressLine3 = "Perm Address Line 3",
+            AddressType = AddressType.Permanent,
+        };
+        public Address? MailingAddres = new Address()
+        {
+            AddressID = 1000,
+            AddressLine1 = "Mailing Address Line 1",
+            AddressLine2 = "Mailing Address Line 2",
+            AddressLine3 = "Mailing Address Line 3",
+            AddressType = AddressType.Correspondence_1,
+        };
     }
     //public static class AgentMapper
     //{

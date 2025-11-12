@@ -8,7 +8,7 @@
         Correspondence_3 = 4,
         Permanent = 5
     }
-    public enum Reftype
+    public enum ReferenceType
     {
         Agent = 1,
     }

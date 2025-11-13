@@ -353,7 +353,7 @@ namespace HMS.Controllers
         }
         [HttpPost("AgentById")]
         //[HttpPost("{id:int}")]
-        //[MenuAuthorize(1001)]
+        [MenuAuthorize(1001)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
             HmsResponse hMSResponse = new HmsResponse();

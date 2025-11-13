@@ -1,4 +1,5 @@
-﻿using Models.DB;
+﻿using AutoMapper;
+using Models.DB;
 using Models.Enums;
 
 namespace Models.DTO
@@ -58,18 +59,18 @@ namespace Models.DTO
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
         public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
-        public string CandidateType = "Corporate";
-        public string ApplicationDocketNo = "AppDoc001";
-        public string Title = "Mr.";
-        public string Father_Husband_Nm = "Father_Husband_Nm";
-        public string Channel_Name = "Channel_Name";
-        public string Sub_Channel = "Sub_Channel";
-        public string EmployeeCode = "EMP001";
-        public DateTime? StartDate = DateTime.Now;
-        public bool? PanAadharLinkFlag = false;
-        public bool? Sec206abFlag = false;
-        public List<Nominee> nominees = new List<Nominee>();
-        public string? PackageID { get; set; }
+        public string CandidateType { get; set; }  = "Corporate";
+        public string ApplicationDocketNo { get; set; } = "AppDoc001";
+        public string Title { get; set; } = "Mr.";
+        public string Father_Husband_Nm { get; set; } = "Father_Husband_Nm";
+        public string Channel_Name { get; set; } = "Channel_Name";
+        public string Sub_Channel { get; set; } = "Sub_Channel";
+        public string EmployeeCode { get; set; } = "EMP001";
+        public DateTime? StartDate { get; set; } = DateTime.Now;
+        public bool PanAadharLinkFlag { get; set; } = false;
+        public bool Sec206abFlag { get; set; } = false;
+        public List<Nominee> nominees { get; set; } = new List<Nominee>();
+        public string? PackageID { get; set; } = "PackageID";
         public PersonalInfo? personalInfo { get; set; } = new PersonalInfo()
         {
             DateOfBirth = DateTime.Now,
@@ -81,23 +82,23 @@ namespace Models.DTO
             BloodGroup = "O -ve",
             PanNumber = "ERTYU4444K"
         };
-        public string? CommissionClass = "CommissionClass";
-        public string? TaxStatus = "TaxStatus";
-        public string? StateEid = "StateEid";
-        public int? OccupationCode = 0;
-        public String? Occupation = "Occupation";
-        public string? URN = "URN";
-        public string? AdditionalComment = "AdditionalComment";
-        public DateTime? AppointmentDate = DateTime.Now;
-        public DateTime? IncorporationDate = DateTime.Now;
-        public string? CnctPersonDesig = "Designation";
-        public string? CnctPersonMobileNo = "9833982266";
-        public string? CnctPersonEmail = "contactperson@gmail.com";
-        public string? CnctPersonName = "Contact Person Name";
-        public string? AgentTypeCategory = "AgentTypeCategory";
-        public string? AgentClassification = "AgentClassification";
-        public string? CMSAgentType = "CMSAgentType";
-        public List<BankAccount>? bankAccounts = new() {
+        public string? CommissionClass  { get; set; } = "CommissionClass";
+        public string? TaxStatus  { get; set; } = "TaxStatus";
+        public string? StateEid  { get; set; } = "StateEid";
+        public int? OccupationCode  { get; set; } = 0;
+        public String? Occupation  { get; set; } = "Occupation";
+        public string? URN  { get; set; } = "URN";
+        public string? AdditionalComment  { get; set; } = "AdditionalComment";
+        public DateTime? AppointmentDate  { get; set; } = DateTime.Now;
+        public DateTime? IncorporationDate  { get; set; } = DateTime.Now;
+        public string? CnctPersonDesig  { get; set; } = "Designation";
+        public string? CnctPersonMobileNo  { get; set; } = "9833982266";
+        public string? CnctPersonEmail  { get; set; } = "contactperson@gmail.com";
+        public string? CnctPersonName  { get; set; } = "Contact Person Name";
+        public string? AgentTypeCategory  { get; set; } = "AgentTypeCategory";
+        public string? AgentClassification  { get; set; } = "AgentClassification";
+        public string? CMSAgentType  { get; set; } = "CMSAgentType";
+        public List<BankAccount>? bankAccounts { get; set; } = new() {
             new BankAccount() {
             AccountHolderName = "AccountHolderName",
             AccountNumber = "1234567890",
@@ -112,8 +113,8 @@ namespace Models.DTO
             preferredPaymentMode = Enums.PreferredPaymentMode.Wallet
         }
         };
-        public string? ServiceTaxNo = "456789123";
-        public Address? PermanentAddres = new Address()
+        public string? ServiceTaxNo { get; set; } = "456789123";
+        public Address? PermanentAddres { get; set; } = new Address()
         {
             AddressID = 1000,
             AddressLine1 = "Perm Address Line 1",
@@ -121,7 +122,7 @@ namespace Models.DTO
             AddressLine3 = "Perm Address Line 3",
             AddressType = AddressType.Permanent,
         };
-        public Address? MailingAddres = new Address()
+        public Address? MailingAddres { get; set; } = new Address()
         {
             AddressID = 1000,
             AddressLine1 = "Mailing Address Line 1",
@@ -130,56 +131,6 @@ namespace Models.DTO
             AddressType = AddressType.Correspondence_1,
         };
     }
-    //public static class AgentMapper
-    //{
-    //    public static AgentDto ToDto(Agent agent)
-    //    {
-    //        return new AgentDto
-    //        {
-    //            AgentId = agent.AgentId,
-    //            AgentCode = agent.AgentCode,
-    //            AgentName = agent.AgentName,
-    //            AgentTypeCode = agent.AgentTypeCode,
-    //            AgentSubTypeCode = agent.AgentSubTypeCode,
-    //            BusinessName = agent.BusinessName,
-    //            FirstName = agent.FirstName,
-    //            MiddleName = agent.MiddleName,
-    //            LastName = agent.LastName,
-    //            Prefix = agent.Prefix,
-    //            Suffix = agent.Suffix,
-    //            SubChannelCode = agent.SubChannelCode,
-    //            ChannelCode = agent.ChannelCode,
-    //            aadhaar_number = agent.AadhaarNumber,
-    //            IrdaLicenseNumber = agent.IrdaLicenseNumber,
-    //            GstNumber = agent.GstNumber,
-    //            AgentLevel = agent.AgentLevel,
-    //            DesignationCode = agent.DesignationCode,
-    //            LocationCode = agent.LocationCode,
-    //            StaffCode = agent.StaffCode,
-    //            Supervisor_Id = agent.SupervisorId,
-    //            AgentStatusCode = agent.AgentStatusCode,
-    //            StatusDate = agent.StatusDate,
-    //            IsLicensed = agent.IsLicensed,
-    //            CreatedBy = agent.CreatedBy,
-    //            CreatedDate = agent.CreatedDate,
-    //            ModifiedBy = agent.ModifiedBy,
-    //            ModifiedDate = agent.ModifiedDate,
-    //            RowVersion = agent.RowVersion,
-    //            IsActive = agent.IsActive,
-    //            DOB = agent.DOB,
-    //            ContractedDate = agent.ContractedDate,
-    //            Gender = agent.Gender,
-    //            MaritalStatusCode = agent.MaritalStatusCode,
-    //            Nationality = agent.Nationality,
-    //            PreferredLanguage = agent.PreferredLanguage,
-    //            MaskedPanNumber = MaskingHelper.MaskPan(agent.PanNumber),
-    //            //PanNumber = string.Empty,
-    //            //Email = agent.Email,
-    //            //MobileNo = agent.MobileNo
-    //        };
-    //    }
-    //}
-
     public class AgentListRequest
     {
         public string userid
@@ -209,7 +160,6 @@ namespace Models.DTO
         public string? SortDirection { get; set; }
         public bool FetchHierarchy { get; set; } = false;
     }
-
     public class AgentDtoResponse
     {
         public int agent_id { get; set; }

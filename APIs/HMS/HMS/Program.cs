@@ -1,4 +1,5 @@
-﻿using CommonLibrary;
+﻿using AutoMapper;
+using CommonLibrary;
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
@@ -231,7 +232,11 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
-
+using (var scope = app.Services.CreateScope())
+{
+    var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+    mapper.ConfigurationProvider.AssertConfigurationIsValid(); // Throws if any map missing
+}
 // ----------------------------
 // Middleware
 // ----------------------------

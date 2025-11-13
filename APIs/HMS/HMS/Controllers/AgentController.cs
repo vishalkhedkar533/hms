@@ -353,7 +353,7 @@ namespace HMS.Controllers
         }
         [HttpPost("AgentById")]
         //[HttpPost("{id:int}")]
-        [MenuAuthorize(1001)]
+        //[MenuAuthorize(1001)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
             HmsResponse hMSResponse = new HmsResponse();
@@ -373,7 +373,7 @@ namespace HMS.Controllers
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
                 return NotFound(hMSResponse);
             }
-            var agentEntity = agent.Where(x => x.AgentId == searchAgent.AgentId).FirstOrDefaultAsync();
+            var agentEntity = await agent.Where(x => x.AgentId == searchAgent.AgentId).FirstOrDefaultAsync();
             if (agentEntity != null)
             {
                 agentDTO = _mapper.Map<AgentDto>(agentEntity);

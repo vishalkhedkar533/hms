@@ -6,7 +6,7 @@ namespace Models.DB
     {
         public int Id { get; set; }
         public int RefKey = 0;
-        public Reftype? RefType = Reftype.Agent;
+        public ReferenceType? RefType = ReferenceType.Agent;
         public string AccountHolderName { get; set; } = null!;
         public string AccountNumber { get; set; } = null!;
         public string IFSC { get; set; } = null!;

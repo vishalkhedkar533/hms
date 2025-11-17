@@ -12,10 +12,11 @@ let _token: string | null = null
 export const auth = {
   getToken(): string | null {
     //return 'mytoken';
+    console.log(_token);
     if (typeof window === 'undefined') return null // SSR guard
     if (_token) return _token
     _token = storage.get(TOKEN_KEY)
-    console.log(_token);
+    
     
     return _token
   },

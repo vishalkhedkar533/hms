@@ -7,14 +7,17 @@
       "config": { "distDir": "dist" }
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "https://hrmadmin-nodeproxxy.onrender.com/$1"
-    },
+      "source": "/api/:path*",
+      "destination": "https://hrmadmin-nodeproxxy.onrender.com/:path*"
+    }
+  ],
+  "redirects": [
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/:path*",
+      "destination": "/index.html",
+      "statusCode": 200
     }
   ]
 }

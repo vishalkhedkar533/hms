@@ -10,7 +10,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://hrmadmin-nodeproxxy.onrender.com/:path*"
+      "destination": "https://hms-odf9.vercel.app/:path*"
     },
     {
       "source": "/(.*)",

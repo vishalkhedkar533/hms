@@ -52,6 +52,17 @@ namespace Models.Mapping
                 .ForMember(dest => dest.Reportees, opt => opt.Ignore())
                 .ForMember(dest => dest.agentAuditTrail, opt => opt.Ignore())
                 .ForMember(dest => dest.peopleHeirarchy, opt => opt.Ignore())
+
+                .ForMember(dest => dest.UlipFlag, opt => opt.Ignore())
+                .ForMember(dest => dest.TrainingGroupType, opt => opt.Ignore())
+                .ForMember(dest => dest.Ifs, opt => opt.Ignore())
+                .ForMember(dest => dest.RefresherTrainingCompleted, opt => opt.Ignore())
+                .ForMember(dest => dest.IsMigrated, opt => opt.Ignore())
+                .ForMember(dest => dest.MainPartnerClientCode, opt => opt.Ignore())
+                .ForMember(dest => dest.AgentMaincodevwEid, opt => opt.Ignore())
+                .ForMember(dest => dest.RegistrationDate, opt => opt.Ignore())
+                .ForMember(dest => dest.Vertical, opt => opt.Ignore())
+
                 // ---- Reverse: AgentDto → Agent ----
                 .ReverseMap()
                 .ForMember(dest => dest.SupervisorId, opt => opt.MapFrom(src => src.Supervisor_Id))

@@ -130,6 +130,17 @@ namespace Models.DTO
             AddressLine3 = "Mailing Address Line 3",
             AddressType = AddressType.Correspondence_1,
         };
+
+        public bool UlipFlag { get; set; } = false;
+        public string? TrainingGroupType { get; set; } = "DefaultTrainingGroup";
+        public string? Ifs { get; set; } = "IFS Default";
+        public bool RefresherTrainingCompleted { get; set; } = false;
+        public bool IsMigrated { get; set; } = false;
+        public string? MainPartnerClientCode { get; set; } = "MPClient001";
+        public string? AgentMaincodevwEid { get; set; } = "EID001";
+        public DateTime? RegistrationDate { get; set; } = DateTime.Now;
+        public string? Vertical { get; set; } = "DefaultVertical";
+
     }
     public class AgentListRequest
     {

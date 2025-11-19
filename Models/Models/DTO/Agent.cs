@@ -130,41 +130,6 @@ namespace Models.DTO
             AddressLine3 = "Mailing Address Line 3",
             AddressType = AddressType.Correspondence_1,
         };
-
-        public bool UlipFlag { get; set; } = false;
-        public string? TrainingGroupType { get; set; } = "DefaultTrainingGroup";
-        public string? Ifs { get; set; } = "IFS Default";
-        public bool RefresherTrainingCompleted { get; set; } = false;
-        public bool IsMigrated { get; set; } = false;
-        public string? MainPartnerClientCode { get; set; } = "MPClient001";
-        public string? AgentMaincodevwEid { get; set; } = "EID001";
-        public DateTime? RegistrationDate { get; set; } = DateTime.Now;
-        public string? Vertical { get; set; } = "DefaultVertical";
-
-        public string? BranchCode { get; set; } = "DefaultBranchCode";
-        public string? BranchName { get; set; } = "DefaultBranchName";
-
-        public DateTime? Ic36TrngCompletionDate { get; set; } = DateTime.Now;
-        public DateTime? STrngCompletionDate { get; set; } = DateTime.Now;
-        public DateTime? ConfirmationDate { get; set; } = DateTime.Now;
-        public DateTime? FgRockstarTrainingDate { get; set; } = DateTime.Now;
-        public DateTime? IncrementDate { get; set; } = DateTime.Now;
-        public DateTime? LastPromotionDate { get; set; } = DateTime.Now;
-        public DateTime? HRDoj { get; set; } = DateTime.Now;
-        public DateTime? FgValueTrngDate { get; set; } = DateTime.Now;
-        public DateTime? HSecPolicyTrngDate { get; set; } = DateTime.Now;
-        public DateTime? ItSecPolicyTrngDate { get; set; } = DateTime.Now;
-        public DateTime? NpsTrngCompletionDate { get; set; } = DateTime.Now;
-        public DateTime? WhistleBlowerTrngDate { get; set; } = DateTime.Now;
-        public DateTime? GovPolicyTrngDate { get; set; } = DateTime.Now;
-        public DateTime? InductionTrngDate { get; set; } = DateTime.Now;
-        public DateTime? LastWorkingDate { get; set; } = DateTime.Now;
-
-        public string? LicenseNo { get; set; } = "DefaultLicenseNo";
-        public string? LicenseType { get; set; } = "DefaultLicenseType";
-        public DateTime? LicenseIssueDate { get; set; } = DateTime.Now;
-        public DateTime? LicenseExpiryDate { get; set; } = DateTime.Now;
-        public string? LicenseStatus { get; set; } = "Active";
     }
     public class AgentListRequest
     {

@@ -1,10 +1,12 @@
-﻿using Models.Enums;
+﻿using Microsoft.EntityFrameworkCore;
+using Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
     [Table("BankAccount", Schema = "hms")]
+    [Index(nameof(RefKey), nameof(RefType), IsUnique = true)]
     public class BankAccount
     {
         [Key]

@@ -14,10 +14,10 @@ namespace Models.DB
         public int Id { get; set; }
         [Required]
         [Column(TypeName = "integer")]
-        public int RefKey { get; set; } = 0;
+        public int RefKey { get; set; }
         [Required]
         [Column(TypeName = "integer")]
-        public int RefType { get; set; } = 1;
+        public ReferenceType RefType { get; set; } 
         [Required]
         [MaxLength(200)]
         public string AccountHolderName { get; set; } = null!;
@@ -40,6 +40,6 @@ namespace Models.DB
         [MaxLength(200)]
         public string? FactoringHouse { get; set; }
         [Required]
-        public PreferredPaymentMode PreferredPaymentMode { get; set; } = 1;
+        public PreferredPaymentMode PreferredPaymentMode { get; set; }
     }
 }

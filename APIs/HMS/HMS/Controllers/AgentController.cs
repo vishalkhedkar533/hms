@@ -426,6 +426,10 @@ namespace HMS.Controllers
                     .Where(a => a.AgentId == searchAgent.AgentId)
                     .ToListAsync();
 
+                agentDTO.bankAccounts = await _context.BankAccount
+                    .Where(b => b.RefKey == agentEntity.AgentId)
+                    .ToListAsync();
+
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;
                 agents.Add(agentDTO);

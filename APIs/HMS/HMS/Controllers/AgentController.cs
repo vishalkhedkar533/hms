@@ -424,10 +424,12 @@ namespace HMS.Controllers
                 }
                 var auditTrail = await _context.AgentAuditTrail
                     .Where(a => a.AgentId == searchAgent.AgentId)
+                    .AsNoTracking()
                     .ToListAsync();
 
                 agentDTO.bankAccounts = await _context.BankAccount
-                    .Where(b => b.RefKey == agentEntity.AgentId)
+                    .Where(b => agentEntity.AgentId  == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .AsNoTracking()
                     .ToListAsync();
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
@@ -561,6 +563,3 @@ namespace HMS.Controllers
         #endregion
     }
 }
-
-
-//Demo Comment

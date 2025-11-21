@@ -13,10 +13,10 @@ namespace Models.DB
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         [Required]
-        [Column(TypeName = "integer")]
+        [Column]
         public int RefKey { get; set; }
         [Required]
-        [Column(TypeName = "integer")]
+        [Column]
         public ReferenceType RefType { get; set; } 
         [Required]
         [MaxLength(200)]
@@ -35,7 +35,7 @@ namespace Models.DB
         public string? BranchName { get; set; }
         [Required]
         public int AccountType { get; set; } = 1;
-        [Column(TypeName = "timestamp")]
+        [Column]
         public DateTime? ActiveSince { get; set; } = DateTime.Now;
         [MaxLength(200)]
         public string? FactoringHouse { get; set; }

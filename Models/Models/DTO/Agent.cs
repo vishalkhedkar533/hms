@@ -98,21 +98,7 @@ namespace Models.DTO
         public string? AgentTypeCategory  { get; set; } = "AgentTypeCategory";
         public string? AgentClassification  { get; set; } = "AgentClassification";
         public string? CMSAgentType  { get; set; } = "CMSAgentType";
-        public List<BankAccount>? bankAccounts { get; set; } = new() {
-            new BankAccount() {
-            AccountHolderName = "AccountHolderName",
-            AccountNumber = "1234567890",
-            AccountType = Enums.BankAccType.Savings,
-            BankName = "Bank Name",
-            BranchName = "Branch Name",
-            ActiveSince = DateTime.Now,
-            FactoringHouse = "FactoringHouse",
-            Id = 1000,
-            IFSC = "123456789",
-            MICR = "789563231",
-            preferredPaymentMode = Enums.PreferredPaymentMode.Wallet
-        }
-        };
+        public List<BankAccount>? bankAccounts { get; set; }
         public string? ServiceTaxNo { get; set; } = "456789123";
         public Address? PermanentAddres { get; set; } = new Address()
         {

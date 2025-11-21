@@ -1352,3 +1352,23 @@ CREATE TABLE hms."Address" (
 ALTER TABLE hms."Address"
 ADD CONSTRAINT uq_address_refkey_reftype_addresstype
 UNIQUE ("RefKey", "RefType", "AddressType");
+
+
+CREATE TABLE hms."BankAccount" (
+    "Id" SERIAL PRIMARY KEY,
+    "RefKey" INTEGER NOT NULL DEFAULT 0,
+    "RefType" INTEGER NOT NULL DEFAULT 1,
+    "AccountHolderName" VARCHAR(200) NOT NULL,
+    "AccountNumber" VARCHAR(50) NOT NULL,
+    "IFSC" VARCHAR(20) NOT NULL,
+    "MICR" VARCHAR(20) NOT NULL,
+    "BankName" VARCHAR(200),
+    "BranchName" VARCHAR(200),
+    "AccountType" INTEGER NOT NULL DEFAULT 1,
+    "ActiveSince" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "FactoringHouse" VARCHAR(200),
+    "PreferredPaymentMode" INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE UNIQUE INDEX "IX_BankAccount_RefKey_RefType"
+ON hms."BankAccount" ("RefKey", "RefType");

@@ -27,6 +27,9 @@ namespace HMS.Data
         public DbSet<ChannelMaster> ChannelMaster => Set<ChannelMaster>();
         public DbSet<SubchannelMaster> SubchannelMaster => Set<SubchannelMaster>();
         public DbSet<BankAccount> BankAccount => Set<BankAccount>();
+        public DbSet<Address> Address => Set<Address>();
+        public DbSet<Nominee> Nominee => Set<Nominee>();
+        public DbSet<PersonalInfo> PersonalInfo => Set<PersonalInfo>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

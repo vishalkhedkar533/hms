@@ -1372,3 +1372,22 @@ CREATE TABLE hms."BankAccount" (
 
 CREATE UNIQUE INDEX "IX_BankAccount_RefKey_RefType"
 ON hms."BankAccount" ("RefKey", "RefType");
+
+
+CREATE TABLE hms."Nominee"
+(
+    "NomineeID"       SERIAL PRIMARY KEY,
+    "RefKey"          INTEGER NOT NULL,
+    "RefType"    INTEGER,
+    "NomineeName"     VARCHAR(255) NOT NULL,
+    "Relationship"    VARCHAR(255) NOT NULL,
+    "PercentageShare" NUMERIC(5,2) NOT NULL,
+    "IsActive"        BOOLEAN DEFAULT TRUE,
+    "NomineeAge"      BIGINT NOT NULL
+);
+
+
+CREATE UNIQUE INDEX "IX_Nominee_RefKey_RefType"
+ON hms."Nominee" ("RefKey", "RefType");
+
+

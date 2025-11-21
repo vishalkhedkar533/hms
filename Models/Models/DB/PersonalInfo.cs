@@ -1,39 +1,76 @@
-﻿using Microsoft.AspNetCore.SignalR.Protocol;
+﻿using Microsoft.EntityFrameworkCore;
 using Models.Enums;
-using System.Runtime.InteropServices;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
+    [Index(nameof(RefKey), nameof(RefType), IsUnique = true)]
+    [Table("PersonalInfo", Schema = "hms")]
     public class PersonalInfo
     {
-        public int Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public DateTime DateOfBirth { get; set; } = DateTime.Now;
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int PersonalInfoId { get; set; }
+
+        [Required]
+        [Column("RefKey")]
+        public int RefKey { get; set; }
+
+        [Column("RefType")]
+        public ReferenceType? RefType { get; set; }
+
+        [Required]
+        [Column("DateOfBirth")]
+        public DateTime DateOfBirth { get; set; }
+
+        [Column("PanNumber")]
+        [StringLength(10)]
         public string? PanNumber { get; set; }
+
+        [Column("Email")]
+        [EmailAddress]
         public string? Email { get; set; }
+
+        [Column("MobileNo")]
+        [Phone]
         public string? MobileNo { get; set; }
+
+        [Column("WorkContactNo")]
+        [Phone]
         public string? WorkContactNo { get; set; }
+
+        [Column("ResidenceContactNo")]
+        [Phone]
         public string? ResidenceContactNo { get; set; }
+
+        [Column("BloodGroup")]
+        [StringLength(5)]
         public string? BloodGroup { get; set; }
-        public Address? PermanentAddress { get; set; }
-        public Address? CorrepondenceAddress1 { get; set; }
-        public Address? CorrepondenceAddress2 { get; set; }
-        public Address? CorrepondenceAddress3 { get; set; }
-        public Address? WorkAddress { get; set; }
+
+        [Column("BirthPlace")]
         public string? BirthPlace { get; set; }
+
+        [Column("MartialStatus")]
         public MartialStatus? MartialStatus { get; set; }
-        public string EducationCode { get; set; } = null!;
-        public string EducationLevel { get; set; } = null!;
-        public string WorkProfile { get; set; } = null!;
-        public decimal AnnualIncome { get; set; }
-        public Int64 WorkExperience { get; set; }
-        /*
-         * Eductaion Code
-Eductaion Level
-Work Profile
-Annual Income 
-Work Experience 
-         */
+
+        [Column("EducationCode")]
+        public int? EducationCode { get; set; }
+
+        [Column("EducationLevel")]
+        [StringLength(50)]
+        public string? EducationLevel { get; set; }
+
+        [Column("WorkProfile")]
+        [StringLength(100)]
+        public string? WorkProfile { get; set; }
+
+        [Column("AnnualIncome")]
+        [Range(0, double.MaxValue)]
+        public decimal? AnnualIncome { get; set; }
+
+        [Column("WorkExpMonths")]
+        [Range(0, 600)]
+        public int? WorkExpMonths { get; set; }
     }
 }

@@ -59,98 +59,70 @@ namespace Models.DTO
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
         public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
-        public string CandidateType { get; set; }  = "Corporate";
-        public string ApplicationDocketNo { get; set; } = "AppDoc001";
-        public string Title { get; set; } = "Mr.";
-        public string Father_Husband_Nm { get; set; } = "Father_Husband_Nm";
-        public string Channel_Name { get; set; } = "Channel_Name";
-        public string Sub_Channel { get; set; } = "Sub_Channel";
-        public string EmployeeCode { get; set; } = "EMP001";
-        public DateTime? StartDate { get; set; } = DateTime.Now;
-        public bool PanAadharLinkFlag { get; set; } = false;
-        public bool Sec206abFlag { get; set; } = false;
-        public List<Nominee> nominees { get; set; } = new List<Nominee>();
-        public string? PackageID { get; set; } = "PackageID";
-        public PersonalInfo? personalInfo { get; set; } = new PersonalInfo()
-        {
-            DateOfBirth = DateTime.Now,
-            Email = "anc@gmail.com",
-            FirstName = "FirstName",
-            Id = 0,
-            LastName = "LastName",
-            MobileNo = "9833982266",
-            BloodGroup = "O -ve",
-            PanNumber = "ERTYU4444K"
-        };
-        public string? CommissionClass  { get; set; } = "CommissionClass";
-        public string? TaxStatus  { get; set; } = "TaxStatus";
-        public string? StateEid  { get; set; } = "StateEid";
-        public int? OccupationCode  { get; set; } = 0;
-        public String? Occupation  { get; set; } = "Occupation";
-        public string? URN  { get; set; } = "URN";
-        public string? AdditionalComment  { get; set; } = "AdditionalComment";
-        public DateTime? AppointmentDate  { get; set; } = DateTime.Now;
-        public DateTime? IncorporationDate  { get; set; } = DateTime.Now;
-        public string? CnctPersonDesig  { get; set; } = "Designation";
-        public string? CnctPersonMobileNo  { get; set; } = "9833982266";
-        public string? CnctPersonEmail  { get; set; } = "contactperson@gmail.com";
-        public string? CnctPersonName  { get; set; } = "Contact Person Name";
-        public string? AgentTypeCategory  { get; set; } = "AgentTypeCategory";
-        public string? AgentClassification  { get; set; } = "AgentClassification";
-        public string? CMSAgentType  { get; set; } = "CMSAgentType";
+        public string? CandidateType { get; set; }
+        public string? ApplicationDocketNo { get; set; }
+        public string? Title { get; set; }
+        public string? Father_Husband_Nm { get; set; }
+        public string? Channel_Name { get; set; }
+        public string? Sub_Channel { get; set; }
+        public string? EmployeeCode { get; set; }
+        public DateTime? StartDate { get; set; }
+        public bool PanAadharLinkFlag { get; set; }
+        public bool Sec206abFlag { get; set; }
+        public List<Nominee> nominees { get; set; }
+        public string? PackageID { get; set; }
+        public List<PersonalInfo> personalInfo { get; set; } 
+        public string? CommissionClass  { get; set; }
+        public string? TaxStatus  { get; set; }
+        public string? StateEid  { get; set; }
+        public int? OccupationCode  { get; set; } 
+        public String? Occupation  { get; set; }
+        public string? URN  { get; set; }
+        public string? AdditionalComment  { get; set; }
+        public DateTime? AppointmentDate  { get; set; } 
+        public DateTime? IncorporationDate  { get; set; }
+        public string? CnctPersonDesig  { get; set; }
+        public string? CnctPersonMobileNo  { get; set; }
+        public string? CnctPersonEmail  { get; set; }
+        public string? CnctPersonName  { get; set; }
+        public string? AgentTypeCategory  { get; set; }
+        public string? AgentClassification  { get; set; }
+        public string? CMSAgentType  { get; set; }
         public List<BankAccount>? bankAccounts { get; set; }
-        public string? ServiceTaxNo { get; set; } = "456789123";
-        public Address? PermanentAddres { get; set; } = new Address()
-        {
-            AddressID = 1000,
-            AddressLine1 = "Perm Address Line 1",
-            AddressLine2 = "Perm Address Line 2",
-            AddressLine3 = "Perm Address Line 3",
-            AddressType = AddressType.Permanent,
-        };
-        public Address? MailingAddres { get; set; } = new Address()
-        {
-            AddressID = 1000,
-            AddressLine1 = "Mailing Address Line 1",
-            AddressLine2 = "Mailing Address Line 2",
-            AddressLine3 = "Mailing Address Line 3",
-            AddressType = AddressType.Correspondence_1,
-        };
-
+        public string? ServiceTaxNo { get; set; }
+        public List<Address>? PermanentAddres { get; set; }
+        public List<Address>? MailingAddres { get; set; }
         public bool UlipFlag { get; set; } = false;
-        public string? TrainingGroupType { get; set; } = "DefaultTrainingGroup";
-        public string? Ifs { get; set; } = "IFS Default";
-        public bool RefresherTrainingCompleted { get; set; } = false;
-        public bool IsMigrated { get; set; } = false;
-        public string? MainPartnerClientCode { get; set; } = "MPClient001";
-        public string? AgentMaincodevwEid { get; set; } = "EID001";
-        public DateTime? RegistrationDate { get; set; } = DateTime.Now;
-        public string? Vertical { get; set; } = "DefaultVertical";
-
-        public string? BranchCode { get; set; } = "DefaultBranchCode";
-        public string? BranchName { get; set; } = "DefaultBranchName";
-
-        public DateTime? Ic36TrngCompletionDate { get; set; } = DateTime.Now;
-        public DateTime? STrngCompletionDate { get; set; } = DateTime.Now;
-        public DateTime? ConfirmationDate { get; set; } = DateTime.Now;
-        public DateTime? FgRockstarTrainingDate { get; set; } = DateTime.Now;
-        public DateTime? IncrementDate { get; set; } = DateTime.Now;
-        public DateTime? LastPromotionDate { get; set; } = DateTime.Now;
-        public DateTime? HRDoj { get; set; } = DateTime.Now;
-        public DateTime? FgValueTrngDate { get; set; } = DateTime.Now;
-        public DateTime? HSecPolicyTrngDate { get; set; } = DateTime.Now;
-        public DateTime? ItSecPolicyTrngDate { get; set; } = DateTime.Now;
-        public DateTime? NpsTrngCompletionDate { get; set; } = DateTime.Now;
-        public DateTime? WhistleBlowerTrngDate { get; set; } = DateTime.Now;
-        public DateTime? GovPolicyTrngDate { get; set; } = DateTime.Now;
-        public DateTime? InductionTrngDate { get; set; } = DateTime.Now;
-        public DateTime? LastWorkingDate { get; set; } = DateTime.Now;
-
-        public string? LicenseNo { get; set; } = "DefaultLicenseNo";
-        public string? LicenseType { get; set; } = "DefaultLicenseType";
-        public DateTime? LicenseIssueDate { get; set; } = DateTime.Now;
-        public DateTime? LicenseExpiryDate { get; set; } = DateTime.Now;
-        public string? LicenseStatus { get; set; } = "Active";
+        public string? TrainingGroupType { get; set; }
+        public string? Ifs { get; set; }
+        public bool RefresherTrainingCompleted { get; set; } 
+        public bool IsMigrated { get; set; }
+        public string? MainPartnerClientCode { get; set; }
+        public string? AgentMaincodevwEid { get; set; }
+        public DateTime? RegistrationDate { get; set; }
+        public string? Vertical { get; set; }
+        public string? BranchCode { get; set; }
+        public string? BranchName { get; set; }
+        public DateTime? Ic36TrngCompletionDate { get; set; }
+        public DateTime? STrngCompletionDate { get; set; }
+        public DateTime? ConfirmationDate { get; set; }
+        public DateTime? FgRockstarTrainingDate { get; set; }
+        public DateTime? IncrementDate { get; set; }
+        public DateTime? LastPromotionDate { get; set; }
+        public DateTime? HRDoj { get; set; }
+        public DateTime? FgValueTrngDate { get; set; }
+        public DateTime? HSecPolicyTrngDate { get; set; }
+        public DateTime? ItSecPolicyTrngDate { get; set; }
+        public DateTime? NpsTrngCompletionDate { get; set; }
+        public DateTime? WhistleBlowerTrngDate { get; set; }
+        public DateTime? GovPolicyTrngDate { get; set; }
+        public DateTime? InductionTrngDate { get; set; }
+        public DateTime? LastWorkingDate { get; set; }
+        public string? LicenseNo { get; set; }
+        public string? LicenseType { get; set; }
+        public DateTime? LicenseIssueDate { get; set; }
+        public DateTime? LicenseExpiryDate { get; set; }
+        public string? LicenseStatus { get; set; }
     }
     public class AgentListRequest
     {

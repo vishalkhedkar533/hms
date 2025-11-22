@@ -426,9 +426,33 @@ namespace HMS.Controllers
                     .Where(a => a.AgentId == searchAgent.AgentId)
                     .AsNoTracking()
                     .ToListAsync();
-
+                //Bank Accounts
                 agentDTO.bankAccounts = await _context.BankAccount
                     .Where(b => agentEntity.AgentId  == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                //Permanent Address
+                agentDTO.PermanentAddres = await _context.Address
+                    .Where(b =>agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Permanent == b.AddressType)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                //Mailing Address
+                agentDTO.MailingAddres = await _context.Address
+                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Correspondence == b.AddressType)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                //Nominees
+                agentDTO.nominees = await _context.Nominee
+                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                //Personal Infomation
+                agentDTO.personalInfo = await _context.PersonalInfo
+                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 

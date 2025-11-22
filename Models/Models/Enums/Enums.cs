@@ -1,12 +1,10 @@
 ﻿namespace Models.Enums
 {
-    public enum AddressType
+    public enum AddressType : int
     {
         Work = 1,
-        Correspondence_1 = 2,
-        Correspondence_2 = 3,
-        Correspondence_3 = 4,
-        Permanent = 5
+        Correspondence = 2,
+        Permanent = 3
     }
     public enum ReferenceType : int
     {
@@ -17,7 +15,7 @@
         Savings = 1,
         Current = 2,
     }
-    public enum MartialStatus 
+    public enum MartialStatus :int
     {
         Single = 1,
         Married = 2,

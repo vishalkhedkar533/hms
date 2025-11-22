@@ -1390,4 +1390,27 @@ CREATE TABLE hms."Nominee"
 CREATE UNIQUE INDEX "IX_Nominee_RefKey_RefType"
 ON hms."Nominee" ("RefKey", "RefType");
 
+CREATE TABLE hms."PersonalInfo"
+(
+    "PersonalInfoId" SERIAL PRIMARY KEY,
+    "RefKey" INTEGER NOT NULL,
+    "RefType" INTEGER,
+    "DateOfBirth" DATE,
+    "PanNumber" VARCHAR(20) null,
+    "Email" VARCHAR(255) null,
+    "MobileNo" VARCHAR(20) null,
+    "WorkContactNo" VARCHAR(20) null,
+    "ResidenceContactNo" VARCHAR(20) null,
+    "BloodGroup" VARCHAR(10),
+    "BirthPlace" VARCHAR(100),
+    "MartialStatus" INTEGER,     -- enum stored as int
+    "EducationCode" INTEGER,
+    "EducationLevel" VARCHAR(200)  null,
+    "WorkProfile" VARCHAR(200) null,
+    "AnnualIncome" NUMERIC(18,2),
+    "WorkExpMonths" INTEGER
+);
+
+CREATE UNIQUE INDEX "IX_PersonalInfo_RefKey_RefType"
+ON hms."PersonalInfo" ("RefKey", "RefType");
 

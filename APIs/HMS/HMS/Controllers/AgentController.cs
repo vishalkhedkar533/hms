@@ -1,4 +1,5 @@
 using AutoMapper;
+using CommonLibrary.Background;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
@@ -352,7 +353,6 @@ namespace HMS.Controllers
             return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
         }
         [HttpPost("AgentById")]
-        //[HttpPost("{id:int}")]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
@@ -583,7 +583,20 @@ namespace HMS.Controllers
             return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
 
         }
-
         #endregion
+        [HttpPost("Bulk/Create")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> BulkAgentCreate(SearchAgent searchAgent,
+            [FromServices] IExcelProcessingQueue queue)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            //return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+            return Ok(hMSResponse);
+        }
+
     }
 }

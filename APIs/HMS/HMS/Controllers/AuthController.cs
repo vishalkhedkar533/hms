@@ -168,7 +168,8 @@ namespace HMS.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),   // 👈 JWT standard "sub"
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),     // 👈 .NET convention
                 new Claim(ClaimTypes.Name, user.Username),                        // Username
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Unique token ID
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Unique token ID,
+                new Claim("organisationId", user.UserId.ToString())                           // Custom claim for User ID
             };
 
             // Add role claims

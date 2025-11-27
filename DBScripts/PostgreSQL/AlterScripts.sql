@@ -125,3 +125,10 @@ ADD COLUMN licensetype VARCHAR(50),
 ADD COLUMN licenseissuedate TIMESTAMP,
 ADD COLUMN licenseexpirydate TIMESTAMP,
 ADD COLUMN licensestatus VARCHAR(50);
+
+
+alter table hms."user" ADD COLUMN OrgId INTEGER;
+
+alter table hms."user" 
+add CONSTRAINT fk_User_OrgId
+FOREIGN KEY (OrgId) REFERENCES hms.Organisation(OrgId)

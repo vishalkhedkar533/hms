@@ -189,7 +189,10 @@ namespace HMS.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),     // 👈 .NET convention
                 new Claim(ClaimTypes.Name, user.Username),                        // Username
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Unique token ID,
-                new Claim("organisationId", user.OrgId.ToString())                           // Custom claim for User ID
+                new Claim("OrganisationId", user.OrgId.ToString()), // Custom claim for User ID
+                new Claim("OrganisationName", user.OrgName.ToString()), // Custom claim for User ID
+                new Claim("SubscriberId", user.SubscriberId.ToString()), // Custom claim for User ID
+                new Claim("SubscriberName", user.SubscriberName.ToString()) // Custom claim for User ID
             };
 
             // Add role claims

@@ -1,4 +1,5 @@
 using AutoMapper;
+using CommonLibrary;
 using CommonLibrary.Background;
 using HMS.Data;
 using HMS.Security;
@@ -363,6 +364,23 @@ namespace HMS.Controllers
             List<AgentDto> agents = new List<AgentDto>();
             AgentDto agentDTO = new AgentDto();
             IQueryable <Agent> agent = _context.Agents;
+
+            #region FetchLoggedInUserInfo
+            string jwtString = "";
+
+            var decoder = new JwtDecoder();
+            var claimsData = decoder.GetClaimsFromJwt(jwtString);
+
+            Console.WriteLine("--- Decoded JWT Claims ---");
+            foreach (var kvp in claimsData)
+            {
+                Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+            }
+
+            // Example of retrieving a specific claim
+            string userId = decoder.GetSpecificClaim(jwtString, "sub");
+            Console.WriteLine($"\nUser ID (sub): {userId}");
+            #endregion
 
             if (searchAgent.AgentId ==null)
             {

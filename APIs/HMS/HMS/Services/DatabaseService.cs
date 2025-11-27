@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Models.DB;
 using Newtonsoft.Json.Linq;
 using Npgsql;
 using System.Data;

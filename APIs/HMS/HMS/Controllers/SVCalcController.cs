@@ -56,7 +56,7 @@ namespace HMS.Controllers
         public int? PT { get; set; } = 20;
         public int? PPT { get; set; } = 20;
         public int? premium { get; set; } = 2000;
-        public string? Product { get; set; } = "Star Union Dai-ichi Life Saral Jeevan Bima"
+        public string? Product { get; set; } = "Star Union Dai-ichi Life Saral Jeevan Bima";
         public DateTime? RCD { get; set; } = DateTime.Now.AddYears(-10);
         public int? totalPremiumPaid { get; set; } = 20;
         public int? pendingInstallments { get; set; } = 5;

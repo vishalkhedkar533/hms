@@ -9,14 +9,11 @@ namespace Models.DB
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int OrgId { get; set; }
-
         [Required]
         [MaxLength(500)]
         public string OrgName { get; set; } = string.Empty;
-
         [Required]
         public int SubscriberId { get; set; }
-
         [ForeignKey(nameof(SubscriberId))]
         public Subscriber Subscriber { get; set; } = null!;
     }

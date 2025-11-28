@@ -20,6 +20,14 @@
 			"UseRegEx": true,
 			"AllowBlank": true,
 			"TrimContent": true
+		},
+		{
+			"ColumnName": "PAN",
+			"DestinationDataType": "System.String",
+			"DataFormat": "^[A-Z]{5}[0-9]{4}[A-Z]$",
+			"UseRegEx": true,
+			"AllowBlank": true,
+			"TrimContent": true
 		}
 	]
 }

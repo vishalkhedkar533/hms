@@ -18,6 +18,7 @@ namespace HMS.Controllers
         {
         }
         //[MenuAuthorize(1001)]
+        [HttpPost("CalculateSV")]
         public async Task<IActionResult> CalculateSV(PolicySearchResponse policySearchResponse)
         {
             SVCalcResponse svCalcResponse = new SVCalcResponse();
@@ -28,6 +29,7 @@ namespace HMS.Controllers
             return Ok(svCalcResponse);
         }
         //[MenuAuthorize(1001)]
+        [HttpPost("SearchPolicy")]
         public async Task<IActionResult> SearchPolicy(PolicySearchRequest policySearchRequest)
         {
             PolicySearchResponse policySearchResponse = new PolicySearchResponse();

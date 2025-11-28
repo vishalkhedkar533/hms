@@ -30,6 +30,8 @@ namespace HMS.Data
         public DbSet<Address> Address => Set<Address>();
         public DbSet<Nominee> Nominee => Set<Nominee>();
         public DbSet<PersonalInfo> PersonalInfo => Set<PersonalInfo>();
+        public DbSet<Subscriber> Subscriber => Set<Subscriber>();
+        public DbSet<Organisation> Organisation => Set<Organisation>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

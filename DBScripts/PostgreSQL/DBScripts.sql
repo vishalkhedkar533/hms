@@ -1414,3 +1414,50 @@ CREATE TABLE hms."PersonalInfo"
 CREATE UNIQUE INDEX "IX_PersonalInfo_RefKey_RefType"
 ON hms."PersonalInfo" ("RefKey", "RefType");
 
+CREATE TABLE hms.FileProcessingTasks (
+    Id SERIAL NOT NULL PRIMARY KEY,
+    FilePath VARCHAR(500) NOT NULL,
+    Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    CreatedBy VARCHAR(100) NOT NULL,
+    
+    -- FileInfo Properties
+    FileName VARCHAR(255) NOT NULL,                        -- .NET FileInfo.Name
+    FileExtension VARCHAR(50) NOT NULL,                    -- .NET FileInfo.Extension
+    FileSize BIGINT NULL,                                  -- .NET FileInfo.Length (in bytes)
+    IsReadOnly BOOLEAN NULL,                               -- .NET FileInfo.IsReadOnly
+    
+    FileCreationTime TIMESTAMP WITHOUT TIME ZONE NULL,     -- .NET FileInfo.CreationTimeUtc
+    FileLastWriteTime TIMESTAMP WITHOUT TIME ZONE NULL,    -- .NET FileInfo.LastWriteTimeUtc
+    
+    -- Numeric fields for tracking row counts
+    TotalRows INTEGER NULL,
+    RowsProcessed INTEGER NULL,
+    RowsRejected INTEGER NULL,
+    
+    CreatedAt TIMESTAMP WITHOUT TIME ZONE NOT NULL DEFAULT NOW(),
+    StartedAt TIMESTAMP WITHOUT TIME ZONE NULL,
+    CompletedAt TIMESTAMP WITHOUT TIME ZONE NULL,
+    ErrorMessage TEXT NULL
+);
+
+-- Optional index for faster polling
+CREATE INDEX IX_FileProcessingTasks_Status_CreatedAt
+    ON hms.FileProcessingTasks (Status, CreatedAt);
+
+create table hms.Subscriber(
+	SubscriberId SERIAL NOT NULL PRIMARY KEY,
+	SubscriberName VARCHAR(500) NOT NULL	
+);
+
+create table hms.Organisation(
+	OrgId SERIAL NOT NULL PRIMARY KEY,
+	SubscriberId INTEGER NOT NULL,
+	OrgName VARCHAR(500) NOT NULL,
+	CONSTRAINT fk_SubscriberId
+	FOREIGN KEY (SubscriberId) REFERENCES hms.Subscriber(SubscriberId)
+);
+
+CREATE INDEX IX_Organisation_SubscriberId
+    ON hms.Organisation (SubscriberId);
+
+

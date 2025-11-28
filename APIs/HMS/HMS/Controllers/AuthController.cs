@@ -4,6 +4,7 @@ using HMS.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Models.DB;
 using Models.DTO;
@@ -162,13 +163,36 @@ namespace HMS.Controllers
             var audience = _config["Jwt:Audience"];
             int expiresTime = int.TryParse(_config["Jwt:ExpiresTime"], out var time) ? time : 60; // Default to 60 minutes if not set
 
+            var orgName  = _context.Organisation.AsNoTracking()
+                .Where(o => o.OrgId == user.OrgId)
+                .FirstOrDefault();
+            
+            if (orgName != null)
+            {
+                user.OrgName = orgName.OrgName;
+
+                var subscriber = _context.Subscriber.AsNoTracking()
+                    .Where(s => s.SubscriberId == orgName.SubscriberId)
+                    .FirstOrDefault() ?? new Subscriber();
+
+                if (subscriber!= null)
+                {
+                    user.SubscriberName = subscriber.SubscriberName;
+                    user.SubscriberId = subscriber.SubscriberId;
+                }
+            }
+
             var claims = new List<Claim>
             {
                 // Standard claims
                 new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),   // 👈 JWT standard "sub"
                 new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),     // 👈 .NET convention
                 new Claim(ClaimTypes.Name, user.Username),                        // Username
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Unique token ID
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Unique token ID,
+                new Claim("OrganisationId", user.OrgId.ToString()), // Custom claim for User ID
+                new Claim("OrganisationName", user.OrgName.ToString()), // Custom claim for User ID
+                new Claim("SubscriberId", user.SubscriberId.ToString()), // Custom claim for User ID
+                new Claim("SubscriberName", user.SubscriberName.ToString()) // Custom claim for User ID
             };
 
             // Add role claims

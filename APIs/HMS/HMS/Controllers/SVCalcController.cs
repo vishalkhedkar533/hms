@@ -59,7 +59,7 @@ namespace HMS.Controllers
         public string? Product { get; set; } = "Star Union Dai-ichi Life Saral Jeevan Bima";
         public DateTime? RCD { get; set; } = DateTime.Now.AddYears(-10);
         public int? totalPremiumPaid { get; set; } = 20;
-        public int? pendingInstallments { get; set; } = 5;
+        public int? pendingPremiumInstallments { get; set; } = 5;
         public Customer? Proposer { get; set; } = new Customer { Name = "John Doe", DoB = DateTime.Now.AddYears(-30), Age = 30 };
         public Customer? Insured { get; set; }= new Customer { Name = "Jane Doe", DoB = DateTime.Now.AddYears(-25), Age = 25 };
         public string? UIN { get; set; } ="UIN12345";
@@ -71,6 +71,7 @@ namespace HMS.Controllers
         public string? Name { get; set; }
         public DateTime? DoB { get; set; }
         public int? Age { get; set; }
+        public string Gender { get; set; } = "Male";
     }
     public class SVCalcResponse
     {
@@ -87,5 +88,6 @@ namespace HMS.Controllers
         public decimal BonusValue { get; set; } = 1005;
         public decimal TotalPremiumPaid { get; set; } = 1005;
         public DateTime CalculationDt { get; set; } = DateTime.Now;
+        public PolicySearchResponse policy { get; set; } = new PolicySearchResponse();
     }
 }

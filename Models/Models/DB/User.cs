@@ -69,5 +69,13 @@ namespace Models.DB
         public int failedloginattempts { get; set; } = 0;
         [Column("lockoutendtime")]
         public DateTime? lockoutendtime { get; set; } = null;
+        [Column("orgid")]
+        public int? OrgId { get; set; } = null;
+        [NotMapped]
+        public string? OrgName { get; set; } = null;
+        [NotMapped]
+        public int? SubscriberId { get; set; } = null;
+        [NotMapped]
+        public string? SubscriberName { get; set; } = null;
     }
 }

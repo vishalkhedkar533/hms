@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ExcelProcess": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

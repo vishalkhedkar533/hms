@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Models.DB;
 using Models.Enums;
+using System.Net.NetworkInformation;
 
 namespace Models.DTO
 {
@@ -69,25 +70,25 @@ namespace Models.DTO
         public DateTime? StartDate { get; set; }
         public bool PanAadharLinkFlag { get; set; }
         public bool Sec206abFlag { get; set; }
-        public List<Nominee> nominees { get; set; }
+        public List<Nominee>? nominees { get; set; }
         public string? PackageID { get; set; }
-        public List<PersonalInfo> personalInfo { get; set; } 
-        public string? CommissionClass  { get; set; }
-        public string? TaxStatus  { get; set; }
-        public string? StateEid  { get; set; }
-        public int? OccupationCode  { get; set; } 
-        public String? Occupation  { get; set; }
-        public string? URN  { get; set; }
-        public string? AdditionalComment  { get; set; }
-        public DateTime? AppointmentDate  { get; set; } 
-        public DateTime? IncorporationDate  { get; set; }
-        public string? CnctPersonDesig  { get; set; }
-        public string? CnctPersonMobileNo  { get; set; }
-        public string? CnctPersonEmail  { get; set; }
-        public string? CnctPersonName  { get; set; }
-        public string? AgentTypeCategory  { get; set; }
-        public string? AgentClassification  { get; set; }
-        public string? CMSAgentType  { get; set; }
+        public List<PersonalInfo>? personalInfo { get; set; }
+        public string? CommissionClass { get; set; }
+        public string? TaxStatus { get; set; }
+        public string? StateEid { get; set; }
+        public int? OccupationCode { get; set; }
+        public String? Occupation { get; set; }
+        public string? URN { get; set; }
+        public string? AdditionalComment { get; set; }
+        public DateTime? AppointmentDate { get; set; }
+        public DateTime? IncorporationDate { get; set; }
+        public string? CnctPersonDesig { get; set; }
+        public string? CnctPersonMobileNo { get; set; }
+        public string? CnctPersonEmail { get; set; }
+        public string? CnctPersonName { get; set; }
+        public string? AgentTypeCategory { get; set; }
+        public string? AgentClassification { get; set; }
+        public string? CMSAgentType { get; set; }
         public List<BankAccount>? bankAccounts { get; set; }
         public string? ServiceTaxNo { get; set; }
         public List<Address>? PermanentAddres { get; set; }
@@ -95,7 +96,7 @@ namespace Models.DTO
         public bool UlipFlag { get; set; } = false;
         public string? TrainingGroupType { get; set; }
         public string? Ifs { get; set; }
-        public bool RefresherTrainingCompleted { get; set; } 
+        public bool RefresherTrainingCompleted { get; set; }
         public bool IsMigrated { get; set; }
         public string? MainPartnerClientCode { get; set; }
         public string? AgentMaincodevwEid { get; set; }
@@ -123,6 +124,15 @@ namespace Models.DTO
         public DateTime? LicenseIssueDate { get; set; }
         public DateTime? LicenseExpiryDate { get; set; }
         public string? LicenseStatus { get; set; }
+
+        public string? AddressLine1 { get; set; }
+        public string? AddressLine2 { get; set; }
+        public string? AddressLine3 { get; set; }
+        public string? City { get; set; }
+        public string? State { get; set; }
+        public string? Country { get; set; }
+        public string? Pin { get; set; }
+        public string? Landmark { get; set; }
     }
     public class AgentListRequest
     {

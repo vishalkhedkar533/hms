@@ -125,3 +125,12 @@ ADD COLUMN licensetype VARCHAR(50),
 ADD COLUMN licenseissuedate TIMESTAMP,
 ADD COLUMN licenseexpirydate TIMESTAMP,
 ADD COLUMN licensestatus VARCHAR(50);
+
+
+ALTER TABLE hms."agent"
+ADD COLUMN "ActivePermAddress" INT NULL,
+ADD COLUMN "ActiveMailAddress" INT NULL,
+ADD CONSTRAINT fk_agent_perm_address
+    FOREIGN KEY ("ActivePermAddress") REFERENCES hms."Address"("AddressID"),
+ADD CONSTRAINT fk_agent_mail_address
+    FOREIGN KEY ("ActiveMailAddress") REFERENCES hms."Address"("AddressID");

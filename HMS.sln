@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Communication", "CommonLibr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommonLibrary", "CommonLibrary\CommonLibrary\CommonLibrary.csproj", "{2331E49C-8FBD-51E7-1C2D-0CCF31BDB0CD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcelProcess", "APIs\ExcelProcess\ExcelProcess\ExcelProcess\ExcelProcess.csproj", "{CC276C27-C66A-D77B-E571-6866C9716163}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{2331E49C-8FBD-51E7-1C2D-0CCF31BDB0CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2331E49C-8FBD-51E7-1C2D-0CCF31BDB0CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2331E49C-8FBD-51E7-1C2D-0CCF31BDB0CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC276C27-C66A-D77B-E571-6866C9716163}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC276C27-C66A-D77B-E571-6866C9716163}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC276C27-C66A-D77B-E571-6866C9716163}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC276C27-C66A-D77B-E571-6866C9716163}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

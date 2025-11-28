@@ -7,17 +7,16 @@ using Models.DTO;
 
 namespace HMS.Controllers
 {
+    [Route("api/[controller]")]
     public class SVCalcController : Controller
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
         private readonly DatabaseService _db;
-
         public SVCalcController(HMSContext context, IConfiguration config, IMapper mapper, DatabaseService db)
         {
         }
-        [HttpPost("CalculateSV")]
         //[MenuAuthorize(1001)]
         public async Task<IActionResult> CalculateSV(PolicySearchResponse policySearchResponse)
         {
@@ -28,9 +27,6 @@ namespace HMS.Controllers
 
             return Ok(svCalcResponse);
         }
-
-
-        [HttpPost("SearchPolicy")]
         //[MenuAuthorize(1001)]
         public async Task<IActionResult> SearchPolicy(PolicySearchRequest policySearchRequest)
         {
@@ -42,12 +38,10 @@ namespace HMS.Controllers
             return Ok(policySearchResponse);
         }
     }
-
     public class PolicySearchRequest
     {
         public string? policyNo { get; set; } = "POL12345";
     }
-
     public class PolicySearchResponse
     {
         public string? policyNo { get; set; } = "POL12345";
@@ -65,7 +59,6 @@ namespace HMS.Controllers
         public string? UIN { get; set; } ="UIN12345";
         public string? ProductOption { get; set; } ="Option1";
     }
-
     public class Customer
     {
         public string? Name { get; set; }

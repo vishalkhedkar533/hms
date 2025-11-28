@@ -1,0 +1,25 @@
+{
+	"OrgId": 1,
+	"InputType": "AgentCreate",
+	"fileExtenstion": [
+		".xlsx;.xls"
+	],
+	"excelColumns": [
+		{
+			"ColumnName": "AgentDoB",
+			"DestinationDataType": "System.DateTime",
+			"DataFormat": "yyyy-MM-dd",
+			"UseRegEx": false,
+			"AllowBlank": true,
+			"TrimContent": true
+		},
+		{
+			"ColumnName": "aadharNo",
+			"DestinationDataType": "System.String",
+			"DataFormat": "^(?:\\d{12}|\\d{4}\\s\\d{4}\\s\\d{4}|\\d{4}-\\d{4}-\\d{4})$",
+			"UseRegEx": true,
+			"AllowBlank": true,
+			"TrimContent": true
+		}
+	]
+}

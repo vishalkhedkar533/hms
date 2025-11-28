@@ -38,6 +38,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Update="InputStructures\excelStructureValidator.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Update="Mappings\mappings.postgresql.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

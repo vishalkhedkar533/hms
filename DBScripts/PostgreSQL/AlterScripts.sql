@@ -134,3 +134,8 @@ ADD CONSTRAINT fk_agent_perm_address
     FOREIGN KEY ("ActivePermAddress") REFERENCES hms."Address"("AddressID"),
 ADD CONSTRAINT fk_agent_mail_address
     FOREIGN KEY ("ActiveMailAddress") REFERENCES hms."Address"("AddressID");
+
+
+alter table hms.tempagentdto 
+add column "Comments" varchar,
+add column "Reason" varchar

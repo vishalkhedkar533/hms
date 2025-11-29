@@ -133,6 +133,8 @@ namespace Models.DTO
         public string? Country { get; set; }
         public string? Pin { get; set; }
         public string? Landmark { get; set; }
+        public string? Comments { get; set; } 
+        public string? Reason { get; set; }
     }
     public class AgentListRequest
     {

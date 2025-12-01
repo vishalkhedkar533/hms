@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Models.DB
 {
     // Sets the table name and schema for EF Core mapping.
-    [Table("subscriber", Schema = "hms")]
+    [Table("subscriber", Schema = "app_subscription")]
     public class Subscriber
     {
         /// <summary>

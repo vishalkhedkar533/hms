@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
-    [Table("organisation", Schema = "hms")]
+    [Table("organisation", Schema = "app_subscription")]
     public class Organisation
     {
         // Corresponds to 'orgid serial4 NOT NULL'

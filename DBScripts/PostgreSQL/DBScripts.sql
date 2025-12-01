@@ -1460,4 +1460,27 @@ create table hms.Organisation(
 CREATE INDEX IX_Organisation_SubscriberId
     ON hms.Organisation (SubscriberId);
 
+create schema app_subscription
 
+DROP TABLE hms.subscriber;
+
+CREATE TABLE app_subscription.subscriber (
+	subscriberid serial4 NOT NULL,
+	subscribername varchar(500) NOT NULL,
+	CONSTRAINT subscriber_pkey PRIMARY KEY (subscriberid)
+);
+
+DROP TABLE hms.organisation;
+
+CREATE TABLE app_subscription.organisation (
+	orgid serial4 NOT NULL,
+	subscriberid int4 NOT NULL,
+	orgname varchar(500) NOT NULL,
+	CONSTRAINT organisation_pkey PRIMARY KEY (orgid)
+);
+CREATE INDEX ix_organisation_subscriberid ON app_subscription.organisation USING btree (subscriberid);
+
+
+-- hms.organisation foreign keys
+
+ALTER TABLE app_subscription.organisation ADD CONSTRAINT fk_subscriberid FOREIGN KEY (subscriberid) REFERENCES app_subscription.subscriber(subscriberid);

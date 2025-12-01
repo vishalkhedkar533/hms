@@ -1478,13 +1478,21 @@ CREATE TABLE app_subscription.organisation (
 );
 CREATE INDEX ix_organisation_subscriberid ON app_subscription.organisation USING btree (subscriberid);
 
-
--- hms.organisation foreign keys
-
 ALTER TABLE app_subscription.organisation ADD CONSTRAINT fk_subscriberid FOREIGN KEY (subscriberid) REFERENCES app_subscription.subscriber(subscriberid);
 ALTER TABLE hms.organisation DROP CONSTRAINT fk_subscriberid;
-ALTER TABLE hms."user" DROP CONSTRAINT fk_user_orgid;
+ALTER TABLE hms."user" DROP CONSTRAINT fks_user_orgid;
 DROP TABLE hms.organisation;
 DROP TABLE hms.subscriber;
 
 ALTER TABLE hms."user" ADD CONSTRAINT fk_user_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+
+create table hmsmaster.KeyValueEntries
+(
+	orgid int4 NOT NULL,
+	EntryCategory int not null,
+	EntryIdentity int not null,
+	EntryDesc int not null,
+	EntryParentID int null,
+	ActiveStatus boolean null
+);
+

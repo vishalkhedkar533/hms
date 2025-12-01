@@ -22,10 +22,14 @@ namespace HMS.Controllers
         [HttpPost("get/{schema}/{table}")]
         public async Task<IActionResult> GetRecords(string schema, string table)
         {
+            //HttpContext.User.Claims.Where(x=>x.Type.Equals("OrganisationId")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
+            //HttpContext.User.Claims.Where(x=>x.Type.Equals("OrganisationName")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
+            //HttpContext.User.Claims.Where(x=>x.Type.Equals("SubscriberId")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
+            //HttpContext.User.Claims.Where(x=>x.Type.Equals("SubscriberName")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
             if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
 
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
-
+            //pass OrgID into GetRecordsAsync if needed for multi-tenant caching
             var result = await _cacheService.GetRecordsAsync(schema, table, refreshInterval);
             return Ok(result);
         }

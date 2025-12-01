@@ -19,7 +19,7 @@ namespace HMS.Controllers
 
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
         // POST api/cache/get/hms/customer
-        [HttpPost("get/{schema}/{table}")]
+        [HttpPost("get/{schema}/{table}/{category}")]
         public async Task<IActionResult> GetRecords(string schema, string table)
         {
             //HttpContext.User.Claims.Where(x=>x.Type.Equals("OrganisationId")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty

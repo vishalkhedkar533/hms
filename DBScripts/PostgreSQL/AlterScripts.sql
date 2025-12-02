@@ -139,3 +139,12 @@ ADD CONSTRAINT fk_agent_mail_address
 alter table hms.tempagentdto 
 add column "Comments" varchar,
 add column "Reason" varchar
+
+ALTER TABLE hms."agent"
+ADD COLUMN "orgid" INT null
+
+alter table hms.tempagentdto 
+add column "orgid" INT null
+
+alter table hms.fileprocessingtasks  
+add column "orgid" INT null

@@ -1,9 +1,10 @@
-﻿using System.Collections.Concurrent;
-using System.Data;
-using System.Text.RegularExpressions;
-using Dapper;
+﻿using Dapper;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Extensions.Caching.Memory;
 using Npgsql;
+using System.Collections.Concurrent;
+using System.Data;
+using System.Text.RegularExpressions;
 
 namespace HMS.Caching
 {
@@ -74,28 +75,28 @@ namespace HMS.Caching
         }
 
         // 🔹 Dynamic
-        public async Task<IEnumerable<dynamic>> GetRecordsAsync(string schema, string table, int? refreshIntervalMinutes = null)
+        public async Task<IEnumerable<dynamic>> GetRecordsAsync(int orgId, string entryCategory, int? refreshIntervalMinutes = null)
         {
-            string cacheKey = $"{schema}.{table}";
+            string cacheKey = $"KV.{orgId}.{entryCategory}";
 
             if (!_cache.TryGetValue(cacheKey, out IEnumerable<dynamic> records))
             {
-                string sql = $"SELECT * FROM {QuoteIdentifier(schema)}.{QuoteIdentifier(table)}";
+                string sql = @"SELECT * FROM hmsmaster.KeyValueEntries 
+                               WHERE OrgId = @OrgId AND EntryCategory = @EntryCategory";
 
                 if (_connection.State != ConnectionState.Open)
                     await _connection.OpenAsync();
 
-                records = await _connection.QueryAsync(sql);
+                records = await _connection.QueryAsync(sql, new { OrgId = orgId, EntryCategory = entryCategory });
 
                 _cache.Set(cacheKey, records, GetCacheOptions());
-                TrackKey(schema, cacheKey, refreshIntervalMinutes);
+                TrackKey("KeyValueEntries", cacheKey, refreshIntervalMinutes);
             }
 
             return records;
         }
-
         // 🔹 Strongly Typed
-        public async Task<IEnumerable<T>> GetRecordsAsync<T>(string schema, string table, int? refreshIntervalMinutes = null) where T : class
+        public async Task<IEnumerable<T>> GetRecordsAsync<T>(string schema, string table, int? refreshIntervalMinutes = null)
         {
             string cacheKey = $"{schema}.{table}.{typeof(T).Name}";
 
@@ -118,19 +119,31 @@ namespace HMS.Caching
         // 🔹 Refresh single (dynamic)
         public async Task<IEnumerable<dynamic>> RefreshCacheAsync(string schema, string table)
         {
-            EvictCache(schema, table);
-            var result = await GetRecordsAsync(schema, table);
-            LastRefreshTimes[$"{schema}.{table}"] = DateTime.UtcNow;
+            string cacheKey = $"{schema}.{table}";
+
+            _cache.Remove(cacheKey);
+
+            string sql = $"SELECT * FROM \"{schema}\".\"{table}\"";
+
+            if (_connection.State != ConnectionState.Open)
+                await _connection.OpenAsync();
+
+            var result = await _connection.QueryAsync(sql);
+
+            _cache.Set(cacheKey, result, GetCacheOptions());
+
+            LastRefreshTimes[cacheKey] = DateTime.UtcNow;
+
             return result;
         }
 
         // 🔹 Refresh single (typed)
-        public async Task<IEnumerable<T>> RefreshCacheAsync<T>(string schema, string table) where T : class
+        public async Task<IEnumerable<T>> RefreshCacheAsync<T>(string schema, string table)
         {
-            EvictCache<T>(schema, table);
-            var result = await GetRecordsAsync<T>(schema, table);
-            LastRefreshTimes[$"{schema}.{table}.{typeof(T).Name}"] = DateTime.UtcNow;
-            return result;
+            string key = $"{schema}.{table}.{typeof(T).Name}";
+            _cache.Remove(key);
+
+            return await GetRecordsAsync<T>(schema, table);
         }
 
         // 🔹 Evict dynamic
@@ -168,18 +181,17 @@ namespace HMS.Caching
         // 🔹 Evict all tables in schema
         public void EvictSchema(string schema)
         {
-            if (SchemaKeys.TryRemove(schema, out var keys))
+            if (!SchemaKeys.TryRemove(schema, out var keys))
+                return;
+
+            lock (keys)
             {
-                lock (keys)
+                foreach (var key in keys)
                 {
-                    foreach (var key in keys)
-                    {
-                        _cache.Remove(key);
-                        RefreshIntervals.TryRemove(key, out _);
-                        LastRefreshTimes.TryRemove(key, out _);
-                        TypeRegistry.TryRemove(key, out _);
-                    }
-                    keys.Clear();
+                    _cache.Remove(key);
+                    RefreshIntervals.TryRemove(key, out _);
+                    LastRefreshTimes.TryRemove(key, out _);
+                    TypeRegistry.TryRemove(key, out _);
                 }
             }
         }

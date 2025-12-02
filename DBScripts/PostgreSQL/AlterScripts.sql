@@ -148,3 +148,10 @@ add column "orgid" INT null
 
 alter table hms.fileprocessingtasks  
 add column "orgid" INT null
+
+
+alter table hms."user" ADD COLUMN OrgId INTEGER;
+
+alter table hms."user" 
+add CONSTRAINT fk_User_OrgId
+FOREIGN KEY (OrgId) REFERENCES hms.Organisation(OrgId)

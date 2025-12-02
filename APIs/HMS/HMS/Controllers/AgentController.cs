@@ -1,4 +1,6 @@
 using AutoMapper;
+using CommonLibrary;
+using CommonLibrary.Background;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
@@ -352,7 +354,6 @@ namespace HMS.Controllers
             return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
         }
         [HttpPost("AgentById")]
-        //[HttpPost("{id:int}")]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
@@ -363,6 +364,23 @@ namespace HMS.Controllers
             List<AgentDto> agents = new List<AgentDto>();
             AgentDto agentDTO = new AgentDto();
             IQueryable <Agent> agent = _context.Agents;
+
+            #region FetchLoggedInUserInfo
+            string jwtString = "";
+
+            var decoder = new JwtDecoder();
+            var claimsData = decoder.GetClaimsFromJwt(jwtString);
+
+            Console.WriteLine("--- Decoded JWT Claims ---");
+            foreach (var kvp in claimsData)
+            {
+                Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+            }
+
+            // Example of retrieving a specific claim
+            string userId = decoder.GetSpecificClaim(jwtString, "sub");
+            Console.WriteLine($"\nUser ID (sub): {userId}");
+            #endregion
 
             if (searchAgent.AgentId ==null)
             {
@@ -455,6 +473,22 @@ namespace HMS.Controllers
                     .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
+
+
+                string EntryCategory = "BANK_ACC_TYP";
+
+                int organisationId = int.Parse(HttpContext.User.Claims.First(x => x.Type == "OrganisationId").Value);
+
+                var BANK_ACC_TYP = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = EntryCategory
+                    });
+
+                agentDTO.KeyValueEntry = _mapper.Map<List<KeyValueEntry>>(BANK_ACC_TYP.ToList());
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;
@@ -583,7 +617,20 @@ namespace HMS.Controllers
             return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
 
         }
-
         #endregion
+        [HttpPost("Bulk/Create")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> BulkAgentCreate(SearchAgent searchAgent,
+            [FromServices] IExcelProcessingQueue queue)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            //return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+            return Ok(hMSResponse);
+        }
+
     }
 }

@@ -1,4 +1,5 @@
 ﻿using HMS.Caching;
+using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HMS.Controllers
@@ -19,14 +20,17 @@ namespace HMS.Controllers
 
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
         // POST api/cache/get/hms/customer
-        [HttpPost("get/{schema}/{table}")]
-        public async Task<IActionResult> GetRecords(string schema, string table)
+        [HttpPost("get/{EntryCategory}")]
+        public async Task<IActionResult> GetRecords(string schema, string table, string EntryCategory)
         {
+            var organisationId = HttpContext.User.Claims.Where(x => x.Type == "OrganisationId").Select(x => x.Value).FirstOrDefault();
+
             if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
 
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
 
-            var result = await _cacheService.GetRecordsAsync(schema, table, refreshInterval);
+            var result = await _cacheService.GetRecordsAsync(Convert.ToInt32(organisationId),EntryCategory,refreshInterval);
+
             return Ok(result);
         }
 

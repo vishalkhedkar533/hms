@@ -474,6 +474,22 @@ namespace HMS.Controllers
                     .AsNoTracking()
                     .ToListAsync();
 
+
+                string EntryCategory = "BANK_ACC_TYP";
+
+                int organisationId = int.Parse(HttpContext.User.Claims.First(x => x.Type == "OrganisationId").Value);
+
+                var BANK_ACC_TYP = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = EntryCategory
+                    });
+
+                agentDTO.KeyValueEntry = _mapper.Map<List<KeyValueEntry>>(BANK_ACC_TYP.ToList());
+
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;
                 agents.Add(agentDTO);

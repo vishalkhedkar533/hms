@@ -121,6 +121,8 @@ namespace Models.DTO
         public DateTime? LicenseIssueDate { get; set; }
         public DateTime? LicenseExpiryDate { get; set; }
         public string? LicenseStatus { get; set; }
+        public List<KeyValueEntry>? KeyValueEntry { get; set; }
+
     }
     public class AgentListRequest
     {

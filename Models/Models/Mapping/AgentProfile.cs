@@ -83,7 +83,7 @@ namespace Models.Mapping
                 .ForMember(dest => dest.LicenseIssueDate, opt => opt.MapFrom(src => src.LicenseIssueDate))
                 .ForMember(dest => dest.LicenseExpiryDate, opt => opt.MapFrom(src => src.LicenseExpiryDate))
                 .ForMember(dest => dest.LicenseStatus, opt => opt.MapFrom(src => src.LicenseStatus))
-
+                .ForMember(dest => dest.KeyValueEntry, opt => opt.Ignore())
                 // ---- Reverse: AgentDto → Agent ----
                 .ReverseMap()
                 .ForMember(dest => dest.SupervisorId, opt => opt.MapFrom(src => src.Supervisor_Id))

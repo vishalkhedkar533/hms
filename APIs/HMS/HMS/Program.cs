@@ -106,7 +106,7 @@ builder.Services.AddScoped<NpgsqlConnection>(sp =>
 // ----------------------------
 builder.Services.AddScoped<GenericCacheService>();
 builder.Services.AddScoped<DatabaseService>(); // ✅ new consolidated service
-
+builder.Services.AddScoped<IAuthClaimService, AuthClaimService>();
 // ----------------------------
 // Background services
 // ----------------------------

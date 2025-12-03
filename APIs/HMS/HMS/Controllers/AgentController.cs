@@ -475,20 +475,151 @@ namespace HMS.Controllers
                     .ToListAsync();
 
 
-                string EntryCategory = "BANK_ACC_TYP";
-
                 int organisationId = int.Parse(HttpContext.User.Claims.First(x => x.Type == "OrganisationId").Value);
 
-                var BANK_ACC_TYP = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                const string BankAccTypeCategory = "BANK_ACC_TYP";
+                var BankAccTypeResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
                     "Master",
                     "getKeyValueEntries",
                     new
                     {
                         orgid = organisationId,
-                        EntryCategory = EntryCategory
+                        EntryCategory = BankAccTypeCategory
                     });
+                List<KeyValueEntry> bankAccTypeDTO = _mapper.Map<List<KeyValueEntry>>(BankAccTypeResults);
+                agentDTO.bankAccType = bankAccTypeDTO;
 
-                agentDTO.KeyValueEntry = _mapper.Map<List<KeyValueEntry>>(BANK_ACC_TYP.ToList());
+                const string TitleCategory = "TITLE";
+                var TitleResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = TitleCategory
+                    });
+                List<KeyValueEntry> titleDTO = _mapper.Map<List<KeyValueEntry>>(TitleResults);
+                agentDTO.titles = titleDTO;
+
+                const string GenderCategory = "GENDER";
+                var GenderResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = GenderCategory
+                    });
+                List<KeyValueEntry> genderDTO = _mapper.Map<List<KeyValueEntry>>(GenderResults);
+                agentDTO.genders = genderDTO;
+
+                const string ChannelNameCategory = "CHANNEL_NAME";
+                var ChannelNameResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = ChannelNameCategory
+                    });
+                List<KeyValueEntry> channelNameDTO = _mapper.Map<List<KeyValueEntry>>(ChannelNameResults);
+                agentDTO.channelNames = channelNameDTO;
+
+                const string SubChannelCategory = "SUB_CHANNEL";
+                var SubChannelResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = SubChannelCategory
+                    });
+                List<KeyValueEntry> subChannelDTO = _mapper.Map<List<KeyValueEntry>>(SubChannelResults);
+                agentDTO.subChannels = subChannelDTO;
+
+                const string OccupationCategory = "OCCUPATION";
+                var OccupationResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = OccupationCategory
+                    });
+                List<KeyValueEntry> occupationDTO = _mapper.Map<List<KeyValueEntry>>(OccupationResults);
+                agentDTO.occupations = occupationDTO;
+
+                const string AgentTypeCatCategory = "AGENT_TYPE_CAT";
+                var AgentTypeCatResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = AgentTypeCatCategory
+                    });
+                List<KeyValueEntry> agentTypeCatDTO = _mapper.Map<List<KeyValueEntry>>(AgentTypeCatResults);
+                agentDTO.agentTypeCategories = agentTypeCatDTO;
+
+                const string AgentClassCategory = "AGENT_CLASS";
+                var AgentClassResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = AgentClassCategory
+                    });
+                List<KeyValueEntry> agentClassDTO = _mapper.Map<List<KeyValueEntry>>(AgentClassResults);
+                agentDTO.agentClassifications = agentClassDTO;
+
+                const string MaritalStatusCategory = "MARITAL_STATUS";
+                var MaritalStatusResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = MaritalStatusCategory
+                    });
+                List<KeyValueEntry> maritalStatusDTO = _mapper.Map<List<KeyValueEntry>>(MaritalStatusResults);
+                agentDTO.maritalStatuses = maritalStatusDTO;
+
+                const string EducationCodeCategory = "EDUCATION_CODE";
+                var EducationCodeResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = EducationCodeCategory
+                    });
+                List<KeyValueEntry> educationCodeDTO = _mapper.Map<List<KeyValueEntry>>(EducationCodeResults);
+                agentDTO.educationCodes = educationCodeDTO;
+
+                const string StateNameCategory = "STATE_NAME";
+                var StateNameResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = StateNameCategory
+                    });
+                List<KeyValueEntry> stateNameDTO = _mapper.Map<List<KeyValueEntry>>(StateNameResults);
+                agentDTO.stateNames = stateNameDTO;
+
+                const string CountryCategory = "COUNTRY";
+                var CountryResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                    "Master",
+                    "getKeyValueEntries",
+                    new
+                    {
+                        orgid = organisationId,
+                        EntryCategory = CountryCategory
+                    });
+                List<KeyValueEntry> countryDTO = _mapper.Map<List<KeyValueEntry>>(CountryResults);
+                agentDTO.countries = countryDTO;
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;

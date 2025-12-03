@@ -22,7 +22,7 @@
 			"TrimContent": true
 		},
 		{
-			"ColumnName": "PAN",
+			"ColumnName": "MaskedPanNumber",
 			"DestinationDataType": "System.String",
 			"DataFormat": "^[A-Z]{5}[0-9]{4}[A-Z]$",
 			"UseRegEx": true,

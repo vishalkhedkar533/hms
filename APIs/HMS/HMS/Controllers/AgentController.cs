@@ -487,8 +487,9 @@ namespace HMS.Controllers
                         orgid = organisationId,
                         EntryCategory = EntryCategory
                     });
+                List<KeyValueEntry> bankAccTypeDTO = _mapper.Map<List<KeyValueEntry>>(BANK_ACC_TYP);
 
-                agentDTO.KeyValueEntry = _mapper.Map<List<KeyValueEntry>>(BANK_ACC_TYP.ToList());
+                agentDTO.bankAccType = bankAccTypeDTO;
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;

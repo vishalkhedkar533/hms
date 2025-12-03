@@ -1,5 +1,6 @@
 ﻿using CommonLibrary;
 using MiniExcelLibs;
+using Models.DB;
 using Models.DTO;
 using Npgsql;
 using System.Reflection;
@@ -17,17 +18,36 @@ string connectionString =
     "server=ep-silent-silence-a1fanpxl-pooler.ap-southeast-1.aws.neon.tech;" +
     "username=neondb_owner;password=npg_MPXYuy4jTe1r;database=neondb;";
 
-Console.WriteLine("Enter Excel file path:");
-string filePath = Console.ReadLine();
+using var conn = new NpgsqlConnection(connectionString);
+conn.Open();
 
-if (!File.Exists(filePath))
+Console.WriteLine("Fetching pending file-import tasks...");
+
+List<FileProcessingTask> fileTasks = new();
+
+using (var cmd = new NpgsqlCommand(
+    @"SELECT filepath, orgid 
+      FROM hms.fileprocessingtasks 
+      WHERE status = 'Pending';", conn))
 {
-    Console.WriteLine("File not found!");
+    using var reader = await cmd.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
+    {
+        fileTasks.Add(new FileProcessingTask
+        {
+            FilePath = reader.GetString(0),
+            OrgId = reader.GetInt32(1)
+        });
+    }
+}
+
+if (!fileTasks.Any())
+{
+    Console.WriteLine("No pending file imports found.");
     return;
 }
 
-using var conn = new NpgsqlConnection(connectionString);
-conn.Open();
+Console.WriteLine($"Found {fileTasks.Count} file(s) to process.\n");
 
 int chunkSize = 0;
 using (var cmd = new NpgsqlCommand(
@@ -37,58 +57,55 @@ using (var cmd = new NpgsqlCommand(
     var result = await cmd.ExecuteScalarAsync();
     chunkSize = int.Parse(result.ToString());
 }
-int batchNo = 1;
-var stream = MiniExcel.Query<AgentDto>(filePath);
-
-List<AgentDto> buffer = new(chunkSize);
-List<string> errorLog = new();
-int rowCount = 0;
-
-foreach (var row in stream)
+foreach (var task in fileTasks)
 {
-    rowCount++;
+    Console.WriteLine($"Processing file: {task.FilePath}, Org: {task.OrgId}");
 
-    List<string> errors;
+    var stream = MiniExcel.Query<AgentDto>(task.FilePath);
+    List<AgentDto> buffer = new(chunkSize);
 
-    // Run Validation
-    if (ValidateRow(row, validatorConfig.excelColumns, rowCount, out errors))
+    int rowCount = 0;
+    int batchNo = 1;
+
+    foreach (var row in stream)
     {
-        // VALID ROW: Mark as Processed and clear errors
-        row.Comments = "Processed";
-        row.Reason = string.Empty;
+        rowCount++;
+
+        // Attach OrgId
+        row.OrgId = (int)task.OrgId;
+
+        List<string> errors;
+
+        // VALIDATION
+        if (ValidateRow(row, validatorConfig.excelColumns, rowCount, out errors))
+        {
+            row.Comments = "Processed";
+            row.Reason = string.Empty;
+        }
+        else
+        {
+            row.Comments = "Rejected";
+            row.Reason = string.Join(" | ", errors);
+        }
+
+        buffer.Add(row);
+
+        if (buffer.Count == chunkSize)
+        {
+            await BulkCopy(buffer, conn, batchNo);
+            buffer.Clear();
+            batchNo++;
+        }
     }
-    else
-    {
-        // INVALID ROW: Mark as Rejected and set Reason
-        row.Comments = "Rejected";
-        // Combine all errors into the Reason column
-        row.Reason = string.Join(" | ", errors);
-    }
 
-    // Add ALL rows (valid or invalid) to the buffer for staging
-    buffer.Add(row);
-
-    if (buffer.Count == chunkSize)
-    {
-        // All rows in the buffer are copied to hms.tempagentdto
+    // LAST REMAINING ROWS
+    if (buffer.Count > 0)
         await BulkCopy(buffer, conn, batchNo);
-        buffer.Clear();
-        batchNo++;
-    }
-}
 
-// Process remaining batch
-if (buffer.Count > 0)
-{
-    await BulkCopy(buffer, conn, batchNo);
+    Console.WriteLine($"Completed: {task.FilePath} — {rowCount} rows processed.\n");
 }
-
+   
 await FinalizeDataTransfer(conn);
-
-
-Console.WriteLine("\nBULK INSERT COMPLETE.");
-Console.WriteLine($"Total rows processed from Excel: {rowCount}.");
-
 static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batchNo)
 {
     Console.WriteLine($"Processing Batch {batchNo} ({rows.Count} rows)...");
@@ -205,7 +222,8 @@ static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batch
             Escape(r.Pin),
             Escape(r.Landmark),
             Escape(r.Comments),
-            Escape(r.Reason)
+            Escape(r.Reason),
+            Escape(r.OrgId)
         }));
     }
 
@@ -231,7 +249,7 @@ static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batch
             FgRockstarTrainingDate, IncrementDate, LastPromotionDate, HRDoj, FgValueTrngDate,
             HSecPolicyTrngDate, ItSecPolicyTrngDate, NpsTrngCompletionDate, WhistleBlowerTrngDate, GovPolicyTrngDate,
             InductionTrngDate, LastWorkingDate, LicenseNo, LicenseType, LicenseIssueDate,
-            LicenseExpiryDate, LicenseStatus,AddressLine1, AddressLine2, AddressLine3, City, State, Country, PIN, Landmark,Comments, Reason
+            LicenseExpiryDate, LicenseStatus,AddressLine1, AddressLine2, AddressLine3, City, State, Country, PIN, Landmark,Comments, Reason,orgid
         )
         FROM STDIN WITH (FORMAT CSV);
     ";
@@ -326,208 +344,92 @@ static bool ValidateRow(AgentDto row, Excelcolumn[] validationRules, int rowNumb
 
 static async Task FinalizeDataTransfer(NpgsqlConnection conn)
 {
-    Console.WriteLine("\n--- Finalizing Data Transfer and Cleaning Staging Table ---");
+    Console.WriteLine("\n--- Finalizing Data Transfer (set-based) ---");
 
-    string sql = @"
-    INSERT INTO hms.agent (
-        agent_code, agent_type_code, agent_sub_type_code, agent_name,
-        business_name, first_name, middle_name, last_name, prefix,
-        suffix, gender, dob, nationality, marital_status_code,
-        preferred_language, channel_code, sub_channel_code, designation_code, agent_level,
-        location_code, staff_code, contracted_date, agent_status_code, status_date,
-        is_licensed, pan_number, aadhaar_number, irda_license_number, gst_number,
-        created_by, created_date, modified_by, modified_date, rowversion,
-        supervisor_id, is_active, candidatetype, -- Removed email and mobileno here
-        applicationdocketno, title, father_husband_nm, channel_name, sub_channel,
-        employeecode, startdate, panaadharlinkflag, sec206abflag, commissionclass,
-        taxstatus, stateeid, occupationcode, occupation, urn,
-        additionalcomment, appointmentdate, incorporationdate, cnctpersondesig, cnctpersonmobileno,
-        cnctpersonemail, cnctpersonname, agenttypecategory, agentclassification, cmsagenttype,
-        packageid, servicetaxno, ulipflag, traininggrouptype, ifs,
-        refreshertrainingcompleted, ismigrated, mainpartnerclientcode, agentmaincodevweid, registrationdate,
-        vertical, branchcode, branchname, ic36trngcompletiondate, strngcompletiondate,
-        confirmationdate, fgrockstartrainingdate, incrementdate, lastpromotiondate, hrdoj,
-        fgvaluetrngdate, hsecpolicytrngdate, itsecpolicytrngdate, npstrngcompletiondate, whistleblowertrngdate,
-        govpolicytrngdate, inductiontrngdate, lastworkingdate, licenseno, licensetype,
-        licenseissuedate, licenseexpirydate, licensestatus
-    )
+    string insertSql = @"
+                        WITH ins AS (
+                          INSERT INTO hms.agent (
+                            -- same columns as before...
+                            agent_code, agent_type_code, agent_sub_type_code, agent_name,
+                            business_name, first_name, middle_name, last_name, prefix,
+                            suffix, gender, dob, nationality, marital_status_code,
+                            preferred_language, channel_code, sub_channel_code, designation_code, agent_level,
+                            location_code, staff_code, contracted_date, agent_status_code, status_date,
+                            is_licensed, pan_number, aadhaar_number, irda_license_number, gst_number,
+                            created_by, created_date, modified_by, modified_date, rowversion,
+                            supervisor_id, is_active, candidatetype,
+                            applicationdocketno, title, father_husband_nm, channel_name, sub_channel,
+                            employeecode, startdate, panaadharlinkflag, sec206abflag, commissionclass,
+                            taxstatus, stateeid, occupationcode, occupation, urn,
+                            additionalcomment, appointmentdate, incorporationdate, cnctpersondesig, cnctpersonmobileno,
+                            cnctpersonemail, cnctpersonname, agenttypecategory, agentclassification, cmsagenttype,
+                            packageid, servicetaxno, ulipflag, traininggrouptype, ifs,
+                            refreshertrainingcompleted, ismigrated, mainpartnerclientcode, agentmaincodevweid, registrationdate,
+                            vertical, branchcode, branchname, ic36trngcompletiondate, strngcompletiondate,
+                            confirmationdate, fgrockstartrainingdate, incrementdate, lastpromotiondate, hrdoj,
+                            fgvaluetrngdate, hsecpolicytrngdate, itsecpolicytrngdate, npstrngcompletiondate, whistleblowertrngdate,
+                            govpolicytrngdate, inductiontrngdate, lastworkingdate, licenseno, licensetype,
+                            licenseissuedate, licenseexpirydate, licensestatus, orgid
+                          )
+                          SELECT
+                            agentcode, agenttypecode, agentsubtypecode, agentname,
+                            businessname, firstname, middlename, lastname, prefix,
+                            suffix, gender, dob::date, nationality, maritalstatuscode,
+                            preferredlanguage, channelcode, subchannelcode, designationcode,
+                            CASE TRIM(agentlevel)
+                              WHEN 'Level1' THEN 1 WHEN 'Level2' THEN 2 WHEN 'Level3' THEN 3 ELSE NULL END,
+                            locationcode, staffcode, contracteddate::date, agentstatuscode, statusdate::date,
+                            CASE WHEN islicensed IN ('Y','y','1') THEN TRUE WHEN islicensed IN ('N','n','0') THEN FALSE ELSE FALSE END,
+                            maskedpannumber, aadhaar_number, irdalicensenumber, gstnumber,
+                            createdby, createddate::date, modifiedby, modifieddate::date,
+                            NULLIF(TRIM(rowversion), '')::integer,
+                            NULLIF(TRIM(supervisor_id), '')::integer,
+                            CASE WHEN isactive IN ('Y','y','1') THEN TRUE WHEN isactive IN ('N','n','0') THEN FALSE ELSE FALSE END,
+                            candidatetype, applicationdocketno, title, father_husband_nm, channel_name, sub_channel,
+                            employeecode, startdate::date,
+                            CASE WHEN panaadharlinkflag IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            CASE WHEN sec206abflag IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            commissionclass, taxstatus, stateeid, occupationcode::integer, occupation, urn,
+                            additionalcomment, appointmentdate::date, incorporationdate::date,
+                            cnctpersondesig, cnctpersonmobileno, cnctpersonemail, cnctpersonname,
+                            agenttypecategory, agentclassification, cmsagenttype, packageid, servicetaxno,
+                            CASE WHEN ulipflag IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            traininggrouptype, ifs,
+                            CASE WHEN refreshertrainingcompleted IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            CASE WHEN ismigrated IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            mainpartnerclientcode, agentmaincodevweid, registrationdate::date,
+                            vertical, branchcode, branchname, ic36trngcompletiondate::date,
+                            strngcompletiondate::date, confirmationdate::date,
+                            fgrockstartrainingdate::date, incrementdate::date, lastpromotiondate::date,
+                            hrdoj::date, fgvaluetrngdate::date, hsecpolicytrngdate::date,
+                            itsecpolicytrngdate::date, npstrngcompletiondate::date, whistleblowertrngdate::date,
+                            govpolicytrngdate::date, inductiontrngdate::date, lastworkingdate::date,
+                            licenseno, licensetype, licenseissuedate::date, licenseexpirydate::date,
+                            licensestatus, orgid
+                          FROM hms.tempagentdto
+                          WHERE comments = 'Processed'
+                          RETURNING agent_id, supervisor_id, created_by, channel_code, designation_code
+                        )
+                        INSERT INTO hms.agent_hierarchy (agent_id, effective_from_date, channel_code, designation_code, created_by, created_date, rowversion, hierarchy_path)
+                        SELECT
+                          ins.agent_id,
+                          CURRENT_DATE,
+                          ins.channel_code,
+                          ins.designation_code,
+                          COALESCE(ins.created_by, '')::text,
+                          NOW(),
+                          1,
+                          CASE WHEN ins.supervisor_id IS NULL THEN ins.agent_id::text::ltree
+                               ELSE (ins.supervisor_id::text || '.' || ins.agent_id::text)::ltree
+                          END
+                        FROM ins;
+                        ";
 
-    SELECT
-    agentcode, 
-    agenttypecode, 
-    agentsubtypecode, 
-    agentname,
-    businessname, 
-    firstname, 
-    middlename, 
-    lastname, 
-    prefix,
-    suffix, 
-    gender, 
-    dob::date, -- Date fix
-    nationality, 
-    maritalstatuscode,
-    preferredlanguage, 
-    channelcode, 
-    subchannelcode, 
-    designationcode, 
-    CASE TRIM(agentlevel)
-    WHEN 'Level1' THEN 1
-    WHEN 'Level2' THEN 2
-    WHEN 'Level3' THEN 3
-    WHEN '' THEN NULL
-    ELSE NULL 
-    END AS agentlevel,
-    locationcode, 
-    staffcode, 
-    contracteddate::date, -- Date fix
-    agentstatuscode, 
-    statusdate::date, -- Date fix (Assumed, based on pattern)
-    CASE 
-        WHEN islicensed IN ('Y', 'y', '1') THEN TRUE 
-        WHEN islicensed IN ('N', 'n', '0') THEN FALSE
-        ELSE FALSE -- Use FALSE instead of NULL to satisfy the NOT NULL constraint
-    END AS islicensed,
-    maskedpannumber, 
-    aadhaar_number, 
-    irdalicensenumber, 
-    gstnumber,
-    createdby, 
-    createddate::date, -- Date fix (Assumed)
-    modifiedby, 
-    modifieddate::date, -- Date fix (Assumed)
-    NULLIF(TRIM(rowversion), '')::integer AS rowversion, -- Integer fix
-    NULLIF(TRIM(supervisor_id), '')::integer AS supervisor_id, -- Integer fix
-    CASE 
-    WHEN isactive IN ('Y', 'y', '1') THEN TRUE 
-    WHEN isactive IN ('N', 'n', '0') THEN FALSE
-    ELSE FALSE -- Changed from NULL to FALSE
-    END AS isactive,
-    candidatetype,
-    applicationdocketno, 
-    title, 
-    father_husband_nm, 
-    channel_name, 
-    sub_channel,
-    employeecode, 
-    startdate::date, -- Date fix (Assumed)
-    CASE 
-        WHEN panaadharlinkflag IN ('Y', 'y', '1', 'TRUE', 'T') THEN TRUE 
-        WHEN panaadharlinkflag IN ('N', 'n', '0', 'FALSE', 'F') THEN FALSE
-        ELSE FALSE
-    END AS panaadharlinkflag, 
-    CASE 
-        WHEN sec206abflag IN ('Y', 'y', '1', 'TRUE', 'T') THEN TRUE 
-        WHEN sec206abflag IN ('N', 'n', '0', 'FALSE', 'F') THEN FALSE
-        ELSE FALSE
-    END AS sec206abflag, 
-    commissionclass,
-    taxstatus, 
-    stateeid, 
-    occupationcode::integer, 
-    occupation, 
-    urn,
-    additionalcomment, 
-    appointmentdate::date, -- Date fix (Assumed)
-    incorporationdate::date, -- Date fix (Assumed)
-    cnctpersondesig, 
-    cnctpersonmobileno,
-    cnctpersonemail, 
-    cnctpersonname, 
-    agenttypecategory, 
-    agentclassification, 
-    cmsagenttype,
-    packageid, 
-    servicetaxno,
-    CASE 
-        WHEN ulipflag IN ('Y', 'y', '1', 'TRUE', 'T') THEN TRUE 
-        WHEN ulipflag IN ('N', 'n', '0', 'FALSE', 'F') THEN FALSE
-        ELSE FALSE
-    END AS ulipflag,
-    traininggrouptype, 
-    ifs,
-    CASE 
-        WHEN refreshertrainingcompleted IN ('Y', 'y', '1', 'TRUE', 'T') THEN TRUE 
-        WHEN refreshertrainingcompleted IN ('N', 'n', '0', 'FALSE', 'F') THEN FALSE
-        ELSE FALSE
-    END AS refreshertrainingcompleted,
-    CASE 
-        WHEN ismigrated IN ('Y', 'y', '1', 'TRUE', 'T') THEN TRUE 
-        WHEN ismigrated IN ('N', 'n', '0', 'FALSE', 'F') THEN FALSE
-        ELSE FALSE
-    END AS ismigrated, 
-    mainpartnerclientcode, 
-    agentmaincodevweid, 
-    registrationdate::date, -- Date fix (Assumed)
-    vertical, 
-    branchcode, 
-    branchname, 
-    ic36trngcompletiondate::date, -- Date fix (Assumed)
-    strngcompletiondate::date, -- Date fix (Assumed)
-    confirmationdate::date, -- Date fix (Assumed)
-    fgrockstartrainingdate::date, -- Date fix (Assumed)
-    incrementdate::date, -- Date fix (Assumed)
-    lastpromotiondate::date, -- Date fix (Assumed)
-    hrdoj::date, -- Date fix (Assumed)
-    fgvaluetrngdate::date, -- Date fix (Assumed)
-    hsecpolicytrngdate::date, -- Date fix (Assumed)
-    itsecpolicytrngdate::date, -- Date fix (Assumed)
-    npstrngcompletiondate::date, -- Date fix (Assumed)
-    whistleblowertrngdate::date, -- Date fix (Assumed)
-    govpolicytrngdate::date, -- Date fix (Assumed)
-    inductiontrngdate::date, -- Date fix (Assumed)
-    lastworkingdate::date, -- Date fix (Assumed)
-    licenseno, 
-    licensetype,
-    licenseissuedate::date, -- Date fix (Assumed)
-    licenseexpirydate::date, -- Date fix (Assumed)
-    licensestatus
-FROM
-    hms.tempagentdto
-WHERE
-    ""comments"" = 'Processed';
-    ";
+    using var tx = await conn.BeginTransactionAsync();
+    using var cmd = new NpgsqlCommand(insertSql, conn, tx);
+    cmd.CommandTimeout = 0; // or a large value (seconds) so it doesn't time out
+    int affected = await cmd.ExecuteNonQueryAsync();
+    await tx.CommitAsync();
 
-    using var cmd = new NpgsqlCommand(sql, conn);
-    int rowsMoved = await cmd.ExecuteNonQueryAsync();
-
-    Console.WriteLine($"{rowsMoved} valid rows successfully moved to hms.agent.");
+    Console.WriteLine("Agents + hierarchy inserted (set-based).");
 }
-
-//--2.Optional: CLEAN UP the staging table (if necessary, though sometimes you keep rejected rows for audit)
-//        -- DELETE FROM hms.tempagentdto WHERE Comments = 'Processed';
-
-
-//string sql = @"
-//    INSERT INTO hms.agent (/* ... all columns ... */)
-//    SELECT
-//        t.agentcode, /* ... all 82 columns ... */
-//    FROM
-//        hms.tempagentdto AS t -- Use alias 't' for the staging table
-//    WHERE
-//        t.""comments"" = 'Processed'
-//        -- 🛑 FIX: Skip any rows where the agentcode already exists in the target table
-//        AND NOT EXISTS (
-//            SELECT 1
-//            FROM hms.agent AS a
-//            WHERE a.agent_code = t.agentcode
-//        );
-//    ";
-
-
-//string sql = @"
-//    INSERT INTO hms.agent (/* ... all columns ... */)
-//    SELECT
-//        /* ... all 82 columns from t ... */
-//    FROM
-//        hms.tempagentdto AS t
-//    WHERE
-//        t.""comments"" = 'Processed'
-
-//    ON CONFLICT (agent_code) -- Key column
-//    DO UPDATE SET
-//        agent_name = EXCLUDED.agent_name,
-//        agent_level = EXCLUDED.agent_level,
-//        status_date = EXCLUDED.status_date,
-//        modified_date = NOW(); -- Add all fields that should be updated
-//    ";

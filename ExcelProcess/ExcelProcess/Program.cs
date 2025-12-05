@@ -1,25 +1,53 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
+﻿using CommonLibrary;
 using MiniExcelLibs;
+using Models.DB;
 using Models.DTO;
 using Npgsql;
+using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+
+const string TemplateRootPath = @"E:\HMS\Code\APIs\HMS\HMS\";
+var _fileService = new FileService(TemplateRootPath);
+var Body= _fileService.GetTemplate(Path.Combine("InputStructures"), "excelStructureValidator.json");
+
+var validatorConfig = JsonSerializer.Deserialize<InputExcelValidator>(Body, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
 string connectionString =
     "server=ep-silent-silence-a1fanpxl-pooler.ap-southeast-1.aws.neon.tech;" +
     "username=neondb_owner;password=npg_MPXYuy4jTe1r;database=neondb;";
 
-Console.WriteLine("Enter Excel file path:");
-string filePath = Console.ReadLine();
+using var conn = new NpgsqlConnection(connectionString);
+conn.Open();
 
-if (!File.Exists(filePath))
+Console.WriteLine("Fetching pending file-import tasks...");
+
+List<FileProcessingTask> fileTasks = new();
+
+using (var cmd = new NpgsqlCommand(
+    @"SELECT filepath, orgid 
+      FROM hms.fileprocessingtasks 
+      WHERE status = 'Pending';", conn))
 {
-    Console.WriteLine("File not found!");
+    using var reader = await cmd.ExecuteReaderAsync();
+    while (await reader.ReadAsync())
+    {
+        fileTasks.Add(new FileProcessingTask
+        {
+            FilePath = reader.GetString(0),
+            OrgId = reader.GetInt32(1)
+        });
+    }
+}
+
+if (!fileTasks.Any())
+{
+    Console.WriteLine("No pending file imports found.");
     return;
 }
 
-using var conn = new NpgsqlConnection(connectionString);
-conn.Open();
+Console.WriteLine($"Found {fileTasks.Count} file(s) to process.\n");
 
 int chunkSize = 0;
 using (var cmd = new NpgsqlCommand(
@@ -29,28 +57,55 @@ using (var cmd = new NpgsqlCommand(
     var result = await cmd.ExecuteScalarAsync();
     chunkSize = int.Parse(result.ToString());
 }
-int batchNo = 1;
-var stream = MiniExcel.Query<AgentDto>(filePath);
-
-List<AgentDto> buffer = new(chunkSize);
-
-foreach (var row in stream)
+foreach (var task in fileTasks)
 {
-    buffer.Add(row);
+    Console.WriteLine($"Processing file: {task.FilePath}, Org: {task.OrgId}");
 
-    if (buffer.Count == chunkSize)
+    var stream = MiniExcel.Query<AgentDto>(task.FilePath);
+    List<AgentDto> buffer = new(chunkSize);
+
+    int rowCount = 0;
+    int batchNo = 1;
+
+    foreach (var row in stream)
     {
-        await BulkCopy(buffer, conn, batchNo);
-        buffer.Clear();
-        batchNo++;
+        rowCount++;
+
+        // Attach OrgId
+        row.OrgId = (int)task.OrgId;
+
+        List<string> errors;
+
+        // VALIDATION
+        if (ValidateRow(row, validatorConfig.excelColumns, rowCount, out errors))
+        {
+            row.Comments = "Processed";
+            row.Reason = string.Empty;
+        }
+        else
+        {
+            row.Comments = "Rejected";
+            row.Reason = string.Join(" | ", errors);
+        }
+
+        buffer.Add(row);
+
+        if (buffer.Count == chunkSize)
+        {
+            await BulkCopy(buffer, conn, batchNo);
+            buffer.Clear();
+            batchNo++;
+        }
     }
+
+    // LAST REMAINING ROWS
+    if (buffer.Count > 0)
+        await BulkCopy(buffer, conn, batchNo);
+
+    Console.WriteLine($"Completed: {task.FilePath} — {rowCount} rows processed.\n");
 }
-
-//if (buffer.Count > 0)
-//    await BulkCopy(buffer, conn, batchNo);
-
-Console.WriteLine("\nALL DATA INSERTED SUCCESSFULLY!");
-
+   
+await FinalizeDataTransfer(conn);
 static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batchNo)
 {
     Console.WriteLine($"Processing Batch {batchNo} ({rows.Count} rows)...");
@@ -165,7 +220,10 @@ static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batch
             Escape(r.State),
             Escape(r.Country),
             Escape(r.Pin),
-            Escape(r.Landmark)
+            Escape(r.Landmark),
+            Escape(r.Comments),
+            Escape(r.Reason),
+            Escape(r.OrgId)
         }));
     }
 
@@ -191,7 +249,7 @@ static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batch
             FgRockstarTrainingDate, IncrementDate, LastPromotionDate, HRDoj, FgValueTrngDate,
             HSecPolicyTrngDate, ItSecPolicyTrngDate, NpsTrngCompletionDate, WhistleBlowerTrngDate, GovPolicyTrngDate,
             InductionTrngDate, LastWorkingDate, LicenseNo, LicenseType, LicenseIssueDate,
-            LicenseExpiryDate, LicenseStatus,AddressLine1, AddressLine2, AddressLine3, City, State, Country, PIN, Landmark
+            LicenseExpiryDate, LicenseStatus,AddressLine1, AddressLine2, AddressLine3, City, State, Country, PIN, Landmark,Comments, Reason,orgid
         )
         FROM STDIN WITH (FORMAT CSV);
     ";
@@ -208,4 +266,170 @@ static string Escape(object value)
 {
     if (value == null) return "";
     return "\"" + value.ToString().Replace("\"", "\"\"") + "\"";
+}
+
+static bool ValidateRow(AgentDto row, Excelcolumn[] validationRules, int rowNumber, out List<string> errors)
+{
+    errors = new List<string>();
+    bool isValid = true;
+    Type dtoType = typeof(AgentDto);
+
+    foreach (var rule in validationRules)
+    {
+        var propertyInfo = dtoType.GetProperty(rule.ColumnName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+
+        if (propertyInfo == null)
+        {
+            errors.Add($"Row {rowNumber}: Config column '{rule.ColumnName}' not found in AgentDto.");
+            isValid = false;
+            continue;
+        }
+
+        var propertyValue = propertyInfo.GetValue(row)?.ToString();
+        var originalValue = propertyValue;
+
+        if (rule.TrimContent && propertyValue != null)
+        {
+            propertyValue = propertyValue.Trim();
+        }
+
+        // Required Check
+        if (!rule.AllowBlank && string.IsNullOrWhiteSpace(propertyValue))
+        {
+            errors.Add($"Row {rowNumber}, Column '{rule.ColumnName}': **Required** field cannot be blank.");
+            isValid = false;
+            continue;
+        }
+
+        if (string.IsNullOrWhiteSpace(propertyValue)) continue;
+
+        // RegEx / Data Format Validation
+        if (rule.UseRegEx)
+        {
+            try
+            {
+                if (!Regex.IsMatch(propertyValue, rule.DataFormat))
+                {
+                    errors.Add($"Row {rowNumber}, Column '{rule.ColumnName}' (Value: '{originalValue}'): Does not match required Regular Expression format.");
+                    isValid = false;
+                }
+            }
+            catch (ArgumentException)
+            {
+                errors.Add($"Row {rowNumber}, Column '{rule.ColumnName}': Internal Error - Malformed Regex Pattern in config.");
+                isValid = false;
+            }
+        }
+        else if (rule.DestinationDataType.Contains("DateTime"))
+        {
+            if (!DateTime.TryParseExact(propertyValue, rule.DataFormat,
+                                        System.Globalization.CultureInfo.InvariantCulture,
+                                        System.Globalization.DateTimeStyles.None, out _))
+            {
+                errors.Add($"Row {rowNumber}, Column '{rule.ColumnName}' (Value: '{originalValue}'): Invalid date format. Expected: {rule.DataFormat}.");
+                isValid = false;
+            }
+        }
+        //else if (rule.DestinationDataType.Contains("Boolean"))
+        //{
+        //    if (!bool.TryParse(propertyValue, out _))
+        //    {
+        //        errors.Add($"Row {rowNumber}, Column '{rule.ColumnName}' (Value: '{originalValue}'): Invalid boolean format. Expected: True or False.");
+        //        isValid = false;
+        //    }
+        //}
+    }
+    return isValid;
+}
+
+static async Task FinalizeDataTransfer(NpgsqlConnection conn)
+{
+    Console.WriteLine("\n--- Finalizing Data Transfer (set-based) ---");
+
+    string insertSql = @"
+                        WITH ins AS (
+                          INSERT INTO hms.agent (
+                            -- same columns as before...
+                            agent_code, agent_type_code, agent_sub_type_code, agent_name,
+                            business_name, first_name, middle_name, last_name, prefix,
+                            suffix, gender, dob, nationality, marital_status_code,
+                            preferred_language, channel_code, sub_channel_code, designation_code, agent_level,
+                            location_code, staff_code, contracted_date, agent_status_code, status_date,
+                            is_licensed, pan_number, aadhaar_number, irda_license_number, gst_number,
+                            created_by, created_date, modified_by, modified_date, rowversion,
+                            supervisor_id, is_active, candidatetype,
+                            applicationdocketno, title, father_husband_nm, channel_name, sub_channel,
+                            employeecode, startdate, panaadharlinkflag, sec206abflag, commissionclass,
+                            taxstatus, stateeid, occupationcode, occupation, urn,
+                            additionalcomment, appointmentdate, incorporationdate, cnctpersondesig, cnctpersonmobileno,
+                            cnctpersonemail, cnctpersonname, agenttypecategory, agentclassification, cmsagenttype,
+                            packageid, servicetaxno, ulipflag, traininggrouptype, ifs,
+                            refreshertrainingcompleted, ismigrated, mainpartnerclientcode, agentmaincodevweid, registrationdate,
+                            vertical, branchcode, branchname, ic36trngcompletiondate, strngcompletiondate,
+                            confirmationdate, fgrockstartrainingdate, incrementdate, lastpromotiondate, hrdoj,
+                            fgvaluetrngdate, hsecpolicytrngdate, itsecpolicytrngdate, npstrngcompletiondate, whistleblowertrngdate,
+                            govpolicytrngdate, inductiontrngdate, lastworkingdate, licenseno, licensetype,
+                            licenseissuedate, licenseexpirydate, licensestatus, orgid
+                          )
+                          SELECT
+                            agentcode, agenttypecode, agentsubtypecode, agentname,
+                            businessname, firstname, middlename, lastname, prefix,
+                            suffix, gender, dob::date, nationality, maritalstatuscode,
+                            preferredlanguage, channelcode, subchannelcode, designationcode,
+                            CASE TRIM(agentlevel)
+                              WHEN 'Level1' THEN 1 WHEN 'Level2' THEN 2 WHEN 'Level3' THEN 3 ELSE NULL END,
+                            locationcode, staffcode, contracteddate::date, agentstatuscode, statusdate::date,
+                            CASE WHEN islicensed IN ('Y','y','1') THEN TRUE WHEN islicensed IN ('N','n','0') THEN FALSE ELSE FALSE END,
+                            maskedpannumber, aadhaar_number, irdalicensenumber, gstnumber,
+                            createdby, createddate::date, modifiedby, modifieddate::date,
+                            NULLIF(TRIM(rowversion), '')::integer,
+                            NULLIF(TRIM(supervisor_id), '')::integer,
+                            CASE WHEN isactive IN ('Y','y','1') THEN TRUE WHEN isactive IN ('N','n','0') THEN FALSE ELSE FALSE END,
+                            candidatetype, applicationdocketno, title, father_husband_nm, channel_name, sub_channel,
+                            employeecode, startdate::date,
+                            CASE WHEN panaadharlinkflag IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            CASE WHEN sec206abflag IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            commissionclass, taxstatus, stateeid, occupationcode::integer, occupation, urn,
+                            additionalcomment, appointmentdate::date, incorporationdate::date,
+                            cnctpersondesig, cnctpersonmobileno, cnctpersonemail, cnctpersonname,
+                            agenttypecategory, agentclassification, cmsagenttype, packageid, servicetaxno,
+                            CASE WHEN ulipflag IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            traininggrouptype, ifs,
+                            CASE WHEN refreshertrainingcompleted IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            CASE WHEN ismigrated IN ('Y','y','1','T','TRUE') THEN TRUE ELSE FALSE END,
+                            mainpartnerclientcode, agentmaincodevweid, registrationdate::date,
+                            vertical, branchcode, branchname, ic36trngcompletiondate::date,
+                            strngcompletiondate::date, confirmationdate::date,
+                            fgrockstartrainingdate::date, incrementdate::date, lastpromotiondate::date,
+                            hrdoj::date, fgvaluetrngdate::date, hsecpolicytrngdate::date,
+                            itsecpolicytrngdate::date, npstrngcompletiondate::date, whistleblowertrngdate::date,
+                            govpolicytrngdate::date, inductiontrngdate::date, lastworkingdate::date,
+                            licenseno, licensetype, licenseissuedate::date, licenseexpirydate::date,
+                            licensestatus, orgid
+                          FROM hms.tempagentdto
+                          WHERE comments = 'Processed'
+                          RETURNING agent_id, supervisor_id, created_by, channel_code, designation_code
+                        )
+                        INSERT INTO hms.agent_hierarchy (agent_id, effective_from_date, channel_code, designation_code, created_by, created_date, rowversion, hierarchy_path)
+                        SELECT
+                          ins.agent_id,
+                          CURRENT_DATE,
+                          ins.channel_code,
+                          ins.designation_code,
+                          COALESCE(ins.created_by, '')::text,
+                          NOW(),
+                          1,
+                          CASE WHEN ins.supervisor_id IS NULL THEN ins.agent_id::text::ltree
+                               ELSE (ins.supervisor_id::text || '.' || ins.agent_id::text)::ltree
+                          END
+                        FROM ins;
+                        ";
+
+    using var tx = await conn.BeginTransactionAsync();
+    using var cmd = new NpgsqlCommand(insertSql, conn, tx);
+    cmd.CommandTimeout = 0; // or a large value (seconds) so it doesn't time out
+    int affected = await cmd.ExecuteNonQueryAsync();
+    await tx.CommitAsync();
+
+    Console.WriteLine("Agents + hierarchy inserted (set-based).");
 }

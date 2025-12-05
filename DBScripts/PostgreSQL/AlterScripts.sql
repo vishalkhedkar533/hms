@@ -134,3 +134,24 @@ ADD CONSTRAINT fk_agent_perm_address
     FOREIGN KEY ("ActivePermAddress") REFERENCES hms."Address"("AddressID"),
 ADD CONSTRAINT fk_agent_mail_address
     FOREIGN KEY ("ActiveMailAddress") REFERENCES hms."Address"("AddressID");
+
+
+alter table hms.tempagentdto 
+add column "Comments" varchar,
+add column "Reason" varchar
+
+ALTER TABLE hms."agent"
+ADD COLUMN "orgid" INT null
+
+alter table hms.tempagentdto 
+add column "orgid" INT null
+
+alter table hms.fileprocessingtasks  
+add column "orgid" INT null
+
+
+alter table hms."user" ADD COLUMN OrgId INTEGER;
+
+alter table hms."user" 
+add CONSTRAINT fk_User_OrgId
+FOREIGN KEY (OrgId) REFERENCES hms.Organisation(OrgId)

@@ -78,37 +78,38 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
 
           return (
             <div
-                className="flex flex-col gap-1 bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
               style={{
-    gridColumn: `span ${field.colSpan} / span ${field.colSpan}`,
-  }}
+                gridColumn: `span ${field.colSpan} / span ${field.colSpan}`,
+              }}
             >
-              {field.type !== 'checkbox' && field.type !== 'link' && (
-                <Label htmlFor={field.name} className="label-text">
+              {!(['text', 'email', 'password', 'number','checkbox','link','boolean'].includes(field.type)) && (
+                <Label
+                  htmlFor={field.name}
+                  className="label-text text-gray-400 font-semibold pt-[1%] pr-[1%] pb-[1%] pl-0"
+                >
                   {field.label}
                 </Label>
               )}
-              {['text', 'email', 'password', 'number'].includes(field.type) && (
-                  <div className="relative flex items-center">
 
-                <Input
-                  id={field.name}
-                  type={field.type}
-                  placeholder={field.placeholder}
-                  value={fieldApi.state.value}
-                  onChange={(e) =>
-                    fieldApi.handleChange(
-                      field.type === 'number'
-                        ? Number(e.target.value)
-                        : e.target.value,
-                    )
-                  }
-                  readOnly={field.readOnly}
-                  disabled={field.readOnly}
-                  variant={field.custom}
-                  
-                />
-                </div>
+              {['text', 'email', 'password', 'number'].includes(field.type) && (
+                  <Input
+                    id={field.name}
+                    type={field.type}
+                    placeholder={field.placeholder}
+                    value={fieldApi.state.value}
+                    onChange={(e) =>
+                      fieldApi.handleChange(
+                        field.type === 'number'
+                          ? Number(e.target.value)
+                          : e.target.value,
+                      )
+                    }
+                    readOnly={field.readOnly}
+                    disabled={field.readOnly}
+                    variant={field.variant}
+                    className="w-full h-10 pl-0 pr-3 py-2"
+                    label={field.label}
+                  />
               )}
 
               {field.type === 'textarea' && (
@@ -117,10 +118,9 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                   placeholder={field.placeholder}
                   value={fieldApi.state.value}
                   onChange={(e) => handleChange(e.target.value)}
-                  className="w-full min-h-24"
+                  className="w-full min-h-24 px-3 py-2" // Added consistent padding
                   readOnly={field.readOnly}
                   disabled={field.readOnly}
-                  
                 />
               )}
 
@@ -129,8 +129,11 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                   value={fieldApi.state.value}
                   onValueChange={handleChange}
                   disabled={field.readOnly}
+               
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="w-full h-10 px-3 py-2">
+                    {' '}
+                    {/* Added consistent height and padding */}
                     <SelectValue placeholder={field.placeholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -144,12 +147,15 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
               )}
 
               {field.type === 'checkbox' && (
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 py-2">
+                  {' '}
+                  {/* Added vertical padding */}
                   <Checkbox
                     id={field.name}
                     checked={fieldApi.state.value}
                     onCheckedChange={handleChange}
                     disabled={field.readOnly}
+                    className="h-4 w-4" // Added consistent size
                   />
                   <Label
                     htmlFor={field.name}
@@ -159,32 +165,43 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                   </Label>
                 </div>
               )}
-              {/* DATE PICKER */}
+
               {field.type === 'date' && (
-                
-                <DatePicker
-                  value={fieldApi.state.value}
-                  onChange={(d) => fieldApi.handleChange(d)}
-                  icon={field.icon}
-                  disabled={field.readOnly}
-                />
+                <div className="py-1">
+                  {' '}
+                  {/* Added vertical padding */}
+                  <DatePicker
+                    value={fieldApi.state.value}
+                    onChange={(d) => fieldApi.handleChange(d)}
+                    icon={field.icon}
+                    disabled={field.readOnly}
+                    className="w-full h-10" // Added consistent height
+                  />
+                </div>
               )}
-       
 
-              {/* TIME PICKER */}
               {field.type === 'time' && (
-                <TimePicker
-                  value={fieldApi.state.value}
-                  onChange={(t: any) => fieldApi.handleChange(t)}
-                />
+                <div className="py-1">
+                  {' '}
+                  {/* Added vertical padding */}
+                  <TimePicker
+                    value={fieldApi.state.value}
+                    onChange={(t: any) => fieldApi.handleChange(t)}
+                    className="w-full h-10" // Added consistent height
+                  />
+                </div>
               )}
 
-              {/* DATE + TIME PICKER */}
               {field.type === 'datetime' && (
-                <DateTimePicker
-                  value={fieldApi.state.value}
-                  onChange={(v: any) => fieldApi.handleChange(v)}
-                />
+                <div className="py-1">
+                  {' '}
+                  {/* Added vertical padding */}
+                  <DateTimePicker
+                    value={fieldApi.state.value}
+                    onChange={(v: any) => fieldApi.handleChange(v)}
+                    className="w-full h-10" // Added consistent height
+                  />
+                </div>
               )}
 
               {field.type === 'link' && (
@@ -192,7 +209,7 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                   onClick={() => onFieldClick(field.name)}
                   className={
                     field.className ||
-                    'text-blue-600 hover:underline text-sm cursor-pointer'
+                    'text-blue-600 hover:underline text-sm cursor-pointer py-2'
                   }
                 >
                   {field.label}
@@ -200,20 +217,28 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
               )}
 
               {field.type === 'boolean' && (
-                <div className="flex items-center justify-between py-1">
+              <div className='bg-white p-[1rem] shadow-sm'>
+                 <Label
+                  htmlFor={field.name}
+                  className="label-text !text-[#9B9B9B] pt-[2%] pr-[1%] pb-[1%] pl-0"
+                >
+                  {field.label}
+                </Label>
+             
                   <Switch
                     id={field.name}
                     checked={fieldApi.state.value ?? false}
                     onCheckedChange={(val) => fieldApi.handleChange(val)}
                     disabled={field.readOnly}
-                    className="h-5 w-9 data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-300 [&>span]:h-3 [&>span]:w-3 [&>span]:translate-x-0 data-[state=checked]:[&>span]:translate-x-5 transition-all duration-200"
+                    containerClassName="font-poppins pt-[2%] pr-[5%] pb-[5%] pl-0"
+                    // className="h-5 w-9 data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-300 [&>span]:h-3 [&>span]:w-3 [&>span]:translate-x-0 data-[state=checked]:[&>span]:translate-x-5 transition-all duration-200"
                   />
-                </div>
+                 </div>
               )}
 
               {/* {fieldApi.state.meta.errors.length > 0 && (
-                <FieldError field={fieldApi.state.meta} />
-              )} */}
+    <FieldError field={fieldApi.state.meta} />
+  )} */}
             </div>
           )
         }}
@@ -232,13 +257,12 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
   return (
     <>
       <div
-        className="grid gap-6 mb-6"
+        className="grid gap-6 w-[100%]"
         style={{
           gridTemplateColumns: `repeat(${config.gridCols}, minmax(0, 1fr))`,
         }}
       >
         {config.fields.map(renderField)}
-
       </div>
 
       {config.buttons && (

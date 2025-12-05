@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using CommonLibrary;
+using CommonLibrary.Background;
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;

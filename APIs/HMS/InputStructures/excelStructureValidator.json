@@ -6,23 +6,23 @@
 	],
 	"excelColumns": [
 		{
-			"ColumnName": "AgentDoB",
+			"ColumnName": "dob",
 			"DestinationDataType": "System.DateTime",
-			"DataFormat": "yyyy-MM-dd",
+			"DataFormat": "M/d/yyyy h:mm:ss tt",
 			"UseRegEx": false,
 			"AllowBlank": true,
 			"TrimContent": true
 		},
 		{
-			"ColumnName": "aadharNo",
+			"ColumnName": "aadhaar_number",
 			"DestinationDataType": "System.String",
 			"DataFormat": "^(?:\\d{12}|\\d{4}\\s\\d{4}\\s\\d{4}|\\d{4}-\\d{4}-\\d{4})$",
 			"UseRegEx": true,
-			"AllowBlank": true,
+			"AllowBlank": false,
 			"TrimContent": true
 		},
 		{
-			"ColumnName": "PAN",
+			"ColumnName": "MaskedPanNumber",
 			"DestinationDataType": "System.String",
 			"DataFormat": "^[A-Z]{5}[0-9]{4}[A-Z]$",
 			"UseRegEx": true,

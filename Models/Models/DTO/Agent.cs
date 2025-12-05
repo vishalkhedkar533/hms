@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Models.DB;
+﻿using Models.DB;
 using Models.Enums;
 using System.Net.NetworkInformation;
 
@@ -124,7 +123,6 @@ namespace Models.DTO
         public DateTime? LicenseIssueDate { get; set; }
         public DateTime? LicenseExpiryDate { get; set; }
         public string? LicenseStatus { get; set; }
-
         public string? AddressLine1 { get; set; }
         public string? AddressLine2 { get; set; }
         public string? AddressLine3 { get; set; }
@@ -133,6 +131,11 @@ namespace Models.DTO
         public string? Country { get; set; }
         public string? Pin { get; set; }
         public string? Landmark { get; set; }
+        public string? Comments { get; set; } 
+        public string? Reason { get; set; }
+        public List<KeyValueEntry>? bankAccType { get; set; }
+        public int OrgId { get; set; }
+
     }
     public class AgentListRequest
     {

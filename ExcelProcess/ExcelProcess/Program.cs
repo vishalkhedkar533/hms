@@ -213,17 +213,17 @@ static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batch
             Escape(r.LicenseIssueDate),
             Escape(r.LicenseExpiryDate),
             Escape(r.LicenseStatus),
-            //Escape(r.AddressLine1),
-            //Escape(r.AddressLine2),
-            //Escape(r.AddressLine3),
-            //Escape(r.City),
-            //Escape(r.State),
-            //Escape(r.Country),
-            //Escape(r.Pin),
-            //Escape(r.Landmark),
-            //Escape(r.Comments),
-            //Escape(r.Reason),
-            //Escape(r.OrgId)
+            Escape(r.AddressLine1),
+            Escape(r.AddressLine2),
+            Escape(r.AddressLine3),
+            Escape(r.City),
+            Escape(r.State),
+            Escape(r.Country),
+            Escape(r.Pin),
+            Escape(r.Landmark),
+            Escape(r.Comments),
+            Escape(r.Reason),
+            Escape(r.OrgId)
         }));
     }
 

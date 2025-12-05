@@ -1,5 +1,4 @@
-﻿using Models.Enums;
-using Swashbuckle.AspNetCore.Annotations;
+﻿using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -243,10 +242,10 @@ namespace Models.DB
 
         [StringLength(200)]
         [Column("additionalcomment")]
-        public string? AdditionalComment { get; set; } 
+        public string? AdditionalComment { get; set; }
 
         [Column("appointmentdate")]
-        public DateTime? AppointmentDate { get; set; } 
+        public DateTime? AppointmentDate { get; set; }
 
         [Column("incorporationdate")]
         public DateTime? IncorporationDate { get; set; }

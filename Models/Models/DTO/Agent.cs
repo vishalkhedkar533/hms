@@ -1,6 +1,4 @@
 ﻿using Models.DB;
-using Models.Enums;
-using System.Net.NetworkInformation;
 
 namespace Models.DTO
 {
@@ -69,9 +67,9 @@ namespace Models.DTO
         public DateTime? StartDate { get; set; }
         public bool PanAadharLinkFlag { get; set; }
         public bool Sec206abFlag { get; set; }
-        public List<Nominee>? nominees { get; set; }
+        public List<Nominee> nominees { get; set; }
         public string? PackageID { get; set; }
-        public List<PersonalInfo>? personalInfo { get; set; }
+        public List<PersonalInfo> personalInfo { get; set; }
         public string? CommissionClass { get; set; }
         public string? TaxStatus { get; set; }
         public string? StateEid { get; set; }
@@ -123,18 +121,18 @@ namespace Models.DTO
         public DateTime? LicenseIssueDate { get; set; }
         public DateTime? LicenseExpiryDate { get; set; }
         public string? LicenseStatus { get; set; }
-        //public List<KeyValueEntry>? bankAccType { get; set; }
-        //public List<KeyValueEntry>? titles { get; set; }
-        //public List<KeyValueEntry>? genders { get; set; }
-        //public List<KeyValueEntry>? channelNames { get; set; }
-        //public List<KeyValueEntry>? subChannels { get; set; }
-        //public List<KeyValueEntry>? occupations { get; set; }
-        //public List<KeyValueEntry>? agentTypeCategories { get; set; }
-        //public List<KeyValueEntry>? agentClassifications { get; set; }
-        //public List<KeyValueEntry>? maritalStatuses { get; set; }
-        //public List<KeyValueEntry>? educationCodes { get; set; }
-        //public List<KeyValueEntry>? stateNames { get; set; }
-        //public List<KeyValueEntry>? countries { get; set; }
+        public List<KeyValueEntry>? bankAccType { get; set; }
+        public List<KeyValueEntry>? titles { get; set; }
+        public List<KeyValueEntry>? genders { get; set; }
+        public List<KeyValueEntry>? channelNames { get; set; }
+        public List<KeyValueEntry>? subChannels { get; set; }
+        public List<KeyValueEntry>? occupations { get; set; }
+        public List<KeyValueEntry>? agentTypeCategories { get; set; }
+        public List<KeyValueEntry>? agentClassifications { get; set; }
+        public List<KeyValueEntry>? maritalStatuses { get; set; }
+        public List<KeyValueEntry>? educationCodes { get; set; }
+        public List<KeyValueEntry>? stateNames { get; set; }
+        public List<KeyValueEntry>? countries { get; set; }
     }
     public class AgentListRequest
     {

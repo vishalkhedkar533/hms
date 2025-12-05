@@ -10,7 +10,9 @@ import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -18,6 +20,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import DatePicker from '../ui/date-picker'
 import { TimePicker } from '../ui/time-picker'
 import { DateTimePicker } from '../ui/date-timepicker'
+import { Variable } from 'lucide-react'
+
 
 interface DynamicFormBuilderProps {
   config: any
@@ -56,6 +60,9 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
   })
   // console.log('config', config)
 
+  const linkField = config.fields.find((field: any) => field.type === 'link');
+  const fieldsToRender = config.fields.filter((field: any) => field.type !== 'link');
+
   const renderField = (field: any) => {
     const fieldSchema = config.schema.shape[field.name]
 
@@ -82,7 +89,7 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                 gridColumn: `span ${field.colSpan} / span ${field.colSpan}`,
               }}
             >
-              {!(['text', 'email', 'password', 'number','checkbox','link','boolean'].includes(field.type)) && (
+              {!(['text', 'email', 'password', 'number','checkbox','link','select'].includes(field.type)) && (
                 <Label
                   htmlFor={field.name}
                   className="label-text text-gray-400 font-semibold pt-[1%] pr-[1%] pb-[1%] pl-0"
@@ -121,22 +128,21 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                   className="w-full min-h-24 px-3 py-2" // Added consistent padding
                   readOnly={field.readOnly}
                   disabled={field.readOnly}
+                  variant={field.variant}
                 />
               )}
 
-              {field.type === 'select' && (
+              {/* {field.type === 'select' && (
+                <div className={field.variant==='custom' ? `!bg-red`:''}>
                 <Select
                   value={fieldApi.state.value}
                   onValueChange={handleChange}
                   disabled={field.readOnly}
-               
                 >
-                  <SelectTrigger className="w-full h-10 px-3 py-2">
-                    {' '}
-                    {/* Added consistent height and padding */}
-                    <SelectValue placeholder={field.placeholder} />
+                  <SelectTrigger className='!w-full !h-10 px-3 py-2' variant={field.variant}>
+                    <SelectValue  placeholder={field.placeholder} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent >
                     {field.options?.map((option: any) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -144,7 +150,35 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
-              )}
+                </div>
+              )} */}
+{field.type === 'select' && (
+  <div className={field.variant === 'custom' ? "bg-white rounded-sm p-[3.5%] shadow-sm border border-gray-200" : ""}>
+    <Select
+      value={fieldApi.state.value}
+      // onValueChange={handleChange}
+      onValueChange={(val) => fieldApi.handleChange(val)}
+      disabled={field.readOnly}
+    >
+      <SelectGroup>
+        <SelectLabel variant={field.variant}>
+          {field.label}
+        </SelectLabel>
+        <SelectTrigger className={field.variant === 'custom' ? '!w-full !h-10 px-1 py-1' : '!w-full !h-10 px-3 py-3'} variant={field.variant}>
+          <SelectValue placeholder={field.placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          
+          {field.options?.map((option: any) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </SelectGroup>
+    </Select>
+  </div>
+)}
 
               {field.type === 'checkbox' && (
                 <div className="flex items-center space-x-2 py-2">
@@ -175,7 +209,7 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
                     onChange={(d) => fieldApi.handleChange(d)}
                     icon={field.icon}
                     disabled={field.readOnly}
-                    className="w-full h-10" // Added consistent height
+                    // className="w-full h-10" // Added consistent height
                   />
                 </div>
               )}
@@ -217,21 +251,13 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
               )}
 
               {field.type === 'boolean' && (
-              <div className='bg-white p-[1rem] shadow-sm'>
-                 <Label
-                  htmlFor={field.name}
-                  className="label-text !text-[#9B9B9B] pt-[2%] pr-[1%] pb-[1%] pl-0"
-                >
-                  {field.label}
-                </Label>
-             
+              <div className='bg-tranparent px-1 py-2'>
                   <Switch
                     id={field.name}
                     checked={fieldApi.state.value ?? false}
                     onCheckedChange={(val) => fieldApi.handleChange(val)}
                     disabled={field.readOnly}
-                    containerClassName="font-poppins pt-[2%] pr-[5%] pb-[5%] pl-0"
-                    // className="h-5 w-9 data-[state=checked]:bg-orange-500 data-[state=unchecked]:bg-gray-300 [&>span]:h-3 [&>span]:w-3 [&>span]:translate-x-0 data-[state=checked]:[&>span]:translate-x-5 transition-all duration-200"
+                    containerClassName="font-poppins"
                   />
                  </div>
               )}
@@ -295,6 +321,16 @@ const DynamicFormBuilder: React.FC<DynamicFormBuilderProps> = ({
               {ele.label}
             </Button>
           ))}
+        </div>
+      )}
+      {linkField && (
+        <div className="!text-end mt-4">
+          <span
+            onClick={() => onFieldClick(linkField.name)}
+            className={linkField.className || 'text-blue-600 hover:underline text-sm cursor-pointer'}
+          >
+            {linkField.label}
+          </span>
         </div>
       )}
     </>

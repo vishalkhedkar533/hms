@@ -123,19 +123,18 @@ namespace Models.DTO
         public DateTime? LicenseIssueDate { get; set; }
         public DateTime? LicenseExpiryDate { get; set; }
         public string? LicenseStatus { get; set; }
-        public string? AddressLine1 { get; set; }
-        public string? AddressLine2 { get; set; }
-        public string? AddressLine3 { get; set; }
-        public string? City { get; set; }
-        public string? State { get; set; }
-        public string? Country { get; set; }
-        public string? Pin { get; set; }
-        public string? Landmark { get; set; }
-        public string? Comments { get; set; } 
-        public string? Reason { get; set; }
         public List<KeyValueEntry>? bankAccType { get; set; }
-        public int OrgId { get; set; }
-
+        public List<KeyValueEntry>? titles { get; set; }
+        public List<KeyValueEntry>? genders { get; set; }
+        public List<KeyValueEntry>? channelNames { get; set; }
+        public List<KeyValueEntry>? subChannels { get; set; }
+        public List<KeyValueEntry>? occupations { get; set; }
+        public List<KeyValueEntry>? agentTypeCategories { get; set; }
+        public List<KeyValueEntry>? agentClassifications { get; set; }
+        public List<KeyValueEntry>? maritalStatuses { get; set; }
+        public List<KeyValueEntry>? educationCodes { get; set; }
+        public List<KeyValueEntry>? stateNames { get; set; }
+        public List<KeyValueEntry>? countries { get; set; }
     }
     public class AgentListRequest
     {

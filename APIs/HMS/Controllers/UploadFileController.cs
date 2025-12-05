@@ -48,8 +48,11 @@ namespace HMS.Controllers
                 var root = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
                 var userFolderPath = Path.Combine(root, model.UserId.ToString());
 
+                // Ensure the directory exists
                 if (!Directory.Exists(userFolderPath))
+                {
                     Directory.CreateDirectory(userFolderPath);
+                }
 
                 // 2. Prepare file info
                 var originalFileName = model.File.FileName;

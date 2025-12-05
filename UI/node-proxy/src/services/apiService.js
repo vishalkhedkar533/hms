@@ -17,6 +17,8 @@ const loadEncryptionConfig = () => {
   return enabled;
 };
 const login = (data) => {
+  console.log(data);
+  
   return apiClient.post(APIRoutes.LOGIN, data);
 };
 const search = (data, headers = {}) => {
@@ -31,6 +33,9 @@ const Agentbyid = (data, headers = {}) => {
 const AgentByCode = (data, headers = {}) => {
   return apiClient.post(APIRoutes.AGENTBYCODE, data, { headers });
 };
+const GetMasters = (key, headers = {}) => {
+  return apiClient.post(`${APIRoutes.MASTER_GET}/${key}`, {}, { headers });
+};
 
 module.exports = {
   login,
@@ -39,5 +44,6 @@ module.exports = {
   loadEncryptionConfig,
   getHRMChunks,
   Agentbyid,
-  AgentByCode
+  AgentByCode,
+  GetMasters
 };

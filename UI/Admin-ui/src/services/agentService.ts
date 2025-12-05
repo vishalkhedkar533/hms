@@ -13,7 +13,7 @@ export const agentService = {
     callApi<ApiResponse<ILoginResponseBody>>(APIRoutes.SEARCH, [data]),
   searchbycode: (data: IAgentSearchByCodeRequest) =>
     callApi<ApiResponse<ILoginResponseBody>>(APIRoutes.SEARCHBYCODE, [data]),
-    AgentByCode: (data: IAgentSearchByCodeRequest) =>
+  AgentByCode: (data: IAgentSearchByCodeRequest) =>
     callApi<ApiResponse<ILoginResponseBody>>(APIRoutes.AGENTBYCODE, [data]),
   fetchAgentHierarchy: async (data: IAgentSearchByCodeRequest) => {
     const response = await callApi<ApiResponse<ILoginResponseBody>>(

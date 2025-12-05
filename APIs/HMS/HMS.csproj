@@ -32,11 +32,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
-    <ProjectReference Include="..\..\..\CommonLibrary\Communication\Communication.csproj" />
-    <ProjectReference Include="..\..\..\Models\Models\Models.csproj" />
+    <ProjectReference Include="..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
+    <ProjectReference Include="..\..\CommonLibrary\Communication\Communication.csproj" />
+    <ProjectReference Include="..\..\Models\Models\Models.csproj" />
   </ItemGroup>
-
   <ItemGroup>
     <Content Update="InputStructures\excelStructureValidator.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -45,7 +44,6 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-
   <ItemGroup>
     <None Update="Templates\Mail\accountlocked.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -57,5 +55,4 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
-
 </Project>

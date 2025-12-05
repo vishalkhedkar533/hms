@@ -420,9 +420,9 @@ static async Task FinalizeDataTransfer(NpgsqlConnection conn)
                           NOW(),
                           1,
                           CASE WHEN ins.supervisor_id IS NULL THEN ins.agent_id::text::ltree
-                               ELSE (ins.supervisor_id::text || '.' || ins.agent_id::text)::ltree
+                               ELSE (hms.agent_hierarchy.hierarchy_path ::text || '.' || ins.agent_id::text)::ltree
                           END
-                        FROM ins;
+                        FROM ins left join hms.agent_hierarchy on ins.supervisor_id = hms.agent_hierarchy.agent_id;
                         ";
 
     using var tx = await conn.BeginTransactionAsync();

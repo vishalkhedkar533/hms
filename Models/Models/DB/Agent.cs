@@ -384,9 +384,8 @@ namespace Models.DB
         [StringLength(50)]
         [Column("licensestatus")]
         public string? LicenseStatus { get; set; }
-
-        // 🔗 Navigation property
         [ForeignKey(nameof(SupervisorId))]
         public Agent? Supervisor { get; set; }
+        public int? OrgId { get; set; }
     }
 }

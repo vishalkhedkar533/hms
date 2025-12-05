@@ -133,6 +133,9 @@ namespace Models.DTO
         public List<KeyValueEntry>? educationCodes { get; set; }
         public List<KeyValueEntry>? stateNames { get; set; }
         public List<KeyValueEntry>? countries { get; set; }
+        public string? Comments { get; set; }
+        public string? Reason { get; set; }
+        public int? OrgId { get; set; }
     }
     public class AgentListRequest
     {

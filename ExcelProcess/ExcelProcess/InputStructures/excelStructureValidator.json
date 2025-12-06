@@ -1,0 +1,25 @@
+{
+	"OrgId": 1,
+	"InputType": "AgentCreate",
+	"fileExtenstion": [
+		".xlsx;.xls"
+	],
+	"excelColumns": [
+		{
+			"ColumnName": "dob",
+			"DestinationDataType": "System.DateTime",
+			"DataFormat": "dd/MM/yyyy 00:00:00",
+			"UseRegEx": false,
+			"AllowBlank": true,
+			"TrimContent": true
+		},
+		{
+			"ColumnName": "MaskedPanNumber",
+			"DestinationDataType": "System.String",
+			"DataFormat": "^[A-Z]{5}[0-9]{4}[A-Z]$",
+			"UseRegEx": true,
+			"AllowBlank": true,
+			"TrimContent": true
+		}
+	]
+}

@@ -147,6 +147,7 @@ namespace Models.DTO
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
         public int? SupervisorId { get; set; }
+        public string? Supervisor_Code { get; set; }
     }
     public class AgentListRequest
     {

@@ -117,7 +117,8 @@ namespace Models.Mapping
                 .ForMember(d => d.State, o => o.Ignore())
                 .ForMember(d => d.Country, o => o.Ignore())
                 .ForMember(d => d.Pin, o => o.Ignore())
-                .ForMember(d => d.Landmark, o => o.Ignore());
+                .ForMember(d => d.Landmark, o => o.Ignore())
+                .ForMember(d => d.Supervisor_Code, o => o.Ignore());
 
 
             // ================================
@@ -168,15 +169,7 @@ namespace Models.Mapping
                 .ForMember(d => d.ModifiedBy, o => o.Ignore())
                 .ForMember(d => d.ModifiedDate, o => o.Ignore())
                 .ForMember(d => d.Email, o => o.MapFrom(s => s.Email))
-                .ForMember(d => d.MobileNo, o => o.MapFrom(s => s.MobileNo))
-                // prevent recursion
-
-                /*
-Email
-MobileNo
-Supervisor*/
-                ;
-
+                .ForMember(d => d.MobileNo, o => o.MapFrom(s => s.MobileNo));
         }
     }
 

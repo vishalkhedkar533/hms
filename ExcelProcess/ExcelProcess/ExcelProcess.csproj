@@ -20,4 +20,13 @@
     <ProjectReference Include="..\..\Models\Models\Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="FileProcess\TempFile.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="InputStructures\excelStructureValidator.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

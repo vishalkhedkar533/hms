@@ -144,6 +144,9 @@ namespace Models.DTO
         public string? Country { get; set; }
         public string? Pin { get; set; }
         public string? Landmark { get; set; }
+        public string? Email { get; set; }
+        public string? MobileNo { get; set; }
+        public int? SupervisorId { get; set; }
     }
     public class AgentListRequest
     {

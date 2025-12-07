@@ -386,6 +386,7 @@ namespace Models.DB
         public string? LicenseStatus { get; set; }
         [ForeignKey(nameof(SupervisorId))]
         public Agent? Supervisor { get; set; }
+        [Column("orgid")]
         public int? OrgId { get; set; }
     }
 }

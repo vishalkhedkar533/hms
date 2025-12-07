@@ -2,7 +2,7 @@
 {
     public class KeyValueEntry
     {
-        public int OrgId { get; set; }
+        public int orgid { get; set; }
         public string EntryCategory { get; set; }
         public int EntryIdentity { get; set; }
         public string EntryDesc { get; set; }

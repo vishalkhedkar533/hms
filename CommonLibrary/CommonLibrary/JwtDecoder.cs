@@ -48,14 +48,14 @@ namespace CommonLibrary
         }
 
         // Example usage of getting a specific claim:
-        public string GetSpecificClaim(string token, string claimType)
-        {
-            var claims = GetClaimsFromJwt(token);
+        //public string GetSpecificClaim(string token, string claimType)
+        //{
+        //    var claims = GetClaimsFromJwt(token);
 
-            // Use TryGetValue to safely retrieve the claim value
-            claims.TryGetValue(claimType, out string value);
+        //    // Use TryGetValue to safely retrieve the claim value
+        //    claims.TryGetValue(claimType, out string value);
 
-            return value;
-        }
+        //    return value;
+        //}
     }
 }

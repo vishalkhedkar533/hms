@@ -23,12 +23,14 @@ namespace HMS.Controllers
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
         private readonly DatabaseService _db;
-        public AgentController(HMSContext context, IConfiguration config, IMapper mapper, DatabaseService db)
+        private readonly IAuthClaimService authClaimService;
+        public AgentController(HMSContext context, IConfiguration config, IMapper mapper, DatabaseService db, IAuthClaimService authClaimService)
         {
             _context = context;
             _config = config;
             _mapper = mapper;
             _db = db;
+            authClaimService = authClaimService;
         }
 
         [HttpPost("Termination/Request")]

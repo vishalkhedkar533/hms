@@ -168,6 +168,33 @@ ALTER TABLE hms.BRANCH_MASTER add column "orgid" INT null;
 ALTER TABLE hms.BRANCH_MASTER  add CONSTRAINT fk_BrMst_OrgId FOREIGN KEY (OrgId) REFERENCES app_subscription.organisation(OrgId)
 ALTER TABLE hms.BRANCH_MASTER add CONSTRAINT fk_branch_head_agent FOREIGN KEY (HEAD_AGENT_ID,OrgId) REFERENCES hms.AGENT (AGENT_CODE,OrgId);
 
+alter table hms.agent drop column agent_type_code;
+alter table hms.agent drop column gender;
+alter table hms.agent drop column marital_status_code;
+alter table hms.agent drop column title;
+alter table hms.agent drop column occupationcode;
+alter table hms.agent drop column occupation;
+alter table hms.agent drop column agent_sub_type_code;
+alter table hms.agent drop column designation_code;
+alter table hms.agent drop column channel_name;
+alter table hms.agent drop column sub_channel;
+alter table hms.agent drop column channel_code;
+alter table hms.agent drop column sub_channel_code;
+alter table hms.agent drop column location_code;
 
-
-
+alter table hms.agent add column agent_type_code int4;
+alter table hms.agent add column bankacctype int4;
+alter table hms.agent add column gender int4;
+alter table hms.agent add column title int4;
+alter table hms.agent add column channel int4;
+alter table hms.agent add column subchannel int4;
+alter table hms.agent add column occupation int4;
+alter table hms.agent add column agent_type_cat int4;
+alter table hms.agent add column agent_class int4;
+alter table hms.agent add column martial_status int4;
+alter table hms.agent add column education int4;
+alter table hms.agent add column state int4;
+alter table hms.agent add column country int4;
+alter table hms.agent add column agent_sub_type_code int4;
+alter table hms.agent add column designation_code int4;
+alter table hms.agent add column location_code int4;

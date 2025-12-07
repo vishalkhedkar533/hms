@@ -127,8 +127,47 @@ ADD COLUMN licenseexpirydate TIMESTAMP,
 ADD COLUMN licensestatus VARCHAR(50);
 
 
+ALTER TABLE hms."agent"
+ADD COLUMN "ActivePermAddress" INT NULL,
+ADD COLUMN "ActiveMailAddress" INT NULL,
+ADD CONSTRAINT fk_agent_perm_address
+    FOREIGN KEY ("ActivePermAddress") REFERENCES hms."Address"("AddressID"),
+ADD CONSTRAINT fk_agent_mail_address
+    FOREIGN KEY ("ActiveMailAddress") REFERENCES hms."Address"("AddressID");
+
+
+alter table hms.tempagentdto 
+add column "Comments" varchar,
+add column "Reason" varchar
+
+ALTER TABLE hms."agent"
+ADD COLUMN "orgid" INT null
+
+alter table hms.tempagentdto 
+add column "orgid" INT null
+
+alter table hms.fileprocessingtasks  
+add column "orgid" INT null
+
 alter table hms."user" ADD COLUMN OrgId INTEGER;
 
 alter table hms."user" 
 add CONSTRAINT fk_User_OrgId
-FOREIGN KEY (OrgId) REFERENCES hms.Organisation(OrgId)
+FOREIGN KEY (OrgId) REFERENCES app_subscription.Organisation(OrgId)
+
+alter table hms.agent_hierarchy
+add column "orgid" INT null
+
+alter table hms.tempagentdto add Supervisor_Code varchar(50);
+alter table hms.tempagentdto drop column Supervisor_Id;
+
+ALTER TABLE hms.BRANCH_MASTER DROP CONSTRAINT fk_branch_head_agent;
+ALTER TABLE hms.agent DROP CONSTRAINT agent_agent_code_key;
+ALTER TABLE hms.agent ADD CONSTRAINT agent_agent_code_key UNIQUE (agent_code,orgid);
+ALTER TABLE hms.BRANCH_MASTER add column "orgid" INT null;
+ALTER TABLE hms.BRANCH_MASTER  add CONSTRAINT fk_BrMst_OrgId FOREIGN KEY (OrgId) REFERENCES app_subscription.organisation(OrgId)
+ALTER TABLE hms.BRANCH_MASTER add CONSTRAINT fk_branch_head_agent FOREIGN KEY (HEAD_AGENT_ID,OrgId) REFERENCES hms.AGENT (AGENT_CODE,OrgId);
+
+
+
+

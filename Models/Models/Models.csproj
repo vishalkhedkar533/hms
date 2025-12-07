@@ -14,8 +14,4 @@
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.3" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
-  </ItemGroup>
-
 </Project>

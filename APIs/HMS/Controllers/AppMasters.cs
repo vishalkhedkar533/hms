@@ -63,6 +63,7 @@ namespace HMS.Controllers
             }                
         }
 
+        // 🔹 Refresh table (dynamic)
         // POST api/cache/refresh/hms/customer
         [HttpPost("refresh/{EntryCategory}")]
         public async Task<IActionResult> Refresh([FromRoute] string EntryCategory)
@@ -87,6 +88,7 @@ namespace HMS.Controllers
             return Ok(result);
         }
 
+        // 🔹 Evict table
         // POST api/cache/evict/hms/customer
         [HttpPost("evict/{EntryCategory}")]
         public IActionResult Evict([FromRoute] string EntryCategory)
@@ -122,6 +124,7 @@ namespace HMS.Controllers
             return Ok($"All cache entries for schema {schema} evicted.");
         }
 
+        // 🔹 Refresh entire schema
         // POST api/cache/refresh/schema/{schema}
         //[HttpPost("refresh/schema/{schema}")]
         //public async Task<IActionResult> RefreshSchema(string schema)
@@ -134,3 +137,4 @@ namespace HMS.Controllers
         private bool IsValidSchema(string schema) => string.Equals(schema, "hmsmaster", StringComparison.OrdinalIgnoreCase);
     }
 }
+//new Comment

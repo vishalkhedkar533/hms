@@ -43,3 +43,5 @@ values (2, 'Salutation', 'hmsmaster','keyvalueentries',' AND entrycategory = ''T
 
 
 
+
+insert into hms."api_config"(config_key,config_value) values ('agent_create_chunk_size', '5');

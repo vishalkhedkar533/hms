@@ -32,6 +32,7 @@ namespace HMS.Data
         public DbSet<PersonalInfo> PersonalInfo => Set<PersonalInfo>();
         public DbSet<Subscriber> Subscriber => Set<Subscriber>();
         public DbSet<Organisation> Organisation => Set<Organisation>();
+        public DbSet<FileProcessingTask> FileProcessingTasks => Set<FileProcessingTask>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

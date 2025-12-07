@@ -1,4 +1,5 @@
 ﻿using Models.DB;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DTO
 {
@@ -17,8 +18,6 @@ namespace Models.DTO
     {
         public int AgentId { get; set; }
         public string AgentCode { get; set; } = null!;
-        public string? AgentTypeCode { get; set; }
-        public string? AgentSubTypeCode { get; set; }
         public string? AgentName { get; set; }
         public string? BusinessName { get; set; }
         public string? FirstName { get; set; }
@@ -26,17 +25,10 @@ namespace Models.DTO
         public string? LastName { get; set; }
         public string? Prefix { get; set; }
         public string? Suffix { get; set; }
-        public string? Gender { get; set; }
         public DateTime? DOB { get; set; }
         public string? Nationality { get; set; }
-        public string? MaritalStatusCode { get; set; }
         public string? PreferredLanguage { get; set; }
-        public string? ChannelCode { get; set; }
-        public string? SubChannelCode { get; set; }
-        public string? DesignationCode { get; set; }
-        public string? Designation { get; set; }
         public string? AgentLevel { get; set; }
-        public string? LocationCode { get; set; }
         public string? StaffCode { get; set; }
         public int? Supervisor_Id { get; set; }
         public DateTime? ContractedDate { get; set; }
@@ -59,10 +51,7 @@ namespace Models.DTO
         public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
         public string? CandidateType { get; set; }
         public string? ApplicationDocketNo { get; set; }
-        public string? Title { get; set; }
         public string? Father_Husband_Nm { get; set; }
-        public string? Channel_Name { get; set; }
-        public string? Sub_Channel { get; set; }
         public string? EmployeeCode { get; set; }
         public DateTime? StartDate { get; set; }
         public bool PanAadharLinkFlag { get; set; }
@@ -73,8 +62,6 @@ namespace Models.DTO
         public string? CommissionClass { get; set; }
         public string? TaxStatus { get; set; }
         public string? StateEid { get; set; }
-        public int? OccupationCode { get; set; }
-        public String? Occupation { get; set; }
         public string? URN { get; set; }
         public string? AdditionalComment { get; set; }
         public DateTime? AppointmentDate { get; set; }
@@ -128,14 +115,28 @@ namespace Models.DTO
         public string? AddressLine2 { get; set; }
         public string? AddressLine3 { get; set; }
         public string? City { get; set; }
-        public string? State { get; set; }
-        public string? Country { get; set; }
         public string? Pin { get; set; }
         public string? Landmark { get; set; }
         public string? Email { get; set; }
         public string? MobileNo { get; set; }
         public int? SupervisorId { get; set; }
         public string? Supervisor_Code { get; set; }
+        public int? BankAccType { get; set; }
+        public int? Gender { get; set; }
+        public int? Title { get; set; }
+        public int? Channel { get; set; }
+        public int? SubChannel { get; set; }
+        public int? occupation { get; set; }
+        public int? AgentTypeCat { get; set; }
+        public int? AgentClass { get; set; }
+        public int? MaritalStatus { get; set; }
+        public int? Education { get; set; }
+        public int? State { get; set; }
+        public int? Country { get; set; }
+        public int? DesignationCode { get; set; }
+        public int? LocationCode { get; set; }
+        public int? AgentTypeCode { get; set; }
+        public int? AgentSubTypeCode { get; set; }
     }
     public class AgentListRequest
     {
@@ -144,7 +145,6 @@ namespace Models.DTO
             get; set;
         }
     }
-
     public class SearchAgent
     {
         public string? SearchCondition { get; set; }
@@ -170,8 +170,6 @@ namespace Models.DTO
     {
         public int agent_id { get; set; }
         public string agent_code { get; set; } = null!;
-        public string? AgentTypeCode { get; set; }
-        public string? AgentSubTypeCode { get; set; }
         public string? agent_name { get; set; }
         public string? BusinessName { get; set; }
         public string? FirstName { get; set; }
@@ -179,10 +177,8 @@ namespace Models.DTO
         public string? LastName { get; set; }
         public string? Prefix { get; set; }
         public string? Suffix { get; set; }
-        public string? Gender { get; set; }
         public DateTime? DOB { get; set; }
         public string? Nationality { get; set; }
-        public string? MaritalStatusCode { get; set; }
         public string? PreferredLanguage { get; set; }
         public string? ChannelCode { get; set; }
         public string? SubChannelCode { get; set; }

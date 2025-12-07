@@ -369,9 +369,9 @@ namespace HMS.Controllers
             IQueryable <Agent> agent = _context.Agents;
 
             #region FetchLoggedInUserInfo
-            string jwtString = "";
+            //string jwtString = "";
 
-            var decoder = new JwtDecoder();
+            //var decoder = new JwtDecoder();
             //var claimsData = decoder.GetClaimsFromJwt(jwtString);
 
             //Console.WriteLine("--- Decoded JWT Claims ---");
@@ -394,7 +394,7 @@ namespace HMS.Controllers
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
                 return NotFound(hMSResponse);
             }
-            var agentEntity = await agent.Where(x => x.AgentId == searchAgent.AgentId).FirstOrDefaultAsync();
+            var agentEntity = await agent.Where(x => x.AgentId == searchAgent.AgentId).AsNoTracking().FirstOrDefaultAsync();
             if (agentEntity != null)
             {
                 agentDTO = _mapper.Map<AgentDto>(agentEntity);

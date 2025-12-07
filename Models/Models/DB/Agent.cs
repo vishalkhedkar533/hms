@@ -17,7 +17,6 @@ namespace Models.DB
           .HasConstraintName("fk_supervisor")
           .OnDelete(DeleteBehavior.SetNull);
 });
-
      */
     [Table("agent", Schema = "hms")] // ✅ lowercase to match DB
     public class Agent
@@ -32,14 +31,6 @@ namespace Models.DB
         [Column("agent_code")]
         [SwaggerSchema("Unique code identifying the agent.")]
         public string AgentCode { get; set; } = null!;
-
-        [StringLength(20)]
-        [Column("agent_type_code")]
-        public string? AgentTypeCode { get; set; }
-
-        [StringLength(20)]
-        [Column("agent_sub_type_code")]
-        public string? AgentSubTypeCode { get; set; }
 
         [StringLength(150)]
         [Column("agent_name")]
@@ -68,46 +59,18 @@ namespace Models.DB
         [StringLength(20)]
         [Column("suffix")]
         public string? Suffix { get; set; }
-
-        [StringLength(10)]
-        [Column("gender")]
-        public string? Gender { get; set; }
-
         [Column("dob", TypeName = "date")]
         public DateTime? DOB { get; set; }
 
         [StringLength(40)]
         [Column("nationality")]
         public string? Nationality { get; set; }
-
-        [StringLength(20)]
-        [Column("marital_status_code")]
-        public string? MaritalStatusCode { get; set; }
-
         [StringLength(22)]
         [Column("preferred_language")]
         public string? PreferredLanguage { get; set; }
-
-        [StringLength(20)]
-        [Column("channel_code")]
-        public string? ChannelCode { get; set; }
-
-        [StringLength(20)]
-        [Column("sub_channel_code")]
-        public string? SubChannelCode { get; set; }
-
-        [StringLength(20)]
-        [Column("designation_code")]
-        public string? DesignationCode { get; set; }
-
         [StringLength(20)]
         [Column("agent_level")]
         public string? AgentLevel { get; set; }
-
-        [StringLength(20)]
-        [Column("location_code")]
-        public string? LocationCode { get; set; }
-
         [StringLength(20)]
         [Column("staff_code")]
         public string? StaffCode { get; set; }
@@ -183,23 +146,9 @@ namespace Models.DB
         [StringLength(100)]
         [Column("applicationdocketno")]
         public string? ApplicationDocketNo { get; set; }
-
-        [StringLength(20)]
-        [Column("title")]
-        public string? Title { get; set; }
-
         [StringLength(200)]
         [Column("father_husband_nm")]
         public string? Father_Husband_Nm { get; set; }
-
-        [StringLength(100)]
-        [Column("channel_name")]
-        public string? Channel_Name { get; set; }
-
-        [StringLength(100)]
-        [Column("sub_channel")]
-        public string? Sub_Channel { get; set; }
-
         [StringLength(50)]
         [Column("employeecode")]
         public string? EmployeeCode { get; set; }
@@ -228,14 +177,6 @@ namespace Models.DB
         [StringLength(50)]
         [Column("stateeid")]
         public string? StateEid { get; set; }
-
-        [Column("occupationcode")]
-        public int? OccupationCode { get; set; }
-
-        [StringLength(150)]
-        [Column("occupation")]
-        public string? Occupation { get; set; }
-
         [StringLength(50)]
         [Column("urn")]
         public string? URN { get; set; }
@@ -388,5 +329,37 @@ namespace Models.DB
         public Agent? Supervisor { get; set; }
         [Column("orgid")]
         public int? OrgId { get; set; }
+        [Column("bankacctype")]
+        public int? BankAccType { get; set; }
+        [Column("gender")]
+        public int? Gender { get; set; }
+        [Column("title")]
+        public int? Title { get; set; }
+        [Column("channel")]
+        public int? Channel { get; set; }
+        [Column("subchannel")]
+        public int? SubChannel { get; set; } = 0;
+        [Column("occupation")]
+        public int? occupation { get; set; }
+        [Column("agent_type_cat")]
+        public int? AgentTypeCat { get; set; }
+        [Column("agent_class")]
+        public int? AgentClass { get; set; }
+        [Column("martial_status")]
+        public int? MaritalStatus { get; set; }
+        [Column("education")]
+        public int? Education { get; set; }
+        [Column("state")]
+        public int? State { get; set; }
+        [Column("country")]
+        public int? Country { get; set; }
+        [Column("agent_sub_type_code")]
+        public int? AgentSubTypeCode { get; set; }
+        [Column("location_code")]
+        public int? LocationCode { get; set; }
+        [Column("agent_type_code")]
+        public int? AgentTypeCode { get; set; }
+        [Column("designation_code")]
+        public int? DesignationCode { get; set; }
     }
 }

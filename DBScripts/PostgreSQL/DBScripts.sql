@@ -1606,3 +1606,81 @@ CREATE TABLE hms.tempagentdto (
 );
 
 
+
+
+-- DROP FUNCTION hms.get_agentsearch(varchar, varchar, int8, int8, varchar, varchar);
+
+CREATE OR REPLACE FUNCTION hms.get_agentsearch(p_searchcondition character varying DEFAULT NULL::character varying
+                                               , p_zone character varying DEFAULT NULL::character varying, p_page_number bigint DEFAULT 1
+                                               , p_page_size bigint DEFAULT 10, p_sort_column character varying DEFAULT 'agent_id'::character varying
+                                               , p_sort_direction character varying DEFAULT 'ASC'::character varying)
+ RETURNS TABLE(agentid integer, agentcode character varying, agenttypecode character varying, agentsubtypecode character varying
+               , agentname character varying, businessname character varying, firstname character varying, middlename character varying
+               , lastname character varying, prefix character varying, suffix character varying, gender character varying, dob date
+               , nationality character varying, maritalstatuscode character varying, preferredlanguage character varying, channelcode character varying
+               , subchannelcode character varying, designationcode character varying, agentlevel character varying, locationcode character varying
+               , staffcode character varying, contracteddate date, agentstatuscode character varying, statusdate date, islicensed boolean
+               , pannumber character varying, aadhaar_number character varying, irdalicensenumber character varying, gstnumber character varying
+               , createdby character varying, createddate timestamp without time zone, modifiedby character varying, modifieddate timestamp without time zone
+               , rowversion integer, supervisor_id integer, isactive boolean, email character varying, mobileno character varying)
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RETURN QUERY
+    SELECT
+        a.agent_id as AgentId, a.agent_code as AgentCode, a.agent_type_code as AgentTypeCode, 
+		a.agent_sub_type_code as AgentSubTypeCode,
+        a.agent_name as AgentName, a.business_name as BusinessName, 
+		a.first_name as FirstName, a.middle_name as MiddleName,
+        a.last_name as LastName, a.prefix as Prefix, a.suffix as Suffix, a.gender as Gender,
+        a.dob as DOB, a.nationality as Nationality, a.martial_status as MaritalStatus,
+		a.preferred_language as PreferredLanguage,
+        a.channel as channel, a.subchannel as subchannel, 
+		a.designation_code as DesignationCode,
+        a.agent_level as AgentLevel, a.location_code as LocationCode, a.staff_code as StaffCode,
+		a.contracted_date as ContractedDate,
+        a.agent_status_code as AgentStatusCode, a.status_date as StatusDate, 
+		a.is_licensed as IsLicensed,
+        a.pan_number as PanNumber, a.aadhaar_number as aadhaar_number, a.irda_license_number as IrdaLicenseNumber,
+        a.gst_number as GstNumber, a.created_by as CreatedBy, a.created_date as CreatedDate, a.modified_by as ModifiedBy,
+        a.modified_date as ModifiedDate, a.rowversion as RowVersion, a.supervisor_id as Supervisor_Id, a.is_active as IsActive,
+        a.email, a.mobileno
+    FROM hms.agent a
+	WHERE (p_SearchCondition IS NULL OR a.agent_code ILIKE '%' || p_SearchCondition || '%')
+          or (p_SearchCondition IS NULL OR a.agent_name ILIKE '%' || p_SearchCondition || '%')
+          or (p_SearchCondition IS NULL OR a.email ILIKE '%' || p_SearchCondition || '%')
+          or (p_SearchCondition IS NULL OR a.mobileno ILIKE '%' || p_SearchCondition || '%')
+          or (p_SearchCondition IS NULL OR a.pan_number ILIKE '%' || p_SearchCondition || '%')
+          or (p_SearchCondition IS NULL OR a.aadhaar_number ILIKE '%' || p_SearchCondition || '%')
+          or (p_SearchCondition IS NULL OR a.irda_license_number ILIKE '%' || p_SearchCondition || '%')
+          or (p_SearchCondition IS NULL OR a.gst_number ILIKE '%' || p_SearchCondition || '%')
+		  ORDER BY
+        CASE 
+            WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'ASC' THEN a.agent_id
+            ELSE NULL
+        END ASC,
+        CASE 
+            WHEN p_sort_column = 'agent_id' AND upper(p_sort_direction) = 'DESC' THEN a.agent_id
+            ELSE NULL
+        END DESC,
+        CASE 
+            WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'ASC' THEN a.agent_name
+            ELSE NULL
+        END ASC,
+        CASE 
+            WHEN p_sort_column = 'agent_name' AND upper(p_sort_direction) = 'DESC' THEN a.agent_name
+            ELSE NULL
+        END DESC,
+        CASE 
+            WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'ASC' THEN a.email
+            ELSE NULL
+        END ASC,
+        CASE 
+            WHEN p_sort_column = 'email' AND upper(p_sort_direction) = 'DESC' THEN a.email
+            ELSE NULL
+        END DESC
+    OFFSET ((p_page_number - 1) * p_page_size)::INT
+    LIMIT p_page_size::INT;
+END;
+$function$
+;

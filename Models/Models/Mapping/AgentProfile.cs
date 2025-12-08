@@ -52,10 +52,11 @@ namespace Models.Mapping
                 .ForMember(d => d.DesignationCode, o => o.MapFrom(s => s.DesignationCode))
                 .ForMember(d => d.Channel, o => o.MapFrom(s => s.Channel))
                 .ForMember(d => d.SubChannel, o => o.MapFrom(s => s.SubChannel))
-                .ForMember(d => d.occupation, o => o.MapFrom(s => s.occupation))
+                .ForMember(d => d.Occupation, o => o.MapFrom(s => s.Occupation))
                 .ForMember(d => d.AgentTypeCode, o => o.MapFrom(s => s.AgentTypeCode))
                 .ForMember(d => d.AgentTypeCat, o => o.MapFrom(s => s.AgentTypeCat))
                 .ForMember(d => d.AgentClass, o => o.MapFrom(s => s.AgentClass))
+                
 
                 // PAN masking
                 .ForMember(d => d.MaskedPanNumber,
@@ -117,7 +118,23 @@ namespace Models.Mapping
                 .ForMember(d => d.Country, o => o.Ignore())
                 .ForMember(d => d.Pin, o => o.Ignore())
                 .ForMember(d => d.Landmark, o => o.Ignore())
-                .ForMember(d => d.Supervisor_Code, o => o.Ignore());
+                .ForMember(d => d.Supervisor_Code, o => o.Ignore())
+                .ForMember(d => d.AgentClassDesc, s => s.Ignore())
+                .ForMember(d => d.DesignationCodeDesc, s => s.Ignore())
+                .ForMember(d => d.CountryDesc, s => s.Ignore())
+                .ForMember(d => d.StateDesc, s => s.Ignore())
+                .ForMember(d => d.EducationDesc, s => s.Ignore())
+                .ForMember(d => d.MaritalStatusDesc, s => s.Ignore())
+                .ForMember(d => d.AgentTypeCatDesc, s => s.Ignore())
+                .ForMember(d => d.OccupationDesc, s => s.Ignore())
+                .ForMember(d => d.SubChannelDesc, s => s.Ignore())
+                .ForMember(d => d.ChannelDesc, s => s.Ignore())
+                .ForMember(d => d.TitleDesc, s => s.Ignore())
+                .ForMember(d => d.GenderDesc, s => s.Ignore())
+                .ForMember(d => d.BankAccTypeDesc, s => s.Ignore())
+                .ForMember(d => d.AgentSubTypeCodeDesc, s => s.Ignore())
+                .ForMember(d => d.AgentTypeCodeDesc, s => s.Ignore())
+                .ForMember(d => d.LocationCodeDesc, s => s.Ignore());
             // ================================
             // AgentDto → Agent
             // ================================
@@ -166,7 +183,7 @@ namespace Models.Mapping
                 .ForMember(d => d.ModifiedBy, o => o.Ignore())
                 .ForMember(d => d.ModifiedDate, o => o.Ignore())
                 .ForMember(d => d.Email, o => o.MapFrom(s => s.Email))
-                .ForMember(d => d.MobileNo, o => o.MapFrom(s => s.MobileNo));
+                .ForMember(d => d.MobileNo, o => o.MapFrom(s => s.MobileNo));            
         }
     }
 

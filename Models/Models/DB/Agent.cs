@@ -340,7 +340,7 @@ namespace Models.DB
         [Column("subchannel")]
         public int? SubChannel { get; set; } = 0;
         [Column("occupation")]
-        public int? occupation { get; set; }
+        public int? Occupation { get; set; }
         [Column("agent_type_cat")]
         public int? AgentTypeCat { get; set; }
         [Column("agent_class")]

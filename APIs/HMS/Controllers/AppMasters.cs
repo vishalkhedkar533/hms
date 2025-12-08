@@ -15,7 +15,6 @@ namespace HMS.Controllers
         private readonly GenericCacheService _cacheService;
         private readonly IConfiguration _configuration;
         private readonly IAuthClaimService _authClaimService;
-        private Int64 OrganisationId;
         private readonly FileService _fileService;
         private int refreshInterval = 15;
         public AppMastersController(GenericCacheService cacheService, IConfiguration configuration
@@ -34,12 +33,10 @@ namespace HMS.Controllers
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetRecords([FromRoute] string EntryCategory)
         {
-            OrganisationId = Convert.ToInt64(_authClaimService.GetClaim("OrganisationId") ?? "0");
-
             var masterTableConfigs = (await _cacheService.GetRecordsAsync<MasterTable>(
                     "hmsmaster",
                     "mastertables",
-                    OrganisationId,
+                    Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
                     $" AND EntryCategory = '{EntryCategory}'",
                     refreshInterval))
                 .ToList().FirstOrDefault();
@@ -50,7 +47,7 @@ namespace HMS.Controllers
             var result = (await _cacheService.GetRecordsAsync<KeyValueEntry>(
                 masterTableConfigs?.SchemaName
                 , masterTableConfigs?.TableName
-                , OrganisationId
+                , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                 , (masterTableConfigs?.FilterCriteria ?? string.Empty)
                 , refreshInterval)).ToList();
             if (result == null)
@@ -68,12 +65,11 @@ namespace HMS.Controllers
         [HttpPost("refresh/{EntryCategory}")]
         public async Task<IActionResult> Refresh([FromRoute] string EntryCategory)
         {
-            OrganisationId = Convert.ToInt64(_authClaimService.GetClaim("OrganisationId") ?? "0");
 
             var masterTableConfigs = (await _cacheService.GetRecordsAsync<MasterTable>(
                     "hmsmaster",
                     "mastertables",
-                    OrganisationId,
+                    Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
                     $" AND EntryCategory = '{EntryCategory}'",
                     refreshInterval))
                 .ToList().FirstOrDefault();
@@ -83,7 +79,7 @@ namespace HMS.Controllers
 
             var result = await _cacheService.RefreshCacheAsync(masterTableConfigs.SchemaName
                 , masterTableConfigs.TableName
-                , OrganisationId
+                , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                 , EntryCategory);
             return Ok(result);
         }
@@ -93,12 +89,11 @@ namespace HMS.Controllers
         [HttpPost("evict/{EntryCategory}")]
         public IActionResult Evict([FromRoute] string EntryCategory)
         {
-            OrganisationId = Convert.ToInt64(_authClaimService.GetClaim("OrganisationId") ?? "0");
 
             var masterTableConfigs = (_cacheService.GetRecordsAsync<MasterTable>(
                     "hmsmaster",
                     "mastertables",
-                    OrganisationId,
+                    Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
                     $" AND EntryCategory = '{EntryCategory}'",
                     refreshInterval)).Result.ToList().FirstOrDefault();
 
@@ -108,7 +103,7 @@ namespace HMS.Controllers
 
             _cacheService.EvictCache(masterTableConfigs?.SchemaName
                 , masterTableConfigs?.TableName
-                , OrganisationId
+                , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                 , EntryCategory);
 
             return Ok($"Cache for {masterTableConfigs?.SchemaName}.{masterTableConfigs?.TableName} evicted.");

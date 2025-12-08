@@ -1,4 +1,5 @@
-﻿using HMS.Data;
+﻿using CommonLibrary;
+using HMS.Data;
 using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,14 @@ namespace HMS.Controllers
         private readonly IConfiguration _configuration;
         private readonly HMSContext _context;
         private readonly ILogger<HealthController> _logger;
-
-        public HealthController(HMSContext context, IConfiguration configuration, ILogger<HealthController> logger)
+        private readonly IAuthClaimService _authClaimService;
+        public HealthController(HMSContext context, IConfiguration configuration, ILogger<HealthController> logger
+            , IAuthClaimService authClaimService)
         {
             _configuration = configuration;
             _context = context;
             _logger = logger;
+            _authClaimService = authClaimService;
         }
 
         [HttpPost("Check")]
@@ -29,10 +32,7 @@ namespace HMS.Controllers
             {
                 //_logger.LogInformation("Information Log is Working");
                 //_logger.LogWarning("Warning Log is Working");
-                //HttpContext.User.Claims.Where(x=>x.Type.Equals("OrganisationId")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
-                //HttpContext.User.Claims.Where(x=>x.Type.Equals("OrganisationName")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
-                //HttpContext.User.Claims.Where(x=>x.Type.Equals("SubscriberId")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
-                //HttpContext.User.Claims.Where(x=>x.Type.Equals("SubscriberName")).Select( x=> x.Value ).FirstOrDefault() ?? String.Empty
+                //Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                 await _context.agent.FindAsync(-1000);
                 return Ok(new
                 {

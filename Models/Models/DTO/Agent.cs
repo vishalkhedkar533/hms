@@ -126,7 +126,7 @@ namespace Models.DTO
         public int? Title { get; set; }
         public int? Channel { get; set; }
         public int? SubChannel { get; set; }
-        public int? occupation { get; set; }
+        public int? Occupation { get; set; }
         public int? AgentTypeCat { get; set; }
         public int? AgentClass { get; set; }
         public int? MaritalStatus { get; set; }
@@ -137,6 +137,25 @@ namespace Models.DTO
         public int? LocationCode { get; set; }
         public int? AgentTypeCode { get; set; }
         public int? AgentSubTypeCode { get; set; }
+
+
+        public string? AgentClassDesc { get; set; }
+        public string? BankAccTypeDesc { get; set; }
+        public string? GenderDesc { get; set; }
+        public string? TitleDesc { get; set; }
+        public string? ChannelDesc { get; set; }
+        public string? SubChannelDesc { get; set; }
+        public string? OccupationDesc { get; set; }
+        public string? AgentTypeCatDesc { get; set; }
+        public string? MaritalStatusDesc { get; set; }
+        public string? EducationDesc { get; set; }
+        public string? StateDesc { get; set; }
+        public string? CountryDesc { get; set; }
+        public string? DesignationCodeDesc { get; set; }
+        public string? LocationCodeDesc { get; set; }
+        public string? AgentTypeCodeDesc { get; set; }
+        public string? AgentSubTypeCodeDesc { get; set; }
+
     }
     public class AgentListRequest
     {

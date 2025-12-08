@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
@@ -16,10 +17,12 @@ namespace HMS.Controllers
         private readonly DatabaseService _db;
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<UploadFileController> _logger;
+        private readonly IAuthClaimService _authClaimService;
         public UploadFileController(HMSContext context, 
             IConfiguration config,IMapper mapper, 
             DatabaseService db,IWebHostEnvironment environment,
-            ILogger<UploadFileController> logger)
+            ILogger<UploadFileController> logger,
+            IAuthClaimService authClaimService)
         {
             _context = context;
             _config = config;
@@ -27,6 +30,7 @@ namespace HMS.Controllers
             _db = db;
             _environment = environment;
             _logger = logger;
+            _authClaimService = authClaimService;
         }
 
         [HttpPost("file")]
@@ -42,7 +46,7 @@ namespace HMS.Controllers
 
             try
             {
-                int organisationId = Convert.ToInt32(HttpContext.User.Claims.FirstOrDefault(x => x.Type == "OrganisationId")?.Value);
+                int organisationId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
                 // 1. Create uploads/userid folder
                 //var userFolderPath = Path.Combine(_environment.WebRootPath, "uploads", model.UserId.ToString());
                 var root = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");

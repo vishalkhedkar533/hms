@@ -41,5 +41,7 @@ namespace Models.DB
         public string? FactoringHouse { get; set; }
         [Required]
         public PreferredPaymentMode PreferredPaymentMode { get; set; }
+        [NotMapped]
+        public string? AccountTypeDesc { get; set; }
     }
 }

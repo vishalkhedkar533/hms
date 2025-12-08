@@ -1,6 +1,7 @@
 using AutoMapper;
 using CommonLibrary;
 using CommonLibrary.Background;
+using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
@@ -9,9 +10,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.Enums;
 using Models.HMSConsts;
+using Mono.TextTemplating;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Diagnostics.Metrics;
 
 namespace HMS.Controllers
 {
@@ -24,14 +28,20 @@ namespace HMS.Controllers
         private readonly IMapper _mapper;
         private readonly DatabaseService _db;
         private readonly IAuthClaimService _authClaimService;
-        public AgentController(HMSContext context, IConfiguration config, IMapper mapper
-            , DatabaseService db, IAuthClaimService authClaimService)
+        private readonly GenericCacheService _cacheService;
+        private int refreshInterval = 15;
+        private readonly IConfiguration _configuration;
+        public AgentController(HMSContext context, IConfiguration config, IMapper mapper, IConfiguration configuration
+            , DatabaseService db, IAuthClaimService authClaimService, GenericCacheService cacheService)
         {
             _context = context;
             _config = config;
             _mapper = mapper;
             _db = db;
             _authClaimService = authClaimService;
+            _cacheService = cacheService;
+            _configuration = configuration;
+            int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
         }
 
         [HttpPost("Termination/Request")]
@@ -356,17 +366,36 @@ namespace HMS.Controllers
             var result = _mapper.Map<AgentDto>(agent);
             return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
         }
+
+        private List<KeyValueEntry> GetMasterData(string EntryCategory)
+        {
+            var masterTableConfigs = (_cacheService.GetRecordsAsync<MasterTable>(
+                    "hmsmaster",
+                    "mastertables",
+                    Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
+                    $" AND EntryCategory = '{EntryCategory}'",
+                    refreshInterval)).Result.FirstOrDefault();
+
+            var result = (_cacheService.GetRecordsAsync<KeyValueEntry>(
+                masterTableConfigs?.SchemaName
+                , masterTableConfigs?.TableName
+                , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
+                , (masterTableConfigs?.FilterCriteria ?? string.Empty)
+                , refreshInterval)).Result.ToList<KeyValueEntry>();
+            return result;
+        }
+
         [HttpPost("AgentById")]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
             HmsResponse hMSResponse = new HmsResponse();
-            Console.WriteLine(_authClaimService.GetClaim("OrganisationId"));
+            Console.WriteLine(_authClaimService.GetClaim(ApiConstants.OrganisationId) );
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
             List<AgentDto> agents = new List<AgentDto>();
             AgentDto agentDTO = new AgentDto();
-            IQueryable <Agent> agent = _context.Agents;
+            IQueryable<Agent> agent = _context.Agents;
 
             #region FetchLoggedInUserInfo
             //string jwtString = "";
@@ -385,7 +414,7 @@ namespace HMS.Controllers
             //Console.WriteLine($"\nUser ID (sub): {userId}");
             #endregion
 
-            if (searchAgent.AgentId ==null)
+            if (searchAgent.AgentId == null)
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
                 hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
@@ -402,14 +431,15 @@ namespace HMS.Controllers
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Agent",
                     "get_agent_supervisors",
-                    new{
+                    new
+                    {
                         p_agent_id = searchAgent.AgentId
                     });
-                
-                if (!string.IsNullOrEmpty( stringResponse.FirstOrDefault()))
+
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
                 {
                     List<PeopleHeirarchyDto> agentHeirarchyDtos = JsonConvert.DeserializeObject<List<PeopleHeirarchyDto>>(
-                        stringResponse.FirstOrDefault(), 
+                        stringResponse.FirstOrDefault(),
                         new Newtonsoft.Json.JsonSerializerSettings
                         {
                             NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore,
@@ -427,7 +457,7 @@ namespace HMS.Controllers
                         new
                         {
                             p_agent_id = searchAgent.AgentId,
-                            p_orgid = Int64.Parse(_authClaimService.GetClaim("OrganisationId"))
+                            p_orgid = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                         });
 
                     var immediateReportees = await _db.ExecuteQueryAsync<AgentDto>(
@@ -436,7 +466,7 @@ namespace HMS.Controllers
                         new
                         {
                             p_agent_id = searchAgent.AgentId,
-                            p_orgid = Int64.Parse(_authClaimService.GetClaim("OrganisationId"))
+                            p_orgid = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                         });
 
                     List<AgentDto> supervisorsDTO = _mapper.Map<List<AgentDto>>(immediateSupervisors);
@@ -449,17 +479,17 @@ namespace HMS.Controllers
                     .Where(a => a.AgentId == searchAgent.AgentId)
                     .AsNoTracking()
                     .ToListAsync();
-                //Bank Accounts
+
                 agentDTO.bankAccounts = await _context.BankAccount
-                    .Where(b => agentEntity.AgentId  == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 
                 //Permanent Address
                 agentDTO.PermanentAddres = await _context.Address
-                    .Where(b =>agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Permanent == b.AddressType)
-                    .AsNoTracking()
-                    .ToListAsync();
+                .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Permanent == b.AddressType)
+                .AsNoTracking()
+                .ToListAsync();
 
                 //Mailing Address
                 agentDTO.MailingAddres = await _context.Address
@@ -479,8 +509,37 @@ namespace HMS.Controllers
                     .AsNoTracking()
                     .ToListAsync();
 
+                var BankAccType = GetMasterData("BankAccType");
+                var AgentClass = GetMasterData("AgentClass");
+                var SalesSubChannels = GetMasterData("SalesSubChannels");
+                var State = GetMasterData("State");
+                var Occupations = GetMasterData("Occupations");
+                var MaritalStatus = GetMasterData("MaritalStatus");
+                var Gender = GetMasterData("Gender");
+                var EducationQualification = GetMasterData("EducationQualification");
+                var Country = GetMasterData("Country");
+                var SalesChannels = GetMasterData("SalesChannels");
+                var AgentTypeCategory = GetMasterData("AgentTypeCategory");
+                var Salutation = GetMasterData("Salutation");
 
-                int organisationId = int.Parse(HttpContext.User.Claims.First(x => x.Type == "OrganisationId").Value);
+                foreach (var bankAcc in agentDTO.bankAccounts)
+                {
+                    bankAcc.AccountTypeDesc = BankAccType
+                        .Where(b => b.EntryIdentity == bankAcc.AccountType)
+                        .Select(b => b.EntryDesc)
+                        .FirstOrDefault() ?? string.Empty;
+                }
+                agentDTO.AgentClassDesc = AgentClass.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentClass ??  -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.SubChannelDesc = SalesSubChannels.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.SubChannel ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.StateDesc = State.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.State ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.OccupationDesc = Occupations.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Occupation ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.MaritalStatusDesc = MaritalStatus.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.MaritalStatus ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.GenderDesc = Gender.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Gender ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.EducationDesc = EducationQualification.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Education ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.CountryDesc = Country.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Country ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.ChannelDesc = SalesChannels.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Channel ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.AgentTypeCodeDesc = AgentTypeCategory.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentTypeCode ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.TitleDesc = Salutation.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Title ?? -1000))?.EntryDesc?? string.Empty;
 
                 //const string BankAccTypeCategory = "BANK_ACC_TYP";
                 //var BankAccTypeResults = await _db.ExecuteQueryAsync<KeyValueEntry>(
@@ -700,11 +759,11 @@ namespace HMS.Controllers
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
                 return NotFound(hMSResponse);
             }
-            
+
             List<AgentDto> agents = new List<AgentDto>();
             var AgentId = await _context.Agents
                 .Where(u => u.AgentCode.ToUpper() == agentDto.AgentCode.ToUpper())
-                .Select(x=> x.AgentId)
+                .Select(x => x.AgentId)
                 .FirstOrDefaultAsync();
             agentDto.AgentId = AgentId;
             agentDto.FetchHierarchy = true;

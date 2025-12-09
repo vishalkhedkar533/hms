@@ -208,29 +208,29 @@ builder.Services.AddAuthorization();
 // ----------------------------
 // Rate Limiting
 // ----------------------------
-builder.Services.AddRateLimiter(options =>
-{
-    options.AddPolicy("RateLimitPerUser", httpContext =>
-    {
-        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
-                     ?? httpContext.Connection.RemoteIpAddress?.ToString()
-                     ?? "anonymous";
+//builder.Services.AddRateLimiter(options =>
+//{
+//    options.AddPolicy("RateLimitPerUser", httpContext =>
+//    {
+//        var userId = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+//                     ?? httpContext.Connection.RemoteIpAddress?.ToString()
+//                     ?? "anonymous";
 
-        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
-        {
-            PermitLimit = 5,
-            Window = TimeSpan.FromSeconds(10),
-            QueueLimit = 0,
-            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-        });
-    });
+//        return RateLimitPartition.GetFixedWindowLimiter(userId, _ => new FixedWindowRateLimiterOptions
+//        {
+//            PermitLimit = 5,
+//            Window = TimeSpan.FromSeconds(10),
+//            QueueLimit = 0,
+//            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+//        });
+//    });
 
-    options.OnRejected = async (context, token) =>
-    {
-        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-        await context.HttpContext.Response.WriteAsync("Rate limit exceeded. Try again later.", token);
-    };
-});
+//    options.OnRejected = async (context, token) =>
+//    {
+//        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+//        await context.HttpContext.Response.WriteAsync("Rate limit exceeded. Try again later.", token);
+//    };
+//});
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())

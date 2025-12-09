@@ -69,27 +69,3 @@ VALUES(2, 'COMMISSION_CLASS', 1, 'Class 1', null, false);
 
 INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
 VALUES(2, 'COMMISSION_CLASS', 2, 'Class 2', null, false);
-
-delete from hmsmaster.keyvalueentries where entrycategory = 'CANDIDATE_TYP';
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'CandidateType', 1, 'Senior', null, false);
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'CandidateType', 2, 'Junior', null, false);
-
-delete from hmsmaster.keyvalueentries where entrycategory = 'AGNT_TYP';
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'AgentType', 1, 'Type 1', null, false);
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'AgentType', 2, 'Type 2', null, false);
-
-delete from hmsmaster.keyvalueentries where entrycategory = 'COMMISSION_CLASS';
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'CommissionClass', 1, 'Class 1', null, false);
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'CommissionClass', 2, 'Class 2', null, false);

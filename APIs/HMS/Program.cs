@@ -247,7 +247,7 @@ app.UseCors("AllowedSites");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<WhitelistHeadersMiddleware>();
-app.UseRateLimiter();
+//app.UseRateLimiter();
 
 // ----------------------------
 // Swagger

@@ -15,6 +15,10 @@
     {
         public const int AGENT_NOTFOUND = 1201;
     }
+    public static class MastersConstants //13x series
+    {
+        public const int MASTER_NOTFOUND = 1301;
+    }
     public static class AddressTypeConstants //12x series
     {
         public const int PERMANENT = 1301;

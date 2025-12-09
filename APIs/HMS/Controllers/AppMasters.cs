@@ -1,9 +1,13 @@
 ﻿using CommonLibrary;
 using HMS.Caching;
+using HMS.Data;
 using HMS.Security;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.HMSConsts;
 
 namespace HMS.Controllers
 {
@@ -17,7 +21,9 @@ namespace HMS.Controllers
         private readonly IAuthClaimService _authClaimService;
         private readonly FileService _fileService;
         private int refreshInterval = 15;
-        public AppMastersController(GenericCacheService cacheService, IConfiguration configuration
+        private readonly HMSContext _context;
+
+        public AppMastersController(HMSContext context, GenericCacheService cacheService, IConfiguration configuration
             , IAuthClaimService authClaimService, FileService fileService)
         {
             _cacheService = cacheService;
@@ -25,6 +31,7 @@ namespace HMS.Controllers
             _authClaimService = authClaimService;
             _fileService = fileService;
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
+            _context = context;
         }
 
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
@@ -33,6 +40,8 @@ namespace HMS.Controllers
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetRecords([FromRoute] string EntryCategory)
         {
+            HmsResponse hMSResponse = new HmsResponse();
+            List<KeyValueEntry>? result = null;
             var masterTableConfigs = (await _cacheService.GetRecordsAsync<MasterTable>(
                     "hmsmaster",
                     "mastertables",
@@ -42,22 +51,40 @@ namespace HMS.Controllers
                 .ToList().FirstOrDefault();
 
             if (!IsValidSchema(masterTableConfigs?.SchemaName ?? string.Empty))
-                return Forbid("Access denied: invalid input." + EntryCategory);
-
-            var result = (await _cacheService.GetRecordsAsync<KeyValueEntry>(
-                masterTableConfigs?.SchemaName
-                , masterTableConfigs?.TableName
-                , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
-                , (masterTableConfigs?.FilterCriteria ?? string.Empty)
-                , refreshInterval)).ToList();
-            if (result == null)
             {
-                return NoContent();
+                hMSResponse.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return NotFound(hMSResponse);
             }
             else
             {
-                return Ok(result);
-            }                
+                result = (await _cacheService.GetRecordsAsync<KeyValueEntry>(
+                    masterTableConfigs?.SchemaName
+                    , masterTableConfigs?.TableName
+                    , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
+                    , (masterTableConfigs?.FilterCriteria ?? string.Empty)
+                    , refreshInterval)).ToList();
+
+                if (result == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                }
+                else
+                {
+                    hMSResponse.responseBody.master = result;
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                }
+            }
+            return result == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
 
         // 🔹 Refresh table (dynamic)

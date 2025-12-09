@@ -9,8 +9,8 @@ insert into hms.errorMaster (error_id,area,error_msg) values (1101, 'Common', 'S
 
 INSERT INTO applogs.applog_filter_policy (minimum_level, excluded_categories)
 VALUES ('Information', ARRAY['Microsoft', 'System.Net.Http', 'Microsoft.EntityFrameworkCore.Database.Command']);
-insert into hms.errorMaster (error_id,area,error_msg) values (1201, 'AgentConstants', 'Agent Not Found.' );
 
+insert into hms.errorMaster (error_id,area,error_msg) values (1201, 'AgentConstants', 'Agent Not Found.' );
 
 
 INSERT INTO hmsmaster.mastertables(orgid,entrycategory,schemaname,tablename,filtercriteria)
@@ -45,3 +45,5 @@ values (2, 'Salutation', 'hmsmaster','keyvalueentries',' AND entrycategory = ''T
 
 
 insert into hms."api_config"(config_key,config_value) values ('agent_create_chunk_size', '5');
+
+insert into hms.errorMaster (error_id,area,error_msg) values (1201, 'MasterConstants', 'Master Entry Not Found.' );

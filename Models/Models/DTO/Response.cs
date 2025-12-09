@@ -21,6 +21,7 @@ namespace Models.DTO
         public HMSDashboard? hmsDashboard { get; set; } = null;
         //public List<AgentDtoResponse>? agents { get; set; } = null;
         public List<AgentDto>? agents { get; set; } = null;
+        public List<KeyValueEntry>? master { get; set; } = null;
     }
 
     public class LoginResponse

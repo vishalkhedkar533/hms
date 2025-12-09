@@ -138,11 +138,6 @@ namespace Models.DB
         [StringLength(20)]
         [Column("mobileno")]
         public string? MobileNo { get; set; }
-
-        [StringLength(100)]
-        [Column("candidatetype")]
-        public string? CandidateType { get; set; }
-
         [StringLength(100)]
         [Column("applicationdocketno")]
         public string? ApplicationDocketNo { get; set; }
@@ -165,10 +160,6 @@ namespace Models.DB
         [StringLength(50)]
         [Column("packageid")]
         public string? PackageID { get; set; }
-
-        [StringLength(50)]
-        [Column("commissionclass")]
-        public string? CommissionClass { get; set; }
 
         [StringLength(50)]
         [Column("taxstatus")]
@@ -361,5 +352,12 @@ namespace Models.DB
         public int? AgentTypeCode { get; set; }
         [Column("designation_code")]
         public int? DesignationCode { get; set; }
+        [Column("candidatetype")]
+        public int? CandidateType { get; set; }
+        [Column("commissionclass")]
+        public int? CommissionClass { get; set; }
+        [Column("agenttype")]
+        public int? AgentType { get; set; }
+
     }
 }

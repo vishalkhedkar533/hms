@@ -56,8 +56,11 @@ namespace Models.Mapping
                 .ForMember(d => d.AgentTypeCode, o => o.MapFrom(s => s.AgentTypeCode))
                 .ForMember(d => d.AgentTypeCat, o => o.MapFrom(s => s.AgentTypeCat))
                 .ForMember(d => d.AgentClass, o => o.MapFrom(s => s.AgentClass))
+                .ForMember(d => d.CandidateType, o => o.MapFrom(s => s.CandidateType))
+                .ForMember(d => d.Title, o => o.MapFrom(s => s.Title))
+                .ForMember(d => d.CommissionClass, o => o.MapFrom(s => s.CommissionClass))
+                .ForMember(d => d.AgentType, o => o.MapFrom(s => s.AgentType))
                 
-
                 // PAN masking
                 .ForMember(d => d.MaskedPanNumber,
                     o => o.MapFrom(s =>
@@ -72,9 +75,7 @@ namespace Models.Mapping
                 .ForMember(d => d.Reportees, o => o.Ignore())
                 .ForMember(d => d.agentAuditTrail, o => o.Ignore())
                 .ForMember(d => d.peopleHeirarchy, o => o.Ignore())
-                .ForMember(d => d.CandidateType, o => o.Ignore())
                 .ForMember(d => d.ApplicationDocketNo, o => o.Ignore())
-                .ForMember(d => d.Title, o => o.Ignore())
                 .ForMember(d => d.Father_Husband_Nm, o => o.Ignore())
                 .ForMember(d => d.EmployeeCode, o => o.Ignore())
                 .ForMember(d => d.StartDate, o => o.Ignore())
@@ -83,7 +84,6 @@ namespace Models.Mapping
                 .ForMember(d => d.nominees, o => o.Ignore())
                 .ForMember(d => d.PackageID, o => o.Ignore())
                 .ForMember(d => d.personalInfo, o => o.Ignore())
-                .ForMember(d => d.CommissionClass, o => o.Ignore())
                 .ForMember(d => d.TaxStatus, o => o.Ignore())
                 .ForMember(d => d.StateEid, o => o.Ignore())
                 .ForMember(d => d.URN, o => o.Ignore())
@@ -95,18 +95,6 @@ namespace Models.Mapping
                 .ForMember(d => d.bankAccounts, o => o.Ignore())
                 .ForMember(d => d.PermanentAddres, o => o.Ignore())
                 .ForMember(d => d.MailingAddres, o => o.Ignore())
-                //.ForMember(d => d.bankAccType, o => o.Ignore())
-                //.ForMember(d => d.titles, o => o.Ignore())
-                //.ForMember(d => d.genders, o => o.Ignore())
-                //.ForMember(d => d.channelNames, o => o.Ignore())
-                //.ForMember(d => d.subChannels, o => o.Ignore())
-                //.ForMember(d => d.occupations, o => o.Ignore())
-                //.ForMember(d => d.agentTypeCategories, o => o.Ignore())
-                //.ForMember(d => d.agentClassifications, o => o.Ignore())
-                //.ForMember(d => d.maritalStatuses, o => o.Ignore())
-                //.ForMember(d => d.educationCodes, o => o.Ignore())
-                //.ForMember(d => d.stateNames, o => o.Ignore())
-                //.ForMember(d => d.countries, o => o.Ignore())
                 .ForMember(d => d.Comments, o => o.Ignore())
                 .ForMember(d => d.Reason, o => o.Ignore())
                 .ForMember(d => d.OrgId, o => o.Ignore())
@@ -134,7 +122,11 @@ namespace Models.Mapping
                 .ForMember(d => d.BankAccTypeDesc, s => s.Ignore())
                 .ForMember(d => d.AgentSubTypeCodeDesc, s => s.Ignore())
                 .ForMember(d => d.AgentTypeCodeDesc, s => s.Ignore())
-                .ForMember(d => d.LocationCodeDesc, s => s.Ignore());
+                .ForMember(d => d.LocationCodeDesc, s => s.Ignore())
+                .ForMember(d => d.CandidateTypeDesc, s => s.Ignore())
+                .ForMember(d => d.AgentTypeDesc, s => s.Ignore())
+                .ForMember(d => d.CommissionClassDesc, s => s.Ignore())
+                ;
             // ================================
             // AgentDto → Agent
             // ================================
@@ -183,7 +175,12 @@ namespace Models.Mapping
                 .ForMember(d => d.ModifiedBy, o => o.Ignore())
                 .ForMember(d => d.ModifiedDate, o => o.Ignore())
                 .ForMember(d => d.Email, o => o.MapFrom(s => s.Email))
-                .ForMember(d => d.MobileNo, o => o.MapFrom(s => s.MobileNo));            
+                .ForMember(d => d.MobileNo, o => o.MapFrom(s => s.MobileNo))
+                .ForMember(d => d.CandidateType, o => o.MapFrom(s => s.CandidateType))
+                .ForMember(d => d.Title, o => o.MapFrom(s => s.Title))
+                .ForMember(d => d.CommissionClass, o => o.MapFrom(s => s.CommissionClass))
+                .ForMember(d => d.AgentType, o => o.MapFrom(s => s.AgentType))
+                ;
         }
     }
 

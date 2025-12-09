@@ -198,3 +198,9 @@ alter table hms.agent add column country int4;
 alter table hms.agent add column agent_sub_type_code int4;
 alter table hms.agent add column designation_code int4;
 alter table hms.agent add column location_code int4;
+
+alter table hms.agent drop column candidatetype;
+alter table hms.agent add column candidatetype int4;
+alter table hms.agent add column agenttype int4;
+alter table hms.agent drop column CommissionClass;
+alter table hms.agent add column commissionclass int4;

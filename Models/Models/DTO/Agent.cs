@@ -48,7 +48,6 @@ namespace Models.DTO
         public List<AgentDto>? Reportees { get; set; }
         public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
         public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
-        public string? CandidateType { get; set; }
         public string? ApplicationDocketNo { get; set; }
         public string? Father_Husband_Nm { get; set; }
         public string? EmployeeCode { get; set; }
@@ -58,7 +57,6 @@ namespace Models.DTO
         public List<Nominee> nominees { get; set; }
         public string? PackageID { get; set; }
         public List<PersonalInfo> personalInfo { get; set; }
-        public string? CommissionClass { get; set; }
         public string? TaxStatus { get; set; }
         public string? StateEid { get; set; }
         public string? URN { get; set; }
@@ -136,8 +134,9 @@ namespace Models.DTO
         public int? LocationCode { get; set; }
         public int? AgentTypeCode { get; set; }
         public int? AgentSubTypeCode { get; set; }
-
-
+        public int? CandidateType { get; set; }
+        public int? CommissionClass { get; set; }
+        public int? AgentType { get; set; }
         public string? AgentClassDesc { get; set; }
         public string? BankAccTypeDesc { get; set; }
         public string? GenderDesc { get; set; }
@@ -154,7 +153,9 @@ namespace Models.DTO
         public string? LocationCodeDesc { get; set; }
         public string? AgentTypeCodeDesc { get; set; }
         public string? AgentSubTypeCodeDesc { get; set; }
-
+        public string? CandidateTypeDesc { get; set; }
+        public string? CommissionClassDesc { get; set; }
+        public string? AgentTypeDesc { get; set; }
     }
     public class AgentListRequest
     {

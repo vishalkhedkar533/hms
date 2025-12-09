@@ -423,7 +423,9 @@ namespace HMS.Controllers
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
                 return NotFound(hMSResponse);
             }
-            var agentEntity = await agent.Where(x => x.AgentId == searchAgent.AgentId).AsNoTracking().FirstOrDefaultAsync();
+            var agentEntity = await agent.Where(x => x.AgentId == searchAgent.AgentId 
+            && x.OrgId == Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"))
+                .AsNoTracking().FirstOrDefaultAsync();
             if (agentEntity != null)
             {
                 agentDTO = _mapper.Map<AgentDto>(agentEntity);
@@ -521,6 +523,9 @@ namespace HMS.Controllers
                 var SalesChannels = GetMasterData("SalesChannels");
                 var AgentTypeCategory = GetMasterData("AgentTypeCategory");
                 var Salutation = GetMasterData("Salutation");
+                var AgentType = GetMasterData("AgentType");
+                var CommissionClass = GetMasterData("CommissionClass");
+                var CandidateType = GetMasterData("CandidateType");
 
                 foreach (var bankAcc in agentDTO.bankAccounts)
                 {
@@ -540,6 +545,9 @@ namespace HMS.Controllers
                 agentDTO.ChannelDesc = SalesChannels.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Channel ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.AgentTypeCodeDesc = AgentTypeCategory.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentTypeCode ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.TitleDesc = Salutation.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Title ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.AgentTypeDesc = AgentType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentType ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.CommissionClassDesc = CommissionClass.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.CommissionClass ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.CandidateTypeDesc = CandidateType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.CandidateType ?? -1000))?.EntryDesc?? string.Empty;
 
                 //const string BankAccTypeCategory = "BANK_ACC_TYP";
                 //var BankAccTypeResults = await _db.ExecuteQueryAsync<KeyValueEntry>(

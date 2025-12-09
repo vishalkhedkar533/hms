@@ -60,6 +60,7 @@ namespace Models.Mapping
                 .ForMember(d => d.Title, o => o.MapFrom(s => s.Title))
                 .ForMember(d => d.CommissionClass, o => o.MapFrom(s => s.CommissionClass))
                 .ForMember(d => d.AgentType, o => o.MapFrom(s => s.AgentType))
+                .ForMember(d => d.Country, o => o.MapFrom(s => s.Country))
                 
                 // PAN masking
                 .ForMember(d => d.MaskedPanNumber,
@@ -103,7 +104,6 @@ namespace Models.Mapping
                 .ForMember(d => d.AddressLine3, o => o.Ignore())
                 .ForMember(d => d.City, o => o.Ignore())
                 .ForMember(d => d.State, o => o.Ignore())
-                .ForMember(d => d.Country, o => o.Ignore())
                 .ForMember(d => d.Pin, o => o.Ignore())
                 .ForMember(d => d.Landmark, o => o.Ignore())
                 .ForMember(d => d.Supervisor_Code, o => o.Ignore())
@@ -131,7 +131,6 @@ namespace Models.Mapping
             // AgentDto → Agent
             // ================================
             CreateMap<AgentDto, Agent>()
-
                 .ForMember(d => d.AgentId, o => o.MapFrom(s => s.AgentId))
                 .ForMember(d => d.AgentCode, o => o.MapFrom(s => s.AgentCode))
                 .ForMember(d => d.AgentTypeCode, o => o.MapFrom(s => s.AgentTypeCode))
@@ -180,6 +179,7 @@ namespace Models.Mapping
                 .ForMember(d => d.Title, o => o.MapFrom(s => s.Title))
                 .ForMember(d => d.CommissionClass, o => o.MapFrom(s => s.CommissionClass))
                 .ForMember(d => d.AgentType, o => o.MapFrom(s => s.AgentType))
+                .ForMember(d => d.Country, o => o.MapFrom(s => s.Country))
                 ;
         }
     }

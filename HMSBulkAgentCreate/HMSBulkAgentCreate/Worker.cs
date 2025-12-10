@@ -1,10 +1,10 @@
-namespace HMSBackGroundService
+namespace HMSBulkAgentCreate
 {
-    public class AgentCreate : BackgroundService
+    public class Worker : BackgroundService
     {
-        private readonly ILogger<AgentCreate> _logger;
+        private readonly ILogger<Worker> _logger;
 
-        public AgentCreate(ILogger<AgentCreate> logger)
+        public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
         }

@@ -1,0 +1,15 @@
+{
+  "ConnectionStringKey": "HMSContext",
+  "Entities": {
+    "Master": {
+      "getKeyValueEntriesByOrgId": {
+        "Function": "na",
+        "Script": "select * from hmsmaster.KeyValueEntries where orgid = @orgid"
+      },
+      "getKeyValueEntriesByOrgIdCategory": {
+        "Function": "na",
+        "Script": "select * from hmsmaster.KeyValueEntries where orgid = @orgid and EntryCategory =@EntryCategory"
+      }
+    }
+  }
+}

@@ -1,34 +1,30 @@
-# Stage 1: Build
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+# --------------------------------------------------------------------------------
+# STAGE 1: Build and Publish (uses the full SDK image)
+# --------------------------------------------------------------------------------
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS publish
 WORKDIR /src
 
-# Copy solution file
-COPY HMS.sln ./
-
-# Copy project files
-COPY Models/Models/Models.csproj Models/Models/
-COPY APIs/HMS/HMS/HMS.csproj APIs/HMS/HMS/
-COPY CommonLibrary/Communication/Communication.csproj CommonLibrary/Communication/
-
-# Restore dependencies
-RUN dotnet restore APIs/HMS/HMS/HMS.csproj
-
-# Copy all source code
+# Copy the entire solution context to the /src folder.
 COPY . .
 
-# Build and publish
-RUN dotnet publish APIs/HMS/HMS/HMS.csproj -c Release -o /app/publish /p:UseAppHost=false
+# Restore dependencies at the solution root (/src) to resolve all ProjectReferences.
+# Assuming your .sln file or project hierarchy is correctly set up here.
+RUN dotnet restore
 
-# Stage 2: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# --- FIX 1: Change to the Project directory ONLY for publishing ---
+# Move to the directory containing HMSBulkAgentCreate.csproj
+WORKDIR /src/HMSBulkAgentCreate/HMSBulkAgentCreate
+
+# --- FIX 2: Simplify the publish command ---
+# Since we are now in the correct directory, we just use the filename.
+# This should resolve the MSB1009 error.
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+
+
+# --------------------------------------------------------------------------------
+# STAGE 2: Final, Production Image (uses the minimal Runtime image)
+# --------------------------------------------------------------------------------
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS final
 WORKDIR /app
-
-# Copy published output
-COPY --from=build /app/publish .
-
-# Expose port
-EXPOSE 80
-EXPOSE 443
-
-# Entry point
-ENTRYPOINT ["dotnet", "HMS.dll"]
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "HMSBulkAgentCreate.dll"]

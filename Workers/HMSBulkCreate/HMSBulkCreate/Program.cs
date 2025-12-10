@@ -1,4 +1,4 @@
-using HMSBulkAgentCreate;
+using HMSBulkCreate;
 
 var builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddHostedService<Worker>();

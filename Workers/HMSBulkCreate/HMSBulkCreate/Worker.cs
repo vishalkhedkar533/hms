@@ -1,4 +1,4 @@
-namespace HMSBulkAgentCreate
+namespace HMSBulkCreate
 {
     public class Worker : BackgroundService
     {

@@ -1,4 +1,4 @@
-const {  setEncryptionEnabled } = require("../config/encryptionConfig");
+const { setEncryptionEnabled } = require("../config/encryptionConfig");
 const { apiClient } = require("./apiclient");
 const { APIRoutes } = require("./constant");
 const { encryptionService } = require("./encryptionService");
@@ -18,7 +18,7 @@ const loadEncryptionConfig = () => {
 };
 const login = (data) => {
   console.log(data);
-  
+
   return apiClient.post(APIRoutes.LOGIN, data);
 };
 const search = (data, headers = {}) => {
@@ -34,7 +34,14 @@ const AgentByCode = (data, headers = {}) => {
   return apiClient.post(APIRoutes.AGENTBYCODE, data, { headers });
 };
 const GetMasters = (key, headers = {}) => {
-  return apiClient.post(`${APIRoutes.MASTER_GET}/${key}`, {}, { headers });
+  const response = apiClient.post(
+    `${APIRoutes.GETMASTERS}/${key}`,
+    {},
+    {
+      headers,
+    }
+  );
+  return response;
 };
 
 module.exports = {
@@ -45,5 +52,5 @@ module.exports = {
   getHRMChunks,
   Agentbyid,
   AgentByCode,
-  GetMasters
+  GetMasters,
 };

@@ -16,13 +16,15 @@ import License from './License'
 import Financial from './Financial'
 import type { ApiResponse } from '@/models/api'
 import { masterService } from '@/services/masterService'
+import { MASTER_DATA_KEYS } from '@/utils/constant'
+import { useMasterData } from '@/hooks/useMasterData'
 
 const tabs = [
   { value: 'personaldetails', label: 'Personal' },
   { value: 'peoplehierarchy', label: 'People Hierarchy' },
   { value: 'geographicalhierarchy', label: 'Geographical Hierarchy' },
   { value: 'partnersmapped', label: 'Partners Mapped' },
-  { value: 'auditlog', label: 'Audit Log' }, // typo fixed
+  { value: 'auditlog', label: 'Audit Log' },
   { value: 'licensedetails', label: 'License' },
   { value: 'financialdetails', label: 'Financial' },
   { value: 'entity360', label: 'Entity 360°' },
@@ -42,20 +44,19 @@ const Agent = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-   // --- NEW STATE FOR CATEGORIES ---
-  const [agentCategories, setAgentCategories] = useState<ApiResponse<AgentResponse> | null>(null)
-  const [categoriesLoading, setCategoriesLoading] = useState(true)
-
+  // --- NEW STATE FOR CATEGORIES ---
 
   // Adjust the "from" path to your actual route, e.g. '/agent/$agentId'
-  const { agentId } = useParams({ from: "/_auth/search/$agentId" }) as { agentId?: string }
+  const { agentId } = useParams({ from: '/_auth/search/$agentId' }) as {
+    agentId?: string
+  }
 
   // Only fetch when encryption is ready (if encryption is enabled)
   const encryptionEnabled = useEncryption()
   const keyReady = !!encryptionService.getHrm_Key()
   const canFetch = !encryptionEnabled || keyReady
 
-  
+
 
   useEffect(() => {
     let cancelled = false
@@ -89,27 +90,6 @@ const Agent = () => {
     }
   }, [agentId, canFetch])
 
-
-  // --- NEW EFFECT FOR FETCHING CATEGORIES ---
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setCategoriesLoading(true)
-        const data = { key: 'gender' }
-        const categories = await masterService.getmasters(data)
-        if (categories) {
-          setAgentCategories(categories)
-        }
-      } catch (e: any) {
-        console.error("Failed to fetch agent categories:", e)
-      } finally {
-        setCategoriesLoading(false)
-      }
-    }
-
-    fetchCategories()
-  }, []) 
-
   if (loading) return <Loader />
   if (error) return <div className="text-red-500">Error: {error}</div>
 
@@ -117,7 +97,6 @@ const Agent = () => {
   if (error) return <div className="text-red-500">Error: {error}</div>
 
   const firstAgent = agentData?.responseBody?.agents?.[0]
-  console.log("firstAgent",firstAgent)
 
   return (
     <>
@@ -131,7 +110,7 @@ const Agent = () => {
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search by Agent Code, Name, Mobile Number...."
             className="w-full !pr-[9rem] !py-6 bg-white"
-            label=''
+            label=""
           />
           <div className="absolute inset-y-0 right-1 pl-3 flex items-center">
             <Button
@@ -141,7 +120,9 @@ const Agent = () => {
                 // Trigger a search by code/name/phone if needed
                 // e.g., refetch with searchInput or navigate to a new route
               }}
-            > Search
+            >
+              {' '}
+              Search
             </Button>
           </div>
         </div>
@@ -162,7 +143,7 @@ const Agent = () => {
       ) : activeTab === 'peoplehierarchy' ? (
         <Hierarchy Agent={firstAgent} />
       ) : activeTab === 'auditlog' ? (
-        <AuditLog Agentcode={agentId||""} />
+        <AuditLog Agentcode={agentId || ''} />
       ) : activeTab === 'training' ? (
         <Training agent={firstAgent} />
       ) : activeTab === 'licensedetails' ? (

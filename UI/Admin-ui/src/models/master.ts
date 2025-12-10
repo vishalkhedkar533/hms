@@ -1,5 +1,5 @@
 export interface IAgentCategoryEntry {
-  orgId: number
+  orgid: number
   entryCategory: string
   entryIdentity: string
   entryDesc: string
@@ -7,7 +7,7 @@ export interface IAgentCategoryEntry {
 }
 
 export interface IAgentCategoryResponse {
-  agentCategory: Array<IAgentCategoryEntry>
+  master: Array<IAgentCategoryEntry>
 }
 
 export interface IMasterRequest {

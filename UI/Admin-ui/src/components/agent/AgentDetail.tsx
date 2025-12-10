@@ -7,62 +7,36 @@ import { useAppForm } from '@/components/form'
 import { Switch } from '@/components/ui/switch'
 import z from 'zod'
 import AutoAccordionSection from '../ui/autoAccordianSection'
+import { MASTER_DATA_KEYS } from '@/utils/constant'
+import { useMasterData } from '@/hooks/useMasterData'
+
 // import { BiIdCard } from 'react-icons/bi'
-
-const AgentDetail = ({ agent }: { agent: IAgent; }) => {
-  const [isEdit, setIsEdit] = useState(false) 
-
-  const toOptions = (list?: IkeyValueEntry[] ) => {
-  return list?.filter(x => x.activeStatus).map(x => ({
-    label: x.entryDesc,
-    value: String(x.entryIdentity)
-  })) || []
+type AgentDetailProps = {
+  agent: any
 }
 
-const genderOptions = toOptions(agent.genders)
-const titleOptions = toOptions(agent.titles)
-const occupationOptions = toOptions(agent.occupations)
-const maritalOptions = toOptions(agent.maritalStatuses)
-const educationOptions = toOptions(agent.educationCodes)
-const stateOptions = toOptions(agent.stateNames)
-const countryOptions = toOptions(agent.countries)
-const channelOptions = toOptions(agent.channelNames)
-const subChannelOptions = toOptions(agent.subChannels)
-const agentTypeCategoryOptions = toOptions(agent.agentTypeCategories)
-const agentClassificationOptions = toOptions(agent.agentClassifications)
-const bankAccountTypeOptions = toOptions(agent.bankAccType)
+const AgentDetail = ({
+  agent,
+}: AgentDetailProps) => {
+  const [isEdit, setIsEdit] = useState(false)
+  const {
+    getOptions,
+    isLoading: masterLoading,
+  } = useMasterData(Object.values(MASTER_DATA_KEYS))
 
-const genderId = agent.genders?.find(g => g.entryDesc === agent.gender)?.entryIdentity;
-const titleId = agent.titles?.find(t => t.entryDesc === agent.title)?.entryIdentity;
-const occupationId = agent.occupations?.find(o => o.entryDesc === "Student")?.entryIdentity;
-// const occupationId = agent.occupations?.find(o => o.entryDesc === agent.occupation)?.entryIdentity;
-// const maritalStatusId = agent.maritalStatuses?.find(m => m.entryDesc === agent.maritalStatusCode)?.entryIdentity;
-const maritalStatusId = agent.maritalStatuses
-  ?.find(m => m.entryDesc?.[0]?.toUpperCase() === agent.maritalStatusCode?.[0]?.toUpperCase())
-  ?.entryIdentity;
-// const educationCodeId = agent.educationCodes?.find(e => e.entryDesc === agent.educationCode)?.entryIdentity;
-const educationCodeId = agent.educationCodes?.find(e => e.entryDesc === "Doctorate (Ph.D.)")?.entryIdentity;
-const educationLevelId = agent.educationCodes?.find(e => e.entryDesc === "Doctorate (Ph.D.)")?.entryIdentity;
-const stateId = agent.stateNames?.find(s => s.entryDesc === "Karnataka")?.entryIdentity;
-// const stateId = agent.stateNames?.find(s => s.entryDesc === agent.state)?.entryIdentity;
-const countryId = agent.countries?.find(c => c.entryDesc === "India")?.entryIdentity;
-// const countryId = agent.countries?.find(c => c.entryDesc === agent.country)?.entryIdentity;
-// const channelId = agent.channelNames?.find(c => c.entryDesc === agent.channel_Name)?.entryIdentity;
-const channelId = agent.channelNames?.find(c => c.entryDesc === "Broker")?.entryIdentity;
-const subChannelId = agent.subChannels?.find(s => s.entryDesc === "Field Agent")?.entryIdentity;
-// const subChannelId = agent.subChannels?.find(s => s.entryDesc === agent.sub_Channel)?.entryIdentity;
-const agentTypeCategoryId = agent.agentTypeCategories?.find(a => a.entryDesc === "Individual")?.entryIdentity;
-// const agentTypeCategoryId = agent.agentTypeCategories?.find(a => a.entryDesc === agent.agentTypeCategory)?.entryIdentity;
-const agentClassificationId = agent.agentClassifications?.find(a => a.entryDesc === agent.agentClassification)?.entryIdentity;
-const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings Account")?.entryIdentity;
-// const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === agent.bankAccounts?.[0]?.accountType)?.entryIdentity;
-
+  const channelId = agent.channelNames?.find(
+    (c) => c.entryDesc === 'Broker',
+  )?.entryIdentity
+  const subChannelId = agent.subChannels?.find(
+    (s) => s.entryDesc === 'Field Agent',
+  )?.entryIdentity
 
   console.log('agent', agent)
 
   if (!agent) return null
 
-  console.log("agent", agent)
+  console.log('agent', agent)
+  console.log('------------title', agent.title)
 
   const agentForm = useAppForm({
     defaultValues: {
@@ -73,13 +47,13 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       applicationDocketNo: agent.applicationDocketNo,
       agentCode: agent.agentCode,
       candidateType: agent.candidateType,
-      agentTypeCode: agent.agentTypeCode,
+      agentType: agent.agentType,
       employeeCode: agent.employeeCode,
       startDate: agent.startDate,
       appointmentDate: agent.appointmentDate,
       incorporationDate: agent.incorporationDate,
-      agentTypeCategory: agent.agentTypeCategory,
-      agentClassification: agent.agentClassification,
+      agentTypeCat: agent.agentTypeCat,
+      agentClass: agent.agentClass,
       cmsAgentType: agent.cmsAgentType,
 
       title: agent.title,
@@ -95,19 +69,16 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       preferredLanguage: agent.preferredLanguage,
       father_Husband_Nm: agent.father_Husband_Nm,
 
-      channel_Name: agent.channel_Name,
-      sub_Channel: agent.sub_Channel,
-
-      // ---- NEW FIELDS ADDED BELOW ----
-
+    channel: agent.channel,
+      subChannel: agent.subChannel,
       // --- contact DETAILS ---
-      mobileNo:agent?.personalInfo?.[0]?.mobileNo,
-      workContactNo:agent?.personalInfo?.[0]?.workContactNo,
+      mobileNo: agent?.personalInfo?.[0]?.mobileNo,
+      workContactNo: agent?.personalInfo?.[0]?.workContactNo,
       // --- EMPLOYMENT DETAILS ---
 
       pob: agent.pob,
       aadharNumber: agent.aadharNumber,
-      educationQualification: agent.educationQualification,
+      education: agent.education,
       educationSpecialization: agent.educationSpecialization,
       educationalInstitute: agent.educationalInstitute,
       passingYear: agent.passingYear,
@@ -166,10 +137,8 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       // --- Other Personal Details ---
       dateOfBirth: agent.personalInfo?.[0]?.dateOfBirth,
       martialStatus: agent.martialStatus,
-      // educationCode: agent.educationCode,
-      educationCode: String(educationCodeId),
-      educationLevel: String(educationLevelId),
-      // educationLevel: agent.educationLevel,
+ 
+      educationLevel: agent.educationLevel,
       workProfile: agent.workProfile,
       annualIncome: agent.annualIncome,
       nomineeName: agent.nomineeName,
@@ -190,7 +159,8 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       addressLine3: agent?.permanentAddres?.[0].addressLine3,
       city: agent?.permanentAddres?.[0].city,
       state: agent?.permanentAddres?.[0].state,
-      country: agent?.permanentAddres?.[0].country,
+      // country: agent?.permanentAddres?.[0].country,
+      country: agent?.country,
       pin: agent?.permanentAddres?.[0].pin,
     },
 
@@ -203,37 +173,35 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
     gridCols: 2,
 
     defaultValues: {
-      // channel_Name: agent.channel_Name,
-      channel_Name: String(channelId),
-      // sub_Channel: agent.sub_Channel,
-      sub_Channel: String(subChannelId),
-      commissionClass: agent.commissionClass,
+      channel: agent.channel,
+      subChannel: agent.subChannel,
+      commissionClass: agent.commissionClass ?? "N/A",
     },
 
     schema: z.object({
-      channel_Name: z.string().optional(),
-      sub_Channel: z.string().optional(),
+      channel: z.string().optional(),
+      subChannel: z.string().optional(),
       commissionClass: z.string().optional(),
     }),
 
     fields: [
       {
-        name: 'channel_Name',
+        name: 'channel',
         label: 'Channel Name',
         type: 'select',
         colSpan: 1,
         readOnly: !isEdit,
         variant: 'custom',
-        options:channelOptions,
+        options: getOptions(MASTER_DATA_KEYS.SALES_CHANNELS),
       },
       {
-        name: 'sub_Channel',
+        name: 'subChannel',
         label: 'Sub Channel',
         type: 'select',
         colSpan: 1,
         readOnly: !isEdit,
         variant: 'custom',
-        options:subChannelOptions,
+        options: getOptions(MASTER_DATA_KEYS.SALES_SUB_CHANNELS),
       },
       {
         name: 'commissionClass',
@@ -266,14 +234,13 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
     gridCols: 3,
 
     defaultValues: {
-      // title: agent.title,
-      title: String(titleId),
+      title: agent.title,
       firstName: agent.firstName,
       middleName: agent.middleName,
       lastName: agent.lastName,
-      father_Husband_Nm: agent.father_Husband_Nm,
-      // gender: agent.gender,
-      gender: String(genderId),
+      father_Husband_Nm: agent.father_Husband_Nm ?? "N/a",
+      gender: agent.gender,
+  
     },
 
     schema: z.object({
@@ -290,10 +257,10 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         name: 'title',
         label: 'Title',
         type: 'select',
+        options: getOptions(MASTER_DATA_KEYS.SALUTATION),
         colSpan: 1,
         readOnly: !isEdit,
         variant: 'standard',
-        options:titleOptions,
       },
       {
         name: 'firstName',
@@ -331,7 +298,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         name: 'gender',
         label: 'Agent Gender',
         type: 'select',
-        options: genderOptions,
+        options: getOptions(MASTER_DATA_KEYS.GENDER),
         colSpan: 1,
         readOnly: !isEdit,
         variant: 'standard',
@@ -360,7 +327,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
     gridCols: 12,
 
     defaultValues: {
-      mobileNo:agent?.personalInfo?.[0]?.mobileNo,
+      mobileNo: agent?.personalInfo?.[0]?.mobileNo,
       residenceContactNo: agent?.personalInfo?.[0]?.residenceContactNo,
       workContactNo: agent?.personalInfo?.[0]?.workContactNo,
       email: agent?.personalInfo?.[0]?.email,
@@ -475,18 +442,16 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
     // DEFAULT VALUES
     defaultValues: {
       agentId: agent.agentId,
-      applicationDocketNo: agent.applicationDocketNo,
+      applicationDocketNo: agent.applicationDocketNo ?? "N/A",
       agentCode: agent.agentCode,
       candidateType: agent.candidateType,
-      agentTypeCode: agent.agentTypeCode,
-      employeeCode: agent.employeeCode,
+      agentType: agent.agentType,
+      employeeCode: agent.employeeCode ?? "N/A",
       startDate: agent.startDate,
       appointmentDate: agent.appointmentDate,
       incorporationDate: agent.incorporationDate,
-      // agentTypeCategory: agent.agentTypeCategory,
-      agentTypeCategory: String(agentTypeCategoryId),
-      // agentClassification: agent.agentClassification,
-      agentClassification: String(agentClassificationId),
+      agentTypeCat: agent.agentTypeCat,
+      agentClass: agent.agentClass,
       cmsAgentType: agent.cmsAgentType,
     },
     // ZOD SCHEMA
@@ -496,13 +461,13 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       applicationDocketNo: z.string().optional(),
       agentCode: z.string().optional(),
       candidateType: z.string().optional(),
-      agentTypeCode: z.string().optional(),
+      agentType: z.string().optional(),
       employeeCode: z.string().optional(),
       startDate: z.string().optional(),
       appointmentDate: z.string().optional(),
       incorporationDate: z.string().optional(),
-      agentTypeCategory: z.string().optional(),
-      agentClassification: z.string().optional(),
+      agentTypeCat: z.string().optional(),
+      agentClass: z.string().optional(),
       cmsAgentType: z.string().optional(),
     }),
 
@@ -536,18 +501,21 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       {
         name: 'candidateType',
         label: 'Candidate Type',
-        type: 'text',
+        type: 'select',
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
+        options: getOptions(MASTER_DATA_KEYS.CANDIDATE_TYPE),
+
       },
       {
-        name: 'agentTypeCode',
+        name: 'agentType',
         label: 'Agent Type',
-        type: 'text',
+        type: 'select',
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
+        options: getOptions(MASTER_DATA_KEYS.AGENT_TYPE),
       },
       {
         name: 'employeeCode',
@@ -584,22 +552,22 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       },
 
       {
-        name: 'agentTypeCategory',
+        name: 'agentTypeCat',
         label: 'Agent Type Category',
         type: 'select',
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
-        options:agentTypeCategoryOptions,
-      },
+ options: getOptions(MASTER_DATA_KEYS.AGENT_TYPE_CATEGORY),      
+},
       {
-        name: 'agentClassification',
+        name: 'agentClass',
         label: 'Agent Classification',
         type: 'select',
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
-        options:agentClassificationOptions,
+        options:getOptions(MASTER_DATA_KEYS.AGENT_CLASS),
       },
       {
         name: 'cmsAgentType',
@@ -631,20 +599,21 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
   const financialDetailsConfig = {
     gridCols: 12,
     // DEFAULT VALUES
+
     defaultValues: {
       panAadharLinkFlag: agent.panAadharLinkFlag,
       sec206abFlag: agent.sec206abFlag,
-      taxStatus: agent.taxStatus,
+      taxStatus: agent.taxStatus ?? "N/A",
       serviceTaxNo: agent.serviceTaxNo,
       //Acct Activation Date missing
       factoringHouse: agent.bankAccounts?.[0]?.factoringHouse,
       accountHolderName: agent.bankAccounts?.[0]?.accountHolderName,
       panNumber: agent.personalInfo?.[0]?.panNumber,
-     bankName: agent.bankAccounts?.[0]?.bankName,
+      bankName: agent.bankAccounts?.[0]?.bankName,
       branchName: agent.bankAccounts?.[0]?.branchName,
 
       accountNumber: agent.bankAccounts?.[0]?.accountNumber,
-      accountType: String(bankAccountTypeId),
+      accountType: agent.bankAccounts?.[0]?.accountType,
       micr: agent.bankAccounts?.[0]?.micr,
       ifsc: agent.bankAccounts?.[0]?.ifsc,
       preferredPaymentMode: agent.bankAccounts?.[0]?.preferredPaymentMode,
@@ -765,7 +734,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         name: 'accountType',
         label: 'Bank Account Type',
         type: 'select',
-  options: bankAccountTypeOptions,
+        options: getOptions(MASTER_DATA_KEYS.BANK_ACC_TYPE),
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
@@ -1048,18 +1017,15 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
     // -----------------------------------------
     defaultValues: {
       dateOfBirth: agent.personalInfo?.[0]?.dateOfBirth,
-      maritalStatusCode: String(maritalStatusId),
-      // maritalStatusCode: agent.maritalStatusCode,
-      educationCode: agent.personalInfo?.[0]?.educationCode,
-      educationLevel: agent.personalInfo?.[0]?.educationLevel,
+      maritalStatus: agent.maritalStatus,
+      education: agent.education,
       workProfile: agent.personalInfo?.[0]?.workProfile,
       annualIncome: agent.personalInfo?.[0]?.annualIncome,
       nomineeName: agent.nominees?.[0]?.nomineeName,
       relationship: agent.nominees?.[0]?.relationship,
       nomineeAge: agent.nominees?.[0]?.nomineeAge,
-      // occupation: agent.occupation,
-      occupation: String(occupationId),
-      urn: agent.urn,
+      occupation: agent.occupation,
+      urn: agent.urn ?? "N/A",
       additionalComment: agent.additionalComment,
       // workExpMonths: agent.personalInfo?[0]?.workExpMonths,
       bloodGroup: agent.personalInfo?.[0]?.bloodGroup,
@@ -1071,9 +1037,8 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
     // -----------------------------------------
     schema: z.object({
       dateOfBirth: z.string().optional(),
-      maritalStatusCode: z.string().optional(),
-      educationCode: z.string().optional(),
-      educationLevel: z.string().optional(),
+      maritalStatus: z.string().optional(),
+      education: z.string().optional(),
       workProfile: z.string().optional(),
       annualIncome: z.string().optional(),
       nomineeAge: z.string().optional(),
@@ -1100,33 +1065,23 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         variant: 'standard',
       },
       {
-        name: 'maritalStatusCode',
+        name: 'maritalStatus',
         label: 'Marital Status',
         type: 'select',
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
-        options: maritalOptions,
+        options: getOptions(MASTER_DATA_KEYS.MARITAL_STATUS),
       },
 
       {
-        name: 'educationCode',
-        label: 'Education Code',
-        type: 'select',
-        colSpan: 4,
-        readOnly: !isEdit,
-        variant: 'standard',
-        options: educationOptions,
-      },
-      {
-        name: 'educationLevel',
+        name: 'education',
         label: 'Education Level',
         type: 'select',
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
-                options: educationOptions,
-
+        options: getOptions(MASTER_DATA_KEYS.EDUCATION_QUALIFICATION),
       },
       {
         name: 'workProfile',
@@ -1176,8 +1131,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         colSpan: 4,
         readOnly: !isEdit,
         // variant: 'standard',
-        options:occupationOptions,
-        
+       options: getOptions(MASTER_DATA_KEYS.OCCUPATIONS),
       },
 
       {
@@ -1193,7 +1147,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         label: 'Additional Comment',
         type: 'textarea',
         colSpan: 12,
-        variant:"white",
+        variant: 'white',
       },
       // {
       //   name: 'workExperience',
@@ -1244,16 +1198,14 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
     // -----------------------------------------
     defaultValues: {
       stateEid: agent.stateEid,
-            addressType: agent?.permanentAddres?.[0].addressType,
+      addressType: agent?.permanentAddres?.[0].addressType,
       addressLine1: agent.permanentAddres?.[0].addressLine1,
       addressLine2: agent.permanentAddres?.[0].addressLine2,
       addressLine3: agent.permanentAddres?.[0].addressLine3,
       city: agent.permanentAddres?.[0].city,
-      // state: agent.permanentAddres?.[0].state,
-      state: String(stateId),
+      state: agent.permanentAddres?.[0].state,
       pin: agent.permanentAddres?.[0].pin,
-      country:String(countryId),
-      // country: agent.permanentAddres?.[0].country,
+      country: agent.permanentAddres?.[0].country,
     },
 
     // -----------------------------------------
@@ -1288,25 +1240,22 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         name: 'addressLine1',
         label: 'Address 1',
         type: 'text',
-        colSpan:4,
-                variant: 'standard',
-
+        colSpan: 4,
+        variant: 'standard',
       },
       {
         name: 'addressLine2',
         label: 'Address 2',
         type: 'text',
-        colSpan:4,
-                variant: 'standard',
-
+        colSpan: 4,
+        variant: 'standard',
       },
       {
         name: 'addressLine3',
         label: 'Address 3',
         type: 'text',
-        colSpan:4,
-                variant: 'standard',
-
+        colSpan: 4,
+        variant: 'standard',
       },
 
       {
@@ -1320,16 +1269,16 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
       {
         name: 'state',
         label: 'State',
-        type: 'select',
+        type: 'text',
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
-        options:stateOptions,
+        //  options: getOptions(MASTER_DATA_KEYS.STATE),
       },
 
       {
         name: 'stateEid',
-        label: 'State',
+        label: 'StateEid',
         type: 'text',
         colSpan: 4,
         readOnly: !isEdit,
@@ -1343,7 +1292,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
         colSpan: 4,
         readOnly: !isEdit,
         variant: 'standard',
-        options:countryOptions,
+         options: getOptions(MASTER_DATA_KEYS.COUNTRY),
       },
       {
         name: 'pin',
@@ -1444,23 +1393,23 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
 
         {/* --------------Personal Details----------------- */}
 
-         <div className="flex justify-between">
+        <div className="flex justify-between">
           <h2 className="text-xl font-semibold text-gray-900 mt-6 font-poppins font-semibold text-[20px]">
             Personal Details
           </h2>
         </div>
         <div className="flex gap-2">
-           <Card className="w-full !px-6 mt-5 overflow-y-auto overflow-x-hidden w-[100%]  bg-[#F2F2F7]">
-             <CardContent className="!px-0 !py-0 w-[100%]">
-               <AutoAccordionSection id="sec-1">
-                 <DynamicFormBuilder
-                   config={PersonalDetailsConfig}
-                   onSubmit={agentForm.handleSubmit}
-                 />
-               </AutoAccordionSection>
-             </CardContent>
-           </Card>
-         </div> 
+          <Card className="w-full !px-6 mt-5 overflow-y-auto overflow-x-hidden w-[100%]  bg-[#F2F2F7]">
+            <CardContent className="!px-0 !py-0 w-[100%]">
+              <AutoAccordionSection id="sec-1">
+                <DynamicFormBuilder
+                  config={PersonalDetailsConfig}
+                  onSubmit={agentForm.handleSubmit}
+                />
+              </AutoAccordionSection>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* --------------Contact Information----------------- */}
 
@@ -1479,8 +1428,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
             </CardContent>
           </Card>
         </div>
-                {/* -------------------hirarchy Information Config------------------------------- */}
-
+        {/* -------------------hirarchy Information Config------------------------------- */}
 
         {/* <h2 className="text-xl mt-6 font-semibold text-gray-900 font-poppins font-semibold !text-[20px]">
           Hierarchy Information
@@ -1545,7 +1493,6 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
                   onSubmit={agentForm.handleSubmit}
                 />
               </AutoAccordionSection>
-             
             </CardContent>
           </Card>
         </div>
@@ -1565,7 +1512,7 @@ const bankAccountTypeId = agent.bankAccType?.find(b => b.entryDesc === "Savings 
               </AutoAccordionSection>
             </CardContent>
           </Card>
-        </div> 
+        </div>
       </div>
     </div>
   )

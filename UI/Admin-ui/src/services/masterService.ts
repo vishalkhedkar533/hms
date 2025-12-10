@@ -35,4 +35,3 @@ export const masterService = {
     return Object.fromEntries(results) as Record<string, any[]>
   },
 }
-

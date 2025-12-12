@@ -204,3 +204,6 @@ alter table hms.agent add column candidatetype int4;
 alter table hms.agent add column agenttype int4;
 alter table hms.agent drop column CommissionClass;
 alter table hms.agent add column commissionclass int4;
+
+alter table hms.commssiondashboard  
+add column "orgid" INT null

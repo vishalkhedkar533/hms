@@ -205,5 +205,13 @@ alter table hms.agent add column agenttype int4;
 alter table hms.agent drop column CommissionClass;
 alter table hms.agent add column commissionclass int4;
 
-alter table hms.commssiondashboard  
-add column "orgid" INT null
+alter table hms.individual_commission  
+add column "orgId" INT null
+
+ALTER TABLE comss.entity_commission
+ADD COLUMN entityCommId serial;
+
+ALTER TABLE comss.entity_commission
+ADD CONSTRAINT pk_entity_commission
+PRIMARY KEY (entityCommId);
+

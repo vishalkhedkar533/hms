@@ -30,4 +30,12 @@
         UPI = 4,
         Wallet = 5
     }
+    public enum CommissionStatus :int
+    {
+        Pending = 1,
+        Approved = 2,
+        Rejected = 3,
+        OnHold = 4,
+        Paid = 5
+    }
 }

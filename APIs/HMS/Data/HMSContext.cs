@@ -33,6 +33,12 @@ namespace HMS.Data
         public DbSet<Subscriber> Subscriber => Set<Subscriber>();
         public DbSet<Organisation> Organisation => Set<Organisation>();
         public DbSet<FileProcessingTask> FileProcessingTasks => Set<FileProcessingTask>();
+        public DbSet<CommissionDashboard> CommissionMgmtDashboards => Set<CommissionDashboard>();
+        public DbSet<CommissionCycle> CommissionCycles => Set<CommissionCycle>();
+        public DbSet<EntityCommission> EntityCommissions => Set<EntityCommission>();
+        public DbSet<PerformanceSnapshot> PerformanceSnapshots => Set<PerformanceSnapshot>();
+        public DbSet<IndividualCommission> IndividualCommissions => Set<IndividualCommission>();
+        public DbSet<AdhocCommission> AdhocCommissions => Set<AdhocCommission>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

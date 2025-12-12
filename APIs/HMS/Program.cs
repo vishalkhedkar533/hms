@@ -4,6 +4,7 @@ using CommonLibrary.Background;
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
+using HMS.MapperProfiles;
 using HMS.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -48,6 +49,7 @@ builder.Services.AddAutoMapper(cfg =>
 {
     cfg.AddProfile<AgentProfile>();
     cfg.AddProfile<AuditTrailProfile>();
+    cfg.AddProfile<CommissionMgmtProfile>();
 });
 
 // ----------------------------

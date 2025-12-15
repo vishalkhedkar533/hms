@@ -94,8 +94,4 @@
         public string? ChannelName { get; set; }
         public string? SubChannelName { get; set; }
     }
-    public class FetchComssDashboard
-    {
-        public int? orgId { get; set; }
-    }
 }

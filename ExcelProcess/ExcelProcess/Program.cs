@@ -253,6 +253,8 @@ static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batch
         FROM STDIN WITH (FORMAT CSV);
     ";
 
+    Console.WriteLine("Mapping descriptive fields to codes...");
+
     /* Step 1
      * Excel will contain
      * public string? AgentClassDesc { get; set; }

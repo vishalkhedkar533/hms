@@ -38,18 +38,13 @@ namespace HMS.Controllers
         [HttpPost("Dashboard")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public async Task<ActionResult<CommissionMgmtDashboardDto>> Dashboard([FromBody] FetchComssDashboard fetchComssDashboard)
+        public async Task<ActionResult<CommissionMgmtDashboardDto>> Dashboard()
         {
             HmsResponse response = new HmsResponse();
+            int orgId = 0;
             try
             {
-                int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-                if (orgId != fetchComssDashboard.orgId)
-                {
-                    _logger.LogWarning("Unauthorized org access.",orgId, fetchComssDashboard.orgId);
-                    return Unauthorized("Invalid organization claim.");
-                }
+                orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
                 var commissionDashboard = await _context.CommissionMgmtDashboards.FirstOrDefaultAsync(x => x.orgId == orgId);
 
@@ -132,7 +127,7 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Dashboard API failed at {UtcNow} OrgId={OrgId} Message={Message}",DateTime.UtcNow,fetchComssDashboard?.orgId,ex.Message);
+                _logger.LogError(ex,"Dashboard API failed at {UtcNow} OrgId={OrgId} Message={Message}",DateTime.UtcNow,orgId,ex.Message);
 
                 return StatusCode(500, "Internal server error.");
             }

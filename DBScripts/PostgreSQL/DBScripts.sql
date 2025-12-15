@@ -1684,3 +1684,94 @@ BEGIN
 END;
 $function$
 ;
+
+create schema comss;
+
+CREATE TABLE comss.commission_cycle (
+    cycleId SERIAL PRIMARY KEY,
+    cycleCode VARCHAR(100) NOT NULL,
+    orgId INT NOT NULL,
+    commissionType VARCHAR(50) NOT NULL,
+    countOfEntities NUMERIC DEFAULT 0,
+    avgCommission NUMERIC DEFAULT 0,
+    Nb_Revenue NUMERIC,
+    Nb_Commission NUMERIC,
+
+    CONSTRAINT fk_cycle_org
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId)
+);
+
+
+CREATE TABLE comss.entity_commission (
+    cycleId INT NOT NULL,
+    orgId INT NOT NULL,
+    agent_id INT NOT NULL,
+    submittedOn DATE,
+    submittedBy INT,
+    commissionAmount NUMERIC,
+    status VARCHAR(50),
+
+    CONSTRAINT fk_ent_comm_cycle 
+        FOREIGN KEY (cycleId) REFERENCES comss.commission_cycle(cycleId),
+
+    CONSTRAINT fk_ent_comm_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId),
+
+    CONSTRAINT fk_ent_comm_agent 
+        FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id),
+
+    CONSTRAINT fk_ent_comm_user 
+        FOREIGN KEY (submittedBy) REFERENCES hms.user(user_id)
+);
+
+CREATE TABLE comss.performance_snapshots (
+    snapshotId SERIAL PRIMARY KEY,
+    orgId INT NOT NULL,
+    periodFrom DATE NOT NULL,
+    periodTo DATE NOT NULL,
+    commissionBudget NUMERIC,
+    commissionActual NUMERIC,
+
+    CONSTRAINT fk_perf_org
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId)
+);
+
+CREATE TABLE comss.individual_commission (
+    individualCommissionId SERIAL PRIMARY KEY,
+    orgId INT  NULL,
+    agent_id INT null,
+    agent_name varchar(200),
+    agent_code varchar(200),
+	submittedOn DATE,
+    submittedBy INT,
+    status VARCHAR(50),
+     CONSTRAINT fk_ent_comm_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId),
+
+    CONSTRAINT fk_ent_comm_agent 
+        FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id),
+
+    CONSTRAINT fk_ent_comm_user 
+        FOREIGN KEY (submittedBy) REFERENCES hms.user(user_id)
+);
+
+CREATE TABLE comss.adhoc_commission (
+    adhocCommissionId SERIAL PRIMARY KEY,
+    orgId INT  NULL,
+    branchId INT  NULL,
+    requestId int null,
+    submittedOn DATE,
+    submittedBy INT,
+
+    CONSTRAINT fk_ent_comm_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId),
+
+    CONSTRAINT fk_ent_comm_user 
+        FOREIGN KEY (submittedBy) REFERENCES hms.user(user_id)
+);
+
+
+select * from comss.commission_cycle;
+select * from comss.entity_commission;
+select * from comss.performance_snapshots;
+

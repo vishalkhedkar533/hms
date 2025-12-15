@@ -253,6 +253,45 @@ static async Task BulkCopy(List<AgentDto> rows, NpgsqlConnection conn, int batch
         FROM STDIN WITH (FORMAT CSV);
     ";
 
+    /* Step 1
+     * Excel will contain
+     * public string? AgentClassDesc { get; set; }
+        public string? BankAccTypeDesc { get; set; }
+        public string? GenderDesc { get; set; }
+        public string? TitleDesc { get; set; }
+        public string? ChannelDesc { get; set; }
+        public string? SubChannelDesc { get; set; }
+        public string? OccupationDesc { get; set; }
+        public string? AgentTypeCatDesc { get; set; }
+        public string? MaritalStatusDesc { get; set; }
+        public string? EducationDesc { get; set; }
+        public string? StateDesc { get; set; }
+        public string? CountryDesc { get; set; }
+        public string? DesignationCodeDesc { get; set; }
+        public string? LocationCodeDesc { get; set; }
+        public string? AgentTypeCodeDesc { get; set; }
+        public string? AgentSubTypeCodeDesc { get; set; }
+        public string? CandidateTypeDesc { get; set; }
+        public string? CommissionClassDesc { get; set; }
+        public string? AgentTypeDesc { get; set; }
+     */
+
+    /* Step 2
+     * Get master from var AgentProfileMst = GetMasterData("AgentProfileMst").ToList();
+     */
+
+    /*
+     * Check if the values exist in master data, if yes, then map the description to code.
+     * if not, mark the records as rejected with reason "Invalid <FieldName>"
+     * update hms.tempagentdto 
+     set "comments" = "comments" + 'Error in BankAcc Details'
+     where not exists (
+     select 1 
+     from hmsmaster.keyvalueentries 
+     where hms.tempagentdto.BankAccTypeDesc = hmsmaster.keyvalueentries.entrydesc 
+      and hms.tempagentdto.orgid = hms.tempagentdto.orgid)
+     */
+
     using var writer = conn.BeginTextImport(copySql);
 
     await writer.WriteAsync(sb.ToString());

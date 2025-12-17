@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.DTO.CommissionMgmt.Dashboard;
 using Models.HMSConsts;
 
 namespace HMS.Controllers
@@ -215,6 +216,183 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "ProcessCommission API failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpPost("HoldCommission")]
+        [Authorize]
+        [MenuAuthorize(1002)]
+        public IActionResult GetHoldCommission()
+{
+    HmsResponse response = new HmsResponse();
+    int orgId = 0;
+
+    try
+    {
+        orgId = Convert.ToInt32(
+            _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
+        );
+
+        var holdCommissionData = new HoldCommissionResponseDto
+        {
+            OrgId = orgId,
+            AmountOnHold = 245890,
+            CurrentlyOnHold = 20,
+            ReleasedThisMonth = 11,
+            Records = new List<HoldCommissionRecordDto>
+            {
+                new ()
+                {
+                    HoldId = 201,
+                    AgentName = "Ramesh Yadav",
+                    Reason = "Incorrect Slab",
+                    Amount = 22300,
+                    HeldOn = new DateTime(2025, 7, 12),
+                    Status = "On Hold",
+                    CanRelease = true
+                },
+                new ()
+                {
+                    HoldId = 202,
+                    AgentName = "Mohan Pratap",
+                    Reason = "Documentation Issue",
+                    Amount = 18300,
+                    HeldOn = new DateTime(2025, 7, 12),
+                    Status = "Released",
+                    CanRelease = false
+                }
+            }
+        };
+
+        response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+        response.responseHeader.ErrorMessage = "SUCCESS";
+        response.responseBody.holdCommission = holdCommissionData;
+
+        return Ok(response);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "HoldCommission API failed OrgId={OrgId}", orgId);
+        return StatusCode(500, "Internal server error");
+    }
+}
+
+        [HttpPost("AdjustCommission")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public IActionResult GetAdjustCommission()
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = 0;
+
+            try
+            {
+                orgId = Convert.ToInt32(
+                    _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
+                );
+
+                var adjustCommissionData = new AdjustCommissionResponseDto
+                {
+                    OrgId = orgId,
+                    Approved = 32,
+                    PendingReview = 24,
+                    Rejected = 20,
+                    TotalRecords = 76,
+                    Records = new List<AdjustCommissionLogDto>
+            {
+                new ()
+                {
+                    AdjustmentId = 301,
+                    Date = new DateTime(2025, 5, 12),
+                    Period = "May 6",
+                    AdjustmentType = "TDS",
+                    UploadedBy = "Rakesh",
+                    RecordsCount = 1250,
+                    Status = "Rejected"
+                },
+                new ()
+                {
+                    AdjustmentId = 302,
+                    Date = new DateTime(2025, 5, 11),
+                    Period = "May 13",
+                    AdjustmentType = "Commission",
+                    UploadedBy = "Mahesh",
+                    RecordsCount = 2250,
+                    Status = "Approved"
+                }
+            }
+                };
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.adjustCommission = adjustCommissionData;
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "AdjustCommission API failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpPost("ApproveCommission")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public IActionResult GetApproveCommission()
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = 0;
+
+            try
+            {
+                orgId = Convert.ToInt32(
+                    _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
+                );
+
+                var approveCommissionData = new ApproveCommissionResponseDto
+                {
+                    OrgId = orgId,
+                    TotalAmountApproved = 245890,
+                    TotalRecords = 431,
+                    PendingApproval = 2,
+                    Records = new List<ApproveCommissionLogDto>
+                    {
+                        new ()
+                        {
+                            ApprovalId = 401,
+                            Date = new DateTime(2025, 5, 8),
+                            Period = "Aug 5",
+                            SubmittedBy = "HO Finance",
+                            Amount = 4290450,
+                            Status = "Pending",
+                            CanApprove = true,
+                            CanDownload = false
+                        },
+                        new ()
+                        {
+                            ApprovalId = 402,
+                            Date = new DateTime(2025, 5, 11),
+                            Period = "May 13",
+                            SubmittedBy = "Zone Office",
+                            Amount = 2890450,
+                            Status = "Approved",
+                            CanApprove = false,
+                            CanDownload = true
+                        }
+                    }
+                };
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.approveCommission = approveCommissionData;
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ApproveCommission API failed OrgId={OrgId}", orgId);
                 return StatusCode(500, "Internal server error");
             }
         }

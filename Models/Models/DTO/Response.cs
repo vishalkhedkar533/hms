@@ -1,5 +1,5 @@
 ﻿using Models.DB;
-using System.ComponentModel.DataAnnotations.Schema;
+using Models.DTO.CommissionMgmt.Dashboard;
 
 namespace Models.DTO
 {
@@ -23,9 +23,10 @@ namespace Models.DTO
         public List<AgentDto>? agents { get; set; } = null;
         public List<KeyValueEntry>? master { get; set; } = null;
         public List<CommissionMgmtDashboardDto>? commissionMgmtDashboards { get; set; } = null;
-        
         public ProcessCommissionResponseDto? processCommission { get; set; } = null;
-
+        public HoldCommissionResponseDto? holdCommission { get; set; } = null;
+        public AdjustCommissionResponseDto? adjustCommission { get; set; }
+        public ApproveCommissionResponseDto? approveCommission { get; set; }
     }
 
     public class LoginResponse

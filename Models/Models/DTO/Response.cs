@@ -23,6 +23,9 @@ namespace Models.DTO
         public List<AgentDto>? agents { get; set; } = null;
         public List<KeyValueEntry>? master { get; set; } = null;
         public List<CommissionMgmtDashboardDto>? commissionMgmtDashboards { get; set; } = null;
+        
+        public ProcessCommissionResponseDto? processCommission { get; set; } = null;
+
     }
 
     public class LoginResponse

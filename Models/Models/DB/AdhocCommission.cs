@@ -24,5 +24,8 @@ namespace Models.DB
 
         [Column("submittedby")]
         public int? SubmittedBy { get; set; }
+
+        [Column("status")]
+        public string? Status { get; set; }
     }
 }

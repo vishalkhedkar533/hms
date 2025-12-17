@@ -86,7 +86,8 @@ namespace HMS.Controllers
                                                     CountOfEntities = x.CountOfEntities,
                                                     AvgCommission = x.AvgCommission,
                                                     NbRevenue = x.NbRevenue,
-                                                    NbCommission = x.NbCommission
+                                                    NbCommission = x.NbCommission,
+                                                    Status = x.Status,
                                                 })
                                                 .ToListAsync();
 
@@ -101,7 +102,8 @@ namespace HMS.Controllers
                                                     RequestId = x.RequestId,
                                                     SubmittedOn = x.SubmittedOn,
                                                     SubmittedBy = x.SubmittedBy,
-                                                    CommissionDate = (DateTime)x.SubmittedOn
+                                                    CommissionDate = (DateTime)x.SubmittedOn,
+                                                    Status = x.Status,
                                                 })
                                                 .ToListAsync();
 
@@ -133,5 +135,88 @@ namespace HMS.Controllers
             }
         }
 
+        [HttpPost("ProcessCommission")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public IActionResult GetProcessCommissionLog()
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = 0;
+            try
+            {
+                orgId = Convert.ToInt32(
+                _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
+            );
+
+                var processCommissionData = new ProcessCommissionResponseDto
+                {
+                    OrgId = orgId,
+                    PeriodType = "Monthly",
+                    ProcessedRecordsLog = new List<ProcessCommissionLogDto>
+                    {
+                        new ProcessCommissionLogDto
+                        {
+                            ProcessId=101,
+                            ProcessedDate = new DateTime(2025, 5, 12),
+                            Period = "May 6",
+                            RecordsCount = 1250,
+                            Status = "In Process",
+                            CanViewDetails = true,
+                            CanDownload = false
+                        },
+                        new ProcessCommissionLogDto
+                        {
+                            ProcessId=102,
+                            ProcessedDate = new DateTime(2025, 5, 11),
+                            Period = "May 13",
+                            RecordsCount = 2250,
+                            Status = "Completed",
+                            CanViewDetails = false,
+                            CanDownload = true
+                        },
+                        new ProcessCommissionLogDto
+                        {
+                            ProcessId=103,
+                            ProcessedDate = new DateTime(2025, 5, 10),
+                            Period = "Jun 25",
+                            RecordsCount = 1152,
+                            Status = "Completed",
+                            CanViewDetails = false,
+                            CanDownload = true
+                        },
+                        new ProcessCommissionLogDto
+                        {
+                            ProcessId=104,
+                            ProcessedDate = new DateTime(2025, 5, 10),
+                            Period = "Aug 5",
+                            RecordsCount = 933,
+                            Status = "Completed",
+                            CanViewDetails = false,
+                            CanDownload = true
+                        },
+                        new ProcessCommissionLogDto
+                        {
+                            ProcessId=105,
+                            ProcessedDate = new DateTime(2025, 5, 9),
+                            Period = "July 10",
+                            RecordsCount = 825,
+                            Status = "Completed",
+                            CanViewDetails = false,
+                            CanDownload = true
+                        }
+                    }
+                };
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.processCommission = processCommissionData;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ProcessCommission API failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
     }
 }

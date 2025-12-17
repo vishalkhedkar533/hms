@@ -30,5 +30,8 @@ namespace Models.DB
 
         [Column("nb_commission")]
         public double? NbCommission { get; set; }
+
+        [Column("status")]
+        public string? Status { get; set; }
     }
 }

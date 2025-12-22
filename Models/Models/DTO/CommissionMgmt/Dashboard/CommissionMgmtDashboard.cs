@@ -72,11 +72,15 @@
 
     public class CurrentBusinessCycleDto
     {
+        public int CurrentBusinessCycleId { get; set; }
         public int OrgId { get; set; }
-        public int CycleId { get; set; }
-        public string? CycleCode { get; set; }
-        public DateTime? CycleStart { get; set; }
-        public DateTime? CycleEnd { get; set; }
+        //public int CycleId { get; set; }
+        public string? Cycle { get; set; }
+        public decimal RevenueAmount { get; set; }
+        public decimal CommissionAmount { get; set; }
+        public decimal Percentage { get; set; }
+        //public DateTime? CycleStart { get; set; }
+        //public DateTime? CycleEnd { get; set; }
     }
 
     public class OnHoldPayoutDto

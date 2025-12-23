@@ -57,7 +57,7 @@ namespace HMS.Controllers
 
                 var commissionDashboardDto = _mapper.Map<CommissionMgmtDashboardDto>(commissionDashboard);
 
-                commissionDashboardDto.IndividualCommissions =await _context.IndividualCommissions
+                commissionDashboardDto.IndividualCommissions = await _context.IndividualCommissions
                                                     .Where(x => x.OrgId == orgId)
                                                     .AsNoTracking()
                                                     .Select(x => new IndividualCommissionDto
@@ -75,7 +75,7 @@ namespace HMS.Controllers
                                                     })
                                                     .ToListAsync();
 
-                commissionDashboardDto.CycleCommissions =await _context.CommissionCycles
+                commissionDashboardDto.CycleCommissions = await _context.CommissionCycles
                                                 .Where(x => x.OrgId == orgId)
                                                 .AsNoTracking()
                                                 .Select(x => new CycleCommissionDto
@@ -92,7 +92,7 @@ namespace HMS.Controllers
                                                 })
                                                 .ToListAsync();
 
-                commissionDashboardDto.AdhocCommissions =await _context.AdhocCommissions
+                commissionDashboardDto.AdhocCommissions = await _context.AdhocCommissions
                                                 .Where(x => x.OrgId == orgId)
                                                 .AsNoTracking()
                                                 .Select(x => new AdhocCommissionDto
@@ -108,7 +108,7 @@ namespace HMS.Controllers
                                                 })
                                                 .ToListAsync();
 
-                commissionDashboardDto.PerformanceSnapshot =await _context.PerformanceSnapshots
+                commissionDashboardDto.PerformanceSnapshot = await _context.PerformanceSnapshots
                                                 .Where(x => x.OrgId == orgId)
                                                 .AsNoTracking()
                                                 .Select(x => new PerformanceSnapshotDto
@@ -130,21 +130,21 @@ namespace HMS.Controllers
                                                     CurrentBusinessCycleId = x.CurrentBusinessCycleId,
                                                     OrgId = x.OrgId,
                                                     Cycle = x.CycleType,
-                                                    RevenueAmount =  x.RevenueAmount,
-                                                    CommissionAmount =  x.CommissionAmount,
-                                                    Percentage =  x.Percentage
+                                                    RevenueAmount = x.RevenueAmount,
+                                                    CommissionAmount = x.CommissionAmount,
+                                                    Percentage = x.Percentage
                                                 })
                                                 .ToListAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.commissionMgmtDashboards =new List<CommissionMgmtDashboardDto> { commissionDashboardDto };
+                response.responseBody.commissionMgmtDashboards = new List<CommissionMgmtDashboardDto> { commissionDashboardDto };
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Dashboard API failed at {UtcNow} OrgId={OrgId} Message={Message}",DateTime.UtcNow,orgId,ex.Message);
+                _logger.LogError(ex, "Dashboard API failed at {UtcNow} OrgId={OrgId} Message={Message}", DateTime.UtcNow, orgId, ex.Message);
 
                 return StatusCode(500, "Internal server error.");
             }
@@ -238,59 +238,59 @@ namespace HMS.Controllers
         [Authorize]
         [MenuAuthorize(1002)]
         public IActionResult GetHoldCommission()
-{
-    HmsResponse response = new HmsResponse();
-    int orgId = 0;
-
-    try
-    {
-        orgId = Convert.ToInt32(
-            _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
-        );
-
-        var holdCommissionData = new HoldCommissionResponseDto
         {
-            OrgId = orgId,
-            AmountOnHold = 245890,
-            CurrentlyOnHold = 20,
-            ReleasedThisMonth = 11,
-            Records = new List<HoldCommissionRecordDto>
+            HmsResponse response = new HmsResponse();
+            int orgId = 0;
+
+            try
             {
-                new ()
+                orgId = Convert.ToInt32(
+                    _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
+                );
+
+                var holdCommissionData = new HoldCommissionResponseDto
                 {
-                    HoldId = 201,
-                    AgentName = "Ramesh Yadav",
-                    Reason = "Incorrect Slab",
-                    Amount = 22300,
-                    HeldOn = new DateTime(2025, 7, 12),
-                    Status = "On Hold",
-                    CanRelease = true
-                },
-                new ()
-                {
-                    HoldId = 202,
-                    AgentName = "Mohan Pratap",
-                    Reason = "Documentation Issue",
-                    Amount = 18300,
-                    HeldOn = new DateTime(2025, 7, 12),
-                    Status = "Released",
-                    CanRelease = false
-                }
+                    OrgId = orgId,
+                    AmountOnHold = 245890,
+                    CurrentlyOnHold = 20,
+                    ReleasedThisMonth = 11,
+                    Records = new List<HoldCommissionRecordDto>
+                    {
+                        new ()
+                        {
+                            HoldId = 201,
+                            AgentName = "Ramesh Yadav",
+                            Reason = "Incorrect Slab",
+                            Amount = 22300,
+                            HeldOn = new DateTime(2025, 7, 12),
+                            Status = "On Hold",
+                            CanRelease = true
+                        },
+                        new ()
+                        {
+                            HoldId = 202,
+                            AgentName = "Mohan Pratap",
+                            Reason = "Documentation Issue",
+                            Amount = 18300,
+                            HeldOn = new DateTime(2025, 7, 12),
+                            Status = "Released",
+                            CanRelease = false
+                        }
+                    }
+                };
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.holdCommission = holdCommissionData;
+
+                return Ok(response);
             }
-        };
-
-        response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-        response.responseHeader.ErrorMessage = "SUCCESS";
-        response.responseBody.holdCommission = holdCommissionData;
-
-        return Ok(response);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "HoldCommission API failed OrgId={OrgId}", orgId);
-        return StatusCode(500, "Internal server error");
-    }
-}
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "HoldCommission API failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
 
         [HttpPost("AdjustCommission")]
         [Authorize]

@@ -21,7 +21,7 @@ namespace HMS.Controllers
         {
             _authClaimService = authClaimService;
             _context = hMSContext;
-            _logger = (ILogger<CommissionConfigController>?)logger;
+            _logger = logger;
         }
 
         [HttpPost("Save")]
@@ -36,18 +36,22 @@ namespace HMS.Controllers
             try
             {
                 int orgIdFromClaims = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-                
+                var username = HttpContext?.User?.Identity?.Name;
+
                 config.OrgId = orgIdFromClaims;
+                config.CreatedBy= username;
+
                 _context.CommissionConfigs.Add(config);
                 await _context.SaveChangesAsync();
                 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.commissionConfig = new List<CommissionConfig> { config }; return Ok(response);
+                response.responseBody.commissionConfig = new List<CommissionConfig> { config }; 
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "SaveCommissionConfig API failed", config.Id);
+                _logger.LogError(ex, "SaveCommissionConfig API failed");
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }

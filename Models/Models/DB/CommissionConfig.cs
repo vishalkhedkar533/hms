@@ -15,7 +15,7 @@ namespace Models.DB
 
         [Required]
         [Column("commission_name")]
-        public string CommissionName { get; set; } = string.Empty;
+        public string? CommissionName { get; set; } 
 
         [Column("trigger_cycle")]
         public string? TriggerCycle { get; set; }
@@ -30,5 +30,9 @@ namespace Models.DB
 
         [Column("created_at")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [Column("created_by")]
+        public string? CreatedBy { get; set; } 
+
     }
 }

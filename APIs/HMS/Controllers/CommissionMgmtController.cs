@@ -122,6 +122,20 @@ namespace HMS.Controllers
                                                 })
                                                 .ToListAsync();
 
+                commissionDashboardDto.CurrentBusinessCycles = await _context.CurrentBusinessCycles
+                                                .Where(x => x.OrgId == orgId)
+                                                .AsNoTracking()
+                                                .Select(x => new CurrentBusinessCycleDto
+                                                {
+                                                    CurrentBusinessCycleId = x.CurrentBusinessCycleId,
+                                                    OrgId = x.OrgId,
+                                                    Cycle = x.CycleType,
+                                                    RevenueAmount =  x.RevenueAmount,
+                                                    CommissionAmount =  x.CommissionAmount,
+                                                    Percentage =  x.Percentage
+                                                })
+                                                .ToListAsync();
+
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.commissionMgmtDashboards =new List<CommissionMgmtDashboardDto> { commissionDashboardDto };

@@ -1771,7 +1771,22 @@ CREATE TABLE comss.adhoc_commission (
 );
 
 
-select * from comss.commission_cycle;
-select * from comss.entity_commission;
-select * from comss.performance_snapshots;
+CREATE TABLE comss.currentbusscycle (
+	currentBussCycleId SERIAL PRIMARY KEY,
+	orgId INT  NULL,	
+	cycle varchar(100) NULL,
+	revenue numeric(18,2),
+	commission numeric(18,2),,
+	revCommPerct numeric(10,4)
+);
 
+create table comss.onholdpayouts (
+onhold_payout_id 		SERIAL primary key,
+orgId 				  int null, 
+agent_id              INT NOT null,
+payout_amount         NUMERIC(18,2) NOT null,
+hold_reason_desc      VARCHAR(200),
+hold_date             DATE NOT null,
+release_date          DATE null,
+hold_status           VARCHAR(30),
+);

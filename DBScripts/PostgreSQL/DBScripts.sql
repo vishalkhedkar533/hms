@@ -1800,4 +1800,3 @@ CREATE TABLE comss.commission_config (
     run_to DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-

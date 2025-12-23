@@ -70,7 +70,20 @@ VALUES(2, 'COMMISSION_CLASS', 1, 'Class 1', null, false);
 INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
 VALUES(2, 'COMMISSION_CLASS', 2, 'Class 2', null, false);
 
-
-select * from hmsmaster.mastertables where entrycategory = 'AgentProfileMst'
 INSERT INTO hmsmaster.mastertables(orgid,entrycategory,schemaname,tablename,filtercriteria)
 values (2, 'AgentProfileMst', 'hmsmaster','keyvalueentries','  AND entrycategory IN( ''AGENT_CLASS'',''SUB_CHANNEL'',''BANK_ACC_TYP'',''STATE_NAME'',''OCCUPATION'',''MARITAL_STATUS'',''GENDER'',''EDUCATION_CODE'',''COUNTRY'',''CHANNEL_NAME'',''AGENT_TYPE_CAT'',''TITLE'',''CANDIDATE_TYP'',''AGNT_TYP'',''COMMISSION_CLASS'')');
+
+INSERT INTO hms.roles (role_id, role_name, description, is_system_role, is_active, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(2, 'Commission Config Creator', 'This role will allow the user to create commission cofiguration', true, true, '', CURRENT_DATE, '', CURRENT_DATE, 0);
+
+INSERT INTO hms.roles (role_id, role_name, description, is_system_role, is_active, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(3, 'Commission Config Viewer', 'This role will allow the user to view commission cofiguration', true, true, '', CURRENT_DATE, '', CURRENT_DATE, 0);
+
+INSERT INTO hms.roles (role_id, role_name, description, is_system_role, is_active, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(4, 'Commission Config Approver', 'This role will allow the user to approve commission cofiguration', true, true, '', CURRENT_DATE, '', CURRENT_DATE, 0);
+
+INSERT INTO hms.menu_master(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1003, 'Save Commission Configuration', null, '', 0, false, false, '', CURRENT_DATE, '', CURRENT_DATE, 0);
+
+INSERT INTO hms.menu_master(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1004, 'View Commission Configuration', null, '', 0, false, false, '', CURRENT_DATE, '', CURRENT_DATE, 0);

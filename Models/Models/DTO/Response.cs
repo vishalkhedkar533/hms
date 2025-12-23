@@ -27,6 +27,7 @@ namespace Models.DTO
         public HoldCommissionResponseDto? holdCommission { get; set; } = null;
         public AdjustCommissionResponseDto? adjustCommission { get; set; }
         public ApproveCommissionResponseDto? approveCommission { get; set; }
+        public List<CommissionConfig>? commissionConfig { get; set; } = null; 
     }
 
     public class LoginResponse
@@ -52,5 +53,4 @@ namespace Models.DTO
         
     }
 
-  
 }

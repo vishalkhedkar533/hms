@@ -40,6 +40,7 @@ namespace HMS.Data
         public DbSet<IndividualCommission> IndividualCommissions => Set<IndividualCommission>();
         public DbSet<AdhocCommission> AdhocCommissions => Set<AdhocCommission>();
         public DbSet<CurrentBusinessCycle> CurrentBusinessCycles => Set<CurrentBusinessCycle>();
+        public DbSet<CommissionConfig> CommissionConfigs => Set<CommissionConfig>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

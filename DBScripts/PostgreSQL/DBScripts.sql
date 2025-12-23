@@ -1790,3 +1790,14 @@ hold_date             DATE NOT null,
 release_date          DATE null,
 hold_status           VARCHAR(30),
 );
+
+CREATE TABLE comss.commission_config (
+    commission_config_id serial PRIMARY KEY,
+    orgId int null,
+    commission_name VARCHAR(255) NOT NULL,
+    trigger_cycle varchar(200),
+    run_from DATE NOT NULL,
+    run_to DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

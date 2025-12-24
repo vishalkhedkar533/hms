@@ -215,3 +215,11 @@ ALTER TABLE comss.entity_commission
 ADD CONSTRAINT pk_entity_commission
 PRIMARY KEY (entityCommId);
 
+ALTER TABLE comss.commission_config 
+ALTER COLUMN orgId SET NOT NULL;
+
+ALTER TABLE comss.commission_config 
+ADD COLUMN created_by VARCHAR(255)
+
+CREATE UNIQUE INDEX idx_unique_org_commission 
+ON comss.commission_config (orgId, commission_name);

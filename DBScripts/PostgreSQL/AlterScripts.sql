@@ -223,3 +223,6 @@ ADD COLUMN created_by VARCHAR(255)
 
 CREATE UNIQUE INDEX idx_unique_org_commission 
 ON comss.commission_config (orgId, commission_name);
+
+ALTER TABLE comss.commission_config 
+ADD COLUMN conditions VARCHAR(500);

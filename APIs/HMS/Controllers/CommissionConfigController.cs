@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using System.Text.Json;
 
 namespace HMS.Controllers
 {
@@ -17,11 +18,13 @@ namespace HMS.Controllers
         private readonly IAuthClaimService _authClaimService;
         private readonly HMSContext _context;
         private readonly ILogger<CommissionConfigController> _logger;
-        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger)
+        private readonly IWebHostEnvironment _env;
+        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger, IWebHostEnvironment env)
         {
             _authClaimService = authClaimService;
             _context = hMSContext;
             _logger = logger;
+            _env = env;
         }
 
         [HttpPost("Save")]
@@ -123,6 +126,36 @@ namespace HMS.Controllers
             {
                 _logger.LogError(ex, "GetCommissionConfigList API failed OrgId={OrgId}", orgId);
                 return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("commission-fields-json")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetCommissionMetadata()
+        {
+            try
+            {
+                string filePath = Path.Combine(_env.ContentRootPath, "CommissionMetaData", "commissionMetadata.json");
+
+                if (!System.IO.File.Exists(filePath))
+                {
+                    _logger.LogWarning("Metadata file missing at: {Path}", filePath);
+                    return NotFound(new { message = "Metadata configuration file not found." });
+                }
+
+                string jsonString = await System.IO.File.ReadAllTextAsync(filePath);
+
+                var metadata = JsonSerializer.Deserialize<CommissionMetadata>(jsonString, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return Ok(metadata);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reading commission metadata file");
+                return StatusCode(500, "Internal server error reading configuration.");
             }
         }
     }

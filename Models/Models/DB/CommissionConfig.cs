@@ -8,7 +8,7 @@ namespace Models.DB
     {
         [Key]
         [Column("commission_config_id")]
-        public int Id { get; set; }
+        public int CommissionConfigId { get; set; }
 
         [Column("orgid")]
         public int? OrgId { get; set; }
@@ -29,10 +29,18 @@ namespace Models.DB
         public DateOnly RunTo { get; set; }
 
         [Column("created_at")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } 
 
         [Column("created_by")]
-        public string? CreatedBy { get; set; } 
+        public string? CreatedBy { get; set; }
 
+        [Column("conditions")]
+        public string? Conditions { get; set; }
+
+    }
+    public class CommissionConditionUpdateDto
+    {
+        public int CommissionConfigId { get; set; }
+        public string Condition { get; set; } = string.Empty;
     }
 }

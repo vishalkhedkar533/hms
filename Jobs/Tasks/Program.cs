@@ -3,6 +3,7 @@ using Database;
 using Npgsql;
 using Repository;
 using System.Data.Common;
+using Tasks.Database;
 
 DbProviderFactories.RegisterFactory("Npgsql", NpgsqlFactory.Instance);
 
@@ -15,12 +16,15 @@ builder.Services.AddLogging();
 builder.Services.AddSingleton<IMappingProvider>(sp =>
 {
     var env = sp.GetRequiredService<IHostEnvironment>();
-    var mappingDir = Path.Combine(env.ContentRootPath, "Mappings");
+    var mappingDir = Path.Combine(env.ContentRootPath, "mapping");
     return new FileMappingProvider(mappingDir);
 });
 
 // Register connection factory (NpgsqlConnectionFactory already exists in Database namespace)
 builder.Services.AddSingleton<IConnectionFactory, ProviderConnectionFactory>();
+
+// Register scoped connection scope to reuse open connections within a DI scope
+builder.Services.AddScoped<IConnectionScope, ConnectionScope>();
 
 // Register repository
 builder.Services.AddScoped<IJobConfigRepository, JobConfigRepository>();

@@ -1,13 +1,10 @@
 ﻿using System.Data;
 using System.Data.Common;
+using Tasks.Database;
 
 namespace Database
 {
-    // Define IConnectionFactory if it does not exist elsewhere in your project
-    public interface IConnectionFactory
-    {
-        IDbConnection CreateConnection(string connectionString);
-    }
+ 
     // Provider-agnostic IConnectionFactory implementation.
     // It uses DbProviderFactory by invariant name so no project code references Npgsql types.
     public class ProviderConnectionFactory : IConnectionFactory

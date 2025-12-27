@@ -223,3 +223,7 @@ ADD COLUMN created_by VARCHAR(255)
 
 CREATE UNIQUE INDEX idx_unique_org_commission 
 ON comss.commission_config (orgId, commission_name);
+
+
+alter table comss.commission_config add column last_run_dt date;
+alter table comss.commission_config add column next_run_dt date;

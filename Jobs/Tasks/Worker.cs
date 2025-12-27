@@ -30,11 +30,11 @@ namespace Tasks
             // Use DI-based JobFactory so jobs are resolved from IServiceProvider
             scheduler.JobFactory = new ServiceProviderJobFactory(_serviceProvider);
 
-            // Create a scope when accessing scoped services (e.g. repositories)
+            // Create an async scope when accessing scoped services (e.g. repositories)
             IEnumerable<Models.JobConfig> configs;
             try
             {
-                using var scope = _serviceProvider.CreateScope();
+                await using var scope = _serviceProvider.CreateAsyncScope();
                 var repo = scope.ServiceProvider.GetRequiredService<IJobConfigRepository>();
                 configs = await repo.GetEnabledAsync();
             }
@@ -49,6 +49,14 @@ namespace Tasks
                 try
                 {
                     var jobKey = new JobKey($"job-{cfg.Id}", "scheduler");
+
+                    // build job detail using the generic ReflectionJob
+                    var jobDetail = JobBuilder.Create(typeof(ReflectionJob))
+                        .WithIdentity(jobKey)
+                        .UsingJobData("TargetType", /* e.g. cfg.Job_Type or parsed from cfg.Parameters */ cfg.Job_Type ?? string.Empty)
+                        .UsingJobData("TargetMethod", /* parse or supply method name */ "Run")
+                        .UsingJobData("Args", cfg.Parameters ?? string.Empty) // pass JSON payload
+                        .Build();
 
                     ITrigger? trigger = cfg.Trigger_Type?.ToLowerInvariant() switch
                     {
@@ -90,6 +98,8 @@ namespace Tasks
                     {
                         await scheduler.DeleteJob(jobKey, stoppingToken);
                     }
+
+                    await scheduler.ScheduleJob(jobDetail, trigger, stoppingToken);
 
                     _logger.LogInformation("Scheduled job {JobName} (Id={Id}) with trigger {TriggerKey}.", cfg.Job_Name, cfg.Id, trigger.Key);
                 }

@@ -1,7 +1,7 @@
+using Jobs;
 using Quartz;
 using Quartz.Impl;
 using Repository;
-using Jobs;
 
 namespace Tasks
 {
@@ -23,9 +23,6 @@ namespace Tasks
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Worker starting - initializing Quartz scheduler.");
-            using var scope = _serviceProvider.CreateScope();
-            var repo = scope.ServiceProvider.GetRequiredService<IJobConfigRepository>();
-            var configs = await repo.GetEnabledAsync();
 
             var factory = new StdSchedulerFactory();
             var scheduler = await factory.GetScheduler(stoppingToken);
@@ -33,16 +30,25 @@ namespace Tasks
             // Use DI-based JobFactory so jobs are resolved from IServiceProvider
             scheduler.JobFactory = new ServiceProviderJobFactory(_serviceProvider);
 
+            // Create a scope when accessing scoped services (e.g. repositories)
+            IEnumerable<Models.JobConfig> configs;
+            try
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var repo = scope.ServiceProvider.GetRequiredService<IJobConfigRepository>();
+                configs = await repo.GetEnabledAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load job configurations. Scheduler will not start.");
+                return;
+            }
+
             foreach (var cfg in configs)
             {
                 try
                 {
                     var jobKey = new JobKey($"job-{cfg.Id}", "scheduler");
-
-                    //var job = JobBuilder.Create<SampleDbJob>()
-                    //            .WithIdentity(jobKey)
-                    //            .UsingJobData("JobConfigId", cfg.Id)
-                    //            .Build();
 
                     ITrigger? trigger = cfg.Trigger_Type?.ToLowerInvariant() switch
                     {
@@ -85,7 +91,6 @@ namespace Tasks
                         await scheduler.DeleteJob(jobKey, stoppingToken);
                     }
 
-                    //await scheduler.ScheduleJob(job, trigger, stoppingToken);
                     _logger.LogInformation("Scheduled job {JobName} (Id={Id}) with trigger {TriggerKey}.", cfg.Job_Name, cfg.Id, trigger.Key);
                 }
                 catch (Exception ex)

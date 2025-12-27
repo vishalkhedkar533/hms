@@ -5,8 +5,8 @@ namespace CommonLibrary.mapping
 {
     public sealed class FileMappingProvider : IMappingProvider
     {
-        private readonly ConcurrentDictionary<string, MappingRoot> _byToken = new();
-        private readonly ConcurrentDictionary<string, MappingRoot> _byConnectionKey = new();
+        private readonly ConcurrentDictionary<string, MappingModel> _byToken = new();
+        private readonly ConcurrentDictionary<string, MappingModel> _byConnectionKey = new();
 
         private readonly string _folderPath;
         private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -29,7 +29,7 @@ namespace CommonLibrary.mapping
                 try
                 {
                     var json = File.ReadAllText(file);
-                    var mapping = JsonSerializer.Deserialize<MappingRoot>(json, _jsonOptions);
+                    var mapping = JsonSerializer.Deserialize<MappingModel>(json, _jsonOptions);
                     if (mapping is null)
                         continue;
 
@@ -39,9 +39,27 @@ namespace CommonLibrary.mapping
 
                     _byToken[token] = mapping;
 
-                    if (!string.IsNullOrWhiteSpace(mapping.ConnectionStringKey))
+                    // Populate connection-key index if mapping operations declare a ConnectionStringKey
+                    if (mapping.Entities is not null)
                     {
-                        _byConnectionKey[mapping.ConnectionStringKey] = mapping;
+                        foreach (var entityMapping in mapping.Entities.Values)
+                        {
+                            if (entityMapping is null)
+                                continue;
+
+                            foreach (var opMapping in entityMapping.Values)
+                            {
+                                if (opMapping is null)
+                                    continue;
+
+                                // If the operation mapping specifies a ConnectionStringKey, index it
+                                var csKey = opMapping.ConnectionStringKey;
+                                if (!string.IsNullOrWhiteSpace(csKey))
+                                {
+                                    _byConnectionKey[csKey] = mapping;
+                                }
+                            }
+                        }
                     }
                 }
                 catch
@@ -51,43 +69,41 @@ namespace CommonLibrary.mapping
             }
         }
 
-        public bool TryGetByConnectionStringKey(string connectionStringKey, out MappingRoot? mapping)
+        public bool TryGetByConnectionStringKey(string connectionStringKey, out MappingModel? mapping)
         {
             return _byConnectionKey.TryGetValue(connectionStringKey, out mapping);
         }
 
-        public bool TryGetByDatabaseToken(string databaseToken, out MappingRoot? mapping)
+        public bool TryGetByDatabaseToken(string databaseToken, out MappingModel? mapping)
         {
             return _byToken.TryGetValue(databaseToken, out mapping);
         }
 
-        public IReadOnlyDictionary<string, MappingRoot> GetAll() => _byToken;
-        public string? GetScriptForOperation(string entityName, string operationName)
+        public IReadOnlyDictionary<string, MappingModel> GetAll() => _byToken;
+
+        public OperationMapping? GetScriptForOperation(string entityName, string operationName)
         {
-            // First try by connection-string key (matches ConnectionStringKey in mapping JSON)
-            if (this.TryGetByConnectionStringKey("HMSContext", out var mapping))
+            // First, search all token-based mappings (e.g. postgresql)
+            foreach (var mapping in _byToken.Values)
             {
                 if (mapping?.Entities != null &&
-                    mapping.Entities.TryGetValue(entityName, out var entityMapping))
+                    mapping.Entities.TryGetValue(entityName, out var entityMapping) &&
+                    entityMapping is not null &&
+                    entityMapping.TryGetValue(operationName, out var opMapping))
                 {
-                    // EntityMapping is designed to map operation name -> OperationMapping
-                    if (entityMapping is not null && entityMapping.TryGetValue(operationName, out var opMapping))
-                    {
-                        return opMapping?.Script;
-                    }
+                    return opMapping;
                 }
             }
 
-            // Fallback: try by common database token (e.g. "postgresql")
-            if (this.TryGetByDatabaseToken("postgresql", out var tokenMapping))
+            // Fallback: search connection-key indexed mappings
+            foreach (var mapping in _byConnectionKey.Values)
             {
-                if (tokenMapping?.Entities != null &&
-                    tokenMapping.Entities.TryGetValue(entityName, out var tokenEntityMapping))
+                if (mapping?.Entities != null &&
+                    mapping.Entities.TryGetValue(entityName, out var entityMapping) &&
+                    entityMapping is not null &&
+                    entityMapping.TryGetValue(operationName, out var opMapping))
                 {
-                    if (tokenEntityMapping is not null && tokenEntityMapping.TryGetValue(operationName, out var opMapping))
-                    {
-                        return opMapping?.Script;
-                    }
+                    return opMapping;
                 }
             }
 

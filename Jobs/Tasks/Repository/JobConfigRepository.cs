@@ -9,24 +9,20 @@ namespace Repository
     public class JobConfigRepository : IJobConfigRepository
     {
         private readonly IConnectionFactory _connectionFactory;
-        private readonly string _connectionString;
         private readonly IMappingProvider _mappingProvider;
         public JobConfigRepository(IConnectionFactory connectionFactory, IConfiguration configuration
             , IMappingProvider mappingProvider)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-            _connectionString = configuration.GetConnectionString("HMSContext")
-                                ?? configuration.GetValue<string>("ConnectionString")
-                                ?? throw new ArgumentException("Connection string 'HMSContext' not found.");
             _mappingProvider = mappingProvider ?? throw new ArgumentNullException(nameof(mappingProvider));
         }
 
         public async Task<IEnumerable<JobConfig>> GetEnabledAsync()
         {
-            string sql = _mappingProvider.GetScriptForOperation("Job", "Insert");
-            await using var conn = (System.Data.Common.DbConnection)_connectionFactory.CreateConnection(_connectionString);
+            OperationMapping operationMapping = _mappingProvider.GetScriptForOperation("Job", "Fetch");
+            await using var conn = (System.Data.Common.DbConnection)_connectionFactory.CreateConnection(operationMapping.ConnectionStringKey);
             await conn.OpenAsync();
-            var rows = await conn.QueryAsync<JobConfig>(sql, commandType: CommandType.Text);
+            var rows = await conn.QueryAsync<JobConfig>(operationMapping.Script, commandType: CommandType.Text);
             return rows.ToList();
         }
     }

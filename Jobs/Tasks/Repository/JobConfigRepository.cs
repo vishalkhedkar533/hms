@@ -29,20 +29,5 @@ namespace Repository
             var rows = await conn.QueryAsync<JobConfig>(sql, commandType: CommandType.Text);
             return rows.ToList();
         }
-
-        public async Task<JobConfig?> GetByIdAsync(int id)
-        {
-            const string sql = @"
-SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression,
-       interval_seconds, start_at, end_at, parameters, created_at, updated_at
-FROM scheduler.job_config
-WHERE job_config_id = @Id
-LIMIT 1;
-";
-            await using var conn = (System.Data.Common.DbConnection)_connectionFactory.CreateConnection(_connectionString);
-            await conn.OpenAsync();
-            var row = await conn.QueryFirstOrDefaultAsync<JobConfig>(sql, new { Id = id }, commandType: CommandType.Text);
-            return row;
-        }
     }
 }

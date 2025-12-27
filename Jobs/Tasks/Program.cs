@@ -1,8 +1,7 @@
+using CommonLibrary.mapping;
 using Database;
-using Jobs;
 using Quartz;
 using Repository;
-using CommonLibrary.mapping;
 
 var builder = Host.CreateApplicationBuilder(args);
 
@@ -23,30 +22,30 @@ builder.Services.AddSingleton<IConnectionFactory, ProviderConnectionFactory>();
 // Register repository
 builder.Services.AddScoped<IJobConfigRepository, JobConfigRepository>();
 
-// Register jobs so DI can resolve them
-builder.Services.AddScoped<SampleDbJob>();
+//// Register jobs so DI can resolve them
+//builder.Services.AddScoped<SampleDbJob>();
 
 // Register worker
 builder.Services.AddHostedService<Tasks.Worker>();
 
 // Register Quartz and use Microsoft DI to create job instances
-builder.Services.AddQuartz(q =>
-{
+//builder.Services.AddQuartz(q =>
+//{
     // Use DI for job instantiation
     // Register the job with an identity
-    q.AddJob<SampleDbJob>(opts => opts.WithIdentity("sample-db-job", "default"));
+    //q.AddJob<SampleDbJob>(opts => opts.WithIdentity("sample-db-job", "default"));
 
-    // Create a simple trigger that starts immediately and repeats every 60 seconds
-    q.AddTrigger(opts => opts
-        .ForJob("sample-db-job", "default")
-        .WithIdentity("sample-db-trigger", "default")
-        .StartNow()
-        .WithSimpleSchedule(x => x.WithIntervalInSeconds(60).RepeatForever())
-    );
-});
+    //// Create a simple trigger that starts immediately and repeats every 60 seconds
+    //q.AddTrigger(opts => opts
+    //    .ForJob("sample-db-job", "default")
+    //    .WithIdentity("sample-db-trigger", "default")
+    //    .StartNow()
+    //    .WithSimpleSchedule(x => x.WithIntervalInSeconds(60).RepeatForever())
+    //);
+//});
 
 // Register Quartz hosted service (starts the scheduler)
-builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+//builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
 
 var host = builder.Build();
 await host.RunAsync();

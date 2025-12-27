@@ -1800,3 +1800,30 @@ CREATE TABLE comss.commission_config (
     run_to DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE SCHEMA IF NOT EXISTS scheduler;
+
+CREATE TABLE IF NOT EXISTS scheduler.job_config
+(
+    job_config_id        SERIAL PRIMARY KEY,
+    job_name             TEXT NOT NULL,
+    job_type             TEXT NOT NULL, -- e.g. "CommissionProcess", "Cleanup"
+    enabled              BOOLEAN NOT NULL DEFAULT TRUE,
+    trigger_type         TEXT NOT NULL, -- "Cron", "Interval", "OneTime"
+    cron_expression      TEXT NULL,     -- when trigger_type = 'Cron'
+    interval_seconds     INTEGER NULL,  -- when trigger_type = 'Interval'
+    start_at             TIMESTAMPTZ NULL,
+    end_at               TIMESTAMPTZ NULL,
+    parameters           JSONB NULL,    -- free-form job parameters (optional)
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ NULL
+);
+
+-- Example inserts:
+-- Cron job that runs every day at 2:30 AM
+INSERT INTO scheduler.job_config (job_name, job_type, enabled, trigger_type, cron_expression, start_at)
+VALUES ('DailyCommission', 'CommissionProcess', true, 'Cron', '0 30 2 ? * *', now());
+
+-- Interval job that runs every 300 seconds
+INSERT INTO scheduler.job_config (job_name, job_type, enabled, trigger_type, interval_seconds, start_at)
+VALUES ('PollQueue', 'QueuePoller', true, 'Interval', 300, now());

@@ -10,22 +10,22 @@ namespace Tasks
         private readonly IConfiguration _configuration;
         private readonly ILogger<Worker> _logger;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IJobConfigRepository _jobConfigRepository;
 
         public Worker(IConfiguration configuration,
                       ILogger<Worker> logger,
-                      IServiceProvider serviceProvider,
-                      IJobConfigRepository jobConfigRepository)
+                      IServiceProvider serviceProvider)
         {
             _configuration = configuration;
             _logger = logger;
             _serviceProvider = serviceProvider;
-            _jobConfigRepository = jobConfigRepository;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             _logger.LogInformation("Worker starting - initializing Quartz scheduler.");
+            using var scope = _serviceProvider.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IJobConfigRepository>();
+            var configs = await repo.GetEnabledAsync();
 
             var factory = new StdSchedulerFactory();
             var scheduler = await factory.GetScheduler(stoppingToken);
@@ -33,28 +33,16 @@ namespace Tasks
             // Use DI-based JobFactory so jobs are resolved from IServiceProvider
             scheduler.JobFactory = new ServiceProviderJobFactory(_serviceProvider);
 
-            // Load enabled job configs from DB via repository
-            IEnumerable<Models.JobConfig> configs;
-            try
-            {
-                configs = await _jobConfigRepository.GetEnabledAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to load job configurations. Scheduler will not start.");
-                return;
-            }
-
             foreach (var cfg in configs)
             {
                 try
                 {
                     var jobKey = new JobKey($"job-{cfg.Id}", "scheduler");
 
-                    var job = JobBuilder.Create<SampleDbJob>()
-                                .WithIdentity(jobKey)
-                                .UsingJobData("JobConfigId", cfg.Id)
-                                .Build();
+                    //var job = JobBuilder.Create<SampleDbJob>()
+                    //            .WithIdentity(jobKey)
+                    //            .UsingJobData("JobConfigId", cfg.Id)
+                    //            .Build();
 
                     ITrigger? trigger = cfg.Trigger_Type?.ToLowerInvariant() switch
                     {
@@ -97,7 +85,7 @@ namespace Tasks
                         await scheduler.DeleteJob(jobKey, stoppingToken);
                     }
 
-                    await scheduler.ScheduleJob(job, trigger, stoppingToken);
+                    //await scheduler.ScheduleJob(job, trigger, stoppingToken);
                     _logger.LogInformation("Scheduled job {JobName} (Id={Id}) with trigger {TriggerKey}.", cfg.Job_Name, cfg.Id, trigger.Key);
                 }
                 catch (Exception ex)

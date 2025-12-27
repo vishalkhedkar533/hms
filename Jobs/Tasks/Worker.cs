@@ -53,9 +53,9 @@ namespace Tasks
                     // build job detail using the generic ReflectionJob
                     var jobDetail = JobBuilder.Create(typeof(ReflectionJob))
                         .WithIdentity(jobKey)
-                        .UsingJobData("TargetType", /* e.g. cfg.Job_Type or parsed from cfg.Parameters */ cfg.Job_Type ?? string.Empty)
-                        .UsingJobData("TargetMethod", /* parse or supply method name */ "Run")
-                        .UsingJobData("Args", cfg.Parameters ?? string.Empty) // pass JSON payload
+                        .UsingJobData(cfg.TargetType, /* e.g. cfg.Job_Type or parsed from cfg.Parameters */ cfg.Job_Type ?? string.Empty)
+                        .UsingJobData(cfg.TargetMethod, /* parse or supply method name */ "Run")
+                        .UsingJobData(cfg.Args ?? string.Empty, cfg.Parameters ?? string.Empty) // pass JSON payload
                         .Build();
 
                     ITrigger? trigger = cfg.Trigger_Type?.ToLowerInvariant() switch

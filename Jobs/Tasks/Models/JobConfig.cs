@@ -14,6 +14,9 @@ namespace Models
         public string? Parameters { get; set; }
         public DateTimeOffset Created_At { get; set; }
         public DateTimeOffset? Updated_At { get; set; }
+        public string? TargetType { get; set; }
+        public string? TargetMethod { get; set; }
+        public string? Args { get; set; }
 
         // convenience
         public int Id => Job_Config_Id;

@@ -227,3 +227,7 @@ ON comss.commission_config (orgId, commission_name);
 
 alter table comss.commission_config add column last_run_dt date;
 alter table comss.commission_config add column next_run_dt date;
+
+alter table scheduler.job_config add column TargetType VARCHAR(255);
+alter table scheduler.job_config add column TargetMethod VARCHAR(100);
+alter table scheduler.job_config add column Args VARCHAR(500);

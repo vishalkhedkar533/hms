@@ -1819,11 +1819,3 @@ CREATE TABLE IF NOT EXISTS scheduler.job_config
     updated_at           TIMESTAMPTZ NULL
 );
 
--- Example inserts:
--- Cron job that runs every day at 2:30 AM
-INSERT INTO scheduler.job_config (job_name, job_type, enabled, trigger_type, cron_expression, start_at)
-VALUES ('DailyCommission', 'CommissionProcess', true, 'Cron', '0 30 2 ? * *', now());
-
--- Interval job that runs every 300 seconds
-INSERT INTO scheduler.job_config (job_name, job_type, enabled, trigger_type, interval_seconds, start_at)
-VALUES ('PollQueue', 'QueuePoller', true, 'Interval', 300, now());

@@ -29,6 +29,12 @@ builder.Services.AddScoped<IConnectionScope, ConnectionScope>();
 // Register repository
 builder.Services.AddScoped<IJobConfigRepository, JobConfigRepository>();
 
+// Add the job type to DI so it can be resolved directly (example placement in Program.cs)
+builder.Services.AddTransient<Jobs.ReflectionJob>();
+
+// Ensure your custom job factory is registered as the IJobFactory used by Quartz (example)
+builder.Services.AddSingleton<Quartz.Spi.IJobFactory, Jobs.ServiceProviderJobFactory>();
+
 //// Register jobs so DI can resolve them
 //builder.Services.AddScoped<SampleDbJob>();
 

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Models.DB
 {
@@ -10,6 +11,7 @@ namespace Models.DB
         [Column("commission_config_id")]
         public int CommissionConfigId { get; set; }
 
+        [JsonIgnore]
         [Column("orgid")]
         public int? OrgId { get; set; }
 
@@ -28,12 +30,15 @@ namespace Models.DB
         [Column("run_to")]
         public DateOnly RunTo { get; set; }
 
+        [JsonIgnore]
         [Column("created_at")]
-        public DateTime CreatedAt { get; set; } 
+        public DateTime CreatedAt { get; set; }
 
+        [JsonIgnore]
         [Column("created_by")]
         public string? CreatedBy { get; set; }
 
+        [JsonIgnore]
         [Column("conditions")]
         public string? Conditions { get; set; }
 

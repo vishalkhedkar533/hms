@@ -81,6 +81,7 @@ namespace HMS.Controllers
                 existingConfig.Conditions = commissionConditionUpdateDto.Condition;
                 existingConfig.CreatedBy = username;
                 existingConfig.CreatedAt = DateTime.SpecifyKind(existingConfig.CreatedAt, DateTimeKind.Utc);
+
                 _context.CommissionConfigs.Update(existingConfig);
                 await _context.SaveChangesAsync();
 
@@ -93,9 +94,7 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "UpdateCommissionCondition failed for ID={CommissionConfigId}", commissionConditionUpdateDto.CommissionConfigId);
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Internal server error";
-                return StatusCode(500, response);
+                return StatusCode(500, $"Internal server error : {ex.Message}");
             }
         }
 

@@ -28,7 +28,7 @@ namespace Jobs
                 return job;
             }
 
-            // Fallback: create via ActivatorUtilities so job can still be constructed
+            // Fallback: create via ActivatorUtilities so job can still be constructed (supports constructor DI)
             try
             {
                 var created = (IJob)ActivatorUtilities.CreateInstance(_serviceProvider, jobType);

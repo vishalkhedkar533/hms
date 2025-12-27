@@ -50,12 +50,12 @@ namespace Tasks
                 {
                     var jobKey = new JobKey($"job-{cfg.Id}", "scheduler");
 
-                    // build job detail using the generic ReflectionJob
+                    // build job detail using the ReflectionJob (use non-generic Create to avoid IJob type mismatches)
                     var jobDetail = JobBuilder.Create(typeof(ReflectionJob))
                         .WithIdentity(jobKey)
-                        .UsingJobData(cfg.TargetType, /* e.g. cfg.Job_Type or parsed from cfg.Parameters */ cfg.Job_Type ?? string.Empty)
-                        .UsingJobData(cfg.TargetMethod, /* parse or supply method name */ "Run")
-                        .UsingJobData(cfg.Args ?? string.Empty, cfg.Parameters ?? string.Empty) // pass JSON payload
+                        .UsingJobData("TargetType", cfg.Job_Type ?? string.Empty)
+                        .UsingJobData("TargetMethod", "Run")
+                        .UsingJobData("Args", cfg.Parameters ?? string.Empty) // pass JSON payload
                         .Build();
 
                     ITrigger? trigger = cfg.Trigger_Type?.ToLowerInvariant() switch

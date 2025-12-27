@@ -53,8 +53,8 @@ namespace Tasks
                     // build job detail using the ReflectionJob (use non-generic Create to avoid IJob type mismatches)
                     var jobDetail = JobBuilder.Create(typeof(ReflectionJob))
                         .WithIdentity(jobKey)
-                        .UsingJobData("TargetType", cfg.Job_Type ?? string.Empty)
-                        .UsingJobData("TargetMethod", "Run")
+                        .UsingJobData("TargetType", cfg.TargetType ?? string.Empty)
+                        .UsingJobData("TargetMethod", cfg.TargetMethod ?? "Run")
                         .UsingJobData("Args", cfg.Parameters ?? string.Empty) // pass JSON payload
                         .Build();
 

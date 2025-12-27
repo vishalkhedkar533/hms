@@ -1,4 +1,3 @@
-csharp Jobs/ReflectionJob.cs
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;

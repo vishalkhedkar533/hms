@@ -224,5 +224,16 @@ ADD COLUMN created_by VARCHAR(255)
 CREATE UNIQUE INDEX idx_unique_org_commission 
 ON comss.commission_config (orgId, commission_name);
 
+
+alter table comss.commission_config add column last_run_dt date;
+alter table comss.commission_config add column next_run_dt date;
+
+alter table scheduler.job_config add column TargetType VARCHAR(255);
+alter table scheduler.job_config add column TargetMethod VARCHAR(100);
+alter table scheduler.job_config add column Args VARCHAR(500);
+alter table scheduler.job_config add column "orgId" INT null;
+
+alter table scheduler.job_config add CONSTRAINT fk_JonCfg_OrgId
+FOREIGN KEY ("orgId") REFERENCES app_subscription.Organisation(OrgId);
 ALTER TABLE comss.commission_config 
 ADD COLUMN conditions VARCHAR(500);

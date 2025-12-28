@@ -1,6 +1,5 @@
 using Quartz;
 using Quartz.Spi;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Jobs
 {

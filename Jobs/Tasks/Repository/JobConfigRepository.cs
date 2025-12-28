@@ -1,7 +1,9 @@
+using Common; // for RetryHelper
 using CommonLibrary.mapping;
 using Dapper;
 using Models;
 using System.Data;
+using System.Data.Common;
 
 namespace Repository
 {
@@ -18,7 +20,7 @@ namespace Repository
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
 
-        public async Task<IEnumerable<JobConfig>> GetEnabledAsync()
+        public async Task<IEnumerable<JobConfig>> GetEnabledAsync(CancellationToken token = default)
         {
             var operationMapping = _mappingProvider.GetScriptForOperation("Job", "Fetch")
                 ?? throw new InvalidOperationException("Operation mapping for Job/Fetch not found.");
@@ -30,8 +32,22 @@ namespace Repository
             var conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
 
             // Do NOT dispose the returned connection here; the scope will dispose it when the DI scope ends.
-            var rows = await conn.QueryAsync<JobConfig>(operationMapping.Script, commandType: CommandType.Text);
-            return rows.ToList();
+            // Wrap the query with a retry policy. Example: retry on DBConcurrencyException, DbException, or Timeout.
+            return await RetryHelper.RetryOnExceptionAsync(
+                async ct =>
+                {
+                    var rows = await conn.QueryAsync<JobConfig>(operationMapping.Script, commandType: CommandType.Text);
+                    return rows.ToList();
+                },
+                shouldRetry: ex =>
+                    ex is DBConcurrencyException
+                    || ex is TimeoutException
+                    || ex is DbException,
+                maxAttempts: 4,
+                initialDelayMs: 100,
+                maxJitterMs: 200,
+                cancellationToken: token
+            );
         }
     }
 }

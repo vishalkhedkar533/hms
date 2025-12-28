@@ -235,3 +235,5 @@ alter table scheduler.job_config add column "orgId" INT null;
 
 alter table scheduler.job_config add CONSTRAINT fk_JonCfg_OrgId
 FOREIGN KEY ("orgId") REFERENCES app_subscription.Organisation(OrgId);
+ALTER TABLE comss.commission_config 
+ADD COLUMN conditions VARCHAR(500);

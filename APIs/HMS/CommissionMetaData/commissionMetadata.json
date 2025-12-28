@@ -1,0 +1,63 @@
+{
+  "policy": [
+    {
+      "name": "pt",
+      "description": "Number - Policy Threshold",
+      "dataType": "number"
+    },
+    {
+      "name": "name",
+      "description": "Text - Policy Holder Name",
+      "dataType": "string"
+    },
+    {
+      "name": "startDate",
+      "description": "Date - Policy Start Date",
+      "dataType": "date"
+    },
+    {
+      "name": "endDate",
+      "description": "Date - Policy End Date",
+      "dataType": "date"
+    },
+    {
+      "name": "product",
+      "description": "Text - Product Name",
+      "dataType": "string"
+    },
+    {
+      "name": "UIN",
+      "description": "Text - Unique Identification Number",
+      "dataType": "string"
+    }
+  ],
+  "premium": [
+    {
+      "name": "amount",
+      "description": "Number - Premium Amount",
+      "dataType": "number"
+    },
+    {
+      "name": "frequency",
+      "description": "Text - Payment Frequency",
+      "dataType": "string"
+    }
+  ],
+  "customer": [
+    {
+      "name": "firstName",
+      "description": "Text - Customer First Name",
+      "dataType": "string"
+    },
+    {
+      "name": "lastName",
+      "description": "Text - Customer Last Name",
+      "dataType": "string"
+    },
+    {
+      "name": "dob",
+      "description": "Date - Date of Birth",
+      "dataType": "date"
+    }
+  ]
+}

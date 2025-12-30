@@ -122,8 +122,21 @@ namespace HMS.Controllers
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.commissionConfig = new List<CommissionConfig> { commissionConfig };
-
+                //response.responseBody.commissionConfig = commissionConfig;
+                response.responseBody.commissionConfig = new List<CommissionConfigDTO>
+                {
+                    new CommissionConfigDTO
+                    {
+                        CommissionConfigId = commissionConfig.CommissionConfigId,
+                        CommissionName = commissionConfig.CommissionName,
+                        RunFrom = commissionConfig.RunFrom,
+                        RunTo = commissionConfig.RunTo,
+                        CreatedAt = commissionConfig.CreatedAt,
+                        CreatedBy = commissionConfig.CreatedBy,
+                        Conditions = commissionConfig.Conditions,
+                        JobConfigId = commissionConfig.JobConfigId
+                    }
+                };
                 return Ok(response);
             }
             catch (DbUpdateException ex)
@@ -145,7 +158,7 @@ namespace HMS.Controllers
             }
         }
 
-        [HttpPatch("UpdateCommissionCondition")]
+        [HttpPost("UpdateCommissionCondition")]
         [Authorize]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> UpdateCommissionCondition([FromBody] CommissionConditionUpdateDto commissionConditionUpdateDto )
@@ -173,44 +186,28 @@ namespace HMS.Controllers
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "Condition updated successfully";
-                response.responseBody.commissionConfig = new List<CommissionConfig> { existingConfig };
+                // response.responseBody.commissionConfig = new List<CommissionConfig> { existingConfig };
 
+                response.responseBody.commissionConfig = new List<CommissionConfigDTO>
+                {
+                    new CommissionConfigDTO
+                    {
+                        CommissionConfigId = existingConfig.CommissionConfigId,
+                        CommissionName = existingConfig.CommissionName,
+                        RunFrom = existingConfig.RunFrom,
+                        RunTo = existingConfig.RunTo,
+                        CreatedAt = existingConfig.CreatedAt,
+                        CreatedBy = existingConfig.CreatedBy,
+                        Conditions = existingConfig.Conditions,
+                        JobConfigId = existingConfig.JobConfigId
+                    }
+                };
                 return Ok(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "UpdateCommissionCondition failed for ID={CommissionConfigId}", commissionConditionUpdateDto.CommissionConfigId);
                 return StatusCode(500, $"Internal server error : {ex.Message}");
-            }
-        }
-
-        [HttpPost("list")]
-        [Authorize]
-        [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetCommissionConfigList()
-        {
-            HmsResponse response = new HmsResponse();
-            int orgId = 0;
-            try
-            {
-                orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-                var configList = await _context.CommissionConfigs
-                                                .Where(x => x.OrgId == orgId)
-                                                .AsNoTracking()
-                                                .OrderByDescending(x => x.CreatedAt)
-                                                .ToListAsync();
-                
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.commissionConfig = configList;
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "GetCommissionConfigList API failed OrgId={OrgId}", orgId);
-                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 
@@ -291,9 +288,9 @@ namespace HMS.Controllers
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                //response.responseBody.commissionConfig = list;
+                response.responseBody.commissionConfig = list;
 
-                return Ok(list);
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -302,5 +299,37 @@ namespace HMS.Controllers
             }
         }
 
+        #region Old Get List Method
+        //[HttpPost("list")]
+        //[Authorize]
+        //[MenuAuthorize(1001)]
+        //public async Task<IActionResult> GetCommissionConfigList()
+        //{
+        //    HmsResponse response = new HmsResponse();
+        //    int orgId = 0;
+        //    try
+        //    {
+        //        orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+        //        var configList = await _context.CommissionConfigs
+        //                                        .Where(x => x.OrgId == orgId)
+        //                                        .AsNoTracking()
+        //                                        .OrderByDescending(x => x.CreatedAt)
+        //                                        .ToListAsync();
+
+        //        response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+        //        response.responseHeader.ErrorMessage = "SUCCESS";
+        //        response.responseBody.commissionConfig = configList;
+
+        //        return Ok(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "GetCommissionConfigList API failed OrgId={OrgId}", orgId);
+        //        return StatusCode(500, $"Internal server error: {ex.Message}");
+        //    }
+        //}
+
+        #endregion
     }
 }

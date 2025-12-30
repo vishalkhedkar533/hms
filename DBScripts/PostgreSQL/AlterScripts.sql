@@ -237,3 +237,6 @@ ALTER TABLE comss.commission_config
 ADD CONSTRAINT fk_commission_config_job_config
 FOREIGN KEY (job_config_id)
 REFERENCES scheduler.job_config(job_config_id)
+
+ALTER TABLE comss.commission_config
+DROP COLUMN trigger_cycle;

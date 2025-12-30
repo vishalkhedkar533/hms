@@ -25,7 +25,7 @@ namespace HMS.Controllers
             if (jobConfig == null)
                 return BadRequest("Invalid request");
 
-            jobConfig.CreatedAt = DateTimeOffset.UtcNow;
+            jobConfig.CreatedAt = DateTime.UtcNow;
 
             _context.JobConfigs.Add(jobConfig);
 

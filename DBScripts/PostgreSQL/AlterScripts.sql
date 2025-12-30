@@ -226,3 +226,14 @@ ON comss.commission_config (orgId, commission_name);
 
 ALTER TABLE comss.commission_config 
 ADD COLUMN conditions VARCHAR(500);
+
+CREATE UNIQUE INDEX ux_job_config_jobname_orgid
+ON scheduler.job_config (job_name, "orgId");
+
+ALTER TABLE comss.commission_config
+ADD COLUMN job_config_id int
+
+ALTER TABLE comss.commission_config
+ADD CONSTRAINT fk_commission_config_job_config
+FOREIGN KEY (job_config_id)
+REFERENCES scheduler.job_config(job_config_id)

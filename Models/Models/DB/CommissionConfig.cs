@@ -11,7 +11,6 @@ namespace Models.DB
         [Column("commission_config_id")]
         public int CommissionConfigId { get; set; }
 
-        [JsonIgnore]
         [Column("orgid")]
         public int? OrgId { get; set; }
 
@@ -19,8 +18,8 @@ namespace Models.DB
         [Column("commission_name")]
         public string? CommissionName { get; set; } 
 
-        [Column("trigger_cycle")]
-        public string? TriggerCycle { get; set; }
+        //[Column("trigger_cycle")]
+        //public string? TriggerCycle { get; set; }
 
         [Required]
         [Column("run_from")]
@@ -30,17 +29,18 @@ namespace Models.DB
         [Column("run_to")]
         public DateOnly RunTo { get; set; }
 
-        [JsonIgnore]
         [Column("created_at")]
         public DateTime CreatedAt { get; set; }
 
-        [JsonIgnore]
         [Column("created_by")]
         public string? CreatedBy { get; set; }
 
-        [JsonIgnore]
         [Column("conditions")]
         public string? Conditions { get; set; }
+
+        [Column("job_config_id")]
+        public int JobConfigId { get; set; }
+
 
     }
     public class CommissionConditionUpdateDto

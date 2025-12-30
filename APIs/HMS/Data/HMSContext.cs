@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Models.DB;
+using Models.DTO.CommissionMgmt;
 
 namespace HMS.Data
 {
@@ -41,6 +42,7 @@ namespace HMS.Data
         public DbSet<AdhocCommission> AdhocCommissions => Set<AdhocCommission>();
         public DbSet<CurrentBusinessCycle> CurrentBusinessCycles => Set<CurrentBusinessCycle>();
         public DbSet<CommissionConfig> CommissionConfigs => Set<CommissionConfig>();
+        public DbSet<JobConfig> JobConfigs => Set<JobConfig>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

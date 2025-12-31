@@ -1,7 +1,7 @@
-﻿using Azure;
-using CommonLibrary;
+﻿using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -91,19 +91,18 @@ namespace HMS.Controllers
 
                 return Ok(response);
             }
-            //catch (DbUpdateException ex)
-            //{
-            //    await tx.RollbackAsync();
-            //    _logger.LogError(ex, "CreateCommission failed");
+            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            {
+                await tx.RollbackAsync();
+                _logger.LogWarning("Duplicate Commission or Job Name: {Name}", dto.CommissionName);
 
-            //    return StatusCode(409,"Duplicate CommissionName or JobName Found.");
-            //}
+                return Conflict(new { Message = "A commission or job with this name already exists." });
+            }
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                _logger.LogError(ex, "CreateCommission failed");
-
-                return StatusCode(500,"Internal server error");
+                _logger.LogError(ex, "Unexpected error creating commission");
+                return StatusCode(500, "An internal error occurred.");
             }
         }
 

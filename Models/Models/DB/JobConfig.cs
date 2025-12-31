@@ -13,19 +13,15 @@ namespace Models.DB
         [Column("job_config_id")]
         public int JobConfigId { get; set; }
 
-        [Required]
         [Column("job_name")]
         public string JobName { get; set; } = null!;
 
-        [Required]
         [Column("job_type")]
         public string JobType { get; set; } = null!;
 
-        [Required]
         [Column("enabled")]
         public bool Enabled { get; set; } = true;
 
-        [Required]
         [Column("trigger_type")]
         public string TriggerType { get; set; } = null!;
 
@@ -36,20 +32,19 @@ namespace Models.DB
         public int? IntervalSeconds { get; set; }
 
         [Column("start_at")]
-        public DateOnly StartAt { get; set; }
+        public DateOnly? StartAt { get; set; }
 
         [Column("end_at")]
-        public DateOnly EndAt { get; set; }
+        public DateOnly? EndAt { get; set; }
 
         [Column("parameters", TypeName = "jsonb")]
         public JsonDocument? Parameters { get; set; }
 
-        [Required]
-        [Column("created_at")]
-        public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+        [Column("created_at", TypeName = "timestamp")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        [Column("updated_at")]
-        public DateTimeOffset? UpdatedAt { get; set; }
+        [Column("updated_at", TypeName = "timestamp")]
+        public DateTime? UpdatedAt { get; set; }
 
         [Column("targettype")]
         [MaxLength(255)]
@@ -65,8 +60,5 @@ namespace Models.DB
 
         [Column("orgId")]
         public int? OrgId { get; set; }
-
-        // Navigation property (optional)
-        // public Organisation Organisation { get; set; }
     }
 }

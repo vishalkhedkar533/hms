@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace Models.DB
 {
@@ -29,8 +28,8 @@ namespace Models.DB
         [Column("run_to")]
         public DateOnly RunTo { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; }
+        [Column("created_at", TypeName = "timestamp")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [Column("created_by")]
         public string? CreatedBy { get; set; }

@@ -23,11 +23,11 @@ namespace Models.DB
 
         [Required]
         [Column("run_from")]
-        public DateTime RunFrom { get; set; }
+        public DateOnly RunFrom { get; set; }
 
         [Required]
         [Column("run_to")]
-        public DateTime RunTo { get; set; }
+        public DateOnly RunTo { get; set; }
 
         [Column("created_at", TypeName = "timestamp")]
         public DateTime CreatedAt { get; set; } = DateTime.Now;

@@ -5,8 +5,8 @@ namespace Models.DTO.CommissionMgmt
     public class CreateCommissionDto
     {
         public string CommissionName { get; set; } = null!;
-        public DateTime RunFrom { get; set; }
-        public DateTime RunTo { get; set; }
+        public DateOnly RunFrom { get; set; }
+        public DateOnly RunTo { get; set; }
     }
 
     public class UpdateCronDto
@@ -31,8 +31,8 @@ namespace Models.DTO.CommissionMgmt
         public string? CommissionName { get; set; }
 
         //public string? TriggerCycle { get; set; }
-        public DateTime RunFrom { get; set; }
-        public DateTime RunTo { get; set; }
+        public DateOnly RunFrom { get; set; }
+        public DateOnly RunTo { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
         public string? Conditions { get; set; }

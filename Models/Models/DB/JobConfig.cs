@@ -32,16 +32,16 @@ namespace Models.DB
         public int? IntervalSeconds { get; set; }
 
         [Column("start_at")]
-        public DateTime? StartAt { get; set; }
+        public DateOnly? StartAt { get; set; }
 
         [Column("end_at")]
-        public DateTime? EndAt { get; set; }
+        public DateOnly? EndAt { get; set; }
 
         [Column("parameters", TypeName = "jsonb")]
         public JsonDocument? Parameters { get; set; }
 
         [Column("created_at", TypeName = "timestamp")]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [Column("updated_at", TypeName = "timestamp")]
         public DateTime? UpdatedAt { get; set; }

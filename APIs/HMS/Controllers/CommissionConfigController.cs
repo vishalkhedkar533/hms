@@ -49,8 +49,8 @@ namespace HMS.Controllers
                     JobType = "CRON",
                     TriggerType = "CRON",
                     Enabled = false,
-                    StartAt = DateTime.SpecifyKind(dto.RunFrom, DateTimeKind.Unspecified),
-                    EndAt = DateTime.SpecifyKind(dto.RunTo, DateTimeKind.Unspecified),
+                    StartAt =dto.RunFrom,
+                    EndAt = dto.RunTo,
                     OrgId = orgId
                 };
 
@@ -60,8 +60,8 @@ namespace HMS.Controllers
                 var commission = new CommissionConfig
                 {
                     CommissionName = dto.CommissionName,
-                    RunFrom = DateTime.SpecifyKind(dto.RunFrom, DateTimeKind.Unspecified),
-                    RunTo = DateTime.SpecifyKind(dto.RunTo, DateTimeKind.Unspecified),
+                    RunFrom = dto.RunFrom,
+                    RunTo = dto.RunTo,
                     CreatedAt = DateTime.Now,
                     CreatedBy = username,
                     OrgId = orgId,

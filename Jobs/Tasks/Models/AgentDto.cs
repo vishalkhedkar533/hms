@@ -1,5 +1,20 @@
-﻿namespace Tasks.Models
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Net;
+
+namespace Tasks.Models
 {
+    public class PeopleHeirarchyDto
+    {
+        public int? AgentId { get; set; }
+        public long? HierarchyId { get; set; }
+        public string? AgentCode { get; set; } = null!;
+        public string? FirstName { get; set; }
+        public string? MiddleName { get; set; }
+        public string? LastName { get; set; }
+        public PeopleHeirarchyDto? Supervisors { get; set; }
+        public string? HierarchyPath { get; set; } = string.Empty;
+    }
     public class AgentDto
     {
         public int AgentId { get; set; }
@@ -22,6 +37,7 @@
         public DateTime? StatusDate { get; set; }
         public bool IsLicensed { get; set; }
         public string? MaskedPanNumber { get; set; }
+        public string? MartialStatus { get; set; }
         public string? aadhaar_number { get; set; }
         public string? IrdaLicenseNumber { get; set; }
         public string? GstNumber { get; set; }
@@ -33,7 +49,7 @@
         public bool IsActive { get; set; } = true;
         public List<AgentDto>? Supervisors { get; set; }
         public List<AgentDto>? Reportees { get; set; }
-        public List<AgentAuditTrailDTO>? agentAuditTrail { get; set; }
+        public string agentAuditTrail { get; set; }
         public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
         public string? ApplicationDocketNo { get; set; }
         public string? Father_Husband_Nm { get; set; }
@@ -56,7 +72,6 @@
         public string? ResidenceContactNo { get; set; }
         public string? BloodGroup { get; set; }
         public string? BirthPlace { get; set; }
-        public MartialStatus? MartialStatus { get; set; }
         public int? EducationCode { get; set; }
         public string? EducationLevel { get; set; }
         public string? WorkProfile { get; set; }
@@ -159,5 +174,82 @@
         public string? ChannelDesc { get; set; }
         public string? SubChannelDesc { get; set; }
         public string? OccupationDesc { get; set; }
+        public string? AgentTypeCatDesc { get; set; }
+        public string? MaritalStatusDesc { get; set; }
+        public string? EducationDesc { get; set; }
+        public string? StateDesc { get; set; }
+        public string? CountryDesc { get; set; }
+        public string? DesignationCodeDesc { get; set; }
+        public string? LocationCodeDesc { get; set; }
+        public string? AgentTypeCodeDesc { get; set; }
+        public string? AgentSubTypeCodeDesc { get; set; }
+        public string? CandidateTypeDesc { get; set; }
+        public string? CommissionClassDesc { get; set; }
+        public string? AgentTypeDesc { get; set; }
+    }
+
+    public class Address
+    {
+        public long AddressID { get; set; }
+        public string? AddressType { get; set; } //enum AddressType
+        public int RefKey { get; set; }
+        public string? RefType { get; set; }//enum RefType
+        public string? AddressLine1 { get; set; }
+        public string? AddressLine2 { get; set; }
+        public string? AddressLine3 { get; set; }
+        public string? City { get; set; }
+        public string? State { get; set; }
+        public string? Country { get; set; }
+        public string? PIN { get; set; }
+        public string? Landmark { get; set; }
+    }
+    public class BankAccount
+    {
+        public int Id { get; set; }
+        public int RefKey { get; set; }
+        public string RefType { get; set; }
+        public string AccountHolderName { get; set; } = null!;
+        public string AccountNumber { get; set; } = null!;
+        public string IFSC { get; set; } = null!;
+        public string? MICR { get; set; } = null!;
+        public string? BankName { get; set; }
+        public string? BranchName { get; set; }
+        public int AccountType { get; set; } = 1;
+        public DateTime? ActiveSince { get; set; } = DateTime.Now;
+        public string? FactoringHouse { get; set; }
+        public string? PreferredPaymentMode { get; set; }
+        public string? AccountTypeDesc { get; set; }
+    }
+
+    public class PersonalInfo
+    {
+        public int PersonalInfoId { get; set; }
+        public int RefKey { get; set; }
+        public string? RefType { get; set; }
+        public DateTime DateOfBirth { get; set; }
+        public string? PanNumber { get; set; }
+        public string? Email { get; set; }
+        public string? MobileNo { get; set; }
+        public string? WorkContactNo { get; set; }
+        public string? ResidenceContactNo { get; set; }
+        public string? BloodGroup { get; set; }
+        public string? BirthPlace { get; set; }
+        public int? EducationCode { get; set; }
+        public string? EducationLevel { get; set; }
+        public string? WorkProfile { get; set; }
+        public decimal? AnnualIncome { get; set; }
+        public int? WorkExpMonths { get; set; }
+    }
+
+    public class Nominee
+    {
+        public int NomineeID { get; set; }
+        public int RefKey { get; set; }
+        public string? RefType { get; set; }
+        public string NomineeName { get; set; }
+        public string Relationship { get; set; }
+        public decimal PercentageShare { get; set; }
+        public bool IsActive { get; set; }
+        public long NomineeAge { get; set; }
     }
 }

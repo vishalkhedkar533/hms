@@ -1,6 +1,9 @@
 ﻿using CommonLibrary;
+using Microsoft.Extensions.Configuration;
 using MiniExcelLibs;
 using Npgsql;
+using Repository;
+using System.Configuration;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -12,24 +15,28 @@ namespace Tasks.Insurance
     {
         private readonly string _connectionString;
         private readonly FileService _fileService;
-
-        public AgentCreateExcel()
+        private readonly IConnectionScope _connectionScope; 
+        public AgentCreateExcel(IConnectionScope connectionScope)
         {
+            _connectionScope = connectionScope;
             _fileService = new FileService(AppContext.BaseDirectory);
-            _connectionString =
-                "server=ep-silent-silence-a1fanpxl-pooler.ap-southeast-1.aws.neon.tech;" +
-                "username=neondb_owner;password=npg_MPXYuy4jTe1r;database=neondb;";
+            //_connectionString =
+            //    "server=ep-silent-silence-a1fanpxl-pooler.ap-southeast-1.aws.neon.tech;" +
+            //    "username=neondb_owner;password=npg_MPXYuy4jTe1r;database=neondb;";
+
+            var connectionStringSettings = System.Configuration.ConfigurationManager.ConnectionStrings["DefaultConnection"];
+            _connectionString = connectionStringSettings?.ConnectionString
+                ?? throw new Exception("Connection string 'DefaultConnection' not found.");
         }
-        public async Task ProcessAgentCreateDataAsync()
+        public async Task ProcessAgentCreateData()
         {
             var body = _fileService.GetTemplate(Path.Combine("InputStructures"),"excelStructureValidator.json");
 
             var validatorConfig = JsonSerializer.Deserialize<InputExcelValidator>(body,new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-
-            using var conn = new NpgsqlConnection(_connectionString);
+            var conn = await _connectionScope.GetOpenConnectionAsync(_connectionString);
             await conn.OpenAsync();
 
-            var fileTasks = await GetPendingTasksAsync(conn);
+            var fileTasks = await GetPendingTasksAsync((NpgsqlConnection)conn);
 
             if (!fileTasks.Any())
             {
@@ -37,11 +44,11 @@ namespace Tasks.Insurance
                 return;
             }
 
-            int chunkSize = await GetChunkSizeAsync(conn);
+            int chunkSize = await GetChunkSizeAsync((NpgsqlConnection)conn);
 
             foreach (var task in fileTasks)
             {
-                await ProcessSingleFileAsync(task, conn, validatorConfig, chunkSize);
+                await ProcessSingleFileAsync(task, (NpgsqlConnection)conn, validatorConfig, chunkSize);
             }
 
             //await FinalizeDataTransfer(conn);
@@ -81,7 +88,7 @@ namespace Tasks.Insurance
         {
             Console.WriteLine($"Processing file: {task.FilePath}");
 
-            var masterData = await GetMasterDataAsync(conn, task.OrgId, "AgentProfileMst");
+            var masterData = await GetMasterDataAsync(conn, task.OrgId ?? 0, "AgentProfileMst");
 
             var agentClassDict = BuildLookup(masterData, "AGENT_CLASS");
             // keep all your dictionaries as-is...
@@ -378,7 +385,7 @@ namespace Tasks.Insurance
             await writer.DisposeAsync();
             Console.WriteLine($"Batch {batchNo} inserted.");
         }
-        static async Task<List<KeyValueEntry>> GetMasterDataAsync(NpgsqlConnection conn, long orgId, string masterName)
+        static async Task<List<KeyValueEntry>> GetMasterDataAsync(NpgsqlConnection conn, int orgId, string masterName)
         {
             var list = new List<KeyValueEntry>();
 
@@ -815,11 +822,8 @@ namespace Tasks.Insurance
             int affected = await cmd.ExecuteNonQueryAsync();
             await tx.CommitAsync();
         }
-
-
-
-        public void ProcessAgentCreateData()
-        {
-        }
+        //public void ProcessAgentCreateData()
+        //{
+        //}
     }
 }

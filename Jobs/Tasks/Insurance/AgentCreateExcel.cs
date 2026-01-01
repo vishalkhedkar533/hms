@@ -1,9 +1,13 @@
-﻿namespace Tasks.Insurance
+﻿using Quartz;
+
+namespace Tasks.Insurance
 {
     public class AgentCreateExcel
     {
-        public void ProcessAgentCreateData()
-        { 
+        private readonly IJobExecutionContext _jobExecutionContext;
+        public AgentCreateExcel(IJobExecutionContext jobExecutionContext)
+        {
+            _jobExecutionContext = jobExecutionContext;
         }
     }
 }

@@ -99,3 +99,6 @@ VALUES(2, 'PREMIUM_COLLECTED_TYPE', 3, 'Renewal Premium', null, true);
 
 INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
 VALUES(2, 'PREMIUM_COLLECTED_TYPE', 4, 'Top Up', null, true);
+
+INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES(2, 'PREMIUM_COLLECTED_TYPE', 5, 'Premium Reversal', null, true);

@@ -149,7 +149,7 @@ namespace Tasks
 
         private async Task UpsertJobAsync(IScheduler scheduler, Models.JobConfig cfg, CancellationToken stoppingToken)
         {
-            var jobKey = new JobKey($"job-{cfg.Id}", "scheduler");
+            var jobKey = new JobKey($"{cfg.Id}", "scheduler");
 
             // build job detail using the ReflectionJob (use non-generic Create to avoid IJob type mismatches)
             var jobDetail = JobBuilder.Create(typeof(ReflectionJob))

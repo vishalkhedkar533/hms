@@ -1,4 +1,5 @@
 ﻿using Models.DB;
+using Models.DTO.CommissionMgmt;
 using Models.DTO.CommissionMgmt.Dashboard;
 
 namespace Models.DTO
@@ -27,7 +28,7 @@ namespace Models.DTO
         public HoldCommissionResponseDto? holdCommission { get; set; } = null;
         public AdjustCommissionResponseDto? adjustCommission { get; set; }
         public ApproveCommissionResponseDto? approveCommission { get; set; }
-        public List<CommissionConfig>? commissionConfig { get; set; } = null; 
+        public List<CommissionConfigDTO>? commissionConfig { get; set; } = null; 
     }
 
     public class LoginResponse

@@ -17,8 +17,8 @@ namespace Models.DB
         [Column("commission_name")]
         public string? CommissionName { get; set; } 
 
-        [Column("trigger_cycle")]
-        public string? TriggerCycle { get; set; }
+        //[Column("trigger_cycle")]
+        //public string? TriggerCycle { get; set; }
 
         [Required]
         [Column("run_from")]
@@ -28,14 +28,18 @@ namespace Models.DB
         [Column("run_to")]
         public DateOnly RunTo { get; set; }
 
-        [Column("created_at")]
-        public DateTime CreatedAt { get; set; } 
+        [Column("created_at", TypeName = "timestamp")]
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         [Column("created_by")]
         public string? CreatedBy { get; set; }
 
         [Column("conditions")]
         public string? Conditions { get; set; }
+
+        [Column("job_config_id")]
+        public int JobConfigId { get; set; }
+
 
     }
     public class CommissionConditionUpdateDto

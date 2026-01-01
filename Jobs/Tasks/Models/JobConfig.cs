@@ -17,6 +17,7 @@ namespace Models
         public string? TargetType { get; set; }
         public string? TargetMethod { get; set; }
         public string? Args { get; set; }
+        public int? orgid { get; set; }
 
         // convenience
         public int Id => Job_Config_Id;

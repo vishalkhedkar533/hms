@@ -157,6 +157,7 @@ namespace Tasks
                 .UsingJobData("TargetType", cfg.TargetType ?? string.Empty)
                 .UsingJobData("TargetMethod", cfg.TargetMethod ?? "Run")
                 .UsingJobData("Args", cfg.Parameters ?? string.Empty)
+                .UsingJobData("orgId", cfg.orgid.ToString() ?? string.Empty)
                 .Build();
 
             ITrigger? trigger = cfg.Trigger_Type?.ToLowerInvariant() switch

@@ -58,7 +58,7 @@ namespace Models.DB
         [MaxLength(500)]
         public string? Args { get; set; }
 
-        [Column("orgId")]
+        [Column("orgid")]
         public int? OrgId { get; set; }
     }
 }

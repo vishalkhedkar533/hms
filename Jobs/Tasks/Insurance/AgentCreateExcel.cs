@@ -16,7 +16,11 @@ namespace Tasks.Insurance
         private readonly IJobExecutionContext _jobExecutionContext;
         private int orgId = 0;
         public JobKey jobKey;
-        public AgentCreateExcel(IJobExecutionContext jobExecutionContext)
+        private readonly string _connectionString;
+        private readonly FileService _fileService;
+        private readonly string _baseDir = AppContext.BaseDirectory;
+        private readonly ILogger<AgentCreateExcel> _logger;
+        public AgentCreateExcel(IJobExecutionContext jobExecutionContext, ILogger<AgentCreateExcel> logger)
         {
             _jobExecutionContext = jobExecutionContext;
             orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -27,24 +31,13 @@ namespace Tasks.Insurance
                     .FirstOrDefault(x => x.value == "orgId").index))
                 .value.ToString());
             jobKey = jobExecutionContext.JobDetail.Key;
-        }
-        public void ProcessAgentCreateData()
-        { 
-        private readonly string _connectionString;
-        private readonly FileService _fileService;
-        private readonly string _baseDir = AppContext.BaseDirectory;
-        private readonly ILogger<AgentCreateExcel> _logger;
-
-
-        public AgentCreateExcel(ILogger<AgentCreateExcel> logger)
-        {
             _connectionString =
-                "server=ep-silent-silence-a1fanpxl-pooler.ap-southeast-1.aws.neon.tech;" +
-                "username=neondb_owner;password=npg_MPXYuy4jTe1r;database=neondb;";
+               "server=ep-silent-silence-a1fanpxl-pooler.ap-southeast-1.aws.neon.tech;" +
+               "username=neondb_owner;password=npg_MPXYuy4jTe1r;database=neondb;";
             _fileService = new FileService(_baseDir);
             _logger = logger;
-
         }
+       
         public async Task ProcessAgentCreateData()
         {
             var validatorConfig = LoadValidatorConfig();

@@ -45,65 +45,75 @@ namespace Jobs
             // Security: optionally check a whitelist here
             // if (!IsAllowed(targetType)) { log & return; }
 
-            // Try resolve an instance from DI; fallback to ActivatorUtilities (allows constructor DI)
-            object? instance = _serviceProvider.GetService(targetType);
-            if (instance == null)
+            // Create a scope so that Scoped services (like IConnectionScope) can be resolved
+            using (var scope = _serviceProvider.CreateScope())
             {
-                try { instance = ActivatorUtilities.CreateInstance(_serviceProvider, targetType, context); }
-                catch (Exception ex)
+                var scopedProvider = scope.ServiceProvider;
+
+                // Try resolve from DI within the scope; fallback to ActivatorUtilities
+                object? instance = scopedProvider.GetService(targetType);
+                if (instance == null)
                 {
-                    _logger.LogError(ex, "Failed to create instance of {Type}.", targetType.FullName);
+                    try
+                    {
+                        // We pass scopedProvider here instead of the root _serviceProvider
+                        instance = ActivatorUtilities.CreateInstance(scopedProvider, targetType, context);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to create instance of {Type}.", targetType.FullName);
+                        return;
+                    }
+                }
+
+                // Find method
+                var method = targetType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+                if (method == null)
+                {
+                    _logger.LogError("Method '{Method}' not found on type {Type}.", methodName, targetType.FullName);
                     return;
                 }
-            }
 
-            // Find method
-            var method = targetType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
-            if (method == null)
-            {
-                _logger.LogError("Method '{Method}' not found on type {Type}.", methodName, targetType.FullName);
-                return;
-            }
-
-            // Build invocation arguments (support 0 or 1 parameter; extend for more)
-            var parameters = method.GetParameters();
-            object?[] invokeArgs;
-            if (parameters.Length == 0)
-            {
-                invokeArgs = Array.Empty<object?>();
-            }
-            else if (parameters.Length == 1)
-            {
-                var paramType = parameters[0].ParameterType;
-                object? deserialized = string.IsNullOrWhiteSpace(argsJson)
-                    ? (paramType.IsValueType ? Activator.CreateInstance(paramType) : null)
-                    : JsonSerializer.Deserialize(argsJson, paramType, _jsonOptions);
-                invokeArgs = new object?[] { deserialized };
-            }
-            else
-            {
-                _logger.LogError("ReflectionJob target method must take 0 or 1 parameters. Found {Count}.", parameters.Length);
-                return;
-            }
-
-            try
-            {
-                var result = method.Invoke(method.IsStatic ? null : instance, invokeArgs);
-
-                if (result is Task task)
+                // Build invocation arguments (support 0 or 1 parameter; extend for more)
+                var parameters = method.GetParameters();
+                object?[] invokeArgs;
+                if (parameters.Length == 0)
                 {
-                    await task.ConfigureAwait(false);
+                    invokeArgs = Array.Empty<object?>();
                 }
-            }
-            catch (TargetInvocationException tie)
-            {
-                _logger.LogError(tie.InnerException ?? tie, "Invocation of {Type}.{Method} failed.", targetType.FullName, methodName);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Invocation of {Type}.{Method} failed.", targetType.FullName, methodName);
-                throw;
+                else if (parameters.Length == 1)
+                {
+                    var paramType = parameters[0].ParameterType;
+                    object? deserialized = string.IsNullOrWhiteSpace(argsJson)
+                        ? (paramType.IsValueType ? Activator.CreateInstance(paramType) : null)
+                        : JsonSerializer.Deserialize(argsJson, paramType, _jsonOptions);
+                    invokeArgs = new object?[] { deserialized };
+                }
+                else
+                {
+                    _logger.LogError("ReflectionJob target method must take 0 or 1 parameters. Found {Count}.", parameters.Length);
+                    return;
+                }
+
+                try
+                {
+                    var result = method.Invoke(method.IsStatic ? null : instance, invokeArgs);
+
+                    if (result is Task task)
+                    {
+                        await task.ConfigureAwait(false);
+                    }
+                }
+                catch (TargetInvocationException tie)
+                {
+                    _logger.LogError(tie.InnerException ?? tie, "Invocation of {Type}.{Method} failed.", targetType.FullName, methodName);
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Invocation of {Type}.{Method} failed.", targetType.FullName, methodName);
+                    throw;
+                }
             }
         }
     }

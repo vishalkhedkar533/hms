@@ -33,7 +33,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Page Include="bin\Debug\net8.0\FileProcess\TempFile.xlsx" />
     <Page Include="FileProcess\TempFile.xlsx" />
   </ItemGroup>
 

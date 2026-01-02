@@ -1845,8 +1845,6 @@ CREATE TABLE insu_core."policy" (
 );
 
 
--- insu_core."policy" foreign keys
-
 ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_agent FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id) ON DELETE CASCADE;
 ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 

@@ -31,8 +31,9 @@ namespace HMS.Controllers
         private readonly GenericCacheService _cacheService;
         private int refreshInterval = 15;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<Agent> _logger;
         public AgentController(HMSContext context, IConfiguration config, IMapper mapper, IConfiguration configuration
-            , DatabaseService db, IAuthClaimService authClaimService, GenericCacheService cacheService)
+            , DatabaseService db, IAuthClaimService authClaimService, GenericCacheService cacheService, ILogger<Agent> logger)
         {
             _context = context;
             _config = config;
@@ -42,6 +43,7 @@ namespace HMS.Controllers
             _cacheService = cacheService;
             _configuration = configuration;
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
+            _logger = logger;
         }
 
         [HttpPost("Termination/Request")]
@@ -691,6 +693,52 @@ namespace HMS.Controllers
 
             //return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
             return Ok(hMSResponse);
+        }
+
+        [HttpPost("Update/{id}")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> UpdateAgent(int id, [FromBody] AgentDto agentDto)
+        {
+            // 1. Basic Validation
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (id != agentDto.AgentId)
+                return BadRequest("ID mismatch between URL and body.");
+
+            var username = HttpContext?.User?.Identity?.Name ?? "System";
+            var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            // 2. Fetch existing agent (with related data if needed for auditing)
+            var existingAgent = await _context.Agents
+                .FirstOrDefaultAsync(a => a.AgentId == id && a.OrgId == orgId);
+
+            if (existingAgent == null)
+                return NotFound(new { message = $"Agent with ID {id} not found for this organization." });
+            // 4. Map DTO to existing Entity (Syncs changes)
+            _mapper.Map(agentDto, existingAgent);
+
+            // 5. Update Metadata
+            existingAgent.ModifiedBy = username;
+            existingAgent.ModifiedDate = DateTime.UtcNow;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+
+                // 6. Return updated DTO
+                var updatedDto = _mapper.Map<AgentDto>(existingAgent);
+                return Ok(new { message = "Agent updated successfully", data = updatedDto });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("The record was modified by another user. Please refresh and try again.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating agent {AgentId}", id);
+                return StatusCode(500, "Internal server error during update.");
+            }
         }
 
     }

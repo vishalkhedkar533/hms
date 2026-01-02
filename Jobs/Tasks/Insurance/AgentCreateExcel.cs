@@ -5,6 +5,7 @@ using MiniExcelLibs;
 using Npgsql;
 using NpgsqlTypes;
 using Quartz;
+using Repository;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -21,8 +22,13 @@ namespace Tasks.Insurance
         private readonly IJobExecutionContext _jobExecutionContext;
         private int orgId = 0;
         public JobKey jobKey;
-
-        public AgentCreateExcel(IJobExecutionContext jobExecutionContext,IMappingProvider mappingProvider, Microsoft.Extensions.Configuration.IConfiguration configuration, ILogger<AgentCreateExcel> logger)
+        private readonly IConnectionScope _connectionScope;
+        private string SQL = string.Empty;
+        public AgentCreateExcel(IJobExecutionContext jobExecutionContext,
+            IMappingProvider mappingProvider, 
+            Microsoft.Extensions.Configuration.IConfiguration configuration, 
+            ILogger<AgentCreateExcel> logger,
+            IConnectionScope connectionScope)
         {
             _jobExecutionContext = jobExecutionContext;
             orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -36,22 +42,40 @@ namespace Tasks.Insurance
             _mappingProvider = mappingProvider;
             _configuration = configuration;
             _logger = logger;
+            _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
         }
 
         public async Task ProcessAgentCreateData()
         {
+            
             _logger.LogInformation("AgentCreateExcel job started for OrgId={OrgId}", orgId);
+
+            var operationMapping = _mappingProvider.GetScriptForOperation("Job", "Fetch")
+                ?? throw new InvalidOperationException("Operation mapping for Job/Fetch not found.");
+
+            var connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+
+            // Get (and reuse) an open connection from the scoped connection manager.
+            var conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
 
             var token = CancellationToken.None;
             var validatorConfig = LoadValidatorConfig();
-            var tasks = await GetPendingTasksAsync(token);
+
+            var tasks = await conn.QueryAsync<FileProcessingTask>(
+                _mappingProvider.GetScriptForOperation("Agent", "GetPendingTasks")!.Script);
+
+            //var tasks = await GetPendingTasksAsync(token);
             if (!tasks.Any())
             {
                 _logger.LogInformation("No pending agent create tasks found");
                 return;
             }
 
-            int chunkSize = await GetChunkSizeAsync("agent_create_chunk_size", 1000, token);
+            int chunkSize = (await conn.QueryAsync<int>(
+                _mappingProvider.GetScriptForOperation("Agent", "GetChunkSize")!.Script)).FirstOrDefault();
+
+            //int chunkSize = await GetChunkSizeAsync("agent_create_chunk_size", 1000, token);
 
             foreach (var task in tasks)
             {
@@ -103,24 +127,24 @@ namespace Tasks.Insurance
 
         #region Database Methods
 
-        private async Task<NpgsqlConnection> GetConnectionAsync(string entity, string operation)
-        {
-            var map = _mappingProvider.GetScriptForOperation(entity, operation)
-                      ?? throw new InvalidOperationException($"{entity}/{operation} mapping missing");
+        //private async Task<NpgsqlConnection> GetConnectionAsync(string entity, string operation)
+        //{
+        //    var map = _mappingProvider.GetScriptForOperation(entity, operation)
+        //              ?? throw new InvalidOperationException($"{entity}/{operation} mapping missing");
 
-            var cs = _configuration.GetConnectionString(map.ConnectionStringKey);
-            var conn = new NpgsqlConnection(cs);
-            await conn.OpenAsync();
-            return conn;
-        }
+        //    var cs = _configuration.GetConnectionString(map.ConnectionStringKey);
+        //    var conn = new NpgsqlConnection(cs);
+        //    await conn.OpenAsync();
+        //    return conn;
+        //}
 
-        private async Task<List<FileProcessingTask>> GetPendingTasksAsync(CancellationToken token)
-        {
-            await using var conn = await GetConnectionAsync("Agent", "GetPendingTasks");
-            var sql = _mappingProvider.GetScriptForOperation("Agent", "GetPendingTasks")!.Script;
-            var rows = await conn.QueryAsync<FileProcessingTask>(sql);
-            return rows.ToList();
-        }
+        //private async Task<List<FileProcessingTask>> GetPendingTasksAsync(CancellationToken token)
+        //{
+        //    await using var conn = await GetConnectionAsync("Agent", "GetPendingTasks");
+        //    var sql = _mappingProvider.GetScriptForOperation("Agent", "GetPendingTasks")!.Script;
+        //    var rows = await conn.QueryAsync<FileProcessingTask>(sql);
+        //    return rows.ToList();
+        //}
 
         private async Task<int> GetChunkSizeAsync(string key, int defaultValue, CancellationToken token)
         {

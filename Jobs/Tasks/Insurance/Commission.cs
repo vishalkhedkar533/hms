@@ -1,14 +1,13 @@
 ﻿using Quartz;
-using System.Diagnostics;
 
 namespace Tasks.Insurance
 {
-    public class PolicyExcelUpload
+    public class Commission
     {
         private readonly IJobExecutionContext _jobExecutionContext;
         private int orgId = 0;
         public JobKey jobKey;
-        public PolicyExcelUpload(IJobExecutionContext jobExecutionContext)
+        public Commission(IJobExecutionContext jobExecutionContext)
         {
             _jobExecutionContext = jobExecutionContext;
             orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -20,11 +19,11 @@ namespace Tasks.Insurance
                 .value.ToString());
             jobKey = jobExecutionContext.JobDetail.Key;
         }
-        public void UploadPolicyData()
+
+        public void Calculate()
         {
-            // Simulate uploading policies from an Excel file
-            Debug.WriteLine($"Uploading policies from ...");
-            // Implementation goes here
+            // Execution logic for commission calculation
+            Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
         }
     }
 }

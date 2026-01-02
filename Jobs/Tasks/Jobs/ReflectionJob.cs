@@ -49,7 +49,7 @@ namespace Jobs
             object? instance = _serviceProvider.GetService(targetType);
             if (instance == null)
             {
-                try { instance = ActivatorUtilities.CreateInstance(_serviceProvider, targetType); }
+                try { instance = ActivatorUtilities.CreateInstance(_serviceProvider, targetType, context); }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to create instance of {Type}.", targetType.FullName);

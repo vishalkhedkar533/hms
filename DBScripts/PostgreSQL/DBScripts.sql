@@ -1819,3 +1819,45 @@ CREATE TABLE IF NOT EXISTS scheduler.job_config
     updated_at           TIMESTAMPTZ NULL
 );
 
+-- DROP SCHEMA insu_core;
+
+CREATE SCHEMA IF NOT EXISTS insu_core ;
+
+-- insu_core."policy" definition
+
+-- Drop table
+
+-- DROP TABLE insu_core."policy";
+
+CREATE TABLE insu_core."policy" (
+	policyref serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	policyno varchar(20) NULL,
+	policysuffix varchar(10) NULL,
+	riskstartdt date NULL,
+	riskenddt date NULL,
+	policyterm int4 NULL,
+	prempayingterm int4 NULL,
+	proposerclientid varchar(10) NULL,
+	lifeinsuredclientid varchar(10) NULL,
+	agent_id int4 NULL,
+	CONSTRAINT policy_pkey PRIMARY KEY (policyref)
+);
+
+
+-- insu_core."policy" foreign keys
+
+ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_agent FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id) ON DELETE CASCADE;
+ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+
+CREATE TABLE insu_core."premium_collected" (
+	premiuCollId serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	policyref int4 NULL,
+	premium_received_dt date null,
+	premium_type int4 null, /*select * from hmsmaster.keyvalueentries where entrycategory = 'PREMIUM_COLLECTED_TYPE'*/
+	premium_amt decimal null,
+	CONSTRAINT premiuCollId_pkey PRIMARY KEY (premiuCollId)
+);
+
+ALTER TABLE insu_core."premium_collected" ADD CONSTRAINT fk_prem_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);

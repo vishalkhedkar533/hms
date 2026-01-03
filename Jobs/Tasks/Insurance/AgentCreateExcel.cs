@@ -1,9 +1,8 @@
 ﻿using CommonLibrary;
 using CommonLibrary.mapping;
 using Dapper;
+using Database;
 using MiniExcelLibs;
-using Npgsql;
-using NpgsqlTypes;
 using Quartz;
 using Repository;
 using System.Reflection;
@@ -23,11 +22,14 @@ namespace Tasks.Insurance
         private int orgId = 0;
         public JobKey jobKey;
         private readonly IConnectionScope _connectionScope;
+        private readonly IBinaryImportFactory _bulkOpsFactory;
+
         public AgentCreateExcel(IJobExecutionContext jobExecutionContext,
-            IMappingProvider mappingProvider, 
-            Microsoft.Extensions.Configuration.IConfiguration configuration, 
+            IMappingProvider mappingProvider,
+            Microsoft.Extensions.Configuration.IConfiguration configuration,
             ILogger<AgentCreateExcel> logger,
-            IConnectionScope connectionScope)
+            IConnectionScope connectionScope,
+            IBinaryImportFactory bulkOpsFactory)
         {
             _jobExecutionContext = jobExecutionContext;
             orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -42,6 +44,7 @@ namespace Tasks.Insurance
             _configuration = configuration;
             _logger = logger;
             _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
+            _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
         }
 
         public async Task ProcessAgentCreateData()
@@ -114,182 +117,182 @@ namespace Tasks.Insurance
                         row.Reason = string.Join(" | ", errors);
                     }
 
-                    // 6. Bulk Copy to Temp Table (Inlined)
+                    // 6. Bulk Copy to Temp Table using GenericBulkOpsFactory (provider-agnostic)
                     var bulkSql = _mappingProvider.GetScriptForOperation("Agent", "BulkCopyTempAgent")?.Script;
-                    if (conn is NpgsqlConnection npgsqlConn)
+                    if (string.IsNullOrWhiteSpace(bulkSql))
+                        throw new Exception("Bulk COPY SQL for BulkCopyTempAgent missing");
+
+                    await using var writer = await _bulkOpsFactory.BeginBinaryImportAsync(conn, bulkSql, token);
+                    foreach (var r in batchList)
                     {
-                        using (var writer = await npgsqlConn.BeginBinaryImportAsync(bulkSql))
-                        {
-                            foreach (var r in batchList)
-                            {
-                                await writer.StartRowAsync();
-                                // 1-10
-                                await writer.WriteAsync(r.AgentId.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentCode ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.BusinessName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.FirstName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.MiddleName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LastName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Prefix ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Suffix ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.DOB?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
+                        writer.StartRow();
 
-                                // 11-20
-                                await writer.WriteAsync(r.Nationality ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.PreferredLanguage ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentLevel ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.StaffCode ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Supervisor_Code ?? "", NpgsqlDbType.Varchar); // Maps to supervisor_code
-                                await writer.WriteAsync(r.ContractedDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentStatusCode ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.StatusDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.IsLicensed.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.MaskedPanNumber ?? "", NpgsqlDbType.Varchar);
+                        // 1-10 (pass same string/int values; provider wrapper will map types)
+                        writer.Write(r.AgentId.ToString());
+                        writer.Write(r.AgentCode ?? "");
+                        writer.Write(r.AgentName ?? "");
+                        writer.Write(r.BusinessName ?? "");
+                        writer.Write(r.FirstName ?? "");
+                        writer.Write(r.MiddleName ?? "");
+                        writer.Write(r.LastName ?? "");
+                        writer.Write(r.Prefix ?? "");
+                        writer.Write(r.Suffix ?? "");
+                        writer.Write(r.DOB?.ToString("yyyy-MM-dd") ?? "");
 
-                                // 21-30
-                                await writer.WriteAsync(r.aadhaar_number ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.IrdaLicenseNumber ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.GstNumber ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CreatedBy ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss"), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ModifiedBy ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ModifiedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.RowVersion?.ToString() ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.IsActive.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ApplicationDocketNo ?? "", NpgsqlDbType.Varchar);
+                        // 11-20
+                        writer.Write(r.Nationality ?? "");
+                        writer.Write(r.PreferredLanguage ?? "");
+                        writer.Write(r.AgentLevel ?? "");
+                        writer.Write(r.StaffCode ?? "");
+                        writer.Write(r.Supervisor_Code ?? "");
+                        writer.Write(r.ContractedDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.AgentStatusCode ?? "");
+                        writer.Write(r.StatusDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.IsLicensed.ToString());
+                        writer.Write(r.MaskedPanNumber ?? "");
 
-                                // 31-40
-                                await writer.WriteAsync(r.Father_Husband_Nm ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.EmployeeCode ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.StartDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.PanAadharLinkFlag.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Sec206abFlag.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.PackageID ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.TaxStatus ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.StateEid ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.URN ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AdditionalComment ?? "", NpgsqlDbType.Varchar);
+                        // 21-30
+                        writer.Write(r.aadhaar_number ?? "");
+                        writer.Write(r.IrdaLicenseNumber ?? "");
+                        writer.Write(r.GstNumber ?? "");
+                        writer.Write(r.CreatedBy ?? "");
+                        writer.Write(r.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss"));
+                        writer.Write(r.ModifiedBy ?? "");
+                        writer.Write(r.ModifiedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "");
+                        writer.Write(r.RowVersion?.ToString() ?? "");
+                        writer.Write(r.IsActive.ToString());
+                        writer.Write(r.ApplicationDocketNo ?? "");
 
-                                // 41-50
-                                await writer.WriteAsync(r.AppointmentDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.IncorporationDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CnctPersonDesig ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CnctPersonMobileNo ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CnctPersonEmail ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CnctPersonName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CMSAgentType ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ServiceTaxNo ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.UlipFlag.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.TrainingGroupType ?? "", NpgsqlDbType.Varchar);
+                        // 31-40
+                        writer.Write(r.Father_Husband_Nm ?? "");
+                        writer.Write(r.EmployeeCode ?? "");
+                        writer.Write(r.StartDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.PanAadharLinkFlag.ToString());
+                        writer.Write(r.Sec206abFlag.ToString());
+                        writer.Write(r.PackageID ?? "");
+                        writer.Write(r.TaxStatus ?? "");
+                        writer.Write(r.StateEid ?? "");
+                        writer.Write(r.URN ?? "");
+                        writer.Write(r.AdditionalComment ?? "");
 
-                                // 51-60
-                                await writer.WriteAsync(r.Ifs ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.RefresherTrainingCompleted.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.IsMigrated.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.MainPartnerClientCode ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentMaincodevwEid ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.RegistrationDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Vertical ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.BranchCode ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.BranchName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Ic36TrngCompletionDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
+                        // 41-50
+                        writer.Write(r.AppointmentDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.IncorporationDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.CnctPersonDesig ?? "");
+                        writer.Write(r.CnctPersonMobileNo ?? "");
+                        writer.Write(r.CnctPersonEmail ?? "");
+                        writer.Write(r.CnctPersonName ?? "");
+                        writer.Write(r.CMSAgentType ?? "");
+                        writer.Write(r.ServiceTaxNo ?? "");
+                        writer.Write(r.UlipFlag.ToString());
+                        writer.Write(r.TrainingGroupType ?? "");
 
-                                // 61-70
-                                await writer.WriteAsync(r.STrngCompletionDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ConfirmationDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.FgRockstarTrainingDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.IncrementDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LastPromotionDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.HRDoj?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.FgValueTrngDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.HSecPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ItSecPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.NpsTrngCompletionDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
+                        // 51-60
+                        writer.Write(r.Ifs ?? "");
+                        writer.Write(r.RefresherTrainingCompleted.ToString());
+                        writer.Write(r.IsMigrated.ToString());
+                        writer.Write(r.MainPartnerClientCode ?? "");
+                        writer.Write(r.AgentMaincodevwEid ?? "");
+                        writer.Write(r.RegistrationDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.Vertical ?? "");
+                        writer.Write(r.BranchCode ?? "");
+                        writer.Write(r.BranchName ?? "");
+                        writer.Write(r.Ic36TrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
 
-                                // 71-80
-                                await writer.WriteAsync(r.WhistleBlowerTrngDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.GovPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.InductionTrngDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LastWorkingDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LicenseNo ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LicenseType ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LicenseIssueDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LicenseExpiryDate?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LicenseStatus ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AddressLine1 ?? "", NpgsqlDbType.Varchar);
+                        // 61-70
+                        writer.Write(r.STrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.ConfirmationDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.FgRockstarTrainingDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.IncrementDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.LastPromotionDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.HRDoj?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.FgValueTrngDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.HSecPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.ItSecPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.NpsTrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
 
-                                // 81-90
-                                await writer.WriteAsync(r.AddressLine2 ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AddressLine3 ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.City ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.StateDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Pin ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Landmark ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Comments ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Reason ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.OrgId, NpgsqlDbType.Integer);
-                                await writer.WriteAsync(r.AgentClassDesc ?? "", NpgsqlDbType.Varchar);
+                        // 71-80
+                        writer.Write(r.WhistleBlowerTrngDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.GovPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.InductionTrngDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.LastWorkingDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.LicenseNo ?? "");
+                        writer.Write(r.LicenseType ?? "");
+                        writer.Write(r.LicenseIssueDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.LicenseExpiryDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.LicenseStatus ?? "");
+                        writer.Write(r.AddressLine1 ?? "");
 
-                                // 91-100
-                                await writer.WriteAsync(r.BankAccTypeDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.GenderDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.TitleDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ChannelDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.SubChannelDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.OccupationDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentTypeCatDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.MaritalStatusDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.EducationDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.StateDesc ?? "", NpgsqlDbType.Varchar);
+                        // 81-90
+                        writer.Write(r.AddressLine2 ?? "");
+                        writer.Write(r.AddressLine3 ?? "");
+                        writer.Write(r.City ?? "");
+                        writer.Write(r.StateDesc ?? "");
+                        writer.Write(r.Pin ?? "");
+                        writer.Write(r.Landmark ?? "");
+                        writer.Write(r.Comments ?? "");
+                        writer.Write(r.Reason ?? "");
+                        writer.Write(r.OrgId);
+                        writer.Write(r.AgentClassDesc ?? "");
 
-                                // 101-110
-                                await writer.WriteAsync(r.CountryDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.DesignationCodeDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.LocationCodeDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentTypeCodeDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentSubTypeCodeDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CandidateTypeDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.CommissionClassDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AgentTypeDesc ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.NomineeName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Relationship ?? "", NpgsqlDbType.Varchar);
+                        // 91-100
+                        writer.Write(r.BankAccTypeDesc ?? "");
+                        writer.Write(r.GenderDesc ?? "");
+                        writer.Write(r.TitleDesc ?? "");
+                        writer.Write(r.ChannelDesc ?? "");
+                        writer.Write(r.SubChannelDesc ?? "");
+                        writer.Write(r.OccupationDesc ?? "");
+                        writer.Write(r.AgentTypeCatDesc ?? "");
+                        writer.Write(r.MaritalStatusDesc ?? "");
+                        writer.Write(r.EducationDesc ?? "");
+                        writer.Write(r.StateDesc ?? "");
 
-                                // 111-120
-                                await writer.WriteAsync(r.PercentageShare.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.NomineeAge.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AccountHolderName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AccountNumber ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.IFSC ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.MICR ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.BankName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.BankAccBranchName ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AccountType.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ActiveSince?.ToString("yyyy-MM-dd") ?? "", NpgsqlDbType.Varchar);
+                        // 101-110
+                        writer.Write(r.CountryDesc ?? "");
+                        writer.Write(r.DesignationCodeDesc ?? "");
+                        writer.Write(r.LocationCodeDesc ?? "");
+                        writer.Write(r.AgentTypeCodeDesc ?? "");
+                        writer.Write(r.AgentSubTypeCodeDesc ?? "");
+                        writer.Write(r.CandidateTypeDesc ?? "");
+                        writer.Write(r.CommissionClassDesc ?? "");
+                        writer.Write(r.AgentTypeDesc ?? "");
+                        writer.Write(r.NomineeName ?? "");
+                        writer.Write(r.Relationship ?? "");
 
-                                // 121-130
-                                await writer.WriteAsync(r.FactoringHouse ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.PreferredPaymentMode.ToString(), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.DateOfBirth.ToString("yyyy-MM-dd"), NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.PanNumber ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.Email ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.MobileNo ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.WorkContactNo ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.ResidenceContactNo ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.BloodGroup ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.BirthPlace ?? "", NpgsqlDbType.Varchar);
+                        // 111-120
+                        writer.Write(r.PercentageShare.ToString());
+                        writer.Write(r.NomineeAge.ToString());
+                        writer.Write(r.AccountHolderName ?? "");
+                        writer.Write(r.AccountNumber ?? "");
+                        writer.Write(r.IFSC ?? "");
+                        writer.Write(r.MICR ?? "");
+                        writer.Write(r.BankName ?? "");
+                        writer.Write(r.BankAccBranchName ?? "");
+                        writer.Write(r.AccountType.ToString());
+                        writer.Write(r.ActiveSince?.ToString("yyyy-MM-dd") ?? "");
 
-                                // 131-136
-                                await writer.WriteAsync(r.MartialStatus ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.EducationCode?.ToString() ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.EducationLevel ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.WorkProfile ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.AnnualIncome?.ToString() ?? "", NpgsqlDbType.Varchar);
-                                await writer.WriteAsync(r.WorkExpMonths?.ToString() ?? "", NpgsqlDbType.Varchar);
-                            }
-                            await writer.CompleteAsync();
-                        }
+                        // 121-130
+                        writer.Write(r.FactoringHouse ?? "");
+                        writer.Write(r.PreferredPaymentMode.ToString());
+                        writer.Write(r.DateOfBirth.ToString("yyyy-MM-dd"));
+                        writer.Write(r.PanNumber ?? "");
+                        writer.Write(r.Email ?? "");
+                        writer.Write(r.MobileNo ?? "");
+                        writer.Write(r.WorkContactNo ?? "");
+                        writer.Write(r.ResidenceContactNo ?? "");
+                        writer.Write(r.BloodGroup ?? "");
+                        writer.Write(r.BirthPlace ?? "");
+
+                        // 131-136
+                        writer.Write(r.MartialStatus ?? "");
+                        writer.Write(r.EducationCode?.ToString() ?? "");
+                        writer.Write(r.EducationLevel ?? "");
+                        writer.Write(r.WorkProfile ?? "");
+                        writer.Write(r.AnnualIncome?.ToString() ?? "");
+                        writer.Write(r.WorkExpMonths?.ToString() ?? "");
                     }
+
+                    await writer.CompleteAsync(token);
                 }
 
                 // 7. Finalize and Move from Temp to Main Tables (Inlined)

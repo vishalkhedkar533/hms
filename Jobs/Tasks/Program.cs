@@ -36,6 +36,9 @@ builder.Services.AddTransient<Jobs.ReflectionJob>();
 // (optional) register your factory in DI if you want to resolve it instead of constructing directly
 builder.Services.AddSingleton<Quartz.Spi.IJobFactory, Jobs.ServiceProviderJobFactory>();
 
+// Register binary import factory
+builder.Services.AddSingleton<Database.IBinaryImportFactory, Database.NpgBulkOpsFactory>();
+
 //// Register jobs so DI can resolve them
 //builder.Services.AddScoped<SampleDbJob>();
 

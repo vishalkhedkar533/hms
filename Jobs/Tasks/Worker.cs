@@ -4,6 +4,7 @@ using Jobs;
 using Quartz;
 using Quartz.Impl;
 using Repository;
+using Models;
 
 namespace Tasks
 {
@@ -76,7 +77,7 @@ namespace Tasks
 
         private async Task RefreshAllConfigsAsync(IScheduler scheduler, CancellationToken stoppingToken)
         {
-            IEnumerable<Models.JobConfig> configs;
+            IEnumerable<JobConfig> configs;
             try
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
@@ -90,7 +91,7 @@ namespace Tasks
             }
 
             // Build new snapshot and compare
-            var newSnapshot = new Dictionary<int, (string Signature, Models.JobConfig Config)>();
+            var newSnapshot = new Dictionary<int, (string Signature, JobConfig Config)>();
             foreach (var cfg in configs)
             {
                 var sig = ComputeSignature(cfg);
@@ -130,7 +131,7 @@ namespace Tasks
             }
         }
 
-        private static string ComputeSignature(Models.JobConfig cfg)
+        private static string ComputeSignature(JobConfig cfg)
         {
             // include only fields that affect scheduling/behavior
             var obj = new
@@ -147,7 +148,7 @@ namespace Tasks
             return JsonSerializer.Serialize(obj);
         }
 
-        private async Task UpsertJobAsync(IScheduler scheduler, Models.JobConfig cfg, CancellationToken stoppingToken)
+        private async Task UpsertJobAsync(IScheduler scheduler, JobConfig cfg, CancellationToken stoppingToken)
         {
             var jobKey = new JobKey($"{cfg.Id}", "scheduler");
 

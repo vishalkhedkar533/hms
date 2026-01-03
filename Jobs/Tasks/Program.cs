@@ -1,5 +1,6 @@
 using CommonLibrary.mapping;
 using Database;
+using MiniExcelLibs;
 using Npgsql;
 using Repository;
 using System.Data.Common;
@@ -35,6 +36,16 @@ builder.Services.AddTransient<Jobs.ReflectionJob>();
 
 // (optional) register your factory in DI if you want to resolve it instead of constructing directly
 builder.Services.AddSingleton<Quartz.Spi.IJobFactory, Jobs.ServiceProviderJobFactory>();
+
+// Register binary import factory
+switch (builder.Configuration.GetValue<string>("DatabaseProviderInvariantName"))
+{
+    case "Npgsql":
+        builder.Services.AddSingleton<Database.IBinaryImportFactory, Database.NpgBulkOpsFactory>();
+        break;
+    default:
+        break;
+}
 
 //// Register jobs so DI can resolve them
 //builder.Services.AddScoped<SampleDbJob>();

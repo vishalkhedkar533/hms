@@ -1,0 +1,255 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Net;
+
+namespace Tasks.Models
+{
+    public class PeopleHeirarchyDto
+    {
+        public int? AgentId { get; set; }
+        public long? HierarchyId { get; set; }
+        public string? AgentCode { get; set; } = null!;
+        public string? FirstName { get; set; }
+        public string? MiddleName { get; set; }
+        public string? LastName { get; set; }
+        public PeopleHeirarchyDto? Supervisors { get; set; }
+        public string? HierarchyPath { get; set; } = string.Empty;
+    }
+    public class AgentDto
+    {
+        public int AgentId { get; set; }
+        public string AgentCode { get; set; } = null!;
+        public string? AgentName { get; set; }
+        public string? BusinessName { get; set; }
+        public string? FirstName { get; set; }
+        public string? MiddleName { get; set; }
+        public string? LastName { get; set; }
+        public string? Prefix { get; set; }
+        public string? Suffix { get; set; }
+        public DateTime? DOB { get; set; }
+        public string? Nationality { get; set; }
+        public string? PreferredLanguage { get; set; }
+        public string? AgentLevel { get; set; }
+        public string? StaffCode { get; set; }
+        public int? Supervisor_Id { get; set; }
+        public DateTime? ContractedDate { get; set; }
+        public string? AgentStatusCode { get; set; }
+        public DateTime? StatusDate { get; set; }
+        public bool IsLicensed { get; set; }
+        public string? MaskedPanNumber { get; set; }
+        public string? MartialStatus { get; set; }
+        public string? aadhaar_number { get; set; }
+        public string? IrdaLicenseNumber { get; set; }
+        public string? GstNumber { get; set; }
+        public string CreatedBy { get; set; } = null!;
+        public DateTime CreatedDate { get; set; }
+        public string? ModifiedBy { get; set; }
+        public DateTime? ModifiedDate { get; set; }
+        public int? RowVersion { get; set; }
+        public bool IsActive { get; set; } = true;
+        public List<AgentDto>? Supervisors { get; set; }
+        public List<AgentDto>? Reportees { get; set; }
+        public string agentAuditTrail { get; set; }
+        public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
+        public string? ApplicationDocketNo { get; set; }
+        public string? Father_Husband_Nm { get; set; }
+        public string? EmployeeCode { get; set; }
+        public DateTime? StartDate { get; set; }
+        public bool PanAadharLinkFlag { get; set; }
+        public bool Sec206abFlag { get; set; }
+        public List<Nominee>? nominees { get; set; }
+        public string? NomineeName { get; set; }
+        public string? Relationship { get; set; }
+        public decimal PercentageShare { get; set; }
+        public long NomineeAge { get; set; }
+        public string? PackageID { get; set; }
+        public List<PersonalInfo>? personalInfo { get; set; }
+        public DateTime DateOfBirth { get; set; }
+        public string? PanNumber { get; set; }
+        //public string? Email { get; set; }
+        //public string? MobileNo { get; set; }
+        public string? WorkContactNo { get; set; }
+        public string? ResidenceContactNo { get; set; }
+        public string? BloodGroup { get; set; }
+        public string? BirthPlace { get; set; }
+        public int? EducationCode { get; set; }
+        public string? EducationLevel { get; set; }
+        public string? WorkProfile { get; set; }
+        public decimal? AnnualIncome { get; set; }
+        public int? WorkExpMonths { get; set; }
+        public string? TaxStatus { get; set; }
+        public string? StateEid { get; set; }
+        public string? URN { get; set; }
+        public string? AdditionalComment { get; set; }
+        public DateTime? AppointmentDate { get; set; }
+        public DateTime? IncorporationDate { get; set; }
+        public string? CnctPersonDesig { get; set; }
+        public string? CnctPersonMobileNo { get; set; }
+        public string? CnctPersonEmail { get; set; }
+        public string? CnctPersonName { get; set; }
+        public string? AgentTypeCategory { get; set; }
+        public string? AgentClassification { get; set; }
+        public string? CMSAgentType { get; set; }
+        public List<BankAccount>? bankAccounts { get; set; }
+        public string? AccountHolderName { get; set; } = null!;
+        public string? AccountNumber { get; set; } = null!;
+        public string? IFSC { get; set; } = null!;
+        public string? MICR { get; set; } = null!;
+        public string? BankName { get; set; }
+        public string? BankAccBranchName { get; set; }
+        public int AccountType { get; set; } = 1;
+        public DateTime? ActiveSince { get; set; } = DateTime.Now;
+        public string? FactoringHouse { get; set; }
+        public int PreferredPaymentMode { get; set; }
+        public string? ServiceTaxNo { get; set; }
+        public List<Address>? PermanentAddres { get; set; }
+        public List<Address>? MailingAddres { get; set; }
+        public bool UlipFlag { get; set; } = false;
+        public string? TrainingGroupType { get; set; }
+        public string? Ifs { get; set; }
+        public bool RefresherTrainingCompleted { get; set; }
+        public bool IsMigrated { get; set; }
+        public string? MainPartnerClientCode { get; set; }
+        public string? AgentMaincodevwEid { get; set; }
+        public DateTime? RegistrationDate { get; set; }
+        public string? Vertical { get; set; }
+        public string? BranchCode { get; set; }
+        public string? BranchName { get; set; }
+        public DateTime? Ic36TrngCompletionDate { get; set; }
+        public DateTime? STrngCompletionDate { get; set; }
+        public DateTime? ConfirmationDate { get; set; }
+        public DateTime? FgRockstarTrainingDate { get; set; }
+        public DateTime? IncrementDate { get; set; }
+        public DateTime? LastPromotionDate { get; set; }
+        public DateTime? HRDoj { get; set; }
+        public DateTime? FgValueTrngDate { get; set; }
+        public DateTime? HSecPolicyTrngDate { get; set; }
+        public DateTime? ItSecPolicyTrngDate { get; set; }
+        public DateTime? NpsTrngCompletionDate { get; set; }
+        public DateTime? WhistleBlowerTrngDate { get; set; }
+        public DateTime? GovPolicyTrngDate { get; set; }
+        public DateTime? InductionTrngDate { get; set; }
+        public DateTime? LastWorkingDate { get; set; }
+        public string? LicenseNo { get; set; }
+        public string? LicenseType { get; set; }
+        public DateTime? LicenseIssueDate { get; set; }
+        public DateTime? LicenseExpiryDate { get; set; }
+        public string? LicenseStatus { get; set; }
+        public string? Comments { get; set; }
+        public string? Reason { get; set; }
+        public int? OrgId { get; set; }
+        public string? AddressLine1 { get; set; }
+        public string? AddressLine2 { get; set; }
+        public string? AddressLine3 { get; set; }
+        public string? City { get; set; }
+        public string? Pin { get; set; }
+        public string? Landmark { get; set; }
+        public string? Email { get; set; }
+        public string? MobileNo { get; set; }
+        public int? SupervisorId { get; set; }
+        public string? Supervisor_Code { get; set; }
+        public int? BankAccType { get; set; }
+        public int? Gender { get; set; }
+        public int? Title { get; set; }
+        public int? Channel { get; set; }
+        public int? SubChannel { get; set; }
+        public int? Occupation { get; set; }
+        public int? AgentTypeCat { get; set; }
+        public int? AgentClass { get; set; }
+        public int? MaritalStatus { get; set; }
+        public int? Education { get; set; }
+        public int? State { get; set; }
+        public int? Country { get; set; }
+        public int? DesignationCode { get; set; }
+        public int? LocationCode { get; set; }
+        public int? AgentTypeCode { get; set; }
+        public int? AgentSubTypeCode { get; set; }
+        public int? CandidateType { get; set; }
+        public int? CommissionClass { get; set; }
+        public int? AgentType { get; set; }
+        public string? AgentClassDesc { get; set; }
+        public string? BankAccTypeDesc { get; set; }
+        public string? GenderDesc { get; set; }
+        public string? TitleDesc { get; set; }
+        public string? ChannelDesc { get; set; }
+        public string? SubChannelDesc { get; set; }
+        public string? OccupationDesc { get; set; }
+        public string? AgentTypeCatDesc { get; set; }
+        public string? MaritalStatusDesc { get; set; }
+        public string? EducationDesc { get; set; }
+        public string? StateDesc { get; set; }
+        public string? CountryDesc { get; set; }
+        public string? DesignationCodeDesc { get; set; }
+        public string? LocationCodeDesc { get; set; }
+        public string? AgentTypeCodeDesc { get; set; }
+        public string? AgentSubTypeCodeDesc { get; set; }
+        public string? CandidateTypeDesc { get; set; }
+        public string? CommissionClassDesc { get; set; }
+        public string? AgentTypeDesc { get; set; }
+    }
+
+    public class Address
+    {
+        public long AddressID { get; set; }
+        public string? AddressType { get; set; } //enum AddressType
+        public int RefKey { get; set; }
+        public string? RefType { get; set; }//enum RefType
+        public string? AddressLine1 { get; set; }
+        public string? AddressLine2 { get; set; }
+        public string? AddressLine3 { get; set; }
+        public string? City { get; set; }
+        public string? State { get; set; }
+        public string? Country { get; set; }
+        public string? PIN { get; set; }
+        public string? Landmark { get; set; }
+    }
+    public class BankAccount
+    {
+        public int Id { get; set; }
+        public int RefKey { get; set; }
+        public string RefType { get; set; }
+        public string AccountHolderName { get; set; } = null!;
+        public string AccountNumber { get; set; } = null!;
+        public string IFSC { get; set; } = null!;
+        public string? MICR { get; set; } = null!;
+        public string? BankName { get; set; }
+        public string? BranchName { get; set; }
+        public int AccountType { get; set; } = 1;
+        public DateTime? ActiveSince { get; set; } = DateTime.Now;
+        public string? FactoringHouse { get; set; }
+        public string? PreferredPaymentMode { get; set; }
+        public string? AccountTypeDesc { get; set; }
+    }
+
+    public class PersonalInfo
+    {
+        public int PersonalInfoId { get; set; }
+        public int RefKey { get; set; }
+        public string? RefType { get; set; }
+        public DateTime DateOfBirth { get; set; }
+        public string? PanNumber { get; set; }
+        public string? Email { get; set; }
+        public string? MobileNo { get; set; }
+        public string? WorkContactNo { get; set; }
+        public string? ResidenceContactNo { get; set; }
+        public string? BloodGroup { get; set; }
+        public string? BirthPlace { get; set; }
+        public int? EducationCode { get; set; }
+        public string? EducationLevel { get; set; }
+        public string? WorkProfile { get; set; }
+        public decimal? AnnualIncome { get; set; }
+        public int? WorkExpMonths { get; set; }
+    }
+
+    public class Nominee
+    {
+        public int NomineeID { get; set; }
+        public int RefKey { get; set; }
+        public string? RefType { get; set; }
+        public string NomineeName { get; set; }
+        public string Relationship { get; set; }
+        public decimal PercentageShare { get; set; }
+        public bool IsActive { get; set; }
+        public long NomineeAge { get; set; }
+    }
+}

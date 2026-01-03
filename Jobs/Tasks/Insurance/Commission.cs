@@ -4,6 +4,7 @@ namespace Tasks.Insurance
 {
     public class Commission
     {
+
         private readonly IJobExecutionContext _jobExecutionContext;
         private int orgId = 0;
         public JobKey jobKey;

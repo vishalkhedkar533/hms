@@ -1,8 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Net;
-
-namespace Tasks.Models
+﻿namespace Tasks.Models.DB
 {
     public class PeopleHeirarchyDto
     {
@@ -15,10 +11,14 @@ namespace Tasks.Models
         public PeopleHeirarchyDto? Supervisors { get; set; }
         public string? HierarchyPath { get; set; } = string.Empty;
     }
-    public class AgentDto
+
+    public class Agent
     {
+        // Primary Key
         public int AgentId { get; set; }
-        public string AgentCode { get; set; } = null!;
+
+        // Required Identity & Status Fields
+        public string AgentCode { get; set; } = string.Empty;
         public string? AgentName { get; set; }
         public string? BusinessName { get; set; }
         public string? FirstName { get; set; }
@@ -26,32 +26,133 @@ namespace Tasks.Models
         public string? LastName { get; set; }
         public string? Prefix { get; set; }
         public string? Suffix { get; set; }
-        public DateTime? DOB { get; set; }
+
+        // Dates (SQL date -> DateOnly)
+        public DateOnly? Dob { get; set; }
         public string? Nationality { get; set; }
         public string? PreferredLanguage { get; set; }
         public string? AgentLevel { get; set; }
         public string? StaffCode { get; set; }
-        public int? Supervisor_Id { get; set; }
-        public DateTime? ContractedDate { get; set; }
+        public DateOnly? ContractedDate { get; set; }
         public string? AgentStatusCode { get; set; }
-        public DateTime? StatusDate { get; set; }
+        public DateOnly? StatusDate { get; set; }
+
+        // Compliance & Licensing
         public bool IsLicensed { get; set; }
-        public string? MaskedPanNumber { get; set; }
-        public string? MartialStatus { get; set; }
-        public string? aadhaar_number { get; set; }
+        public string? PanNumber { get; set; }
+        public string? AadhaarNumber { get; set; }
         public string? IrdaLicenseNumber { get; set; }
         public string? GstNumber { get; set; }
-        public string CreatedBy { get; set; } = null!;
+
+        // Audit Fields (SQL timestamp -> DateTime)
+        public string CreatedBy { get; set; } = string.Empty;
         public DateTime CreatedDate { get; set; }
         public string? ModifiedBy { get; set; }
         public DateTime? ModifiedDate { get; set; }
-        public int? RowVersion { get; set; }
-        public bool IsActive { get; set; } = true;
-        public List<AgentDto>? Supervisors { get; set; }
-        public List<AgentDto>? Reportees { get; set; }
-        public string agentAuditTrail { get; set; }
-        public List<PeopleHeirarchyDto>? peopleHeirarchy { get; set; }
+        public int? Rowversion { get; set; }
+
+        // Hierarchy & Status
+        public int? SupervisorId { get; set; }
+        public bool IsActive { get; set; }
+        public string? Email { get; set; }
+        public string? Mobileno { get; set; }
         public string? ApplicationDocketNo { get; set; }
+        public string? FatherHusbandNm { get; set; }
+        public string? Employeecode { get; set; }
+        public DateTime? Startdate { get; set; }
+
+        // Compliance Flags
+        public bool Panaadharlinkflag { get; set; }
+        public bool Sec206abflag { get; set; }
+        public string? Taxstatus { get; set; }
+        public string? Stateeid { get; set; }
+        public string? Urn { get; set; }
+        public string? Additionalcomment { get; set; }
+        public DateTime? Appointmentdate { get; set; }
+        public DateTime? Incorporationdate { get; set; }
+
+        // Contact Person Details
+        public string? Cnctpersondesig { get; set; }
+        public string? Cnctpersonmobileno { get; set; }
+        public string? Cnctpersonemail { get; set; }
+        public string? Cnctpersonname { get; set; }
+
+        // Classifications & Training
+        public string? Agenttypecategory { get; set; }
+        public string? Agentclassification { get; set; }
+        public string? Cmsagenttype { get; set; }
+        public string? Packageid { get; set; }
+        public string? Servicetaxno { get; set; }
+        public bool? Ulipflag { get; set; }
+        public string? Traininggrouptype { get; set; }
+        public string? Ifs { get; set; }
+        public bool? Refreshertrainingcompleted { get; set; }
+        public bool? Ismigrated { get; set; }
+
+        // Branch & Partner Info
+        public string? Mainpartnerclientcode { get; set; }
+        public string? Agentmaincodevweid { get; set; }
+        public DateTime? Registrationdate { get; set; }
+        public string? Vertical { get; set; }
+        public string? Branchcode { get; set; }
+        public string? Branchname { get; set; }
+
+        // Extensive HR/Training Dates
+        public DateTime? Ic36Trngcompletiondate { get; set; }
+        public DateTime? Strngcompletiondate { get; set; }
+        public DateTime? Confirmationdate { get; set; }
+        public DateTime? Fgrockstartrainingdate { get; set; }
+        public DateTime? Incrementdate { get; set; }
+        public DateTime? Lastpromotiondate { get; set; }
+        public DateTime? Hrdoj { get; set; }
+        public DateTime? Fgvaluetrngdate { get; set; }
+        public DateTime? Hsecpolicytrngdate { get; set; }
+        public DateTime? Itsecpolicytrngdate { get; set; }
+        public DateTime? Npstrngcompletiondate { get; set; }
+        public DateTime? Whistleblowertrngdate { get; set; }
+        public DateTime? Govpolicytrngdate { get; set; }
+        public DateTime? Inductiontrngdate { get; set; }
+        public DateTime? Lastworkingdate { get; set; }
+
+        // License Details
+        public string? Licenseno { get; set; }
+        public string? Licensetype { get; set; }
+        public DateTime? Licenseissuedate { get; set; }
+        public DateTime? Licenseexpirydate { get; set; }
+        public string? Licensestatus { get; set; }
+
+        // Foreign Key IDs (Lookup codes)
+        public int? ActivePermAddress { get; set; }
+        public int? ActiveMailAddress { get; set; }
+        public int? Orgid { get; set; }
+        public int? Bankacctype { get; set; }
+        public int? Channel { get; set; }
+        public int? Subchannel { get; set; }
+        public int? AgentTypeCat { get; set; }
+        public int? AgentClass { get; set; }
+        public int? MartialStatus { get; set; }
+        public int? Education { get; set; }
+        public int? State { get; set; }
+        public int? Country { get; set; }
+        public int? Gender { get; set; }
+        public int? Title { get; set; }
+        public int? Occupation { get; set; }
+        public int? AgentSubTypeCode { get; set; }
+        public int? DesignationCode { get; set; }
+        public int? AgentTypeCode { get; set; }
+        public int? LocationCode { get; set; }
+        public int? Candidatetype { get; set; }
+        public int? Agenttype { get; set; }
+        public int? Commissionclass { get; set; }
+        public string? AgentClassDesc { get; set; }
+        public string? Comments { get; set; }
+        public string? Reason { get; set; }
+        public DateOnly? DOB { get; set; }
+        public string? Supervisor_Code { get; set; }
+        public string? MaskedPanNumber { get; set; }
+        public string? aadhaar_number { get; set; }
+        public int? RowVersion { get; set; }
+
         public string? Father_Husband_Nm { get; set; }
         public string? EmployeeCode { get; set; }
         public DateTime? StartDate { get; set; }
@@ -65,9 +166,6 @@ namespace Tasks.Models
         public string? PackageID { get; set; }
         public List<PersonalInfo>? personalInfo { get; set; }
         public DateTime DateOfBirth { get; set; }
-        public string? PanNumber { get; set; }
-        //public string? Email { get; set; }
-        //public string? MobileNo { get; set; }
         public string? WorkContactNo { get; set; }
         public string? ResidenceContactNo { get; set; }
         public string? BloodGroup { get; set; }
@@ -106,13 +204,11 @@ namespace Tasks.Models
         public List<Address>? MailingAddres { get; set; }
         public bool UlipFlag { get; set; } = false;
         public string? TrainingGroupType { get; set; }
-        public string? Ifs { get; set; }
         public bool RefresherTrainingCompleted { get; set; }
         public bool IsMigrated { get; set; }
         public string? MainPartnerClientCode { get; set; }
         public string? AgentMaincodevwEid { get; set; }
         public DateTime? RegistrationDate { get; set; }
-        public string? Vertical { get; set; }
         public string? BranchCode { get; set; }
         public string? BranchName { get; set; }
         public DateTime? Ic36TrngCompletionDate { get; set; }
@@ -135,8 +231,6 @@ namespace Tasks.Models
         public DateTime? LicenseIssueDate { get; set; }
         public DateTime? LicenseExpiryDate { get; set; }
         public string? LicenseStatus { get; set; }
-        public string? Comments { get; set; }
-        public string? Reason { get; set; }
         public int? OrgId { get; set; }
         public string? AddressLine1 { get; set; }
         public string? AddressLine2 { get; set; }
@@ -144,30 +238,13 @@ namespace Tasks.Models
         public string? City { get; set; }
         public string? Pin { get; set; }
         public string? Landmark { get; set; }
-        public string? Email { get; set; }
         public string? MobileNo { get; set; }
-        public int? SupervisorId { get; set; }
-        public string? Supervisor_Code { get; set; }
         public int? BankAccType { get; set; }
-        public int? Gender { get; set; }
-        public int? Title { get; set; }
-        public int? Channel { get; set; }
         public int? SubChannel { get; set; }
-        public int? Occupation { get; set; }
-        public int? AgentTypeCat { get; set; }
-        public int? AgentClass { get; set; }
         public int? MaritalStatus { get; set; }
-        public int? Education { get; set; }
-        public int? State { get; set; }
-        public int? Country { get; set; }
-        public int? DesignationCode { get; set; }
-        public int? LocationCode { get; set; }
-        public int? AgentTypeCode { get; set; }
-        public int? AgentSubTypeCode { get; set; }
         public int? CandidateType { get; set; }
         public int? CommissionClass { get; set; }
         public int? AgentType { get; set; }
-        public string? AgentClassDesc { get; set; }
         public string? BankAccTypeDesc { get; set; }
         public string? GenderDesc { get; set; }
         public string? TitleDesc { get; set; }
@@ -187,7 +264,6 @@ namespace Tasks.Models
         public string? CommissionClassDesc { get; set; }
         public string? AgentTypeDesc { get; set; }
     }
-
     public class Address
     {
         public long AddressID { get; set; }

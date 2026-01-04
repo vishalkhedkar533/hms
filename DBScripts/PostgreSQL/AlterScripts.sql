@@ -290,3 +290,12 @@ add column modalBasePremium decimal;
 
 alter table insu_core."policy"
 add column modalBaseRiderPremium decimal;
+
+
+
+alter table hms.agent add column ActivePermAddress int4 null;
+alter table hms.agent add column ActiveMailAddress int4 null;
+update hms.agent set ActivePermAddress = "ActivePermAddress";
+update hms.agent set ActiveMailAddress = "ActiveMailAddress";
+alter table hms.agent drop column "ActivePermAddress";
+alter table hms.agent drop column "ActiveMailAddress";

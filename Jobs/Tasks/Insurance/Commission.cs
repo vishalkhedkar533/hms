@@ -1,4 +1,9 @@
-﻿using Quartz;
+﻿using CommonLibrary.mapping;
+using Dapper;
+using Database;
+using Quartz;
+using Repository;
+using Tasks.Models.DB;
 
 namespace Tasks.Insurance
 {
@@ -8,7 +13,21 @@ namespace Tasks.Insurance
         private readonly IJobExecutionContext _jobExecutionContext;
         private int orgId = 0;
         public JobKey jobKey;
-        public Commission(IJobExecutionContext jobExecutionContext)
+
+        private readonly IMappingProvider _mappingProvider;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
+        private readonly string _baseDir = AppContext.BaseDirectory;
+        private readonly ILogger<AgentCreateExcel> _logger;
+        private readonly IConnectionScope _connectionScope;
+        private readonly IBinaryImportFactory _bulkOpsFactory;
+        private string connectionString;
+        private OperationMapping? operationMapping;
+        public Commission(IJobExecutionContext jobExecutionContext,
+            IMappingProvider mappingProvider,
+            Microsoft.Extensions.Configuration.IConfiguration configuration,
+            ILogger<AgentCreateExcel> logger,
+            IConnectionScope connectionScope,
+            IBinaryImportFactory bulkOpsFactory)
         {
             _jobExecutionContext = jobExecutionContext;
             orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -19,9 +38,17 @@ namespace Tasks.Insurance
                     .FirstOrDefault(x => x.value == "orgId").index))
                 .value.ToString());
             jobKey = jobExecutionContext.JobDetail.Key;
+            _mappingProvider = mappingProvider;
+            _configuration = configuration;
+            _logger = logger;
+            _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
+            _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
+
+            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
         }
 
-        public void Calculate()
+        public async Task Calculate()
         {
             // Execution logic for commission calculation
             Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
@@ -53,7 +80,26 @@ var compiledFormula = e.Compile();
 var result = compiledFormula.DynamicInvoke(pol, agent, premium);
 
 Console.WriteLine($"Calculated Result: {result}");
+
+
              */
+            operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetCommissionData")
+                ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
+            var conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+
+            var result = await conn.QueryAsync<PremiumCollected, Policy, Organisation, Agent, CommissionCalcRecord>(
+            operationMapping.Script,
+            (prem, pol, org, agnt) => new CommissionCalcRecord
+            {
+                PremiumCollected = prem,
+                Policy = pol,
+                Organisation = org,
+                Agent = agnt
+            },
+            // 'splitOn' tells Dapper: when you see this column, start the next object
+            splitOn: "policyref,orgid,aadhaar_number"
+        );
+
         }
     }
 }

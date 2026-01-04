@@ -85,12 +85,10 @@ namespace HMS.Data
             {
                 entity.ToTable("agent", "hms");
 
-                entity.HasIndex(e => e.AgentCode).IsUnique();
-
-                entity.HasOne(e => e.Supervisor)
+                // Self-referencing relationship for Supervisor
+                entity.HasOne(a => a.Supervisor)
                       .WithMany()
-                      .HasForeignKey(e => e.SupervisorId)
-                      .HasConstraintName("fk_supervisor")
+                      .HasForeignKey(a => a.SupervisorId)
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
@@ -110,9 +108,11 @@ namespace HMS.Data
                       .HasConstraintName("fk_menu")
                       .OnDelete(DeleteBehavior.Cascade);
             });
-
+            modelBuilder.Entity<Organisation>(entity =>
+            {
+                entity.ToTable("organisation", "app_subscription");
+            });
             modelBuilder.HasDefaultSchema("hms");
-
         }
     }
 }

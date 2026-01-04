@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tasks.Models;
+using Tasks.Models.DB;
 
 namespace Tasks.Insurance
 {
@@ -96,7 +97,7 @@ namespace Tasks.Insurance
                 }
 
                 // 5. Query Excel and process in chunks
-                var rows = MiniExcel.Query<AgentDto>(task.FilePath);
+                var rows = MiniExcel.Query<Agent>(task.FilePath);
                 int rowCount = 0;
 
                 foreach (var batch in rows.Chunk(chunkSize))
@@ -105,7 +106,7 @@ namespace Tasks.Insurance
                     foreach (var row in batchList)
                     {
                         rowCount++;
-                        row.OrgId = task.OrgId;
+                        row.Orgid = task.OrgId;
                         List<string> errors = new();
 
                         // Validation logic
@@ -284,7 +285,7 @@ namespace Tasks.Insurance
                         writer.Write(r.BirthPlace ?? "");
 
                         // 131-136
-                        writer.Write(r.MartialStatus ?? "");
+                        writer.Write(r.MaritalStatus ?? 0);
                         writer.Write(r.EducationCode?.ToString() ?? "");
                         writer.Write(r.EducationLevel ?? "");
                         writer.Write(r.WorkProfile ?? "");
@@ -345,11 +346,11 @@ namespace Tasks.Insurance
             }
         }
 
-        private bool ValidateRow(AgentDto row, Excelcolumn[] rules, int rowNum, out List<string> errors)
+        private bool ValidateRow(Agent row, Excelcolumn[] rules, int rowNum, out List<string> errors)
         {
             errors = new List<string>();
             bool isValid = true;
-            var type = typeof(AgentDto);
+            var type = typeof(Agent);
 
             foreach (var rule in rules)
             {

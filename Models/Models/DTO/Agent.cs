@@ -24,7 +24,7 @@ namespace Models.DTO
         public string? LastName { get; set; }
         public string? Prefix { get; set; }
         public string? Suffix { get; set; }
-        public DateTime? DOB { get; set; }
+        public DateOnly? DOB { get; set; }
         public string? Nationality { get; set; }
         public string? PreferredLanguage { get; set; }
         public string? AgentLevel { get; set; }

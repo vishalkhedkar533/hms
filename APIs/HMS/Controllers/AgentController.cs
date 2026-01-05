@@ -730,13 +730,13 @@ namespace HMS.Controllers
                         agent.LastName = agentDto.LastName;
 
                     if (!string.IsNullOrWhiteSpace(agentDto.Father_Husband_Nm))
-                        agent.Father_Husband_Nm = agentDto.Father_Husband_Nm;
+                        agent.FatherHusbandNm = agentDto.Father_Husband_Nm;
 
                     if (agentDto.Gender.HasValue)
                         agent.Gender = agentDto.Gender;
 
                     if (agentDto.DOB.HasValue)
-                        agent.DOB = agentDto.DOB;
+                        agent.Dob = agentDto.DOB;
 
                     if (agentDto.MaritalStatus.HasValue)
                         agent.MaritalStatus = agentDto.MaritalStatus;

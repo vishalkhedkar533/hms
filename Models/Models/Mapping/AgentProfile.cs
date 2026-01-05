@@ -26,7 +26,7 @@ namespace Models.Mapping
                 .ForMember(d => d.Prefix, o => o.MapFrom(s => s.Prefix))
                 .ForMember(d => d.Suffix, o => o.MapFrom(s => s.Suffix))
                 .ForMember(d => d.Gender, o => o.MapFrom(s => s.Gender))
-                .ForMember(d => d.DOB, o => o.MapFrom(s => s.DOB))
+                .ForMember(d => d.DOB, o => o.MapFrom(s => s.Dob))
                 .ForMember(d => d.Nationality, o => o.MapFrom(s => s.Nationality))
                 .ForMember(d => d.MaritalStatus, o => o.MapFrom(s => s.MaritalStatus))
                 .ForMember(d => d.PreferredLanguage, o => o.MapFrom(s => s.PreferredLanguage))
@@ -35,9 +35,9 @@ namespace Models.Mapping
                 .ForMember(d => d.AgentLevel, o => o.MapFrom(s => s.AgentLevel))
                 .ForMember(d => d.LocationCode, o => o.MapFrom(s => s.LocationCode))
                 .ForMember(d => d.StaffCode, o => o.MapFrom(s => s.StaffCode))
-                .ForMember(d => d.ContractedDate, o => o.MapFrom(s => s.ContractedDate))
+                .ForMember(d => d.ContractedDate, o => o.MapFrom(s => s.ContractedDate.HasValue ? s.ContractedDate.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null))
                 .ForMember(d => d.AgentStatusCode, o => o.MapFrom(s => s.AgentStatusCode))
-                .ForMember(d => d.StatusDate, o => o.MapFrom(s => s.StatusDate))
+                .ForMember(d => d.StatusDate, o => o.MapFrom(s => s.StatusDate.HasValue ? s.StatusDate.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null))
                 .ForMember(d => d.IsLicensed, o => o.MapFrom(s => s.IsLicensed))
                 .ForMember(d => d.aadhaar_number, o => o.MapFrom(s => s.AadhaarNumber))
                 .ForMember(d => d.IrdaLicenseNumber, o => o.MapFrom(s => s.IrdaLicenseNumber))
@@ -61,7 +61,7 @@ namespace Models.Mapping
                 .ForMember(d => d.CommissionClass, o => o.MapFrom(s => s.CommissionClass))
                 .ForMember(d => d.AgentType, o => o.MapFrom(s => s.AgentType))
                 .ForMember(d => d.Country, o => o.MapFrom(s => s.Country))
-                
+                .ForMember(d => d.Father_Husband_Nm, o => o.MapFrom(s => s.FatherHusbandNm))
                 // PAN masking
                 .ForMember(d => d.MaskedPanNumber,
                     o => o.MapFrom(s =>
@@ -77,7 +77,6 @@ namespace Models.Mapping
                 .ForMember(d => d.agentAuditTrail, o => o.Ignore())
                 .ForMember(d => d.peopleHeirarchy, o => o.Ignore())
                 .ForMember(d => d.ApplicationDocketNo, o => o.Ignore())
-                .ForMember(d => d.Father_Husband_Nm, o => o.Ignore())
                 .ForMember(d => d.EmployeeCode, o => o.Ignore())
                 .ForMember(d => d.StartDate, o => o.Ignore())
                 .ForMember(d => d.PanAadharLinkFlag, o => o.Ignore())
@@ -143,7 +142,7 @@ namespace Models.Mapping
                 .ForMember(d => d.Prefix, o => o.MapFrom(s => s.Prefix))
                 .ForMember(d => d.Suffix, o => o.MapFrom(s => s.Suffix))
                 .ForMember(d => d.Gender, o => o.MapFrom(s => s.Gender))
-                .ForMember(d => d.DOB, o => o.MapFrom(s => s.DOB))
+                .ForMember(d => d.Dob, o => o.MapFrom(s => s.DOB))
                 .ForMember(d => d.Nationality, o => o.MapFrom(s => s.Nationality))
                 .ForMember(d => d.MaritalStatus, o => o.MapFrom(s => s.MaritalStatus))
                 .ForMember(d => d.PreferredLanguage, o => o.MapFrom(s => s.PreferredLanguage))
@@ -152,11 +151,11 @@ namespace Models.Mapping
                 .ForMember(d => d.AgentLevel, o => o.MapFrom(s => s.AgentLevel))
                 .ForMember(d => d.LocationCode, o => o.MapFrom(s => s.LocationCode))
                 .ForMember(d => d.StaffCode, o => o.MapFrom(s => s.StaffCode))
-                .ForMember(d => d.ContractedDate, o => o.MapFrom(s => s.ContractedDate))
+                .ForMember(d => d.ContractedDate, o => o.MapFrom(s => s.ContractedDate.HasValue ? DateOnly.FromDateTime(s.ContractedDate.Value) : (DateOnly?)null))
                 .ForMember(d => d.AgentStatusCode, o => o.MapFrom(s => s.AgentStatusCode))
-                .ForMember(d => d.StatusDate, o => o.MapFrom(s => s.StatusDate))
+                .ForMember(d => d.StatusDate, o => o.MapFrom(s => s.StatusDate.HasValue ? DateOnly.FromDateTime(s.StatusDate.Value) : (DateOnly?)null))
                 .ForMember(d => d.IsLicensed, o => o.MapFrom(s => s.IsLicensed))
-
+                .ForMember(d => d.FatherHusbandNm, o => o.MapFrom(s => s.Father_Husband_Nm))
                 // IMPORTANT: prevent corruption
                 .ForMember(d => d.PanNumber, o => o.Ignore())
 

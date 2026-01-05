@@ -28,14 +28,14 @@
         public string? Suffix { get; set; }
 
         // Dates (SQL date -> DateOnly)
-        public DateOnly? Dob { get; set; }
+        public DateTime? Dob { get; set; }
         public string? Nationality { get; set; }
         public string? PreferredLanguage { get; set; }
         public string? AgentLevel { get; set; }
         public string? StaffCode { get; set; }
-        public DateOnly? ContractedDate { get; set; }
+        public DateTime? ContractedDate { get; set; }
         public string? AgentStatusCode { get; set; }
-        public DateOnly? StatusDate { get; set; }
+        public DateTime? StatusDate { get; set; }
 
         // Compliance & Licensing
         public bool IsLicensed { get; set; }
@@ -147,7 +147,7 @@
         public string? AgentClassDesc { get; set; }
         public string? Comments { get; set; }
         public string? Reason { get; set; }
-        public DateOnly? DOB { get; set; }
+        public DateTime? DOB { get; set; }
         public string? Supervisor_Code { get; set; }
         public string? MaskedPanNumber { get; set; }
         public string? aadhaar_number { get; set; }

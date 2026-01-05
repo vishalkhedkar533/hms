@@ -1827,9 +1827,9 @@ CREATE SCHEMA IF NOT EXISTS insu_core ;
 
 -- Drop table
 
--- DROP TABLE insu_core."policy";
+-- DROP TABLE insu_core.policy;
 
-CREATE TABLE insu_core."policy" (
+CREATE TABLE insu_core.ins_policy (
 	policyref serial4 NOT NULL,
 	orgid int4 NOT NULL,
 	policyno varchar(20) NULL,
@@ -1845,8 +1845,8 @@ CREATE TABLE insu_core."policy" (
 );
 
 
-ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_agent FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id) ON DELETE CASCADE;
-ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+ALTER TABLE insu_core.ins_policy ADD CONSTRAINT fk_pol_agent FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id) ON DELETE CASCADE;
+ALTER TABLE insu_core.ins_policy ADD CONSTRAINT fk_pol_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 
 CREATE TABLE insu_core."premium_collected" (
 	premiuCollId serial4 NOT NULL,

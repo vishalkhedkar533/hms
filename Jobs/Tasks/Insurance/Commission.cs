@@ -44,8 +44,6 @@ namespace Tasks.Insurance
             _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
             _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
 
-            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
         }
 
         public async Task Calculate()
@@ -85,9 +83,13 @@ Console.WriteLine($"Calculated Result: {result}");
              */
             operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetCommissionData")
                 ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
+
+            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+
             var conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
 
-            var result = await conn.QueryAsync<PremiumCollected, Policy, Organisation, Agent, CommissionCalcRecord>(
+            var result = await conn.QueryAsync<PremiumCollected, Ins_Policy, Organisation, Agent, CommissionCalcRecord>(
             operationMapping.Script,
             (prem, pol, org, agnt) => new CommissionCalcRecord
             {

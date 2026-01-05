@@ -5,7 +5,7 @@ namespace Tasks.Models.DB
         public int PremiuCollId { get; set; }
         public int OrgId { get; set; }
         public int? PolicyRef { get; set; }
-        public DateOnly? PremiumReceivedDt { get; set; }
+        public DateTime? PremiumReceivedDt { get; set; }
         public int? PremiumType { get; set; }
         public decimal? PremiumAmt { get; set; }
     }

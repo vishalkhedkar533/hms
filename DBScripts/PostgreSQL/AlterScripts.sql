@@ -252,46 +252,41 @@ REFERENCES scheduler.job_config(job_config_id)
 ALTER TABLE comss.commission_config
 DROP COLUMN trigger_cycle;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column isStaffPolicy bool;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column PolicySourceCode int;
 
-alter table insu_core."policy"
-add column PolicySourceCode int;
-
-alter table insu_core."policy"
+alter table insu_core.policy
 add column insuredPAN varchar(10);
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column proposerPAN varchar(10);
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column insuredDOB date;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column proposerDOB date;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column loginDt date;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column insuredGender int;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column proposerGender int;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column maturityAgeInMonths int;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column modalBasePremium decimal;
 
-alter table insu_core."policy"
+alter table insu_core.policy
 add column modalBaseRiderPremium decimal;
-
-
 
 alter table hms.agent add column ActivePermAddress int4 null;
 alter table hms.agent add column ActiveMailAddress int4 null;

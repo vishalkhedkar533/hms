@@ -5,6 +5,7 @@ using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -695,49 +696,98 @@ namespace HMS.Controllers
             return Ok(hMSResponse);
         }
 
-        [HttpPost("Update/{id}")]
+        [HttpPost("UpdateAgent/{id}/{sectionName}")]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> UpdateAgent(int id, [FromBody] AgentDto agentDto)
+        public async Task<IActionResult> UpdateAgent(
+            [FromRoute] int id,
+            [FromRoute] string sectionName,
+            [FromBody] AgentDto agentDto)
         {
-            // 1. Basic Validation
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            if (id != agentDto.AgentId)
-                return BadRequest("ID mismatch between URL and body.");
-
+            ModelState.Clear();
             var username = HttpContext?.User?.Identity?.Name ?? "System";
             var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-            // 2. Fetch existing agent (with related data if needed for auditing)
-            var existingAgent = await _context.Agents
+            var agent = await _context.Agents
                 .FirstOrDefaultAsync(a => a.AgentId == id && a.OrgId == orgId);
 
-            if (existingAgent == null)
-                return NotFound(new { message = $"Agent with ID {id} not found for this organization." });
-            // 4. Map DTO to existing Entity (Syncs changes)
-            _mapper.Map(agentDto, existingAgent);
+            if (agent == null)
+                return NotFound($"Agent with ID {id} not found");
 
-            // 5. Update Metadata
-            existingAgent.ModifiedBy = username;
-            existingAgent.ModifiedDate = DateTime.UtcNow;
+            switch (sectionName.ToLower())
+            {
+                case "personal_details":
+
+                    if (agentDto.Title.HasValue)
+                        agent.Title = agentDto.Title;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.FirstName))
+                        agent.FirstName = agentDto.FirstName;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.MiddleName))
+                        agent.MiddleName = agentDto.MiddleName;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.LastName))
+                        agent.LastName = agentDto.LastName;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.Father_Husband_Nm))
+                        agent.Father_Husband_Nm = agentDto.Father_Husband_Nm;
+
+                    if (agentDto.Gender.HasValue)
+                        agent.Gender = agentDto.Gender;
+
+                    if (agentDto.DOB.HasValue)
+                        agent.DOB = agentDto.DOB;
+
+                    if (agentDto.MaritalStatus.HasValue)
+                        agent.MaritalStatus = agentDto.MaritalStatus;
+
+                    break;
+
+                case "contact_details":
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.Email))
+                        agent.Email = agentDto.Email;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
+                        agent.MobileNo = agentDto.MobileNo;
+
+                    break;
+
+                case "official_details":
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
+                        agent.AgentCode = agentDto.AgentCode;
+
+                    if (agentDto.AgentType.HasValue)
+                        agent.AgentType = agentDto.AgentType;
+
+                    break;
+
+                default:
+                    return BadRequest("Invalid section name");
+            }
+
+            agent.ModifiedBy = username;
+            agent.ModifiedDate = DateTime.UtcNow;
 
             try
             {
                 await _context.SaveChangesAsync();
 
-                // 6. Return updated DTO
-                var updatedDto = _mapper.Map<AgentDto>(existingAgent);
-                return Ok(new { message = "Agent updated successfully", data = updatedDto });
+                return Ok(new
+                {
+                    message = $"{sectionName} updated successfully",
+                    agentId = agent.AgentId
+                });
             }
             catch (DbUpdateConcurrencyException)
             {
-                return Conflict("The record was modified by another user. Please refresh and try again.");
+                return Conflict("Record updated by another user");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating agent {AgentId}", id);
-                return StatusCode(500, "Internal server error during update.");
+                return StatusCode(500, "Internal server error");
             }
         }
 

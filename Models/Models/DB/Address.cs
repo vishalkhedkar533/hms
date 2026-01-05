@@ -28,7 +28,7 @@ namespace Models.DB
         [Required]
         [StringLength(255)]
         [Column]
-        public string AddressLine1 { get; set; }
+        public string? AddressLine1 { get; set; }
 
         [StringLength(255)]
         [Column]
@@ -41,7 +41,7 @@ namespace Models.DB
         [Required]
         [StringLength(100)]
         [Column]
-        public string City { get; set; } 
+        public string? City { get; set; } 
 
         [StringLength(100)]
         [Column]

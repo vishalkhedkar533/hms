@@ -19,11 +19,11 @@ namespace Models.DB
 
         [Required]
         [MaxLength(255)]
-        public string NomineeName { get; set; }
+        public string? NomineeName { get; set; }
 
         [Required]
         [MaxLength(255)]
-        public string Relationship { get; set; }
+        public string? Relationship { get; set; }
 
         [Column]
         public decimal PercentageShare { get; set; }

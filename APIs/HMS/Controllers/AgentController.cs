@@ -5,6 +5,7 @@ using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
+using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,8 +32,9 @@ namespace HMS.Controllers
         private readonly GenericCacheService _cacheService;
         private int refreshInterval = 15;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<Agent> _logger;
         public AgentController(HMSContext context, IConfiguration config, IMapper mapper, IConfiguration configuration
-            , DatabaseService db, IAuthClaimService authClaimService, GenericCacheService cacheService)
+            , DatabaseService db, IAuthClaimService authClaimService, GenericCacheService cacheService, ILogger<Agent> logger)
         {
             _context = context;
             _config = config;
@@ -42,6 +44,7 @@ namespace HMS.Controllers
             _cacheService = cacheService;
             _configuration = configuration;
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
+            _logger = logger;
         }
 
         [HttpPost("Termination/Request")]
@@ -691,6 +694,101 @@ namespace HMS.Controllers
 
             //return agentEntity == null ? NotFound(hMSResponse) : Ok(hMSResponse);
             return Ok(hMSResponse);
+        }
+
+        [HttpPost("UpdateAgent/{id}/{sectionName}")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> UpdateAgent(
+            [FromRoute] int id,
+            [FromRoute] string sectionName,
+            [FromBody] AgentDto agentDto)
+        {
+            ModelState.Clear();
+            var username = HttpContext?.User?.Identity?.Name ?? "System";
+            var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            var agent = await _context.Agents
+                .FirstOrDefaultAsync(a => a.AgentId == id && a.OrgId == orgId);
+
+            if (agent == null)
+                return NotFound($"Agent with ID {id} not found");
+
+            switch (sectionName.ToLower())
+            {
+                case "personal_details":
+
+                    if (agentDto.Title.HasValue)
+                        agent.Title = agentDto.Title;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.FirstName))
+                        agent.FirstName = agentDto.FirstName;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.MiddleName))
+                        agent.MiddleName = agentDto.MiddleName;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.LastName))
+                        agent.LastName = agentDto.LastName;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.Father_Husband_Nm))
+                        agent.Father_Husband_Nm = agentDto.Father_Husband_Nm;
+
+                    if (agentDto.Gender.HasValue)
+                        agent.Gender = agentDto.Gender;
+
+                    if (agentDto.DOB.HasValue)
+                        agent.DOB = agentDto.DOB;
+
+                    if (agentDto.MaritalStatus.HasValue)
+                        agent.MaritalStatus = agentDto.MaritalStatus;
+
+                    break;
+
+                case "contact_details":
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.Email))
+                        agent.Email = agentDto.Email;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
+                        agent.MobileNo = agentDto.MobileNo;
+
+                    break;
+
+                case "official_details":
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
+                        agent.AgentCode = agentDto.AgentCode;
+
+                    if (agentDto.AgentType.HasValue)
+                        agent.AgentType = agentDto.AgentType;
+
+                    break;
+
+                default:
+                    return BadRequest("Invalid section name");
+            }
+
+            agent.ModifiedBy = username;
+            agent.ModifiedDate = DateTime.UtcNow;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = $"{sectionName} updated successfully",
+                    agentId = agent.AgentId
+                });
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("Record updated by another user");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating agent {AgentId}", id);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
     }

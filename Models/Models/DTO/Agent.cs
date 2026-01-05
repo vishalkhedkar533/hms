@@ -16,7 +16,7 @@ namespace Models.DTO
     public class AgentDto
     {
         public int AgentId { get; set; }
-        public string AgentCode { get; set; } = null!;
+        public string? AgentCode { get; set; } 
         public string? AgentName { get; set; }
         public string? BusinessName { get; set; }
         public string? FirstName { get; set; }
@@ -38,7 +38,7 @@ namespace Models.DTO
         public string? aadhaar_number { get; set; }
         public string? IrdaLicenseNumber { get; set; }
         public string? GstNumber { get; set; }
-        public string CreatedBy { get; set; } = null!;
+        public string? CreatedBy { get; set; }
         public DateTime CreatedDate { get; set; }
         public string? ModifiedBy { get; set; }
         public DateTime? ModifiedDate { get; set; }
@@ -54,9 +54,9 @@ namespace Models.DTO
         public DateTime? StartDate { get; set; }
         public bool PanAadharLinkFlag { get; set; }
         public bool Sec206abFlag { get; set; }
-        public List<Nominee> nominees { get; set; }
+        public List<Nominee>? nominees { get; set; }
         public string? PackageID { get; set; }
-        public List<PersonalInfo> personalInfo { get; set; }
+        public List<PersonalInfo>? personalInfo { get; set; }
         public string? TaxStatus { get; set; }
         public string? StateEid { get; set; }
         public string? URN { get; set; }

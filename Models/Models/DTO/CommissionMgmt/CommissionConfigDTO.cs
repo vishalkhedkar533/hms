@@ -54,4 +54,20 @@ namespace Models.DTO.CommissionMgmt
         public string? TargetMethod { get; set; }
         public string? Args { get; set; }
     }
+    public class JobExecutionHistoryDto
+    {
+        public int JobExeHistId { get; set; }
+        public int JobConfigId { get; set; }
+
+        public string? JobName { get; set; }
+
+        public DateTime StartedAt { get; set; }
+        public DateTime? FinishedAt { get; set; }
+
+        public string? ExeStatus { get; set; }
+        public string? DownloadLink { get; set; }
+
+        public TimeSpan? Duration =>
+            FinishedAt.HasValue ? FinishedAt.Value - StartedAt : null;
+    }
 }

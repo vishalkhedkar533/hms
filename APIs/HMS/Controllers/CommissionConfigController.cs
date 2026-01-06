@@ -354,5 +354,57 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
+        [HttpPost("JobExecutionHistory/{jobConfigId}")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetJobExecutionHistory([FromRoute] int? jobConfigId)        
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = 0;
+
+            try
+            {
+                orgId = Convert.ToInt32(
+                    _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var query =
+                    from h in _context.JobExeHists.AsNoTracking()
+                    join jc in _context.JobConfigs.AsNoTracking()
+                        on h.JobConfigId equals jc.JobConfigId
+                    where h.OrgId == orgId
+                    select new JobExecutionHistoryDto
+                    {
+                        JobExeHistId = h.JobExeHistId,
+                        JobConfigId = h.JobConfigId,
+                        JobName = jc.JobName,
+
+                        StartedAt = h.StartedAt,
+                        FinishedAt = h.FinishedAt,
+                        ExeStatus = h.ExeStatus,
+                        DownloadLink = h.DownloadLnk
+                    };
+
+                if (jobConfigId.HasValue)
+                    query = query.Where(x => x.JobConfigId == jobConfigId.Value);
+
+                var list = await query
+                    .OrderByDescending(x => x.StartedAt)
+                    .ToListAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.jobExecutionHistory = list;
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "GetJobExecutionHistory failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
     }
 }

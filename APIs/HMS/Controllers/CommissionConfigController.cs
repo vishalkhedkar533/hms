@@ -406,5 +406,64 @@ namespace HMS.Controllers
             }
         }
 
+        [HttpPost("GetCommissionById/{commissionConfigId}")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetCommissionById(int commissionConfigId)
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            try
+            {
+                var data = await (
+                    from cc in _context.CommissionConfigs.AsNoTracking()
+                    join jc in _context.JobConfigs.AsNoTracking()
+                        on cc.JobConfigId equals jc.JobConfigId
+                    where cc.CommissionConfigId == commissionConfigId && cc.OrgId == orgId
+                    select new CommissionConfigDTO
+                    {
+                        // Step 1: Basic Info
+                        CommissionConfigId = cc.CommissionConfigId,
+                        CommissionName = cc.CommissionName,
+                        RunFrom = cc.RunFrom,
+                        RunTo = cc.RunTo,
+
+                        // Step 2: Formula
+                        Conditions = cc.Conditions,
+
+                        // Step 3: Schedule Configuration
+                        JobConfigId = cc.JobConfigId,
+                        JobType = jc.JobType,
+                        TriggerType = jc.TriggerType,
+                        CronExpression = jc.CronExpression,
+
+                        // Step 4: Status
+                        Enabled = jc.Enabled,
+
+                        UpdatedAt = jc.UpdatedAt
+                    }
+                ).FirstOrDefaultAsync();
+
+                if (data == null)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Commission configuration not found.";
+                    return NotFound(response);
+                }
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.commissionConfig = new List<CommissionConfigDTO> { data };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching commission details for ID: {Id}", commissionConfigId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
     }
 }

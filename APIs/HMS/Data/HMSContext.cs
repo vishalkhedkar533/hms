@@ -43,6 +43,8 @@ namespace HMS.Data
         public DbSet<CurrentBusinessCycle> CurrentBusinessCycles => Set<CurrentBusinessCycle>();
         public DbSet<CommissionConfig> CommissionConfigs => Set<CommissionConfig>();
         public DbSet<JobConfig> JobConfigs => Set<JobConfig>();
+        public DbSet<JobExeHist> JobExeHists => Set<JobExeHist>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

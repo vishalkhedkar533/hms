@@ -1874,3 +1874,35 @@ create table scheduler.job_exe_hist(
     constraint fk_job_hist_org 
         foreign key (orgId) references app_subscription.organisation(orgId)
 );
+
+CREATE TABLE insu_core.tmp_ins_policy (
+	tmp_ins_policyid 		 SERIAL primary key,
+    orgid                     varchar(20)  NOT NULL,
+    policyno                  varchar(20)  NOT NULL,
+    policysuffix              varchar(10)  NOT NULL,
+    riskstartdt               varchar(20)  NULL,
+    riskenddt                 varchar(20)  NULL,
+    policyterm                varchar(10)  NULL,
+    prempayingterm            varchar(10)  NULL,
+    proposerclientid           varchar(20)  NULL,
+    lifeinsuredclientid        varchar(20)  NULL,
+    agent_id                  varchar(20)  NULL,
+    isstaffpolicy              varchar(10)  NULL,
+    policysourcecode           varchar(10)  NULL,
+    insuredpan                varchar(20)  NULL,
+    proposerpan               varchar(20)  NULL,
+    insureddob                varchar(20)  NULL,
+    proposerdob               varchar(20)  NULL,
+    logindt                   varchar(20)  NULL,
+    insuredgender              varchar(10)  NULL,
+    proposergender             varchar(10)  NULL,
+    maturityageinmonths        varchar(10)  NULL,
+    modalbasepremium           varchar(20)  NULL,
+    modalbaseriderpremium      varchar(20)  NULL,
+    comments                  varchar(100)  NULL,
+    reason                    varchar(100)  NULL,
+    created_at                timestamp  DEFAULT now()
+);
+
+CREATE UNIQUE INDEX uq_ins_policy_org_polno_suffix
+ON insu_core.ins_policy (orgid, policyno, policysuffix);

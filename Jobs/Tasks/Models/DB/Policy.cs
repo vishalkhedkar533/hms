@@ -25,5 +25,6 @@ namespace Tasks.Models.DB
         public int? MaturityAgeInMonths { get; set; }
         public decimal? ModalBasePremium { get; set; }
         public decimal? ModalBaseRiderPremium { get; set; }
+        public string? ProdCode { get; set; }
     }
 }

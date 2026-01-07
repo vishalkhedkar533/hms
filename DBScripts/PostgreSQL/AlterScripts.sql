@@ -294,3 +294,5 @@ update hms.agent set ActivePermAddress = "ActivePermAddress";
 update hms.agent set ActiveMailAddress = "ActiveMailAddress";
 alter table hms.agent drop column "ActivePermAddress";
 alter table hms.agent drop column "ActiveMailAddress";
+
+alter table insu_core.ins_policy add column prod_code varchar(10)

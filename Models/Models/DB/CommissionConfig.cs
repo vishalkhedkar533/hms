@@ -40,6 +40,10 @@ namespace Models.DB
         [Column("job_config_id")]
         public int JobConfigId { get; set; }
 
+        [Column("filter_condition")]
+        public string? FilterCondition { get; set; }
+        [Column("comments")]
+        public string? Comments { get; set; }
 
     }
     public class CommissionConditionUpdateDto

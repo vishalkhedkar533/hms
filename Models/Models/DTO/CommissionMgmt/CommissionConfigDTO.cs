@@ -7,6 +7,8 @@ namespace Models.DTO.CommissionMgmt
         public string CommissionName { get; set; } = null!;
         public DateOnly RunFrom { get; set; }
         public DateOnly RunTo { get; set; }
+        public string? FilterConditions { get; set; }
+        public string? Comments { get; set; }
     }
 
     public class UpdateCronDto
@@ -53,6 +55,8 @@ namespace Models.DTO.CommissionMgmt
         public string? TargetType { get; set; }
         public string? TargetMethod { get; set; }
         public string? Args { get; set; }
+        public string? FilterCondition { get; set; }
+        public string? Comments { get; set; }
     }
     public class JobExecutionHistoryDto
     {

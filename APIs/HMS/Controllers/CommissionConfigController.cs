@@ -62,6 +62,8 @@ namespace HMS.Controllers
                     CommissionName = dto.CommissionName,
                     RunFrom = dto.RunFrom,
                     RunTo = dto.RunTo,
+                    FilterCondition = dto.FilterConditions,
+                    Comments = dto.Comments,
                     CreatedAt = DateTime.Now,
                     CreatedBy = username,
                     OrgId = orgId,
@@ -83,6 +85,8 @@ namespace HMS.Controllers
                             CommissionName = commission.CommissionName,
                             RunFrom = commission.RunFrom,
                             RunTo = commission.RunTo,
+                            FilterCondition = commission.FilterCondition,
+                            Comments = commission.Comments,
                             JobConfigId = commission.JobConfigId,
                             CreatedAt = commission.CreatedAt,
                             CreatedBy = commission.CreatedBy

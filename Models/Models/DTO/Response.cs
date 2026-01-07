@@ -30,6 +30,7 @@ namespace Models.DTO
         public ApproveCommissionResponseDto? approveCommission { get; set; }
         public List<CommissionConfigDTO>? commissionConfig { get; set; } = null;
         public List<JobExecutionHistoryDto>? jobExecutionHistory { get; set; } = null;
+        public List<CommissionMetadata>? CommissionMetadata { get; set; } = null;
     }
 
     public class LoginResponse

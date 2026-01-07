@@ -9,6 +9,7 @@ using Models.DB;
 using Models.DTO;
 using Models.DTO.CommissionMgmt;
 using Models.HMSConsts;
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Text.Json;
 
@@ -273,8 +274,10 @@ namespace HMS.Controllers
 
         [HttpPost("CommissionSearchFieldsJson")]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetCommissionMetadata()
+        public async Task<IActionResult> GetCommissionSearchFieldsJson()
         {
+            HmsResponse response = new HmsResponse();
+
             try
             {
                 string filePath = Path.Combine(_env.ContentRootPath, "CommissionMetaData", "commissionMetadata.json");
@@ -292,7 +295,12 @@ namespace HMS.Controllers
                     PropertyNameCaseInsensitive = true
                 });
 
-                return Ok(metadata);
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.CommissionMetadata = new List<CommissionMetadata> { metadata };
+
+                return Ok(response);
+
             }
             catch (Exception ex)
             {

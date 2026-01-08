@@ -61,7 +61,7 @@ namespace Models.DB
         public string? Suffix { get; set; }
 
         [Column("dob", TypeName = "date")]
-        public DateOnly? Dob { get; set; }
+        public DateTime? Dob { get; set; }
 
         [StringLength(40)]
         [Column("nationality")]

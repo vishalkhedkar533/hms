@@ -1823,10 +1823,6 @@ CREATE TABLE IF NOT EXISTS scheduler.job_config
 
 CREATE SCHEMA IF NOT EXISTS insu_core ;
 
--- insu_core."policy" definition
-
--- Drop table
-
 -- DROP TABLE insu_core.policy;
 
 CREATE TABLE insu_core.ins_policy (
@@ -1859,3 +1855,52 @@ CREATE TABLE insu_core."premium_collected" (
 );
 
 ALTER TABLE insu_core."premium_collected" ADD CONSTRAINT fk_prem_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+--drop table scheduler.job_exe_hist
+
+create table scheduler.job_exe_hist(
+	job_exe_hist_id SERIAL primary key,
+	job_config_id int4 not null,
+	started_at TIMESTAMPTZ not null default now(),
+	finished_at TIMESTAMPTZ  default now(),
+	exe_status varchar(10) not null,/*CREATED > STARTED > PROCESSING > FAILURE OR FINISHED*/
+	download_lnk varchar(1000) null, /*when the user clicks on the link the API will check if the file is available*/
+	/*if the file is not available it will recreate the data from Commission Calculation Table and download the file*/
+	/*file will be saved server at path <orgId>/<job_config_id>/job_exe_hist_id/commission_extract.xlsx*/
+	orgId int not null,
+
+	constraint fk_job_hist_cfg
+        foreign key (job_config_id) references scheduler.job_config(job_config_id),
+        
+    constraint fk_job_hist_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+--drop table insu_core.customer
+create table insu_core.customer(
+	clientid serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	pas_clientid varchar(10) null,
+	isstaff bool default false,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ null,
+    dob DATE null,
+    gender int null,
+    constraint fk_pas_cust_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+
+--drop table comss.comm_rate
+create table comss.comm_rate(
+	comm_rate serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	prod_code varchar(10) null,
+	comm_rate_from DATE null,
+	comm_rate_to DATE null,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	created_by VARCHAR(100),
+    updated_at TIMESTAMPTZ null,
+    updated_by VARCHAR(100),
+    constraint fk_pas_comm_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);

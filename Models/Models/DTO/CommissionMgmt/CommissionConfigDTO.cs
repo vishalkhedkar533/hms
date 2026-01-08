@@ -4,6 +4,7 @@ namespace Models.DTO.CommissionMgmt
 {
     public class CreateCommissionDto
     {
+        public int CommissionConfigId { get; set; }
         public string CommissionName { get; set; } = null!;
         public DateOnly RunFrom { get; set; }
         public DateOnly RunTo { get; set; }

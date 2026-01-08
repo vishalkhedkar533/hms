@@ -31,7 +31,6 @@ namespace HMS.Controllers
             _env = env;
         }
 
-
         [HttpPost("GetCommissionById/{commissionConfigId}")]
         [Authorize]
         [MenuAuthorize(1001)]
@@ -104,71 +103,120 @@ namespace HMS.Controllers
 
             try
             {
-                var job = new JobConfig
+                CommissionConfig commission;
+                JobConfig job;
+                //Edit Existing Entry
+                if (dto.CommissionConfigId > 0)
                 {
-                    JobName = dto.CommissionName,
-                    JobType = "CRON",
-                    TriggerType = "CRON",
-                    Enabled = false,
-                    StartAt =dto.RunFrom,
-                    EndAt = dto.RunTo,
-                    OrgId = orgId,
-                    Comments = dto.Comments
-                };
+                    commission = await _context.CommissionConfigs
+                        .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId && x.OrgId == orgId);
 
-                _context.JobConfigs.Add(job);
-                await _context.SaveChangesAsync();
+                    if (commission == null)
+                    {
+                        response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                        response.responseHeader.ErrorMessage = await _context.errorMaster
+                            .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                     && x.Area == "CommissionConstants")
+                            .Select(x => x.ErrorMsg)
+                            .FirstOrDefaultAsync() ?? "Undefined Error Message";
 
-                var commission = new CommissionConfig
+                        return NoContent();
+                    }
+
+                    job = await _context.JobConfigs
+                        .FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
+
+                    if (job == null)
+                    {
+                        response.responseHeader.ErrorCode = JobConstants.JOB_NOTFOUND;
+                        response.responseHeader.ErrorMessage = await _context.errorMaster
+                            .Where(x => x.ErrorId == JobConstants.JOB_NOTFOUND
+                                     && x.Area == "JobConstants")
+                            .Select(x => x.ErrorMsg)
+                            .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                        return NoContent();
+                    }
+
+                    // Update Job (Only fields relevant to Step 1)
+                    job.JobName = dto.CommissionName;
+                    job.StartAt = dto.RunFrom;
+                    job.EndAt = dto.RunTo;
+                    job.Comments = dto.Comments;
+                    job.UpdatedAt = DateTime.Now;
+
+                    // Update Commission
+                    commission.CommissionName = dto.CommissionName;
+                    commission.RunFrom = dto.RunFrom;
+                    commission.RunTo = dto.RunTo;
+                    commission.FilterCondition = dto.FilterConditions;
+                    commission.Comments = dto.Comments;
+                }
+                else
                 {
-                    CommissionName = dto.CommissionName,
-                    RunFrom = dto.RunFrom,
-                    RunTo = dto.RunTo,
-                    FilterCondition = dto.FilterConditions,
-                    Comments = dto.Comments,
-                    CreatedAt = DateTime.Now,
-                    CreatedBy = username,
-                    OrgId = orgId,
-                    JobConfigId = job.JobConfigId
-                };
+                    //At time New Entry
+                    job = new JobConfig
+                    {
+                        JobName = dto.CommissionName,
+                        JobType = "CRON",
+                        TriggerType = "CRON",
+                        Enabled = false,
+                        StartAt = dto.RunFrom,
+                        EndAt = dto.RunTo,
+                        OrgId = orgId,
+                        Comments = dto.Comments,
+                        CreatedAt = DateTime.Now
+                    };
 
-                _context.CommissionConfigs.Add(commission);
+                    _context.JobConfigs.Add(job);
+                    await _context.SaveChangesAsync();
+
+                    commission = new CommissionConfig
+                    {
+                        CommissionName = dto.CommissionName,
+                        RunFrom = dto.RunFrom,
+                        RunTo = dto.RunTo,
+                        FilterCondition = dto.FilterConditions,
+                        Comments = dto.Comments,
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = username,
+                        OrgId = orgId,
+                        JobConfigId = job.JobConfigId
+                    };
+
+                    _context.CommissionConfigs.Add(commission);
+                }
+
                 await _context.SaveChangesAsync();
-
                 await tx.CommitAsync();
 
+                // Return the full DTO so the UI can proceed to Step 2 with the ID
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.commissionConfig = new List<CommissionConfigDTO>
-                    {
-                        new CommissionConfigDTO
-                        {
-                            CommissionConfigId = commission.CommissionConfigId,
-                            CommissionName = commission.CommissionName,
-                            RunFrom = commission.RunFrom,
-                            RunTo = commission.RunTo,
-                            FilterCondition = commission.FilterCondition,
-                            Comments = commission.Comments,
-                            JobConfigId = commission.JobConfigId,
-                            CreatedAt = commission.CreatedAt,
-                            CreatedBy = commission.CreatedBy
-                        }
-                    };
-
+                                            {
+                                                new CommissionConfigDTO
+                                                {
+                                                    CommissionConfigId = commission.CommissionConfigId,
+                                                    CommissionName = commission.CommissionName,
+                                                    RunFrom = commission.RunFrom,
+                                                    RunTo = commission.RunTo,
+                                                    JobConfigId = commission.JobConfigId,
+                                                    CreatedAt = commission.CreatedAt
+                                                }
+                                            };
                 return Ok(response);
             }
-            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("unique") == true)
             {
                 await tx.RollbackAsync();
-                _logger.LogWarning("Duplicate Commission or Job Name: {Name}", dto.CommissionName);
-
-                return Conflict(new { Message = "A commission or job with this name already exists." });
+                return Conflict(new { Message = "A commission with this name already exists." });
             }
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                _logger.LogError(ex, "Unexpected error creating commission");
-                return StatusCode(500, "An internal error occurred.");
+                _logger.LogError(ex, "Error in Create/Update Commission Step 1");
+                return StatusCode(500, "Internal server error");
             }
         }
 
@@ -182,7 +230,6 @@ namespace HMS.Controllers
             try
             {
                 var config = await _context.CommissionConfigs
-                                .AsNoTracking()
                                .FirstOrDefaultAsync(c =>
                                 c.CommissionConfigId == dto.CommissionConfigId
                                 && _context.JobConfigs.Any(j => j.JobConfigId == c.JobConfigId)
@@ -202,7 +249,7 @@ namespace HMS.Controllers
 
                 config.Conditions = dto.Condition;
 
-                _context.CommissionConfigs.Update(config);
+                //_context.CommissionConfigs.Update(config);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
@@ -242,7 +289,6 @@ namespace HMS.Controllers
             try
             {
                 var commission = await _context.CommissionConfigs
-                        .AsNoTracking()
                         .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
 
                 if (commission == null)
@@ -272,12 +318,11 @@ namespace HMS.Controllers
                     return NoContent();
                 }
 
-                job.JobType = dto.JobType;
-                job.TriggerType = dto.TriggerType;
-                job.CronExpression = dto.CronExpression;
+                job.JobType = dto.JobType ?? job.JobType;
+                job.TriggerType = dto.TriggerType ?? job.TriggerType;
+                job.CronExpression = dto.CronExpression ?? job.CronExpression;
                 job.UpdatedAt = DateTime.Now;
 
-                _context.JobConfigs.Update(job);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
@@ -317,7 +362,6 @@ namespace HMS.Controllers
             try
             {
                 var commission = await _context.CommissionConfigs
-                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
 
                 if (commission == null)
@@ -348,11 +392,10 @@ namespace HMS.Controllers
                 }
 
                 job.Enabled = dto.Enabled;
-                job.TargetType = dto.TargetType;
-                job.TargetMethod = dto.TargetMethod;
+                job.TargetType = dto.TargetType ?? job.TargetType;
+                job.TargetMethod = dto.TargetMethod ?? job.TargetMethod;
                 job.UpdatedAt = DateTime.Now;
 
-                _context.JobConfigs.Update(job);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;

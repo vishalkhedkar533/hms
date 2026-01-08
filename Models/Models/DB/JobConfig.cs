@@ -60,5 +60,8 @@ namespace Models.DB
 
         [Column("orgid")]
         public int? OrgId { get; set; }
+
+        [Column("comments")]
+        public string? Comments { get; set; }
     }
 }

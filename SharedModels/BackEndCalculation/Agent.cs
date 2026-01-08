@@ -11,7 +11,6 @@
         public PeopleHeirarchyDto? Supervisors { get; set; }
         public string? HierarchyPath { get; set; } = string.Empty;
     }
-
     public class Agent
     {
         // Primary Key
@@ -296,7 +295,6 @@
         public string? PreferredPaymentMode { get; set; }
         public string? AccountTypeDesc { get; set; }
     }
-
     public class PersonalInfo
     {
         public int PersonalInfoId { get; set; }
@@ -316,7 +314,6 @@
         public decimal? AnnualIncome { get; set; }
         public int? WorkExpMonths { get; set; }
     }
-
     public class Nominee
     {
         public int NomineeID { get; set; }

@@ -110,7 +110,7 @@ namespace Tasks.Insurance
                     CommRate = rate
                 },
                 // The markers where each NEW object starts in the SELECT list:
-                splitOn: "PolicyRef,OrgId,AgentId,InsuredID,OwnerID,CommRateId"
+                splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
             );
             var parameters = new[] {
                  Expression.Parameter(typeof(PremiumCollected), "premium"),

@@ -106,7 +106,7 @@ namespace Tasks.Insurance
                     foreach (var row in batchList)
                     {
                         rowCount++;
-                        row.Orgid = task.OrgId;
+                        row.OrgId = task.OrgId;
                         List<string> errors = new();
 
                         // Validation logic
@@ -138,7 +138,7 @@ namespace Tasks.Insurance
                         writer.Write(r.LastName ?? "");
                         writer.Write(r.Prefix ?? "");
                         writer.Write(r.Suffix ?? "");
-                        writer.Write(r.DOB?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.DoB?.ToString("yyyy-MM-dd") ?? "");
 
                         // 11-20
                         writer.Write(r.Nationality ?? "");
@@ -153,7 +153,7 @@ namespace Tasks.Insurance
                         writer.Write(r.MaskedPanNumber ?? "");
 
                         // 21-30
-                        writer.Write(r.aadhaar_number ?? "");
+                        writer.Write(r.AadhaarNumber ?? "");
                         writer.Write(r.IrdaLicenseNumber ?? "");
                         writer.Write(r.GstNumber ?? "");
                         writer.Write(r.CreatedBy ?? "");
@@ -193,24 +193,24 @@ namespace Tasks.Insurance
                         writer.Write(r.RefresherTrainingCompleted.ToString());
                         writer.Write(r.IsMigrated.ToString());
                         writer.Write(r.MainPartnerClientCode ?? "");
-                        writer.Write(r.AgentMaincodevwEid ?? "");
+                        writer.Write(r.AgentMainCodeVWEid ?? "");
                         writer.Write(r.RegistrationDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.Vertical ?? "");
                         writer.Write(r.BranchCode ?? "");
                         writer.Write(r.BranchName ?? "");
-                        writer.Write(r.Ic36TrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.IC36TrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
 
                         // 61-70
                         writer.Write(r.STrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.ConfirmationDate?.ToString("yyyy-MM-dd") ?? "");
-                        writer.Write(r.FgRockstarTrainingDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.FgRockStarTrainingDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.IncrementDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.LastPromotionDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.HRDoj?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.FgValueTrngDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.HSecPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "");
-                        writer.Write(r.ItSecPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "");
-                        writer.Write(r.NpsTrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.ITSecPolicyTrngDate?.ToString("yyyy-MM-dd") ?? "");
+                        writer.Write(r.NPSTrngCompletionDate?.ToString("yyyy-MM-dd") ?? "");
 
                         // 71-80
                         writer.Write(r.WhistleBlowerTrngDate?.ToString("yyyy-MM-dd") ?? "");
@@ -275,7 +275,7 @@ namespace Tasks.Insurance
                         // 121-130
                         writer.Write(r.FactoringHouse ?? "");
                         writer.Write(r.PreferredPaymentMode.ToString());
-                        writer.Write(r.DateOfBirth.ToString("yyyy-MM-dd"));
+                        writer.Write(r.DoB?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.PanNumber ?? "");
                         writer.Write(r.Email ?? "");
                         writer.Write(r.MobileNo ?? "");
@@ -285,7 +285,7 @@ namespace Tasks.Insurance
                         writer.Write(r.BirthPlace ?? "");
 
                         // 131-136
-                        writer.Write(r.MaritalStatus ?? 0);
+                        writer.Write(r.MartialStatus ?? 0);
                         writer.Write(r.EducationCode?.ToString() ?? "");
                         writer.Write(r.EducationLevel ?? "");
                         writer.Write(r.WorkProfile ?? "");

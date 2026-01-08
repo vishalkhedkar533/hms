@@ -3,9 +3,9 @@ using Dapper;
 using Database;
 using Quartz;
 using Repository;
+using SharedModels.BackEndCalculation;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
-using Tasks.Models.DB;
 
 namespace Tasks.Insurance
 {

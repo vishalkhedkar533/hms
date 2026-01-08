@@ -39,5 +39,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
+    <ProjectReference Include="..\..\SharedModels\SharedModels.csproj" />
   </ItemGroup>
 </Project>

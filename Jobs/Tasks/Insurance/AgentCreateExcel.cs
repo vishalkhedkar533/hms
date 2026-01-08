@@ -5,11 +5,11 @@ using Database;
 using MiniExcelLibs;
 using Quartz;
 using Repository;
+using SharedModels.BackEndCalculation;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tasks.Models;
-using Tasks.Models.DB;
 
 namespace Tasks.Insurance
 {

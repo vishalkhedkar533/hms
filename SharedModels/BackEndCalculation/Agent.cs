@@ -1,4 +1,4 @@
-﻿namespace Tasks.Models.DB
+﻿namespace SharedModels.BackEndCalculation
 {
     public class PeopleHeirarchyDto
     {

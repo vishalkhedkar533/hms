@@ -300,3 +300,6 @@ ADD COLUMN filter_condition VARCHAR(500);
 
 ALTER TABLE comss.commission_config 
 ADD COLUMN comments VARCHAR(2000) NULL;
+
+ALTER TABLE scheduler.job_config
+ADD COLUMN comments VARCHAR(2000) NULL;

@@ -70,7 +70,7 @@ namespace Models.DTO.CommissionMgmt
 
         public string? ExeStatus { get; set; }
         public string? DownloadLink { get; set; }
-
+        public string? Comments { get; set; }
         public TimeSpan? Duration =>
             FinishedAt.HasValue ? FinishedAt.Value - StartedAt : null;
     }

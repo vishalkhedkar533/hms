@@ -92,18 +92,16 @@ namespace Tasks.Insurance
             var CommCalcInput = await conn.QueryAsync<
                 PremiumCollected,
                 Ins_Policy,
-                Organisation,
                 Agent,
                 Insured,
                 Owner,
                 CommRate,
                 CommissionCalcRecord>(
                 operationMapping.Script,
-                (prem, pol, org, agnt, ins, own, rate) => new CommissionCalcRecord
+                (prem, pol, agnt, ins, own, rate) => new CommissionCalcRecord
                 {
                     PremiumCollected = prem,
                     Policy = pol,
-                    Organisation = org,
                     Agent = agnt,
                     Insured = ins,
                     Owner = own,
@@ -115,7 +113,6 @@ namespace Tasks.Insurance
             var parameters = new[] {
                  Expression.Parameter(typeof(PremiumCollected), "premium"),
                  Expression.Parameter(typeof(Ins_Policy), "policy"),
-                 Expression.Parameter(typeof(Organisation), "org"),
                  Expression.Parameter(typeof(Agent), "agent"),
                  Expression.Parameter(typeof(Insured), "insured"),
                  Expression.Parameter(typeof(Owner), "owner"),
@@ -135,7 +132,6 @@ namespace Tasks.Insurance
                 }
                 var result = compiledFormula.DynamicInvoke(record.PremiumCollected
                     , record.Policy
-                    , record.Organisation
                     , record.Agent
                     , record.Insured
                     , record.Owner

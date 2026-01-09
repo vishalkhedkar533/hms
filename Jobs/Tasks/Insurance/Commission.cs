@@ -3,7 +3,9 @@ using Dapper;
 using Database;
 using Quartz;
 using Repository;
-using Tasks.Models.DB;
+using SharedModels.BackEndCalculation;
+using System.Linq.Dynamic.Core;
+using System.Linq.Expressions;
 
 namespace Tasks.Insurance
 {
@@ -87,19 +89,56 @@ namespace Tasks.Insurance
 
             var conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
 
-            var result = await conn.QueryAsync<PremiumCollected, Ins_Policy, Organisation, Agent, CommissionCalcRecord>(
-            operationMapping.Script,
-            (prem, pol, org, agnt) => new CommissionCalcRecord
-            {
-                PremiumCollected = prem,
-                Policy = pol,
-                Organisation = org,
-                Agent = agnt
-            },
-            // 'splitOn' tells Dapper: when you see this column, start the next object
-            splitOn: "policyref,orgid,aadhaar_number"
-        );
+            var CommCalcInput = await conn.QueryAsync<
+                PremiumCollected,
+                Ins_Policy,
+                Agent,
+                Insured,
+                Owner,
+                CommRate,
+                CommissionCalcRecord>(
+                operationMapping.Script,
+                (prem, pol, agnt, ins, own, rate) => new CommissionCalcRecord
+                {
+                    PremiumCollected = prem,
+                    Policy = pol,
+                    Agent = agnt,
+                    Insured = ins,
+                    Owner = own,
+                    CommRate = rate
+                },
+                // The markers where each NEW object starts in the SELECT list:
+                splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
+            );
+            var parameters = new[] {
+                 Expression.Parameter(typeof(PremiumCollected), "premium"),
+                 Expression.Parameter(typeof(Ins_Policy), "policy"),
+                 Expression.Parameter(typeof(Agent), "agent"),
+                 Expression.Parameter(typeof(Insured), "insured"),
+                 Expression.Parameter(typeof(Owner), "owner"),
+                 Expression.Parameter(typeof(CommRate), "commrate")
+             };
 
+            string userFormula = "(premium.PremiumAmt ?? 0) * commrate.CommRateValue";
+            var e = DynamicExpressionParser.ParseLambda(parameters, typeof(decimal), userFormula);
+            var compiledFormula = e.Compile();
+
+            foreach (var record in CommCalcInput)
+            {
+                if (record.Policy == null || record.Agent == null || record.PremiumCollected == null)
+                {
+                    _logger.LogWarning("Skipping record due to null values: {@Record}", record);
+                    continue;
+                }
+                var result = compiledFormula.DynamicInvoke(record.PremiumCollected
+                    , record.Policy
+                    , record.Agent
+                    , record.Insured
+                    , record.Owner
+                    , record.CommRate);
+
+                Console.WriteLine( result );
+            }
         }
     }
 }

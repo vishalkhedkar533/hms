@@ -4,6 +4,7 @@ namespace Models.DTO.CommissionMgmt
 {
     public class CreateCommissionDto
     {
+        public int CommissionConfigId { get; set; }
         public string CommissionName { get; set; } = null!;
         public DateOnly RunFrom { get; set; }
         public DateOnly RunTo { get; set; }
@@ -70,7 +71,7 @@ namespace Models.DTO.CommissionMgmt
 
         public string? ExeStatus { get; set; }
         public string? DownloadLink { get; set; }
-
+        public string? Comments { get; set; }
         public TimeSpan? Duration =>
             FinishedAt.HasValue ? FinishedAt.Value - StartedAt : null;
     }

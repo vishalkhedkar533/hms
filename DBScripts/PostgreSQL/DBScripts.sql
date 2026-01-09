@@ -1906,3 +1906,33 @@ CREATE TABLE insu_core.tmp_ins_policy (
 
 CREATE UNIQUE INDEX uq_ins_policy_org_polno_suffix
 ON insu_core.ins_policy (orgid, policyno, policysuffix);
+
+--drop table insu_core.customer
+create table insu_core.customer(
+	clientid serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	pas_clientid varchar(10) null,
+	isstaff bool default false,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ null,
+    dob DATE null,
+    gender int null,
+    constraint fk_pas_cust_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+
+--drop table comss.comm_rate
+create table comss.comm_rate(
+	comm_rate serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	prod_code varchar(10) null,
+	comm_rate_from DATE null,
+	comm_rate_to DATE null,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	created_by VARCHAR(100),
+    updated_at TIMESTAMPTZ null,
+    updated_by VARCHAR(100),
+    constraint fk_pas_comm_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);

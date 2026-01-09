@@ -303,3 +303,4 @@ ADD COLUMN comments VARCHAR(2000) NULL;
 
 ALTER TABLE scheduler.job_config
 ADD COLUMN comments VARCHAR(2000) NULL;
+alter table insu_core.ins_policy add column prod_code varchar(10)

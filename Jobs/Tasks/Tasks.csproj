@@ -11,9 +11,13 @@
 
   <ItemGroup>
     <Compile Remove="bin\**" />
+    <Compile Remove="RejectedFiles\**" />
     <Content Remove="bin\**" />
+    <Content Remove="RejectedFiles\**" />
     <EmbeddedResource Remove="bin\**" />
+    <EmbeddedResource Remove="RejectedFiles\**" />
     <None Remove="bin\**" />
+    <None Remove="RejectedFiles\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -40,9 +44,5 @@
   <ItemGroup>
     <ProjectReference Include="..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
     <ProjectReference Include="..\..\SharedModels\SharedModels.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="RejectedFiles\" />
   </ItemGroup>
 </Project>

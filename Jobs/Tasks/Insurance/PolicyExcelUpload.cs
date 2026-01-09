@@ -1,12 +1,13 @@
 ﻿using CommonLibrary.mapping;
 using Dapper;
 using Database;
-using MiniExcelLibs;
 using Quartz;
 using Repository;
+using SharedModels.BackEndCalculation;
 using System.Text.RegularExpressions;
 using Tasks.Models;
-using Tasks.Models.DB;
+using MiniExcelLibs;
+
 
 namespace Tasks.Insurance
 {
@@ -153,34 +154,34 @@ namespace Tasks.Insurance
             }
             _logger.LogInformation("Policy Execel Upload Job Finished");
 
-            _logger.LogInformation("Policy Excel Upload Job Finished. Checking for rejected rows...");
+            //_logger.LogInformation("Policy Excel Upload Job Finished. Checking for rejected rows...");
 
-            // Step 1: Get rejected rows from temp table
-            var exportSql = _mappingProvider.GetScriptForOperation("Policy", "ExportRejectedPolicy")!.Script;
+            //// Step 1: Get rejected rows from temp table
+            //var exportSql = _mappingProvider.GetScriptForOperation("Policy", "ExportRejectedPolicy")!.Script;
 
-            // Pass OrgId as a parameter
-            var rejectedRows = await conn.QueryAsync<Ins_Policy>(exportSql,new { OrgId = orgId });
+            //// Pass OrgId as a parameter
+            //var rejectedRows = await conn.QueryAsync<Ins_Policy>(exportSql,new { OrgId = orgId });
 
-            if (rejectedRows.Any())
-            {
-                // Step 2: Generate Excel file for rejected rows
-                var fileName = $"Rejected_Policies_{orgId}_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
+            //if (rejectedRows.Any())
+            //{
+            //    // Step 2: Generate Excel file for rejected rows
+            //    var fileName = $"Rejected_Policies_{orgId}_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
 
-                var rootFolder = @"E:\HMS2\Jobs\Tasks\RejectedFiles"; // choose your folder
-                Directory.CreateDirectory(rootFolder);
+            //    var rootFolder = @"E:\HMS2\Jobs\Tasks\RejectedFiles"; // choose your folder
+            //    Directory.CreateDirectory(rootFolder);
 
-                var filePath = Path.Combine(rootFolder, fileName);
+            //    var filePath = Path.Combine(rootFolder, fileName);
 
-                // Step 3: Save the object list to Excel
-                await using var stream = new FileStream(filePath, FileMode.Create);
-                await MiniExcel.SaveAsAsync(stream, rejectedRows);
+            //    // Step 3: Save the object list to Excel
+            //    await using var stream = new FileStream(filePath, FileMode.Create);
+            //    await MiniExcel.SaveAsAsync(stream, rejectedRows);
 
-                _logger.LogInformation("Rejected rows exported to Excel: {FilePath}", filePath);
-            }
-            else
-            {
-                _logger.LogInformation("No rejected rows found for OrgId={OrgId}", orgId);
-            }
+            //    _logger.LogInformation("Rejected rows exported to Excel: {FilePath}", filePath);
+            //}
+            //else
+            //{
+            //    _logger.LogInformation("No rejected rows found for OrgId={OrgId}", orgId);
+            //}
         }
 
         private static List<string> ValidatePolicyRow(Ins_Policy row, int rowNo)

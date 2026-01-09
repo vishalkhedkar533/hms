@@ -77,5 +77,7 @@ namespace SharedModels.BackEndCalculation
         [Column("prod_code")]
         [Description("prodcode")]
         public string? ProdCode { get; set; }
+        public string? Comments { get; set; }
+        public string? Reason { get; set; }
     }
 }

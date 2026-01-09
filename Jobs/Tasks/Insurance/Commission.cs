@@ -88,6 +88,8 @@ namespace Tasks.Insurance
                 ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
 
             var conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+            var sqlParams = new DynamicParameters();
+            sqlParams.Add("@orgid", orgId);
 
             var CommCalcInput = await conn.QueryAsync<
                 PremiumCollected,
@@ -108,7 +110,7 @@ namespace Tasks.Insurance
                     CommRate = rate
                 },
                 // The markers where each NEW object starts in the SELECT list:
-                splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
+                sqlParams, null, splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
             );
             var parameters = new[] {
                  Expression.Parameter(typeof(PremiumCollected), "premium"),

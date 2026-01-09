@@ -1946,3 +1946,16 @@ create table comss.comm_calc_rslt(
     constraint fk_comm_rslt_org 
         foreign key (orgId) references app_subscription.organisation(orgId)
 );
+
+create table scheduler.job_extns(
+	job_config_id int4 not null,
+	orgId int not null,
+	comments varchar(500),
+	filter varchar(10000),
+
+	constraint fk_job_hist_cfg
+        foreign key (job_config_id) references scheduler.job_config(job_config_id),
+        
+    constraint fk_job_hist_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);

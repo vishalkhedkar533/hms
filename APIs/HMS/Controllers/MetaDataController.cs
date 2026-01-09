@@ -9,7 +9,7 @@ namespace HMS.Controllers
     [Route("api/[controller]")]
     public class MetaDataController : Controller
     {
-        [HttpGet("MetaData")]
+        [HttpGet("Fetch")]
         public IActionResult GetHMSMetaData()
         {
             var metaDataResponse = new MetaDataResponse();
@@ -19,12 +19,14 @@ namespace HMS.Controllers
             var insuredProperties = typeof(SharedModels.BackEndCalculation.Insured).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var ownerProperties = typeof(SharedModels.BackEndCalculation.Owner).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             var commrateProperties = typeof(SharedModels.BackEndCalculation.CommRate).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var premiumProperties = typeof(SharedModels.BackEndCalculation.PremiumCollected).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             metaDataResponse.agent = GetMetaDataForType<SharedModels.BackEndCalculation.Agent>(agentProperties);
             metaDataResponse.policy = GetMetaDataForType<SharedModels.BackEndCalculation.Ins_Policy>(policyProperties);
             metaDataResponse.insured = GetMetaDataForType<SharedModels.BackEndCalculation.Insured>(insuredProperties);
             metaDataResponse.owner = GetMetaDataForType<SharedModels.BackEndCalculation.Owner>(ownerProperties);
             metaDataResponse.commrate = GetMetaDataForType<SharedModels.BackEndCalculation.CommRate>(commrateProperties);
+            metaDataResponse.premium = GetMetaDataForType<SharedModels.BackEndCalculation.PremiumCollected>(premiumProperties);
 
             return Ok(metaDataResponse);
         }
@@ -48,14 +50,15 @@ namespace HMS.Controllers
                         // Fallback to Property Name if [Column] attribute is missing
                         ColumnName = columnAttr?.Name ?? prop.Name,
                         Description = descAttr.Description,
+                        DataType = (Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType).FullName,
+                        IsNullable = Nullable.GetUnderlyingType(prop.PropertyType) != null || !prop.PropertyType.IsValueType
                     }
-                    );
+                    );                    
                 }
             }
             return metadataList;
         }
     }
-
     public class MetaDataResponse
     {
         public List<MetaProperty> policy { get; set; }
@@ -64,14 +67,13 @@ namespace HMS.Controllers
         public List<MetaProperty> insured { get; set; }
         public List<MetaProperty> owner { get; set; }
         public List<MetaProperty> commrate { get; set; }
-
     }
-
     public class MetaProperty
     {
         public string PropertyName { get; set; }
         public string ColumnName { get; set; }
         public string Description { get; set; }
+        public string DataType { get; set; }
+        public bool IsNullable { get; set; }
     }
-
 }

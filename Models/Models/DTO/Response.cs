@@ -1,6 +1,7 @@
 ﻿using Models.DB;
 using Models.DTO.CommissionMgmt;
 using Models.DTO.CommissionMgmt.Dashboard;
+using SharedModels;
 
 namespace Models.DTO
 {
@@ -31,6 +32,7 @@ namespace Models.DTO
         public List<CommissionConfigDTO>? commissionConfig { get; set; } = null;
         public List<JobExecutionHistoryDto>? jobExecutionHistory { get; set; } = null;
         public List<CommissionMetadata>? CommissionMetadata { get; set; } = null;
+        public MetaDataResponse? metaDataResponse { get; set; } = null;
     }
 
     public class LoginResponse

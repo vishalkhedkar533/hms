@@ -1,5 +1,7 @@
 ﻿using HMS.Security;
 using Microsoft.AspNetCore.Mvc;
+using Models.DTO;
+using SharedModels;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
@@ -10,27 +12,47 @@ namespace HMS.Controllers
     [Route("api/[controller]")]
     public class MetaDataController : Controller
     {
+        private readonly ILogger<MetaDataController> _logger;
+        public MetaDataController(ILogger<MetaDataController> logger)
+        {
+            _logger = logger;
+        }
         [HttpGet("Fetch")]
         [MenuAuthorize(1001)]
-        public IActionResult GetHMSMetaData()
+        public async Task<IActionResult> GetHMSMetaData()
         {
-            var metaDataResponse = new MetaDataResponse();
-            var metadataList = new List<MetaProperty>();
-            var agentProperties = typeof(SharedModels.BackEndCalculation.Agent).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var policyProperties = typeof(SharedModels.BackEndCalculation.Ins_Policy).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var insuredProperties = typeof(SharedModels.BackEndCalculation.Insured).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var ownerProperties = typeof(SharedModels.BackEndCalculation.Owner).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var commrateProperties = typeof(SharedModels.BackEndCalculation.CommRate).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            var premiumProperties = typeof(SharedModels.BackEndCalculation.PremiumCollected).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            try
+            {
+                HmsResponse hMSResponse = new HmsResponse();
+                var metaDataResponse = new MetaDataResponse();
+                var metadataList = new List<MetaProperty>();
+                var agentProperties = typeof(SharedModels.BackEndCalculation.Agent).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                var policyProperties = typeof(SharedModels.BackEndCalculation.Ins_Policy).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                var insuredProperties = typeof(SharedModels.BackEndCalculation.Insured).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                var ownerProperties = typeof(SharedModels.BackEndCalculation.Owner).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                var commrateProperties = typeof(SharedModels.BackEndCalculation.CommRate).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                var premiumProperties = typeof(SharedModels.BackEndCalculation.PremiumCollected).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
-            metaDataResponse.agent = GetMetaDataForType<SharedModels.BackEndCalculation.Agent>(agentProperties);
-            metaDataResponse.policy = GetMetaDataForType<SharedModels.BackEndCalculation.Ins_Policy>(policyProperties);
-            metaDataResponse.insured = GetMetaDataForType<SharedModels.BackEndCalculation.Insured>(insuredProperties);
-            metaDataResponse.owner = GetMetaDataForType<SharedModels.BackEndCalculation.Owner>(ownerProperties);
-            metaDataResponse.commrate = GetMetaDataForType<SharedModels.BackEndCalculation.CommRate>(commrateProperties);
-            metaDataResponse.premium = GetMetaDataForType<SharedModels.BackEndCalculation.PremiumCollected>(premiumProperties);
-
-            return Ok(metaDataResponse);
+                metaDataResponse.agent = GetMetaDataForType<SharedModels.BackEndCalculation.Agent>(agentProperties);
+                metaDataResponse.policy = GetMetaDataForType<SharedModels.BackEndCalculation.Ins_Policy>(policyProperties);
+                metaDataResponse.insured = GetMetaDataForType<SharedModels.BackEndCalculation.Insured>(insuredProperties);
+                metaDataResponse.owner = GetMetaDataForType<SharedModels.BackEndCalculation.Owner>(ownerProperties);
+                metaDataResponse.commrate = GetMetaDataForType<SharedModels.BackEndCalculation.CommRate>(commrateProperties);
+                metaDataResponse.premium = GetMetaDataForType<SharedModels.BackEndCalculation.PremiumCollected>(premiumProperties);
+                hMSResponse.responseBody.metaDataResponse = metaDataResponse;
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Meta Data Retrival at {UtcNow} Exception {message}", DateTime.UtcNow, ex.Message);
+                return StatusCode(503, new
+                {
+                    status = "Failed",
+                    database = "File Retrival",
+                    error = ex.Message,
+                    timestamp = DateTime.UtcNow
+                });
+            }
         }
         private List<MetaProperty> GetMetaDataForType<T>(PropertyInfo[] propertyInfo)
         {
@@ -55,27 +77,12 @@ namespace HMS.Controllers
                         DataType = (Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType).FullName,
                         IsNullable = Nullable.GetUnderlyingType(prop.PropertyType) != null || !prop.PropertyType.IsValueType
                     }
-                    );                    
+                    );
                 }
             }
             return metadataList;
         }
     }
-    public class MetaDataResponse
-    {
-        public List<MetaProperty> policy { get; set; }
-        public List<MetaProperty> agent { get; set; }
-        public List<MetaProperty> premium { get; set; }
-        public List<MetaProperty> insured { get; set; }
-        public List<MetaProperty> owner { get; set; }
-        public List<MetaProperty> commrate { get; set; }
-    }
-    public class MetaProperty
-    {
-        public string PropertyName { get; set; }
-        public string ColumnName { get; set; }
-        public string Description { get; set; }
-        public string DataType { get; set; }
-        public bool IsNullable { get; set; }
-    }
+
+
 }

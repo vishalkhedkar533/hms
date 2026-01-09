@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using HMS.Security;
+using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
@@ -10,6 +11,7 @@ namespace HMS.Controllers
     public class MetaDataController : Controller
     {
         [HttpGet("Fetch")]
+        [MenuAuthorize(1001)]
         public IActionResult GetHMSMetaData()
         {
             var metaDataResponse = new MetaDataResponse();

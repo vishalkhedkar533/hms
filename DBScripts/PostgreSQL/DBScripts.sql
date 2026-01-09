@@ -1844,17 +1844,19 @@ CREATE TABLE insu_core.ins_policy (
 ALTER TABLE insu_core.ins_policy ADD CONSTRAINT fk_pol_agent FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id) ON DELETE CASCADE;
 ALTER TABLE insu_core.ins_policy ADD CONSTRAINT fk_pol_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 
-CREATE TABLE insu_core."premium_collected" (
-	premiuCollId serial4 NOT NULL,
+-- DROP TABLE insu_core.premium_collected;
+CREATE TABLE insu_core.premium_collected (
+	premiucollid serial4 NOT NULL,
 	orgid int4 NOT NULL,
 	policyref int4 NULL,
-	premium_received_dt date null,
-	premium_type int4 null, /*select * from hmsmaster.keyvalueentries where entrycategory = 'PREMIUM_COLLECTED_TYPE'*/
-	premium_amt decimal null,
-	CONSTRAINT premiuCollId_pkey PRIMARY KEY (premiuCollId)
+	premium_received_dt date NULL,
+	premium_type int4 NULL,
+	premium_amt numeric NULL,
+	CONSTRAINT premiucollid_pkey PRIMARY KEY (premiucollid)
 );
 
-ALTER TABLE insu_core."premium_collected" ADD CONSTRAINT fk_prem_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+ALTER TABLE insu_core.premium_collected ADD CONSTRAINT fk_prem_org 
+            FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 --drop table scheduler.job_exe_hist
 
 create table scheduler.job_exe_hist(
@@ -1921,7 +1923,6 @@ create table insu_core.customer(
         foreign key (orgId) references app_subscription.organisation(orgId)
 );
 
-
 --drop table comss.comm_rate
 create table comss.comm_rate(
 	comm_rate serial4 NOT NULL,
@@ -1934,5 +1935,14 @@ create table comss.comm_rate(
     updated_at TIMESTAMPTZ null,
     updated_by VARCHAR(100),
     constraint fk_pas_comm_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+--drop table comss.comm_calc_rslt
+create table comss.comm_calc_rslt(
+	comm_calc_rslt_id serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	prod_code varchar(10) null,
+    constraint fk_comm_rslt_org 
         foreign key (orgId) references app_subscription.organisation(orgId)
 );

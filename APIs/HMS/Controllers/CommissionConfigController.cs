@@ -493,6 +493,7 @@ namespace HMS.Controllers
                         CreatedBy = cc.CreatedBy,
                         Conditions = cc.Conditions,
                         JobConfigId = cc.JobConfigId,
+                        FilterCondition = cc.FilterCondition,
 
                         // -------- JobConfig --------
                         JobType = jc.JobType,
@@ -504,7 +505,8 @@ namespace HMS.Controllers
                         UpdatedAt = jc.UpdatedAt,
                         TargetType = jc.TargetType,
                         TargetMethod = jc.TargetMethod,
-                        Args = jc.Args
+                        Args = jc.Args,
+                        Comments = jc.Comments
                     }
                 ).ToListAsync();
 

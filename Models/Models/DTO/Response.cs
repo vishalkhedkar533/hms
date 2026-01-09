@@ -29,6 +29,7 @@ namespace Models.DTO
         public AdjustCommissionResponseDto? adjustCommission { get; set; }
         public ApproveCommissionResponseDto? approveCommission { get; set; }
         public List<CommissionConfigDTO>? commissionConfig { get; set; } = null; 
+        public string? updatedAgentSectionName { get; set; } = null;
     }
 
     public class LoginResponse

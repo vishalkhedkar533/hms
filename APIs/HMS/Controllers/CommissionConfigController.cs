@@ -55,7 +55,7 @@ namespace HMS.Controllers
                         RunTo = cc.RunTo,
 
                         // Step 2: Formula
-                        Conditions = cc.Conditions,
+                        Formula = cc.Formula,
 
                         // Step 3: Schedule Configuration
                         JobConfigId = cc.JobConfigId,
@@ -265,7 +265,7 @@ namespace HMS.Controllers
                     return NoContent();
                 }
 
-                config.Conditions = dto.Condition;
+                config.Formula = dto.Formula;
 
                 //_context.CommissionConfigs.Update(config);
                 await _context.SaveChangesAsync();
@@ -281,7 +281,7 @@ namespace HMS.Controllers
                                         CommissionName     = config.CommissionName,
                                         RunFrom            = config.RunFrom,
                                         RunTo              = config.RunTo,
-                                        Conditions         = config.Conditions,
+                                        Formula         = config.Formula,
                                         CreatedAt          = config.CreatedAt,
                                         CreatedBy          = config.CreatedBy,
                                         JobConfigId        = config.JobConfigId
@@ -509,6 +509,7 @@ namespace HMS.Controllers
                                     CommissionName = cc.CommissionName,
                                     RunFrom = cc.RunFrom,
                                     RunTo = cc.RunTo,
+                                    Formula=cc.Formula,
                                     CreatedAt = cc.CreatedAt,
                                     CreatedBy = cc.CreatedBy,
                                     JobConfigId = cc.JobConfigId,

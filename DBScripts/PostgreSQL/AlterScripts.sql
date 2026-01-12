@@ -333,6 +333,9 @@ alter table comss.commission_config alter conditions TYPE varchar(10000);
 alter table comss.commission_config add formula varchar(10000);
 alter table comss.commission_config drop column conditions ;
 
+alter table insu_core.tmp_ins_policy add column prod_code varchar(10)
+alter table comss.commission_config drop column conditions ;
+
 ALTER TABLE comss.commission_config DROP COLUMN run_from;
 ALTER TABLE comss.commission_config DROP COLUMN run_to;
 ALTER TABLE comss.commission_config DROP COLUMN next_run_dt;

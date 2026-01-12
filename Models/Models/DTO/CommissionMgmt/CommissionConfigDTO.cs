@@ -11,7 +11,11 @@ namespace Models.DTO.CommissionMgmt
         public string? FilterConditions { get; set; }
         public string? Comments { get; set; }
     }
-
+    public class CommissionConditionUpdateDto
+    {
+        public int CommissionConfigId { get; set; }
+        public string Formula { get; set; } = string.Empty;
+    }
     public class UpdateCronDto
     {
         public int CommissionConfigId { get; set; }
@@ -38,7 +42,7 @@ namespace Models.DTO.CommissionMgmt
         public DateOnly RunTo { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
-        public string? Conditions { get; set; }
+        public string? Formula { get; set; }
         // Additional properties or methods can be added here as needed
 
         public int JobConfigId { get; set; }

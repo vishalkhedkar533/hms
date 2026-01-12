@@ -136,6 +136,7 @@ namespace Tasks.Insurance
                         writer.Write(r.MaturityAgeInMonths?.ToString() ?? "");
                         writer.Write(r.ModalBasePremium?.ToString() ?? "");
                         writer.Write(r.ModalBaseRiderPremium?.ToString() ?? "");
+                        writer.Write(r.ProdCode?.ToString() ?? "");
                         writer.Write(r.Comments ?? "");
                         writer.Write(r.Reason ?? "");
                     }

@@ -133,11 +133,8 @@ namespace Tasks.Insurance
                     continue;
                 }
                 var result = compiledFormula.DynamicInvoke(record.PremiumCollected
-                    , record.Policy
-                    , record.Agent
-                    , record.Insured
-                    , record.Owner
-                    , record.CommRate);
+                    , record.Policy, record.Agent, record.Insured
+                    , record.Owner , record.CommRate);
 
                 Console.WriteLine( result );
             }

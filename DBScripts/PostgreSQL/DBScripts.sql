@@ -1947,15 +1947,20 @@ create table comss.comm_calc_rslt(
         foreign key (orgId) references app_subscription.organisation(orgId)
 );
 
-create table scheduler.job_extns(
-	job_config_id int4 not null,
-	orgId int not null,
-	comments varchar(500),
-	filter varchar(10000),
+drop table scheduler.job_extns;
 
-	constraint fk_job_hist_cfg
-        foreign key (job_config_id) references scheduler.job_config(job_config_id),
+CREATE TABLE scheduler.job_extns (
+    job_config_id int4 NOT NULL,
+    orgId int NOT NULL,
+    comments varchar(500),
+    filter varchar(10000),
+
+    -- Unique constraint ensures one extension per job config
+    CONSTRAINT uq_job_config_id UNIQUE (job_config_id),
+
+    CONSTRAINT fk_job_hist_cfg
+        FOREIGN KEY (job_config_id) REFERENCES scheduler.job_config(job_config_id),
         
-    constraint fk_job_hist_org 
-        foreign key (orgId) references app_subscription.organisation(orgId)
+    CONSTRAINT fk_job_hist_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId)
 );

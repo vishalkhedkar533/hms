@@ -23,5 +23,15 @@ namespace SharedModels.BackEndCalculation
         [Column("premium_amt")]
         [Description("premium_amt")]
         public decimal? PremiumAmt { get; set; }
+        [Column("prem_coll_yr")]
+        [Description("prem_coll_yr")]
+        public int? PremCollectedYr { get; set; }
+
+        [Column("prem_coll_qtr")]
+        [Description("prem_coll_qtr")]
+        public int? PremCollectedQtr { get; set; }
+        [Column("prem_coll_fin_yr")]
+        [Description("prem_coll_fin_yr")]
+        public string? PremCollectedFinYr { get; set; }
     }
 }

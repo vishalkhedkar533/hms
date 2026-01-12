@@ -35,5 +35,11 @@ namespace SharedModels.BackEndCalculation
         [Column("updated_by")]
         [Description("updated_by")]
         public string? UpdatedBy { get; set; }
+        [Column("pol_yr_from")]
+        [Description("pol_yr_from")]
+        public int? PolicyYearFrom { get; set; }
+        [Column("pol_yr_to")]
+        [Description("pol_yr_to")]
+        public int? PolicyYearTo { get; set; }
     }
 }

@@ -302,4 +302,19 @@ ADD COLUMN comments VARCHAR(2000) NULL;
 
 ALTER TABLE scheduler.job_config
 ADD COLUMN comments VARCHAR(2000) NULL;
-alter table insu_core.ins_policy add column prod_code varchar(10)
+
+alter table insu_core.ins_policy add column prod_code varchar(10);
+
+alter table comss.comm_rate add column pol_yr_from int4 null;
+alter table comss.comm_rate add column pol_yr_to int4 null;
+
+alter table insu_core.premium_collected add column prem_coll_yr int4 null;
+alter table insu_core.premium_collected add column prem_coll_qtr int4 null;
+alter table insu_core.premium_collected add column prem_coll_fin_yr varchar(10) null;
+
+alter table comss.comm_rate alter column pol_yr_from set not null;
+alter table comss.comm_rate alter column pol_yr_to set not null;
+
+alter table insu_core.premium_collected alter column prem_coll_yr set not null;
+alter table insu_core.premium_collected alter column prem_coll_qtr set not null;
+alter table insu_core.premium_collected alter column prem_coll_fin_yr set not null;

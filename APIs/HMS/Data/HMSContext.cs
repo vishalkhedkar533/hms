@@ -44,6 +44,7 @@ namespace HMS.Data
         public DbSet<CommissionConfig> CommissionConfigs => Set<CommissionConfig>();
         public DbSet<JobConfig> JobConfigs => Set<JobConfig>();
         public DbSet<JobExeHist> JobExeHists => Set<JobExeHist>();
+        public DbSet<JobExtns> JobExtns => Set<JobExtns>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

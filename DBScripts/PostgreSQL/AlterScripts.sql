@@ -302,6 +302,16 @@ ADD COLUMN comments VARCHAR(2000) NULL;
 
 ALTER TABLE scheduler.job_config
 ADD COLUMN comments VARCHAR(2000) NULL;
+alter table insu_core.ins_policy add column prod_code varchar(10)
+
+ALTER TABLE scheduler.job_config
+DROP COLUMN comments;
+
+ALTER TABLE comss.commission_config
+DROP COLUMN filter_condition;
+
+ALTER TABLE comss.commission_config
+DROP COLUMN comments;
 
 alter table insu_core.ins_policy add column prod_code varchar(10);
 
@@ -318,3 +328,7 @@ alter table comss.comm_rate alter column pol_yr_to set not null;
 alter table insu_core.premium_collected alter column prem_coll_yr set not null;
 alter table insu_core.premium_collected alter column prem_coll_qtr set not null;
 alter table insu_core.premium_collected alter column prem_coll_fin_yr set not null;
+
+alter table comss.commission_config alter conditions TYPE varchar(10000);
+alter table comss.commission_config add formula varchar(10000);
+alter table comss.commission_config drop column conditions ;

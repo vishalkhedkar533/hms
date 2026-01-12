@@ -1976,6 +1976,7 @@ CREATE TABLE scheduler.comm_job_exe_dtls (
     premium_amt int not null,
     formula varchar(10000),
     comm_amt int4 not null default 0, 
+    logs varchar(10000),
     CONSTRAINT uq_comm_job_exe_hist_id UNIQUE (job_exe_hist_id),
     
     CONSTRAINT fk_job_exe_hist

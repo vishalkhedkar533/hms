@@ -34,15 +34,10 @@ namespace Models.DB
         [Column("created_by")]
         public string? CreatedBy { get; set; }
 
-        [Column("conditions")]
-        public string? Conditions { get; set; }
+        [Column("formula")]
+        public string? Formula { get; set; }
 
         [Column("job_config_id")]
         public int JobConfigId { get; set; }
-    }
-    public class CommissionConditionUpdateDto
-    {
-        public int CommissionConfigId { get; set; }
-        public string Condition { get; set; } = string.Empty;
     }
 }

@@ -1966,9 +1966,10 @@ CREATE TABLE scheduler.job_extns (
 );
 
 
---drop table scheduler.comm_job_exe_dtls;
+--drop table comss.comm_job_exe_dtls;
 
-CREATE TABLE scheduler.comm_job_exe_dtls (
+CREATE TABLE comss.comm_job_exe_dtls (
+    comm_job_exe_dtls_id serial4 NOT NULL,
     job_exe_hist_id int4 NOT NULL,
     orgId int NOT NULL,
     agent_id int not null,
@@ -1977,8 +1978,6 @@ CREATE TABLE scheduler.comm_job_exe_dtls (
     formula varchar(10000),
     comm_amt int4 not null default 0, 
     logs varchar(10000),
-    CONSTRAINT uq_comm_job_exe_hist_id UNIQUE (job_exe_hist_id),
-    
     CONSTRAINT fk_job_exe_hist
         FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id),
     

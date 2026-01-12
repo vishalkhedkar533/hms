@@ -332,3 +332,10 @@ alter table insu_core.premium_collected alter column prem_coll_fin_yr set not nu
 alter table comss.commission_config alter conditions TYPE varchar(10000);
 alter table comss.commission_config add formula varchar(10000);
 alter table comss.commission_config drop column conditions ;
+
+ALTER TABLE comss.commission_config DROP COLUMN run_from;
+ALTER TABLE comss.commission_config DROP COLUMN run_to;
+ALTER TABLE comss.commission_config DROP COLUMN next_run_dt;
+ALTER TABLE comss.commission_config DROP COLUMN last_run_dt;
+ALTER TABLE comss.commission_config DROP COLUMN commission_name;
+

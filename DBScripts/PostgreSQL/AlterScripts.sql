@@ -332,3 +332,5 @@ alter table insu_core.premium_collected alter column prem_coll_fin_yr set not nu
 alter table comss.commission_config alter conditions TYPE varchar(10000);
 alter table comss.commission_config add formula varchar(10000);
 alter table comss.commission_config drop column conditions ;
+
+alter table insu_core.tmp_ins_policy add column prod_code varchar(10)

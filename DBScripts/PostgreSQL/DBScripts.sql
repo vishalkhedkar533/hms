@@ -1966,15 +1966,17 @@ CREATE TABLE scheduler.job_extns (
 );
 
 
---drop table scheduler.job_exe_dtls;
+--drop table scheduler.comm_job_exe_dtls;
 
-CREATE TABLE scheduler.job_exe_dtls (
+CREATE TABLE scheduler.comm_job_exe_dtls (
     job_exe_hist_id int4 NOT NULL,
     orgId int NOT NULL,
     agent_id int not null,
     premiucollid  int not null,
     premium_amt int not null,
-    CONSTRAINT uq_job_exe_hist_id UNIQUE (job_exe_hist_id),
+    formula varchar(10000),
+    comm_amt int4 not null default 0, 
+    CONSTRAINT uq_comm_job_exe_hist_id UNIQUE (job_exe_hist_id),
     
     CONSTRAINT fk_job_exe_hist
         FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id),
@@ -1983,9 +1985,9 @@ CREATE TABLE scheduler.job_exe_dtls (
         FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId),
     
     CONSTRAINT fk_agnt_id
-        FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id)
+        FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id),
     
     CONSTRAINT fk_prem_coll_id
-        FOREIGN KEY (premiucollid) REFERENCES insu_core.premium_collected(premiucollid)
-      
+        FOREIGN KEY (premiucollid) REFERENCES insu_core.premium_collected(premiucollid)      
 );
+

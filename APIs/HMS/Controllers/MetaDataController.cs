@@ -1,6 +1,7 @@
 ﻿using HMS.Security;
 using Microsoft.AspNetCore.Mvc;
 using Models.DTO;
+using Models.HMSConsts;
 using SharedModels;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -40,6 +41,8 @@ namespace HMS.Controllers
                 metaDataResponse.commrate = GetMetaDataForType<SharedModels.BackEndCalculation.CommRate>(commrateProperties);
                 metaDataResponse.premium = GetMetaDataForType<SharedModels.BackEndCalculation.PremiumCollected>(premiumProperties);
                 hMSResponse.responseBody.metaDataResponse = metaDataResponse;
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
                 return Ok(hMSResponse);
             }
             catch (Exception ex)

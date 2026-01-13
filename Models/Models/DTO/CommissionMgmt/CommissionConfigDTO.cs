@@ -38,22 +38,23 @@ namespace Models.DTO.CommissionMgmt
         public string? CommissionName { get; set; }
 
         //public string? TriggerCycle { get; set; }
-        public DateOnly RunFrom { get; set; }
-        public DateOnly RunTo { get; set; }
+        public DateOnly? RunFrom { get; set; }
+        public DateOnly? RunTo { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
         public string? Formula { get; set; }
         // Additional properties or methods can be added here as needed
 
         public int JobConfigId { get; set; }
-        //public string JobName { get; set; } = null!;
+
+        public string JobName { get; set; } = null!;
         public string JobType { get; set; } = null!;
         public bool Enabled { get; set; } = true;
         public string TriggerType { get; set; } = null!;
         public string? CronExpression { get; set; }
         public int? IntervalSeconds { get; set; }
-        //public DateTimeOffset? StartAt { get; set; }
-        //public DateTimeOffset? EndAt { get; set; }
+        public DateOnly? StartAt { get; set; }
+        public DateOnly? EndAt { get; set; }
         public JsonDocument? Parameters { get; set; }
         //public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? UpdatedAt { get; set; }

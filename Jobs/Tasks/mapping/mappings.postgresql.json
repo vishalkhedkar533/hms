@@ -11,13 +11,6 @@
         "Script": "INSERT INTO scheduler.job_exe_hist(job_exe_hist_id, job_config_id, started_at, finished_at, exe_status, download_lnk, orgid)VALUES(nextval('scheduler.job_exe_hist_job_exe_hist_id_seq'::regclass), @job_config_id, now(), null, @exe_status, null, @orgid) RETURNING job_exe_hist_id"
       }
     },
-    "insu_core.premium_collected": {
-      "Fetch": {
-        "ConnectionStringKey": "CommissionDB",
-        "Function": "GetPremiumData",
-        "Script": "SELECT premiucollid, orgid, policyref, premium_received_dt, premium_type, premium_amt FROM insu_core.premium_collected WHERE orgId= @orgId"
-      }
-    },
     "Agent": {
       "GetPendingTasks": {
         "ConnectionStringKey": "CommissionDB",
@@ -74,6 +67,25 @@
       "ExportRejectedPolicy": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT * FROM insu_core.tmp_ins_policy WHERE comments = 'Rejected' AND orgid = @OrgId::text"
+      }
+    },
+    "insu_core.premium_collected": {
+      "Fetch": {
+        "ConnectionStringKey": "CommissionDB",
+        "Function": "GetPremiumData",
+        "Script": "SELECT premiucollid, orgid, policyref, premium_received_dt, premium_type, premium_amt FROM insu_core.premium_collected WHERE orgId= @orgId"
+      },
+      "GetPendingTasks": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT filepath, orgid FROM hms.fileprocessingtasks WHERE status = 'Pending' AND filename='premium_collected'"
+      },
+      "BulkCopyTempPremium": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "COPY insu_core.tmp_premium_collected (orgid, policyref, premium_received_dt, premium_type, premium_amt,prem_coll_yr,prem_coll_qtr,prem_coll_fin_yr, comments, reason) FROM STDIN (FORMAT BINARY)"
+      },
+      "FinalizePremium": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "WITH src AS (\n    SELECT\n        orgid::int                                AS orgid,\n        NULLIF(policyref,'')::int                AS policyref,\n        NULLIF(premium_received_dt,'')::date     AS premium_received_dt,\n        NULLIF(premium_type,'')::int             AS premium_type,\n        NULLIF(premium_amt,'')::numeric          AS premium_amt,\n        NULLIF(prem_coll_yr,'')::int             AS prem_coll_yr,\n        NULLIF(prem_coll_qtr,'')::int            AS prem_coll_qtr,\n        prem_coll_fin_yr::varchar(10)             AS prem_coll_fin_yr\n    FROM insu_core.tmp_premium_collected\n    WHERE comments = 'Processed'\n),\ninserted AS (\n    INSERT INTO insu_core.premium_collected (\n        orgid,\n        policyref,\n        premium_received_dt,\n        premium_type,\n        premium_amt,\n        prem_coll_yr,\n        prem_coll_qtr,\n        prem_coll_fin_yr\n    )\n    SELECT\n        orgid,\n        policyref,\n        premium_received_dt,\n        premium_type,\n        premium_amt,\n        prem_coll_yr,\n        prem_coll_qtr,\n        prem_coll_fin_yr\n    FROM src\n    RETURNING premiucollid\n)\nSELECT COUNT(1) FROM inserted;"
       }
     }
   }

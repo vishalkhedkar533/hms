@@ -1991,3 +1991,17 @@ CREATE TABLE comss.comm_job_exe_dtls (
         FOREIGN KEY (premiucollid) REFERENCES insu_core.premium_collected(premiucollid)      
 );
 
+create table insu_core.tmp_premium_collected (
+	tmp_premium_coll_id SERIAL primary key,
+    orgid varchar(20) not null,
+    policyref varchar(20) not null,
+    premium_received_dt varchar(20) null,
+    premium_type varchar(20) null,
+    premium_amt varchar(20) null,
+    prem_coll_yr varchar(20) null,
+    prem_coll_qtr varchar(20) null,
+    prem_coll_fin_yr varchar(20) null,
+    comments varchar(20) null,
+    reason varchar(200) null,
+    created_at timestamp default now()
+);

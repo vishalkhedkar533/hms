@@ -46,7 +46,7 @@ namespace Tasks.Insurance
             _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
         }
 
-        public async Task UploadPremiumData()
+        public async Task UploadPremiumData(JobExeHist jobExeHist)
         {
             _logger.LogInformation("PremiumExcelUpload job started for OrgId={OrgId}", orgId);
 

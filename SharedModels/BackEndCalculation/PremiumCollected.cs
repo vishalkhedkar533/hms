@@ -22,7 +22,7 @@ namespace SharedModels.BackEndCalculation
         public int? PremiumType { get; set; }
         [Column("premium_amt")]
         [Description("premium_amt")]
-        public decimal PremiumAmt { get; set; }
+        public decimal? PremiumAmt { get; set; }
         [Column("prem_coll_yr")]
         [Description("prem_coll_yr")]
         public int? PremCollectedYr { get; set; }

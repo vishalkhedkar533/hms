@@ -56,6 +56,17 @@ namespace Tasks.Insurance
 
         public async Task Calculate(JobExeHist jobExeHist)
         {
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "GetJobExtn")
+                ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
+
+            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+
+            conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+            var jobExtn = await conn.QueryFirstOrDefaultAsync<JobExtn>(
+                operationMapping.Script,
+                new { orgid = orgId, job_config_id = int.Parse(jobKey.Name) });
+
             JobExeHist jobTriggerDetails = await _jobTriggerRepository.CreateJobTriggerDetails(_jobExecutionContext);
             operationMapping = _mappingProvider.GetScriptForOperation("Commission", "ConfigByID")
                 ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
@@ -64,9 +75,11 @@ namespace Tasks.Insurance
                 ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
 
             conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+
             var commission_config = await conn.QueryFirstOrDefaultAsync<CommissionConfig>(
                 operationMapping.Script,
-                new { job_config_id = int.Parse(jobKey.Name), orgid = orgId });
+                new { job_config_id = int.Parse(jobKey.Name), 
+                    orgid = orgId});
 
             #region frameFormulafromDatabase
             var parameters = new[] {
@@ -93,6 +106,12 @@ namespace Tasks.Insurance
                     ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
 
                 conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+
+                string FilterCriteria = string.IsNullOrEmpty(jobExtn.Filter) ? " 1=1 " : jobExtn.Filter;
+                FilterCriteria = FilterCriteria.Replace("&&", " AND ");
+                FilterCriteria = FilterCriteria.Replace("||", " OR ");
+
+                operationMapping.Script = operationMapping.Script.Replace("{{FilterCriteria}}", FilterCriteria);
 
                 var CommCalcInput = await conn.QueryAsync<
                     PremiumCollected,Ins_Policy,Agent,Insured,Owner,CommRate,CommissionCalcRecord>(

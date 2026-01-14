@@ -33,5 +33,7 @@ namespace SharedModels.BackEndCalculation
         [Column("prem_coll_fin_yr")]
         [Description("prem_coll_fin_yr")]
         public string? PremCollectedFinYr { get; set; }
+        public string? Comments { get; set; }
+        public string? Reason { get; set; }
     }
 }

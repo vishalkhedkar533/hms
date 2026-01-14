@@ -2005,3 +2005,17 @@ create table scheduler.job_exe_logs(
 );
 
 create index idx_exe_logs on scheduler.job_exe_logs(orgId,job_exe_hist_id);
+create table insu_core.tmp_premium_collected (
+	tmp_premium_coll_id SERIAL primary key,
+    orgid varchar(20) not null,
+    policyref varchar(20) not null,
+    premium_received_dt varchar(20) null,
+    premium_type varchar(20) null,
+    premium_amt varchar(20) null,
+    prem_coll_yr varchar(20) null,
+    prem_coll_qtr varchar(20) null,
+    prem_coll_fin_yr varchar(20) null,
+    comments varchar(20) null,
+    reason varchar(200) null,
+    created_at timestamp default now()
+);

@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using Quartz;
 using Repository;
 using System.Data.Common;
-using System.Text.Json.Serialization;
 using Tasks.Models;
 
 namespace Tasks.Repository
@@ -29,7 +28,6 @@ namespace Tasks.Repository
             _mappingProvider = mappingProvider ?? throw new ArgumentNullException(nameof(mappingProvider));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
-
         public async Task<JobExeHist> CreateJobTriggerDetails(IJobExecutionContext jobExecutionContext)
         {
             if (jobExecutionContext is null) throw new ArgumentNullException(nameof(jobExecutionContext));
@@ -102,10 +100,55 @@ namespace Tasks.Repository
                 FireTimeUtc = DateTime.UtcNow
             };
         }
-
-        public Task<JobExeHist> UpdateJobTriggerDetails(IJobExecutionContext context)
+        public Task<JobExeHist> UpdateJobTriggerDetails(IJobExecutionContext jobExecutionContext)
         {
             throw new NotImplementedException();
+        }
+        public async Task<bool> WriteExecutionLogs(IJobExecutionContext jobExecutionContext
+            , JobExeLog jobExeLog
+            , LoggingLevel loggingLevel)
+        {
+            bool boolWriteExecutionLogs = false;
+            if (jobExecutionContext is null) throw new ArgumentNullException(nameof(jobExecutionContext));
+
+            // safe extraction of orgId
+            var dataMap = jobExecutionContext.JobDetail.JobDataMap;
+            if (dataMap.ContainsKey("orgId") 
+                && int.TryParse(dataMap.GetString("orgId"), out var parsedOrg))
+            {
+                orgId = parsedOrg;
+            }
+
+            jobKey = jobExecutionContext.JobDetail.Key;
+            if (string.IsNullOrEmpty(jobKey?.Name) || !int.TryParse(jobKey.Name, out _))
+            {
+                throw new InvalidOperationException($"Job key name is not a valid integer: '{jobKey?.Name ?? "<null>"}'. Expected job_config_id as integer in JobKey.Name.");
+            }
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "WriteExecutionLog")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
+
+            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+
+            conn = await _connection_scope.GetOpenConnectionAsync(connectionString);
+            //@orgid, @job_exe_hist_id, now(), @exe_logs
+            var parameters = new
+            {
+                orgid = jobExeLog.OrgId,
+                job_exe_hist_id = jobExeLog.JobExeHistId,
+                exe_logs = jobExeLog.ExeLogs,
+                loglevel = loggingLevel switch
+                {
+                    LoggingLevel.Info => "INFO",
+                    LoggingLevel.Warning => "WARNING",
+                    LoggingLevel.Error => "ERROR",
+                    _ => "UNKNOWN" 
+                }
+            };
+            int RecordsEffected = conn.Execute(operationMapping.Script, parameters);
+            boolWriteExecutionLogs = RecordsEffected > 0;
+            return boolWriteExecutionLogs;
         }
     }
 }

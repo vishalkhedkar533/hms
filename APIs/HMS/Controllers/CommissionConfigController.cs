@@ -50,9 +50,9 @@ namespace HMS.Controllers
                     {
                         // Step 1: Basic Info
                         CommissionConfigId = cc.CommissionConfigId,
-                        CommissionName = cc.CommissionName,
-                        RunFrom = cc.RunFrom,
-                        RunTo = cc.RunTo,
+                        CommissionName = jc.JobName,
+                        RunFrom = (DateOnly)jc.StartAt,
+                        RunTo = (DateOnly)jc.EndAt,
 
                         // Step 2: Formula
                         Formula = cc.Formula,
@@ -143,11 +143,6 @@ namespace HMS.Controllers
                     job.EndAt = dto.RunTo;
                     job.UpdatedAt = DateTime.Now;
 
-                    // Update Commission
-                    commission.CommissionName = dto.CommissionName;
-                    commission.RunFrom = dto.RunFrom;
-                    commission.RunTo = dto.RunTo;
-
                     jobExtns = await _context.JobExtns.FirstOrDefaultAsync(x => x.JobConfigId == job.JobConfigId && x.OrgId == orgId);
 
                     if (jobExtns == null)
@@ -193,10 +188,6 @@ namespace HMS.Controllers
 
                     commission = new CommissionConfig
                     {
-                        CommissionName = dto.CommissionName,
-                        RunFrom = dto.RunFrom,
-                        RunTo = dto.RunTo,
-
                         CreatedAt = DateTime.Now,
                         CreatedBy = username,
                         OrgId = orgId,
@@ -216,9 +207,6 @@ namespace HMS.Controllers
                                                 new CommissionConfigDTO
                                                 {
                                                     CommissionConfigId = commission.CommissionConfigId,
-                                                    CommissionName = commission.CommissionName,
-                                                    RunFrom = commission.RunFrom,
-                                                    RunTo = commission.RunTo,
                                                     JobConfigId = commission.JobConfigId,
                                                     CreatedAt = commission.CreatedAt
                                                 }
@@ -278,9 +266,6 @@ namespace HMS.Controllers
                                     new CommissionConfigDTO
                                     {
                                         CommissionConfigId = config.CommissionConfigId,
-                                        CommissionName     = config.CommissionName,
-                                        RunFrom            = config.RunFrom,
-                                        RunTo              = config.RunTo,
                                         Formula         = config.Formula,
                                         CreatedAt          = config.CreatedAt,
                                         CreatedBy          = config.CreatedBy,
@@ -350,11 +335,8 @@ namespace HMS.Controllers
                                                              new CommissionConfigDTO
                                                              {
                                                                  CommissionConfigId = commission.CommissionConfigId,
-                                                                 CommissionName = commission.CommissionName,
-                                                                 RunFrom = commission.RunFrom,
-                                                                 RunTo = commission.RunTo,
                                                                  JobConfigId = commission.JobConfigId,
-
+                                                                 JobName = job.JobName,
                                                                  JobType = job.JobType,
                                                                  TriggerType = job.TriggerType,
                                                                  CronExpression = job.CronExpression,
@@ -423,11 +405,8 @@ namespace HMS.Controllers
                     new CommissionConfigDTO
                     {
                         CommissionConfigId = commission.CommissionConfigId,
-                        CommissionName = commission.CommissionName,
-                        RunFrom = commission.RunFrom,
-                        RunTo = commission.RunTo,
+                        JobName = job.JobName,
                         JobConfigId = commission.JobConfigId,
-
                         JobType = job.JobType,
                         TriggerType = job.TriggerType,
                         CronExpression = job.CronExpression,
@@ -441,43 +420,6 @@ namespace HMS.Controllers
             {
                 _logger.LogError(ex, "EnableDisableJob failed at {UtcNow} Exception {message}", DateTime.UtcNow, ex.Message);
                 return StatusCode(500, "Internal Server Error");
-            }
-        }
-
-        [HttpPost("CommissionSearchFieldsJson")]
-        [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetCommissionSearchFieldsJson()
-        {
-            HmsResponse response = new HmsResponse();
-
-            try
-            {
-                string filePath = Path.Combine(_env.ContentRootPath, "CommissionMetaData", "commissionMetadata.json");
-
-                if (!System.IO.File.Exists(filePath))
-                {
-                    _logger.LogWarning("Metadata file missing at: {Path}", filePath);
-                    return NotFound(new { message = "Metadata configuration file not found." });
-                }
-
-                string jsonString = await System.IO.File.ReadAllTextAsync(filePath);
-
-                var metadata = JsonSerializer.Deserialize<CommissionMetadata>(jsonString, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.CommissionMetadata = new List<CommissionMetadata> { metadata };
-
-                return Ok(response);
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error reading commission metadata file");
-                return StatusCode(500, "Internal server error reading configuration.");
             }
         }
 
@@ -506,9 +448,9 @@ namespace HMS.Controllers
                                 {
                                     // -------- CommissionConfig --------
                                     CommissionConfigId = cc.CommissionConfigId,
-                                    CommissionName = cc.CommissionName,
-                                    RunFrom = cc.RunFrom,
-                                    RunTo = cc.RunTo,
+                                    CommissionName = jc.JobName,
+                                    RunFrom = (DateOnly)jc.StartAt,
+                                    RunTo = (DateOnly)jc.EndAt,
                                     Formula=cc.Formula,
                                     CreatedAt = cc.CreatedAt,
                                     CreatedBy = cc.CreatedBy,

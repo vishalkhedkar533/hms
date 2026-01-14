@@ -48,7 +48,7 @@ namespace Tasks.Insurance
             _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
         }
 
-        public async Task ProcessAgentCreateData()
+        public async Task ProcessAgentCreateData(JobExeHist jobExeHist)
         {
             _logger.LogInformation("AgentCreateExcel job started for OrgId={OrgId}", orgId);
 

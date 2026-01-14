@@ -14,7 +14,6 @@ namespace Tasks.Insurance
 {
     public class Commission
     {
-
         private readonly IJobExecutionContext _jobExecutionContext;
         private int orgId = 0;
         public JobKey jobKey;
@@ -34,7 +33,8 @@ namespace Tasks.Insurance
             Microsoft.Extensions.Configuration.IConfiguration configuration,
             ILogger<Commission> logger,
             IConnectionScope connectionScope,
-            IBinaryImportFactory bulkOpsFactory
+            IBinaryImportFactory bulkOpsFactory,
+            IJobTriggerRepository jobTriggerRepository
             )
         {
             _jobExecutionContext = jobExecutionContext;
@@ -51,6 +51,7 @@ namespace Tasks.Insurance
             _logger = logger;
             _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
             _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
+            _jobTriggerRepository = jobTriggerRepository;
         }
 
         public async Task Calculate(JobExeHist jobExeHist)
@@ -93,8 +94,6 @@ namespace Tasks.Insurance
 
                 conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
 
-                Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
-
                 var CommCalcInput = await conn.QueryAsync<
                     PremiumCollected,Ins_Policy,Agent,Insured,Owner,CommRate,CommissionCalcRecord>(
                     operationMapping.Script,
@@ -114,26 +113,36 @@ namespace Tasks.Insurance
 
                 foreach (var record in CommCalcInput)
                 {
+                    if (record.Policy == null || record.Agent == null || record.PremiumCollected == null)
+                    {
+                        conn.Execute(operationMapping.Script, new
+                        {
+                            job_exe_hist_id = jobExeHist.JobExeHistId,
+                            agent_id = record?.Agent?.AgentId ?? -1000,
+                            premiucollid = record?.PremiumCollected?.PremiuCollId ?? -1000,
+                            premium_amt = record?.PremiumCollected?.PremiumAmt ?? 0,
+                            orgid = orgId,
+                            formula = commission_config.Formula,
+                            comm_amt = 0,
+                            logs = "Null Object Cannot proceed"
+                        });
+                        continue;
+                    }
+
+                    operationMapping = _mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable")
+                        ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
+
+                    connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                        ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+                    conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
                     try
                     {
-                        if (record.Policy == null || record.Agent == null || record.PremiumCollected == null)
-                        {
-                            _logger.LogWarning("Skipping record due to null values: {@Record}", record);
-                            continue;
-                        }
                         var comm_amt = compiledFormula.DynamicInvoke(record.PremiumCollected
                             , record.Policy, record.Agent, record.Insured
                             , record.Owner, record.CommRate);
-                        operationMapping = _mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable")
-                            ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
-
-                        connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                            ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-                        conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
-
                         conn.Execute(operationMapping.Script, new
                         {
-                            job_exe_hist_id = 0,
+                            job_exe_hist_id = jobExeHist.JobExeHistId,
                             agent_id = record.Agent.AgentId,
                             premiucollid = record.PremiumCollected.PremiuCollId,
                             premium_amt = record.PremiumCollected.PremiumAmt,
@@ -142,18 +151,35 @@ namespace Tasks.Insurance
                             comm_amt = comm_amt,
                             logs = string.Empty
                         });
-
-                        Console.WriteLine(comm_amt);
                     }
-                    catch (Exception)
+                    catch (Exception exCalc)
                     {
+                        conn.Execute(operationMapping.Script, new
+                        {
+                            job_exe_hist_id = jobExeHist.JobExeHistId,
+                            agent_id = record.Agent.AgentId,
+                            premiucollid = record.PremiumCollected.PremiuCollId,
+                            premium_amt = record.PremiumCollected.PremiumAmt,
+                            orgid = orgId,
+                            formula = commission_config.Formula,
+                            comm_amt = 0,
+                            logs = exCalc.Message
+                        });
                     }
+
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                _jobTriggerRepository.WriteExecutionLogs(_jobExecutionContext,
+                    new JobExeLog
+                    {
+                        OrgId = orgId,
+                        JobExeHistId = jobExeHist.JobExeHistId,
+                        ExeLogs = ex.Message,
+                        LogLevel = nameof(LoggingLevel.Error)
+                    },
+                    LoggingLevel.Error).Wait();
             }
 
         }

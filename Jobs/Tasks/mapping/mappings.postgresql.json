@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true AND job_config_id = 31"
       },
       "CreateExecutionCycle": {
         "ConnectionStringKey": "CommissionDB",
@@ -13,6 +13,10 @@
       "UpdateExecutionStatus": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "UPDATE scheduler.job_exe_hist SET exe_status = @exe_status WHERE job_exe_hist_id = @job_exe_hist_id"
+      },
+      "WriteExecutionLog": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "INSERT INTO scheduler.job_exe_logs(job_exe_log_id, orgid, job_exe_hist_id, created_on, exe_logs, loglevel)VALUES(nextval('scheduler.job_exe_logs_job_exe_log_id_seq'::regclass), @orgid, @job_exe_hist_id, now(), @exe_logs, @loglevel)"
       }
     },
     "insu_core.premium_collected": {

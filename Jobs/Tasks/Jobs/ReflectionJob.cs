@@ -1,6 +1,8 @@
 using Quartz;
 using System.Reflection;
 using System.Text.Json;
+using Tasks.Models;
+using Tasks.Repository;
 
 namespace Jobs
 {
@@ -42,13 +44,12 @@ namespace Jobs
                 return;
             }
 
-            // Security: optionally check a whitelist here
-            // if (!IsAllowed(targetType)) { log & return; }
-
             // Create a scope so that Scoped services (like IConnectionScope) can be resolved
             using (var scope = _serviceProvider.CreateScope())
             {
                 var scopedProvider = scope.ServiceProvider;
+                var repo = scope.ServiceProvider.GetRequiredService<IJobTriggerRepository>();
+                JobExeHist hist = await repo.CreateJobTriggerDetails(context);
 
                 // Try resolve from DI within the scope; fallback to ActivatorUtilities
                 object? instance = scopedProvider.GetService(targetType);
@@ -74,9 +75,10 @@ namespace Jobs
                     return;
                 }
 
-                // Build invocation arguments (support 0 or 1 parameter; extend for more)
+                // Build invocation arguments (support 0, 1, or 2 parameters; if a parameter type is JobExeHist pass hist)
                 var parameters = method.GetParameters();
                 object?[] invokeArgs;
+
                 if (parameters.Length == 0)
                 {
                     invokeArgs = Array.Empty<object?>();
@@ -84,14 +86,57 @@ namespace Jobs
                 else if (parameters.Length == 1)
                 {
                     var paramType = parameters[0].ParameterType;
-                    object? deserialized = string.IsNullOrWhiteSpace(argsJson)
-                        ? (paramType.IsValueType ? Activator.CreateInstance(paramType) : null)
-                        : JsonSerializer.Deserialize(argsJson, paramType, _jsonOptions);
-                    invokeArgs = new object?[] { deserialized };
+
+                    // If the single parameter expects JobExeHist (or base/interface) pass hist directly
+                    if (paramType.IsAssignableFrom(typeof(JobExeHist)))
+                    {
+                        invokeArgs = new object?[] { hist };
+                    }
+                    else
+                    {
+                        object? deserialized = string.IsNullOrWhiteSpace(argsJson)
+                            ? (paramType.IsValueType ? Activator.CreateInstance(paramType) : null)
+                            : JsonSerializer.Deserialize(argsJson, paramType, _jsonOptions);
+                        invokeArgs = new object?[] { deserialized };
+                    }
+                }
+                else if (parameters.Length == 2)
+                {
+                    // Support common pattern: (T args, JobExeHist hist) or (JobExeHist hist, T args)
+                    var p0 = parameters[0].ParameterType;
+                    var p1 = parameters[1].ParameterType;
+
+                    object? arg0 = null;
+                    object? arg1 = null;
+
+                    // Determine which parameter should receive hist
+                    if (p0.IsAssignableFrom(typeof(JobExeHist)))
+                    {
+                        arg0 = hist;
+                        // deserialize argsJson into p1
+                        arg1 = string.IsNullOrWhiteSpace(argsJson)
+                            ? (p1.IsValueType ? Activator.CreateInstance(p1) : null)
+                            : JsonSerializer.Deserialize(argsJson, p1, _jsonOptions);
+                    }
+                    else if (p1.IsAssignableFrom(typeof(JobExeHist)))
+                    {
+                        arg1 = hist;
+                        // deserialize argsJson into p0
+                        arg0 = string.IsNullOrWhiteSpace(argsJson)
+                            ? (p0.IsValueType ? Activator.CreateInstance(p0) : null)
+                            : JsonSerializer.Deserialize(argsJson, p0, _jsonOptions);
+                    }
+                    else
+                    {
+                        _logger.LogError("ReflectionJob target method with 2 parameters must accept JobExeHist in either position.");
+                        return;
+                    }
+
+                    invokeArgs = new object?[] { arg0, arg1 };
                 }
                 else
                 {
-                    _logger.LogError("ReflectionJob target method must take 0 or 1 parameters. Found {Count}.", parameters.Length);
+                    _logger.LogError("ReflectionJob target method must take 0, 1 or 2 parameters. Found {Count}.", parameters.Length);
                     return;
                 }
 

@@ -4,6 +4,7 @@ using Npgsql;
 using Repository;
 using System.Data.Common;
 using Tasks.Database;
+using Tasks.Repository;
 
 DbProviderFactories.RegisterFactory("Npgsql", NpgsqlFactory.Instance);
 
@@ -28,6 +29,7 @@ builder.Services.AddScoped<IConnectionScope, ConnectionScope>();
 
 // Register repository
 builder.Services.AddScoped<IJobConfigRepository, JobConfigRepository>();
+builder.Services.AddScoped<IJobTriggerRepository, JobTriggerRepository>();
 
 // Example DI registrations to ensure ReflectionJob and dependencies can be resolved.
 // Place these near other service registrations (before building the host).

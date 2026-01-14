@@ -8,7 +8,11 @@
       },
       "CreateExecutionCycle": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "INSERT INTO scheduler.job_exe_hist(job_exe_hist_id, job_config_id, started_at, finished_at, exe_status, download_lnk, orgid)VALUES(nextval('scheduler.job_exe_hist_job_exe_hist_id_seq'::regclass), @job_config_id, now(), null, @exe_status, null, @orgid) RETURNING job_exe_hist_id"
+        "Script": "INSERT INTO scheduler.job_exe_hist(job_exe_hist_id, job_config_id, started_at, finished_at, exe_status, download_lnk, orgid, FireInstanceId, TriggerObject, JobDetailObject,FireTimeUtc) VALUES(nextval('scheduler.job_exe_hist_job_exe_hist_id_seq'::regclass), @job_config_id, now(), null, @exe_status, null, @orgid, @FireInstanceId, @TriggerObject, @JobDetailObject,now()) RETURNING job_exe_hist_id"
+      },
+      "UpdateExecutionStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE scheduler.job_exe_hist SET exe_status = @exe_status WHERE job_exe_hist_id = @job_exe_hist_id"
       }
     },
     "insu_core.premium_collected": {

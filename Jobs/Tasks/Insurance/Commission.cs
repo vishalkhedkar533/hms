@@ -7,6 +7,8 @@ using SharedModels.BackEndCalculation;
 using System.Data.Common;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
+using Tasks.Models;
+using Tasks.Repository;
 
 namespace Tasks.Insurance
 {
@@ -26,12 +28,14 @@ namespace Tasks.Insurance
         private string connectionString;
         private OperationMapping? operationMapping;
         private DbConnection conn;
+        private readonly IJobTriggerRepository _jobTriggerRepository;
         public Commission(IJobExecutionContext jobExecutionContext,
             IMappingProvider mappingProvider,
             Microsoft.Extensions.Configuration.IConfiguration configuration,
             ILogger<Commission> logger,
             IConnectionScope connectionScope,
-            IBinaryImportFactory bulkOpsFactory)
+            IBinaryImportFactory bulkOpsFactory
+            )
         {
             _jobExecutionContext = jobExecutionContext;
             orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -49,8 +53,9 @@ namespace Tasks.Insurance
             _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
         }
 
-        public async Task Calculate()
+        public async Task Calculate(JobExeHist jobExeHist)
         {
+            JobExeHist jobTriggerDetails = await _jobTriggerRepository.CreateJobTriggerDetails(_jobExecutionContext);
             operationMapping = _mappingProvider.GetScriptForOperation("Commission", "ConfigByID")
                 ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
 
@@ -76,95 +81,72 @@ namespace Tasks.Insurance
             var compiledFormula = e.Compile();
             #endregion frameFormulafromDatabase
 
-            #region RecordStartOfJob
             try
             {
-                operationMapping = _mappingProvider.GetScriptForOperation("Job", "CreateExecutionCycle")
-                    ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
+                #region getListOfPremiumCollectedAgentPolicy
+                Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
+                operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetCommissionData")
+                    ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
 
                 connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
                     ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-                
+
                 conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
-                //@job_config_id, now(), null, @exe_status, null, @orgid
-                int JobTriggerCreated = (await conn.QueryAsync<int>(operationMapping.Script, new
-                {
-                    job_config_id = int.Parse(jobKey.Name),
-                    exe_status = "CREATED",
-                    orgid = orgId
-                })).SingleOrDefault();
-                if (JobTriggerCreated > 0)//record created and ID returned
-                {
-                    #region getListOfPremiumCollectedAgentPolicy
-                    Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
-                    operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetCommissionData")
-                        ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
 
-                    connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                        ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+                Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
 
-                    conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
-
-                    Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
-
-                    var CommCalcInput = await conn.QueryAsync<
-                        PremiumCollected,
-                        Ins_Policy,
-                        Agent,
-                        Insured,
-                        Owner,
-                        CommRate,
-                        CommissionCalcRecord>(
-                        operationMapping.Script,
-                        (prem, pol, agnt, ins, own, rate) => new CommissionCalcRecord
-                        {
-                            PremiumCollected = prem,
-                            Policy = pol,
-                            Agent = agnt,
-                            Insured = ins,
-                            Owner = own,
-                            CommRate = rate
-                        },
-                        // The markers where each NEW object starts in the SELECT list:
-                        new { orgid  = orgId}, null, splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
-                    );
-                    #endregion getListOfPremiumCollectedAgentPolicy
-                    foreach (var record in CommCalcInput)
+                var CommCalcInput = await conn.QueryAsync<
+                    PremiumCollected,Ins_Policy,Agent,Insured,Owner,CommRate,CommissionCalcRecord>(
+                    operationMapping.Script,
+                    (prem, pol, agnt, ins, own, rate) => new CommissionCalcRecord
                     {
-                        try
+                        PremiumCollected = prem,
+                        Policy = pol,
+                        Agent = agnt,
+                        Insured = ins,
+                        Owner = own,
+                        CommRate = rate
+                    },
+                    // The markers where each NEW object starts in the SELECT list:
+                    new { orgid = orgId }, null, splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
+                );
+                #endregion getListOfPremiumCollectedAgentPolicy
+
+                foreach (var record in CommCalcInput)
+                {
+                    try
+                    {
+                        if (record.Policy == null || record.Agent == null || record.PremiumCollected == null)
                         {
-                            if (record.Policy == null || record.Agent == null || record.PremiumCollected == null)
-                            {
-                                _logger.LogWarning("Skipping record due to null values: {@Record}", record);
-                                continue;
-                            }
-                            var comm_amt = compiledFormula.DynamicInvoke(record.PremiumCollected
-                                , record.Policy, record.Agent, record.Insured
-                                , record.Owner, record.CommRate);
-                            operationMapping = _mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable")
-                                ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
-
-                            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-                            conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
-
-                            conn.Execute(operationMapping.Script, new
-                            {
-                                job_exe_hist_id = JobTriggerCreated,
-                                agent_id = record.Agent.AgentId,
-                                premiucollid = record.PremiumCollected.PremiuCollId,
-                                premium_amt = record.PremiumCollected.PremiumAmt,                                
-                                orgid = orgId,
-                                formula = commission_config.Formula,
-                                comm_amt = comm_amt,
-                                logs = string.Empty
-                            });
-
-                            Console.WriteLine(comm_amt);
+                            _logger.LogWarning("Skipping record due to null values: {@Record}", record);
+                            continue;
                         }
-                        catch (Exception)
+                        var comm_amt = compiledFormula.DynamicInvoke(record.PremiumCollected
+                            , record.Policy, record.Agent, record.Insured
+                            , record.Owner, record.CommRate);
+                        operationMapping = _mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable")
+                            ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
+
+                        connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                            ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+                        conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+
+                        conn.Execute(operationMapping.Script, new
                         {
-                        }
+                            job_exe_hist_id = 0,
+                            agent_id = record.Agent.AgentId,
+                            premiucollid = record.PremiumCollected.PremiuCollId,
+                            premium_amt = record.PremiumCollected.PremiumAmt,
+                            orgid = orgId,
+                            formula = commission_config.Formula,
+                            comm_amt = comm_amt,
+                            logs = string.Empty
+                        });
+
+                        Console.WriteLine(comm_amt);
+                    }
+                    catch (Exception)
+                    {
                     }
                 }
             }
@@ -173,7 +155,6 @@ namespace Tasks.Insurance
 
                 throw;
             }
-            #endregion RecordStartOfJob
 
         }
     }

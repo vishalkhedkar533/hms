@@ -1,6 +1,8 @@
 using Quartz;
 using System.Reflection;
 using System.Text.Json;
+using Tasks.Models;
+using Tasks.Repository;
 
 namespace Jobs
 {
@@ -49,7 +51,8 @@ namespace Jobs
             using (var scope = _serviceProvider.CreateScope())
             {
                 var scopedProvider = scope.ServiceProvider;
-
+                var repo = scope.ServiceProvider.GetRequiredService<IJobTriggerRepository>();
+                JobExeHist hist = await repo.CreateJobTriggerDetails(context);
                 // Try resolve from DI within the scope; fallback to ActivatorUtilities
                 object? instance = scopedProvider.GetService(targetType);
                 if (instance == null)

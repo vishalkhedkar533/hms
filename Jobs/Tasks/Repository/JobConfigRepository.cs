@@ -2,6 +2,7 @@ using Common; // for RetryHelper
 using CommonLibrary.mapping;
 using Dapper;
 using Models;
+using Quartz;
 using System.Data;
 using System.Data.Common;
 
@@ -13,7 +14,9 @@ namespace Repository
         private readonly IMappingProvider _mappingProvider;
         private readonly IConfiguration _configuration;
 
-        public JobConfigRepository(IConnectionScope connectionScope, IConfiguration configuration, IMappingProvider mappingProvider)
+        public JobConfigRepository(IConnectionScope connectionScope, 
+            IConfiguration configuration, 
+            IMappingProvider mappingProvider)
         {
             _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
             _mappingProvider = mappingProvider ?? throw new ArgumentNullException(nameof(mappingProvider));

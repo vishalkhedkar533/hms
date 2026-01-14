@@ -1965,7 +1965,6 @@ CREATE TABLE scheduler.job_extns (
         FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId)
 );
 
-
 --drop table comss.comm_job_exe_dtls;
 
 CREATE TABLE comss.comm_job_exe_dtls (
@@ -1990,4 +1989,19 @@ CREATE TABLE comss.comm_job_exe_dtls (
     CONSTRAINT fk_prem_coll_id
         FOREIGN KEY (premiucollid) REFERENCES insu_core.premium_collected(premiucollid)      
 );
+--drop table scheduler.job_exe_logs
 
+create table scheduler.job_exe_logs(
+    job_exe_log_id serial4 NOT NULL,
+    orgId int NOT NULL,
+    job_exe_hist_id int4 NOT NULL,
+    created_on TIMESTAMP NOT null default now(),
+    exe_logs varchar(10000),
+    CONSTRAINT fk_job_exe_log
+        FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id),
+    
+    CONSTRAINT fk_job_log_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId)
+);
+
+create index idx_exe_logs on scheduler.job_exe_logs(orgId,job_exe_hist_id);

@@ -6,8 +6,8 @@ namespace Models.DTO.CommissionMgmt
     {
         public int CommissionConfigId { get; set; }
         public string CommissionName { get; set; } = null!;
-        public DateTime RunFrom { get; set; }
-        public DateTime RunTo { get; set; }
+        public DateTime? RunFrom { get; set; }
+        public DateTime? RunTo { get; set; }
         public string? FilterConditions { get; set; }
         public string? Comments { get; set; }
         public string? TargetType { get; set; }

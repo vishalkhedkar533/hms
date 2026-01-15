@@ -32,6 +32,8 @@ namespace Models.DTO
         public List<CommissionConfigDTO>? commissionConfig { get; set; } = null;
         public List<JobExecutionHistoryDto>? jobExecutionHistory { get; set; } = null;
         public MetaDataResponse? metaDataResponse { get; set; } = null;
+
+        public object? pagination { get; set; }
     }
 
     public class LoginResponse

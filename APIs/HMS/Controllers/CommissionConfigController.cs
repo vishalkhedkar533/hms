@@ -9,9 +9,7 @@ using Models.DB;
 using Models.DTO;
 using Models.DTO.CommissionMgmt;
 using Models.HMSConsts;
-using System.Collections.Generic;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace HMS.Controllers
 {
@@ -23,12 +21,15 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private readonly ILogger<CommissionConfigController> _logger;
         private readonly IWebHostEnvironment _env;
-        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger, IWebHostEnvironment env)
+        private readonly DatabaseService _db;
+
+        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger, IWebHostEnvironment env,DatabaseService databaseService)
         {
             _authClaimService = authClaimService;
             _context = hMSContext;
             _logger = logger;
             _env = env;
+            _db = databaseService;
         }
 
         [HttpPost("GetCommissionById/{commissionConfigId}")]
@@ -51,8 +52,8 @@ namespace HMS.Controllers
                         // Step 1: Basic Info
                         CommissionConfigId = cc.CommissionConfigId,
                         CommissionName = jc.JobName,
-                        RunFrom = (DateOnly)jc.StartAt,
-                        RunTo = (DateOnly)jc.EndAt,
+                        RunFrom = jc.StartAt,
+                        RunTo = jc.EndAt,
 
                         // Step 2: Formula
                         Formula = cc.Formula,
@@ -60,6 +61,9 @@ namespace HMS.Controllers
                         // Step 3: Schedule Configuration
                         JobConfigId = cc.JobConfigId,
                         JobType = jc.JobType,
+                        JobName = jc.JobName,
+                        TargetType=jc.TargetType,
+                        TargetMethod = jc.TargetMethod,
                         TriggerType = jc.TriggerType,
                         CronExpression = jc.CronExpression,
 
@@ -139,8 +143,10 @@ namespace HMS.Controllers
                     }
                     // Update Job (Only fields relevant to Step 1)
                     job.JobName = dto.CommissionName;
-                    job.StartAt = dto.RunFrom;
-                    job.EndAt = dto.RunTo;
+                    job.StartAt = dto.RunFrom.HasValue ? dto.RunFrom.Value.ToUniversalTime() : null;
+                    job.EndAt = dto.RunTo.HasValue ? dto.RunTo.Value.ToUniversalTime() : null;
+                    job.TargetType = dto.TargetType;
+                    job.TargetMethod = dto.TargetMethod;
                     job.UpdatedAt = DateTime.Now;
 
                     jobExtns = await _context.JobExtns.FirstOrDefaultAsync(x => x.JobConfigId == job.JobConfigId && x.OrgId == orgId);
@@ -167,10 +173,12 @@ namespace HMS.Controllers
                         JobType = "CRON",
                         TriggerType = "CRON",
                         Enabled = false,
-                        StartAt = dto.RunFrom,
-                        EndAt = dto.RunTo,
+                        StartAt = dto.RunFrom.HasValue ? dto.RunFrom.Value.ToUniversalTime() : null,
+                        EndAt = dto.RunTo.HasValue ? dto.RunTo.Value.ToUniversalTime() : null,
                         OrgId = orgId,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = DateTime.Now,
+                        TargetType = dto.TargetType,
+                        TargetMethod = dto.TargetMethod
                     };
 
                     _context.JobConfigs.Add(job);
@@ -208,6 +216,18 @@ namespace HMS.Controllers
                                                 {
                                                     CommissionConfigId = commission.CommissionConfigId,
                                                     JobConfigId = commission.JobConfigId,
+                                                    JobName=job.JobName,
+                                                    RunFrom=job.StartAt,
+                                                    RunTo=job.StartAt,
+                                                    Formula=commission.Formula,
+                                                    TargetType=job.TargetType,
+                                                    TargetMethod=job.TargetMethod,
+                                                    JobType=job.JobType,
+                                                    TriggerType=job.TriggerType,
+                                                    CronExpression=job.CronExpression,
+                                                    Enabled=job.Enabled,
+                                                    FilterCondition=jobExtns.Filter,
+                                                    Comments=jobExtns.Comments,
                                                     CreatedAt = commission.CreatedAt
                                                 }
                                             };
@@ -361,8 +381,7 @@ namespace HMS.Controllers
             HmsResponse response = new HmsResponse();
             try
             {
-                var commission = await _context.CommissionConfigs
-                .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
+                var commission = await _context.CommissionConfigs.FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
 
                 if (commission == null)
                 {
@@ -376,8 +395,7 @@ namespace HMS.Controllers
                     return NoContent();
                 }
 
-                var job = await _context.JobConfigs
-                    .FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
+                var job = await _context.JobConfigs.FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
 
                 if (job == null)
                 {
@@ -392,8 +410,6 @@ namespace HMS.Controllers
                 }
 
                 job.Enabled = dto.Enabled;
-                job.TargetType = dto.TargetType ?? job.TargetType;
-                job.TargetMethod = dto.TargetMethod ?? job.TargetMethod;
                 job.UpdatedAt = DateTime.Now;
 
                 await _context.SaveChangesAsync();
@@ -449,8 +465,8 @@ namespace HMS.Controllers
                                     // -------- CommissionConfig --------
                                     CommissionConfigId = cc.CommissionConfigId,
                                     CommissionName = jc.JobName,
-                                    RunFrom = (DateOnly)jc.StartAt,
-                                    RunTo = (DateOnly)jc.EndAt,
+                                    RunFrom = jc.StartAt,
+                                    RunTo = jc.EndAt,
                                     Formula=cc.Formula,
                                     CreatedAt = cc.CreatedAt,
                                     CreatedBy = cc.CreatedBy,
@@ -538,6 +554,66 @@ namespace HMS.Controllers
             {
                 _logger.LogError(ex,
                     "GetJobExecutionHistory failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpPost("CommissionJobConfigPaginatedList")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetCommissionJobConfigList([FromBody] PaginationRequest request)
+        {
+            HmsResponse response = new HmsResponse();
+
+            request.PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber;
+            request.PageSize = request.PageSize <= 0 ? 10 :  request.PageSize;
+            
+            try
+            {
+                int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var results = await _db.ExecuteQueryAsync<CommissionConfigDTO>(
+                    "Commission",
+                    "GetConfigList",
+                    new
+                    {
+                        p_orgid = orgId,
+                        p_page_number = request.PageNumber,
+                        p_page_size = request.PageSize
+                    });
+
+                var configList = results?.ToList() ?? new List<CommissionConfigDTO>();
+                if(configList.Any())
+                {
+                    int totalItems = configList.FirstOrDefault()?.TotalCount ?? 0;
+
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "SUCCESS";
+                    response.responseBody.commissionConfig = configList;
+                    response.responseBody.pagination = new
+                    {
+                        currentPage = request.PageNumber,
+                        totalPages = (int)Math.Ceiling(totalItems / (double)request.PageSize),
+                        pageSize = request.PageSize,
+                        totalItems = totalItems
+                    };
+                    return Ok(response);
+                }
+                else
+                {
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                 && x.Area == "CommissionConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                    return NoContent();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch paginated commission list ");
                 return StatusCode(500, "Internal server error");
             }
         }

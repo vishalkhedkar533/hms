@@ -347,5 +347,7 @@ alter TABLE scheduler.job_exe_hist add FireInstanceId bigint;
 alter TABLE scheduler.job_exe_hist add TriggerObject varchar(4000);
 alter TABLE scheduler.job_exe_hist add JobDetailObject varchar(4000);
 alter TABLE scheduler.job_exe_hist add FireTimeUtc TIMESTAMP WITH TIME ZONE;
-
+alter TABLE scheduler.job_exe_hist add LogLevel varchar(10);
 create index idx_FireInstanceId on scheduler.job_exe_hist(FireInstanceId);
+
+

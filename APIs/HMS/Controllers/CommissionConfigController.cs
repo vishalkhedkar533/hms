@@ -139,8 +139,8 @@ namespace HMS.Controllers
                     }
                     // Update Job (Only fields relevant to Step 1)
                     job.JobName = dto.CommissionName;
-                    job.StartAt = dto.RunFrom;
-                    job.EndAt = dto.RunTo;
+                    job.StartAt = dto.RunFrom.ToUniversalTime();
+                    job.EndAt = dto.RunTo.ToUniversalTime();
                     job.TargetType = dto.TargetType;
                     job.TargetMethod = dto.TargetMethod;
                     job.UpdatedAt = DateTime.Now;
@@ -169,8 +169,8 @@ namespace HMS.Controllers
                         JobType = "CRON",
                         TriggerType = "CRON",
                         Enabled = false,
-                        StartAt = dto.RunFrom,
-                        EndAt = dto.RunTo,
+                        StartAt = dto.RunFrom.ToUniversalTime(),
+                        EndAt = dto.RunTo.ToUniversalTime(),
                         OrgId = orgId,
                         CreatedAt = DateTime.Now,
                         TargetType = dto.TargetType,

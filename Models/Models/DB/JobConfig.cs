@@ -32,10 +32,10 @@ namespace Models.DB
         public int? IntervalSeconds { get; set; }
 
         [Column("start_at")]
-        public DateOnly? StartAt { get; set; }
+        public DateTime? StartAt { get; set; }
 
         [Column("end_at")]
-        public DateOnly? EndAt { get; set; }
+        public DateTime? EndAt { get; set; }
 
         [Column("parameters", TypeName = "jsonb")]
         public JsonDocument? Parameters { get; set; }

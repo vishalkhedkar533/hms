@@ -6,8 +6,8 @@ namespace Models.DTO.CommissionMgmt
     {
         public int CommissionConfigId { get; set; }
         public string CommissionName { get; set; } = null!;
-        public DateOnly RunFrom { get; set; }
-        public DateOnly RunTo { get; set; }
+        public DateTime RunFrom { get; set; }
+        public DateTime RunTo { get; set; }
         public string? FilterConditions { get; set; }
         public string? Comments { get; set; }
         public string? TargetType { get; set; }
@@ -38,8 +38,8 @@ namespace Models.DTO.CommissionMgmt
         public string? CommissionName { get; set; }
 
         //public string? TriggerCycle { get; set; }
-        public DateOnly? RunFrom { get; set; }
-        public DateOnly? RunTo { get; set; }
+        public DateTime? RunFrom { get; set; }
+        public DateTime? RunTo { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? CreatedBy { get; set; }
         public string? Formula { get; set; }
@@ -53,8 +53,8 @@ namespace Models.DTO.CommissionMgmt
         public string TriggerType { get; set; } = null!;
         public string? CronExpression { get; set; }
         public int? IntervalSeconds { get; set; }
-        public DateOnly? StartAt { get; set; }
-        public DateOnly? EndAt { get; set; }
+        public DateTime? StartAt { get; set; }
+        public DateTime? EndAt { get; set; }
         public JsonDocument? Parameters { get; set; }
         //public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
         public DateTimeOffset? UpdatedAt { get; set; }

@@ -1,7 +1,6 @@
 ﻿using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
-using HMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,9 +8,7 @@ using Models.DB;
 using Models.DTO;
 using Models.DTO.CommissionMgmt;
 using Models.HMSConsts;
-using System.Collections.Generic;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace HMS.Controllers
 {
@@ -51,8 +48,8 @@ namespace HMS.Controllers
                         // Step 1: Basic Info
                         CommissionConfigId = cc.CommissionConfigId,
                         CommissionName = jc.JobName,
-                        RunFrom = (DateOnly)jc.StartAt,
-                        RunTo = (DateOnly)jc.EndAt,
+                        RunFrom = jc.StartAt,
+                        RunTo = jc.EndAt,
 
                         // Step 2: Formula
                         Formula = cc.Formula,
@@ -461,8 +458,8 @@ namespace HMS.Controllers
                                     // -------- CommissionConfig --------
                                     CommissionConfigId = cc.CommissionConfigId,
                                     CommissionName = jc.JobName,
-                                    RunFrom = (DateOnly)jc.StartAt,
-                                    RunTo = (DateOnly)jc.EndAt,
+                                    RunFrom = jc.StartAt,
+                                    RunTo = jc.EndAt,
                                     Formula=cc.Formula,
                                     CreatedAt = cc.CreatedAt,
                                     CreatedBy = cc.CreatedBy,

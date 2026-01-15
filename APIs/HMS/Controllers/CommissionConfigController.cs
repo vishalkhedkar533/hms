@@ -141,6 +141,8 @@ namespace HMS.Controllers
                     job.JobName = dto.CommissionName;
                     job.StartAt = dto.RunFrom;
                     job.EndAt = dto.RunTo;
+                    job.TargetType = dto.TargetType;
+                    job.TargetMethod = dto.TargetMethod;
                     job.UpdatedAt = DateTime.Now;
 
                     jobExtns = await _context.JobExtns.FirstOrDefaultAsync(x => x.JobConfigId == job.JobConfigId && x.OrgId == orgId);
@@ -170,7 +172,9 @@ namespace HMS.Controllers
                         StartAt = dto.RunFrom,
                         EndAt = dto.RunTo,
                         OrgId = orgId,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = DateTime.Now,
+                        TargetType = dto.TargetType,
+                        TargetMethod = dto.TargetMethod
                     };
 
                     _context.JobConfigs.Add(job);
@@ -208,6 +212,18 @@ namespace HMS.Controllers
                                                 {
                                                     CommissionConfigId = commission.CommissionConfigId,
                                                     JobConfigId = commission.JobConfigId,
+                                                    JobName=job.JobName,
+                                                    RunFrom=job.StartAt,
+                                                    RunTo=job.StartAt,
+                                                    Formula=commission.Formula,
+                                                    TargetType=job.TargetType,
+                                                    TargetMethod=job.TargetMethod,
+                                                    JobType=job.JobType,
+                                                    TriggerType=job.TriggerType,
+                                                    CronExpression=job.CronExpression,
+                                                    Enabled=job.Enabled,
+                                                    FilterCondition=jobExtns.Filter,
+                                                    Comments=jobExtns.Comments,
                                                     CreatedAt = commission.CreatedAt
                                                 }
                                             };
@@ -361,8 +377,7 @@ namespace HMS.Controllers
             HmsResponse response = new HmsResponse();
             try
             {
-                var commission = await _context.CommissionConfigs
-                .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
+                var commission = await _context.CommissionConfigs.FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
 
                 if (commission == null)
                 {
@@ -376,8 +391,7 @@ namespace HMS.Controllers
                     return NoContent();
                 }
 
-                var job = await _context.JobConfigs
-                    .FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
+                var job = await _context.JobConfigs.FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
 
                 if (job == null)
                 {
@@ -392,8 +406,6 @@ namespace HMS.Controllers
                 }
 
                 job.Enabled = dto.Enabled;
-                job.TargetType = dto.TargetType ?? job.TargetType;
-                job.TargetMethod = dto.TargetMethod ?? job.TargetMethod;
                 job.UpdatedAt = DateTime.Now;
 
                 await _context.SaveChangesAsync();

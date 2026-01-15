@@ -10,6 +10,8 @@ namespace Models.DTO.CommissionMgmt
         public DateOnly RunTo { get; set; }
         public string? FilterConditions { get; set; }
         public string? Comments { get; set; }
+        public string? TargetType { get; set; }
+        public string? TargetMethod { get; set; }
     }
     public class CommissionConditionUpdateDto
     {
@@ -27,9 +29,7 @@ namespace Models.DTO.CommissionMgmt
     public class EnableDisableJobDto
     {
         public int CommissionConfigId { get; set; }
-        public bool Enabled { get; set; }
-        public string? TargetType { get; set; }
-        public string? TargetMethod { get; set; }
+        public bool Enabled { get; set; }    
     }
 
     public class CommissionConfigDTO

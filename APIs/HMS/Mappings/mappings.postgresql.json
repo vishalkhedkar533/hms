@@ -36,6 +36,12 @@
         "Function": "na",
         "Script": "select * from hmsmaster.KeyValueEntries where orgid = @orgid and EntryCategory =@EntryCategory"
       }
+    },
+    "Commission": {
+      "GetConfigList": {
+        "Function": "na",
+        "Script": "SELECT cc.commission_config_id AS \"CommissionConfigId\", jc.job_name AS \"CommissionName\", jc.start_at AS \"RunFrom\", jc.end_at AS \"RunTo\", cc.formula AS \"Formula\", cc.created_at AS \"CreatedAt\", cc.created_by AS \"CreatedBy\", cc.job_config_id AS \"JobConfigId\", je.filter AS \"FilterCondition\", je.comments AS \"Comments\", jc.job_type AS \"JobType\", jc.enabled AS \"Enabled\", jc.trigger_type AS \"TriggerType\", jc.cron_expression AS \"CronExpression\", jc.interval_seconds AS \"IntervalSeconds\", jc.parameters AS \"Parameters\", jc.updated_at AS \"UpdatedAt\", jc.targettype AS \"TargetType\", jc.targetmethod AS \"TargetMethod\", jc.args AS \"Args\", COUNT(*) OVER() AS \"TotalCount\" FROM comss.commission_config cc JOIN scheduler.job_config jc ON cc.job_config_id = jc.job_config_id JOIN scheduler.job_extns je ON jc.job_config_id = je.job_config_id WHERE cc.orgid = @p_orgid ORDER BY cc.created_at DESC LIMIT @p_page_size OFFSET ((@p_page_number - 1) * @p_page_size);"
+      }
     }
   }
 }

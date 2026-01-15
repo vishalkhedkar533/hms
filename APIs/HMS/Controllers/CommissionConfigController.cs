@@ -1,6 +1,7 @@
 ﻿using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,12 +21,15 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private readonly ILogger<CommissionConfigController> _logger;
         private readonly IWebHostEnvironment _env;
-        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger, IWebHostEnvironment env)
+        private readonly DatabaseService _db;
+
+        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger, IWebHostEnvironment env,DatabaseService databaseService)
         {
             _authClaimService = authClaimService;
             _context = hMSContext;
             _logger = logger;
             _env = env;
+            _db = databaseService;
         }
 
         [HttpPost("GetCommissionById/{commissionConfigId}")]
@@ -550,6 +554,66 @@ namespace HMS.Controllers
             {
                 _logger.LogError(ex,
                     "GetJobExecutionHistory failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpPost("CommissionJobConfigPaginatedList")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetCommissionJobConfigList([FromBody] PaginationRequest request)
+        {
+            HmsResponse response = new HmsResponse();
+
+            request.PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber;
+            request.PageSize = request.PageSize <= 0 ? 10 :  request.PageSize;
+            
+            try
+            {
+                int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var results = await _db.ExecuteQueryAsync<CommissionConfigDTO>(
+                    "Commission",
+                    "GetConfigList",
+                    new
+                    {
+                        p_orgid = orgId,
+                        p_page_number = request.PageNumber,
+                        p_page_size = request.PageSize
+                    });
+
+                var configList = results?.ToList() ?? new List<CommissionConfigDTO>();
+                if(configList.Any())
+                {
+                    int totalItems = configList.FirstOrDefault()?.TotalCount ?? 0;
+
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "SUCCESS";
+                    response.responseBody.commissionConfig = configList;
+                    response.responseBody.pagination = new
+                    {
+                        currentPage = request.PageNumber,
+                        totalPages = (int)Math.Ceiling(totalItems / (double)request.PageSize),
+                        pageSize = request.PageSize,
+                        totalItems = totalItems
+                    };
+                    return Ok(response);
+                }
+                else
+                {
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                 && x.Area == "CommissionConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                    return NoContent();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch paginated commission list ");
                 return StatusCode(500, "Internal server error");
             }
         }

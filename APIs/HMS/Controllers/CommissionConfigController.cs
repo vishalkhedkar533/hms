@@ -57,6 +57,9 @@ namespace HMS.Controllers
                         // Step 3: Schedule Configuration
                         JobConfigId = cc.JobConfigId,
                         JobType = jc.JobType,
+                        JobName = jc.JobName,
+                        TargetType=jc.TargetType,
+                        TargetMethod = jc.TargetMethod,
                         TriggerType = jc.TriggerType,
                         CronExpression = jc.CronExpression,
 

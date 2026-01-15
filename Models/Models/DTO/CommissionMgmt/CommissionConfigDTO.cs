@@ -63,6 +63,7 @@ namespace Models.DTO.CommissionMgmt
         public string? Args { get; set; }
         public string? FilterCondition { get; set; }
         public string? Comments { get; set; }
+        public int TotalCount { get; set; }
     }
     public class JobExecutionHistoryDto
     {

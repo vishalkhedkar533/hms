@@ -63,6 +63,17 @@ namespace Tasks.Insurance
                 ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
 
             conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "GetLastJobTriggered")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
+
+            JobExeHist LastExecutedJob = await conn.QuerySingleOrDefaultAsync<JobExeHist>(operationMapping.Script, new
+            {
+                job_config_id = int.Parse(jobKey.Name),
+                orgid = orgId,
+                fireinstanceid = null as long?
+            });
+
             var jobExtn = await conn.QueryFirstOrDefaultAsync<JobExtn>(
                 operationMapping.Script,
                 new { orgid = orgId, job_config_id = int.Parse(jobKey.Name) });
@@ -73,8 +84,6 @@ namespace Tasks.Insurance
 
             connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
                 ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-
-            conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
 
             var commission_config = await conn.QueryFirstOrDefaultAsync<CommissionConfig>(
                 operationMapping.Script,
@@ -105,9 +114,7 @@ namespace Tasks.Insurance
                 connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
                     ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
 
-                conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
-
-                string FilterCriteria = string.IsNullOrEmpty(jobExtn.Filter) ? " 1=1 " : jobExtn.Filter;
+                string FilterCriteria = string.IsNullOrEmpty(jobExtn?.Filter) ? " 1=1 " : jobExtn.Filter;
                 FilterCriteria = FilterCriteria.Replace("&&", " AND ");
                 FilterCriteria = FilterCriteria.Replace("||", " OR ");
 
@@ -126,7 +133,9 @@ namespace Tasks.Insurance
                         CommRate = rate
                     },
                     // The markers where each NEW object starts in the SELECT list:
-                    new { orgid = orgId }, null, splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
+                    new { orgid = orgId, job_exe_hist_id = LastExecutedJob?.JobExeHistId, job_config_id = int.Parse(jobKey.Name) }, 
+                    null, 
+                    splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
                 );
                 #endregion getListOfPremiumCollectedAgentPolicy
 
@@ -147,13 +156,28 @@ namespace Tasks.Insurance
                         });
                         continue;
                     }
+                    operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetProcessedRecords")
+                    ?? throw new InvalidOperationException("Operation mapping for Commission/GetProcessedRecords not found.");
 
+                    var processedRecords = await conn.QueryAsync<CommJobExeDtls>(operationMapping.Script,
+                        new
+                        {
+                            orgid = orgId,
+                            job_exe_hist_id = jobExeHist.JobExeHistId,
+                            agent_id = record.Agent.AgentId,
+                            premiucollid = record.PremiumCollected.PremiuCollId
+                        });
+                    if (processedRecords != null && processedRecords.Count() > 0)
+                    {
+                        //skip already processed records
+                        continue;
+                    }
                     operationMapping = _mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable")
-                        ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
+                        ?? throw new InvalidOperationException("Operation mapping for Commission/SaveCommissionPayable not found.");
 
                     connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
                         ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-                    conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+
                     try
                     {
                         var comm_amt = compiledFormula.DynamicInvoke(record.PremiumCollected
@@ -200,7 +224,7 @@ namespace Tasks.Insurance
                     },
                     LoggingLevel.Error).Wait();
             }
-
+            JobExeHist CompletedJob = await _jobTriggerRepository.UpdateJobStatus(_jobExecutionContext , "COMPLETED");
         }
     }
 }

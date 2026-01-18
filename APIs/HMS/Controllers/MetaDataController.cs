@@ -1,5 +1,6 @@
 ﻿using HMS.Security;
 using Microsoft.AspNetCore.Mvc;
+using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using SharedModels;
@@ -33,6 +34,7 @@ namespace HMS.Controllers
                 var ownerProperties = typeof(SharedModels.BackEndCalculation.Owner).GetProperties(BindingFlags.Public | BindingFlags.Instance);
                 var commrateProperties = typeof(SharedModels.BackEndCalculation.CommRate).GetProperties(BindingFlags.Public | BindingFlags.Instance);
                 var premiumProperties = typeof(SharedModels.BackEndCalculation.PremiumCollected).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                var lastExec = typeof(JobExeHist).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
                 metaDataResponse.agent = GetMetaDataForType<SharedModels.BackEndCalculation.Agent>(agentProperties);
                 metaDataResponse.policy = GetMetaDataForType<SharedModels.BackEndCalculation.Ins_Policy>(policyProperties);
@@ -40,6 +42,7 @@ namespace HMS.Controllers
                 metaDataResponse.owner = GetMetaDataForType<SharedModels.BackEndCalculation.Owner>(ownerProperties);
                 metaDataResponse.commrate = GetMetaDataForType<SharedModels.BackEndCalculation.CommRate>(commrateProperties);
                 metaDataResponse.premium = GetMetaDataForType<SharedModels.BackEndCalculation.PremiumCollected>(premiumProperties);
+                metaDataResponse.lastExec = GetMetaDataForType<JobExeHist>(premiumProperties);
                 hMSResponse.responseBody.metaDataResponse = metaDataResponse;
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";

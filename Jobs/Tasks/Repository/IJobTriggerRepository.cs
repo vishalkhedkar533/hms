@@ -7,6 +7,7 @@ namespace Tasks.Repository
     {
         Task<JobExeHist> CreateJobTriggerDetails(IJobExecutionContext context);
         Task<JobExeHist> UpdateJobTriggerDetails(IJobExecutionContext context);
+        Task<JobExeHist> UpdateJobStatus(IJobExecutionContext context, string exe_status);
         Task<bool> WriteExecutionLogs(IJobExecutionContext context, 
             JobExeLog jobExeLog,
             LoggingLevel loggingLevel);

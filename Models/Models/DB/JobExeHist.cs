@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
@@ -17,6 +18,7 @@ namespace Models.DB
         public DateTime StartedAt { get; set; }
 
         [Column("finished_at")]
+        [Description("Job - last executed on")]
         public DateTime? FinishedAt { get; set; }
 
         [MaxLength(10)]

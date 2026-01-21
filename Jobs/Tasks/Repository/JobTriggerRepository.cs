@@ -1,0 +1,224 @@
+﻿using CommonLibrary.mapping;
+using Dapper;
+using Newtonsoft.Json;
+using Quartz;
+using Repository;
+using System.Data.Common;
+using Tasks.Models;
+
+namespace Tasks.Repository
+{
+    internal class JobTriggerRepository : IJobTriggerRepository
+    {   
+        private readonly IMappingProvider _mappingProvider;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
+        private readonly IConnectionScope _connection_scope;
+        private string connectionString;
+        private OperationMapping? operationMapping;
+        private DbConnection conn;
+        private int orgId = 0;
+        private JobKey jobKey;
+
+        public JobTriggerRepository(
+            IConnectionScope connectionScope,
+            IMappingProvider mappingProvider,
+            Microsoft.Extensions.Configuration.IConfiguration configuration)
+        {
+            _connection_scope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
+            _mappingProvider = mappingProvider ?? throw new ArgumentNullException(nameof(mappingProvider));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        }
+        public async Task<JobExeHist> CreateJobTriggerDetails(IJobExecutionContext jobExecutionContext)
+        {
+            if (jobExecutionContext is null) throw new ArgumentNullException(nameof(jobExecutionContext));
+
+            // safe extraction of orgId
+            var dataMap = jobExecutionContext.JobDetail.JobDataMap;
+            if (dataMap.ContainsKey("orgId") && int.TryParse(dataMap.GetString("orgId"), out var parsedOrg))
+            {
+                orgId = parsedOrg;
+            }
+
+            jobKey = jobExecutionContext.JobDetail.Key;
+            if (string.IsNullOrEmpty(jobKey?.Name) || !int.TryParse(jobKey.Name, out _))
+            {
+                throw new InvalidOperationException($"Job key name is not a valid integer: '{jobKey?.Name ?? "<null>"}'. Expected job_config_id as integer in JobKey.Name.");
+            }
+
+            #region RecordStartOfJob
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "CreateExecutionCycle")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
+
+            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+
+            conn = await _connection_scope.GetOpenConnectionAsync(connectionString);
+
+            Int64? fireInstanceId = null;
+            if (!string.IsNullOrEmpty(jobExecutionContext.FireInstanceId) && Int64.TryParse(jobExecutionContext.FireInstanceId, out var fid))
+            {
+                fireInstanceId = fid;
+            }
+
+            // Use QuerySingleOrDefaultAsync<long?> so missing return is detectable
+            long? JobTriggerCreated;
+            try
+            {
+                JobTriggerCreated = await conn.QuerySingleOrDefaultAsync<long?>(operationMapping.Script, 
+                    new
+                    {
+                        job_config_id = int.Parse(jobKey.Name),
+                        exe_status = "CREATED",
+                        orgid = orgId,
+                        fireinstanceid = fireInstanceId,
+                        triggerobject = JsonConvert.SerializeObject(jobExecutionContext.Trigger),
+                        jobdetailobject = JsonConvert.SerializeObject(jobExecutionContext.JobDetail)
+                    });
+            }
+            catch (Exception ex)
+            {
+                // rethrow with context to help debugging
+                throw new InvalidOperationException($"Error executing CreateExecutionCycle SQL. SQL should return the generated id (e.g. use RETURNING). SQL: {operationMapping.Script}", ex);
+            }
+
+            if (!JobTriggerCreated.HasValue || JobTriggerCreated.Value == 0)
+            {
+                throw new InvalidOperationException("CreateExecutionCycle did not return a generated id. Ensure the SQL mapping includes a RETURNING clause (e.g. INSERT ... RETURNING job_exe_hist_id) or otherwise selects the id.");
+            }
+            #endregion RecordStartOfJob
+
+            return new JobExeHist
+            {
+                JobExeHistId = JobTriggerCreated.Value,
+                JobConfigId = int.Parse(jobKey.Name),
+                ExeStatus = "CREATED",
+                OrgId = orgId,
+                FireInstanceId = fireInstanceId,
+                TriggerObject = JsonConvert.SerializeObject(jobExecutionContext.Trigger),
+                JobDetail = JsonConvert.SerializeObject(jobExecutionContext.JobDetail),
+                FireTimeUtc = DateTime.UtcNow
+            };
+        }
+        public Task<JobExeHist> UpdateJobTriggerDetails(IJobExecutionContext jobExecutionContext)
+        {
+            throw new NotImplementedException();
+        }
+        public async Task<JobExeHist> UpdateJobStatus(IJobExecutionContext jobExecutionContext, string exe_status)
+        {
+            if (jobExecutionContext is null) throw new ArgumentNullException(nameof(jobExecutionContext));
+
+            // safe extraction of orgId
+            var dataMap = jobExecutionContext.JobDetail.JobDataMap;
+            if (dataMap.ContainsKey("orgId") && int.TryParse(dataMap.GetString("orgId"), out var parsedOrg))
+            {
+                orgId = parsedOrg;
+            }
+
+            jobKey = jobExecutionContext.JobDetail.Key;
+            if (string.IsNullOrEmpty(jobKey?.Name) || !int.TryParse(jobKey.Name, out _))
+            {
+                throw new InvalidOperationException($"Job key name is not a valid integer: '{jobKey?.Name ?? "<null>"}'. Expected job_config_id as integer in JobKey.Name.");
+            }
+
+            #region RecordStartOfJob
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "GetLastJobTriggered")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
+
+            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+
+            conn = await _connection_scope.GetOpenConnectionAsync(connectionString);
+
+            Int64? fireInstanceId = null;
+            if (!string.IsNullOrEmpty(jobExecutionContext.FireInstanceId) && Int64.TryParse(jobExecutionContext.FireInstanceId, out var fid))
+            {
+                fireInstanceId = fid;
+            }
+
+            var GetJobTriggeredParams = new
+            {
+                job_config_id = int.Parse(jobKey.Name),
+                orgid = orgId,
+                fireinstanceid = fireInstanceId
+            };
+
+            // Use QuerySingleOrDefaultAsync<long?> so missing return is detectable
+            JobExeHist? TriggeredJobHist;
+            try
+            {
+                TriggeredJobHist = await conn.QuerySingleOrDefaultAsync<JobExeHist>(operationMapping.Script, GetJobTriggeredParams);
+            }
+            catch (Exception ex)
+            {
+                // rethrow with context to help debugging
+                throw new InvalidOperationException($"Error executing CreateExecutionCycle SQL. SQL should return the generated id (e.g. use RETURNING). SQL: {operationMapping.Script}", ex);
+            }
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "UpdateTriggeredJobStatus")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
+
+            try
+            {
+                await conn.ExecuteAsync(operationMapping.Script, new
+                {
+                    exe_status = exe_status,
+                    job_exe_hist_id = TriggeredJobHist?.JobExeHistId
+                });
+            }
+            catch (Exception ex)
+            {
+                // rethrow with context to help debugging
+                throw new InvalidOperationException($"Error executing UpdateTriggeredJobStatus SQL", ex);
+            }
+
+            #endregion RecordStartOfJob
+
+            return TriggeredJobHist;
+        }
+        public async Task<bool> WriteExecutionLogs(IJobExecutionContext jobExecutionContext
+            , JobExeLog jobExeLog
+            , LoggingLevel loggingLevel)
+        {
+            bool boolWriteExecutionLogs = false;
+            if (jobExecutionContext is null) throw new ArgumentNullException(nameof(jobExecutionContext));
+
+            // safe extraction of orgId
+            var dataMap = jobExecutionContext.JobDetail.JobDataMap;
+            if (dataMap.ContainsKey("orgId") 
+                && int.TryParse(dataMap.GetString("orgId"), out var parsedOrg))
+            {
+                orgId = parsedOrg;
+            }
+
+            jobKey = jobExecutionContext.JobDetail.Key;
+            if (string.IsNullOrEmpty(jobKey?.Name) || !int.TryParse(jobKey.Name, out _))
+            {
+                throw new InvalidOperationException($"Job key name is not a valid integer: '{jobKey?.Name ?? "<null>"}'. Expected job_config_id as integer in JobKey.Name.");
+            }
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "WriteExecutionLog")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
+
+            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+
+            conn = await _connection_scope.GetOpenConnectionAsync(connectionString);
+            //@orgid, @job_exe_hist_id, now(), @exe_logs
+            var parameters = new
+            {
+                orgid = jobExeLog.OrgId,
+                job_exe_hist_id = jobExeLog.JobExeHistId,
+                exe_logs = jobExeLog.ExeLogs,
+                loglevel = loggingLevel switch
+                {
+                    LoggingLevel.Info => "INFO",
+                    LoggingLevel.Warning => "WARNING",
+                    LoggingLevel.Error => "ERROR",
+                    _ => "UNKNOWN" 
+                }
+            };
+            int RecordsEffected = conn.Execute(operationMapping.Script, parameters);
+            boolWriteExecutionLogs = RecordsEffected > 0;
+            return boolWriteExecutionLogs;
+        }
+    }
+}

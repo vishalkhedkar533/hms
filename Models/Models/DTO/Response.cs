@@ -1,6 +1,7 @@
 ﻿using Models.DB;
 using Models.DTO.CommissionMgmt;
 using Models.DTO.CommissionMgmt.Dashboard;
+using SharedModels;
 
 namespace Models.DTO
 {
@@ -30,6 +31,10 @@ namespace Models.DTO
         public ApproveCommissionResponseDto? approveCommission { get; set; }
         public List<CommissionConfigDTO>? commissionConfig { get; set; } = null; 
         public string? updatedAgentSectionName { get; set; } = null;
+        public List<JobExecutionHistoryDto>? jobExecutionHistory { get; set; } = null;
+        public MetaDataResponse? metaDataResponse { get; set; } = null;
+
+        public object? pagination { get; set; }
     }
 
     public class LoginResponse

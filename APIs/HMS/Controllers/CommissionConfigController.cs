@@ -10,7 +10,6 @@ using Models.DTO;
 using Models.DTO.CommissionMgmt;
 using Models.HMSConsts;
 using System.Security.Claims;
-using System.Text.Json;
 
 namespace HMS.Controllers
 {
@@ -22,12 +21,77 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private readonly ILogger<CommissionConfigController> _logger;
         private readonly IWebHostEnvironment _env;
-        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger, IWebHostEnvironment env)
+        private readonly DatabaseService _db;
+
+        public CommissionConfigController(IAuthClaimService authClaimService,HMSContext hMSContext, ILogger<CommissionConfigController> logger, IWebHostEnvironment env,DatabaseService databaseService)
         {
             _authClaimService = authClaimService;
             _context = hMSContext;
             _logger = logger;
             _env = env;
+            _db = databaseService;
+        }
+
+        [HttpPost("GetCommissionById/{commissionConfigId}")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetCommissionById(int commissionConfigId)
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            try
+            {
+                var data = await (
+                    from cc in _context.CommissionConfigs.AsNoTracking()
+                    join jc in _context.JobConfigs.AsNoTracking()
+                        on cc.JobConfigId equals jc.JobConfigId
+                    where cc.CommissionConfigId == commissionConfigId && cc.OrgId == orgId
+                    select new CommissionConfigDTO
+                    {
+                        // Step 1: Basic Info
+                        CommissionConfigId = cc.CommissionConfigId,
+                        CommissionName = jc.JobName,
+                        RunFrom = jc.StartAt,
+                        RunTo = jc.EndAt,
+
+                        // Step 2: Formula
+                        Formula = cc.Formula,
+
+                        // Step 3: Schedule Configuration
+                        JobConfigId = cc.JobConfigId,
+                        JobType = jc.JobType,
+                        JobName = jc.JobName,
+                        TargetType=jc.TargetType,
+                        TargetMethod = jc.TargetMethod,
+                        TriggerType = jc.TriggerType,
+                        CronExpression = jc.CronExpression,
+
+                        // Step 4: Status
+                        Enabled = jc.Enabled,
+
+                        UpdatedAt = jc.UpdatedAt
+                    }
+                ).FirstOrDefaultAsync();
+
+                if (data == null)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Commission configuration not found.";
+                    return NotFound(response);
+                }
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.commissionConfig = new List<CommissionConfigDTO> { data };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching commission details for ID: {Id}", commissionConfigId);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
         [HttpPost("CreateCommission")]
@@ -43,66 +107,142 @@ namespace HMS.Controllers
 
             try
             {
-                var job = new JobConfig
+                CommissionConfig commission;
+                JobConfig job;
+                JobExtns jobExtns;
+
+                //Edit Existing Entry
+                if (dto.CommissionConfigId > 0)
                 {
-                    JobName = dto.CommissionName,
-                    JobType = "CRON",
-                    TriggerType = "CRON",
-                    Enabled = false,
-                    StartAt =dto.RunFrom,
-                    EndAt = dto.RunTo,
-                    OrgId = orgId
-                };
+                    commission = await _context.CommissionConfigs.FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId && x.OrgId == orgId);
 
-                _context.JobConfigs.Add(job);
-                await _context.SaveChangesAsync();
+                    if (commission == null)
+                    {
+                        response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                        response.responseHeader.ErrorMessage = await _context.errorMaster
+                            .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                     && x.Area == "CommissionConstants")
+                            .Select(x => x.ErrorMsg)
+                            .FirstOrDefaultAsync() ?? "Undefined Error Message";
 
-                var commission = new CommissionConfig
+                        return NoContent();
+                    }
+
+                    job = await _context.JobConfigs.FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
+
+                    if (job == null)
+                    {
+                        response.responseHeader.ErrorCode = JobConstants.JOB_NOTFOUND;
+                        response.responseHeader.ErrorMessage = await _context.errorMaster
+                            .Where(x => x.ErrorId == JobConstants.JOB_NOTFOUND
+                                     && x.Area == "JobConstants")
+                            .Select(x => x.ErrorMsg)
+                            .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                        return NoContent();
+                    }
+                    // Update Job (Only fields relevant to Step 1)
+                    job.JobName = dto.CommissionName;
+                    job.StartAt = dto.RunFrom.HasValue ? dto.RunFrom.Value.ToUniversalTime() : null;
+                    job.EndAt = dto.RunTo.HasValue ? dto.RunTo.Value.ToUniversalTime() : null;
+                    job.TargetType = dto.TargetType;
+                    job.TargetMethod = dto.TargetMethod;
+                    job.UpdatedAt = DateTime.Now;
+
+                    jobExtns = await _context.JobExtns.FirstOrDefaultAsync(x => x.JobConfigId == job.JobConfigId && x.OrgId == orgId);
+
+                    if (jobExtns == null)
+                    {
+                        jobExtns = new JobExtns
+                        {
+                            JobConfigId = job.JobConfigId,
+                            OrgId = orgId
+                        };
+                        _context.JobExtns.Add(jobExtns);
+                    }
+
+                    jobExtns.Comments = dto.Comments;
+                    jobExtns.Filter = dto.FilterConditions;
+                }
+                else
                 {
-                    CommissionName = dto.CommissionName,
-                    RunFrom = dto.RunFrom,
-                    RunTo = dto.RunTo,
-                    CreatedAt = DateTime.Now,
-                    CreatedBy = username,
-                    OrgId = orgId,
-                    JobConfigId = job.JobConfigId
-                };
+                    //At time New Entry
+                    job = new JobConfig
+                    {
+                        JobName = dto.CommissionName,
+                        JobType = "CRON",
+                        TriggerType = "CRON",
+                        Enabled = false,
+                        StartAt = dto.RunFrom.HasValue ? dto.RunFrom.Value.ToUniversalTime() : null,
+                        EndAt = dto.RunTo.HasValue ? dto.RunTo.Value.ToUniversalTime() : null,
+                        OrgId = orgId,
+                        CreatedAt = DateTime.Now,
+                        TargetType = dto.TargetType,
+                        TargetMethod = dto.TargetMethod
+                    };
 
-                _context.CommissionConfigs.Add(commission);
+                    _context.JobConfigs.Add(job);
+                    await _context.SaveChangesAsync();
+
+                     jobExtns = new JobExtns
+                    {
+                        JobConfigId = job.JobConfigId,
+                        OrgId = orgId,
+                        Comments = dto.Comments,
+                        Filter = dto.FilterConditions
+                    };
+
+                    _context.JobExtns.Add(jobExtns);
+
+                    commission = new CommissionConfig
+                    {
+                        CreatedAt = DateTime.Now,
+                        CreatedBy = username,
+                        OrgId = orgId,
+                        JobConfigId = job.JobConfigId
+                    };
+
+                    _context.CommissionConfigs.Add(commission);
+                }
+
                 await _context.SaveChangesAsync();
-
                 await tx.CommitAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.commissionConfig = new List<CommissionConfigDTO>
-                    {
-                        new CommissionConfigDTO
-                        {
-                            CommissionConfigId = commission.CommissionConfigId,
-                            CommissionName = commission.CommissionName,
-                            RunFrom = commission.RunFrom,
-                            RunTo = commission.RunTo,
-                            JobConfigId = commission.JobConfigId,
-                            CreatedAt = commission.CreatedAt,
-                            CreatedBy = commission.CreatedBy
-                        }
-                    };
-
+                                            {
+                                                new CommissionConfigDTO
+                                                {
+                                                    CommissionConfigId = commission.CommissionConfigId,
+                                                    JobConfigId = commission.JobConfigId,
+                                                    JobName=job.JobName,
+                                                    RunFrom=job.StartAt,
+                                                    RunTo=job.StartAt,
+                                                    Formula=commission.Formula,
+                                                    TargetType=job.TargetType,
+                                                    TargetMethod=job.TargetMethod,
+                                                    JobType=job.JobType,
+                                                    TriggerType=job.TriggerType,
+                                                    CronExpression=job.CronExpression,
+                                                    Enabled=job.Enabled,
+                                                    FilterCondition=jobExtns.Filter,
+                                                    Comments=jobExtns.Comments,
+                                                    CreatedAt = commission.CreatedAt
+                                                }
+                                            };
                 return Ok(response);
             }
-            catch (DbUpdateException ex) when (ex.IsUniqueConstraintViolation())
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("unique") == true)
             {
                 await tx.RollbackAsync();
-                _logger.LogWarning("Duplicate Commission or Job Name: {Name}", dto.CommissionName);
-
-                return Conflict(new { Message = "A commission or job with this name already exists." });
+                return Conflict(new { Message = "A commission with this name already exists." });
             }
             catch (Exception ex)
             {
                 await tx.RollbackAsync();
-                _logger.LogError(ex, "Unexpected error creating commission");
-                return StatusCode(500, "An internal error occurred.");
+                _logger.LogError(ex, "Error in Create/Update Commission Step 1");
+                return StatusCode(500, "Internal server error");
             }
         }
 
@@ -113,39 +253,53 @@ namespace HMS.Controllers
         {
             HmsResponse response = new HmsResponse();
 
-            var config = await _context.CommissionConfigs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
-
-            if (config == null)
+            try
             {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Commission not found";
-                return NotFound(response);
-            }
+                var config = await _context.CommissionConfigs
+                               .FirstOrDefaultAsync(c =>
+                                c.CommissionConfigId == dto.CommissionConfigId
+                                && _context.JobConfigs.Any(j => j.JobConfigId == c.JobConfigId)
+                               );
 
-            config.Conditions = dto.Condition;
-            _context.CommissionConfigs.Update(config);
-            await _context.SaveChangesAsync();
-
-            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-            response.responseHeader.ErrorMessage = "SUCCESS";
-            response.responseBody.commissionConfig = new List<CommissionConfigDTO>
-            {
-                new CommissionConfigDTO
+                if (config == null)
                 {
-                    CommissionConfigId = config.CommissionConfigId,
-                    CommissionName = config.CommissionName,
-                    RunFrom = config.RunFrom,
-                    RunTo = config.RunTo,
-                    Conditions = config.Conditions,
-                    CreatedAt = config.CreatedAt,
-                    CreatedBy = config.CreatedBy,
-                    JobConfigId = config.JobConfigId
-                }
-            };
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                 && x.Area == "CommissionConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
 
-            return Ok(response);
+                    return NoContent();
+                }
+
+                config.Formula = dto.Formula;
+
+                //_context.CommissionConfigs.Update(config);
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+
+                response.responseBody.commissionConfig = new List<CommissionConfigDTO>
+                                {
+                                    new CommissionConfigDTO
+                                    {
+                                        CommissionConfigId = config.CommissionConfigId,
+                                        Formula         = config.Formula,
+                                        CreatedAt          = config.CreatedAt,
+                                        CreatedBy          = config.CreatedBy,
+                                        JobConfigId        = config.JobConfigId
+                                    }
+                                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Commission Config UpdateCommissionFormula failed at {UtcNow} Exception {message}", DateTime.UtcNow, ex.Message);
+                return StatusCode(500, "Internal Server Error");
+            }
         }
 
         [HttpPost("UpdateCronSetting")]
@@ -155,57 +309,68 @@ namespace HMS.Controllers
         {
             HmsResponse response = new HmsResponse();
 
-            var commission = await _context.CommissionConfigs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
-
-            if (commission == null)
+            try
             {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Commission not found";
-                return NotFound(response);
+                var commission = await _context.CommissionConfigs
+                        .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
+
+                if (commission == null)
+                {
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                 && x.Area == "CommissionConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                    return NoContent();
+                }
+
+                var job = await _context.JobConfigs
+                    .FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
+
+                if (job == null)
+                {
+                    response.responseHeader.ErrorCode = JobConstants.JOB_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == JobConstants.JOB_NOTFOUND
+                                 && x.Area == "JobConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                    return NoContent();
+                }
+
+                job.JobType = dto.JobType ?? job.JobType;
+                job.TriggerType = dto.TriggerType ?? job.TriggerType;
+                job.CronExpression = dto.CronExpression ?? job.CronExpression;
+                job.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.commissionConfig = new List<CommissionConfigDTO>
+                                                         {
+                                                             new CommissionConfigDTO
+                                                             {
+                                                                 CommissionConfigId = commission.CommissionConfigId,
+                                                                 JobConfigId = commission.JobConfigId,
+                                                                 JobName = job.JobName,
+                                                                 JobType = job.JobType,
+                                                                 TriggerType = job.TriggerType,
+                                                                 CronExpression = job.CronExpression,
+                                                                 Enabled = job.Enabled,
+                                                                 UpdatedAt = job.UpdatedAt
+                                                             }
+                                                         };
+                return Ok(response);
             }
-
-            var job = await _context.JobConfigs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
-
-            if (job == null)
+            catch (Exception ex)
             {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Job not found";
-                return NotFound(response);
+                _logger.LogError(ex, "Commisssion Config UpdateCronSetting failed at {UtcNow} Exception {message}", DateTime.UtcNow, ex.Message);
+                return StatusCode(500, "Internal Server Error");
             }
-
-            job.JobType = dto.JobType;
-            job.TriggerType = dto.TriggerType;
-            job.CronExpression = dto.CronExpression;
-            job.UpdatedAt = DateTime.Now;
-
-            _context.JobConfigs.Update(job);
-            await _context.SaveChangesAsync();
-
-            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-            response.responseHeader.ErrorMessage = "SUCCESS";
-            response.responseBody.commissionConfig = new List<CommissionConfigDTO>
-                    {
-                        new CommissionConfigDTO
-                        {
-                            CommissionConfigId = commission.CommissionConfigId,
-                            CommissionName = commission.CommissionName,
-                            RunFrom = commission.RunFrom,
-                            RunTo = commission.RunTo,
-                            JobConfigId = commission.JobConfigId,
-
-                            JobType = job.JobType,
-                            TriggerType = job.TriggerType,
-                            CronExpression = job.CronExpression,
-                            Enabled = job.Enabled,
-                            UpdatedAt = job.UpdatedAt
-                        }
-                    };
-
-            return Ok(response);
         }
 
         [HttpPost("EnableDisableJob")]
@@ -214,49 +379,50 @@ namespace HMS.Controllers
         public async Task<IActionResult> EnableDisableJob([FromBody] EnableDisableJobDto dto)
         {
             HmsResponse response = new HmsResponse();
-
-            var commission = await _context.CommissionConfigs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
-
-            if (commission == null)
+            try
             {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Commission not found";
-                return NotFound(response);
-            }
+                var commission = await _context.CommissionConfigs.FirstOrDefaultAsync(x => x.CommissionConfigId == dto.CommissionConfigId);
 
-            var job = await _context.JobConfigs
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
+                if (commission == null)
+                {
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                 && x.Area == "CommissionConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
 
-            if (job == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Job not found";
-                return NotFound(response);
-            }
+                    return NoContent();
+                }
 
-            job.Enabled = dto.Enabled;
-            job.TargetType = dto.TargetType;
-            job.TargetMethod = dto.TargetMethod;
-            job.UpdatedAt = DateTime.Now;
+                var job = await _context.JobConfigs.FirstOrDefaultAsync(x => x.JobConfigId == commission.JobConfigId);
 
-            _context.JobConfigs.Update(job);
-            await _context.SaveChangesAsync();
+                if (job == null)
+                {
+                    response.responseHeader.ErrorCode = JobConstants.JOB_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == JobConstants.JOB_NOTFOUND
+                                 && x.Area == "JobConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
 
-            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-            response.responseHeader.ErrorMessage = "SUCCESS";
-            response.responseBody.commissionConfig = new List<CommissionConfigDTO>
+                    return NoContent();
+                }
+
+                job.Enabled = dto.Enabled;
+                job.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.commissionConfig = new List<CommissionConfigDTO>
                 {
                     new CommissionConfigDTO
                     {
                         CommissionConfigId = commission.CommissionConfigId,
-                        CommissionName = commission.CommissionName,
-                        RunFrom = commission.RunFrom,
-                        RunTo = commission.RunTo,
+                        JobName = job.JobName,
                         JobConfigId = commission.JobConfigId,
-
                         JobType = job.JobType,
                         TriggerType = job.TriggerType,
                         CronExpression = job.CronExpression,
@@ -264,36 +430,12 @@ namespace HMS.Controllers
                         UpdatedAt = job.UpdatedAt
                     }
                 };
-            return Ok(response);
-        }
-
-        [HttpPost("CommissionSearchFieldsJson")]
-        [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetCommissionMetadata()
-        {
-            try
-            {
-                string filePath = Path.Combine(_env.ContentRootPath, "CommissionMetaData", "commissionMetadata.json");
-
-                if (!System.IO.File.Exists(filePath))
-                {
-                    _logger.LogWarning("Metadata file missing at: {Path}", filePath);
-                    return NotFound(new { message = "Metadata configuration file not found." });
-                }
-
-                string jsonString = await System.IO.File.ReadAllTextAsync(filePath);
-
-                var metadata = JsonSerializer.Deserialize<CommissionMetadata>(jsonString, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-                return Ok(metadata);
+                return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error reading commission metadata file");
-                return StatusCode(500, "Internal server error reading configuration.");
+                _logger.LogError(ex, "EnableDisableJob failed at {UtcNow} Exception {message}", DateTime.UtcNow, ex.Message);
+                return StatusCode(500, "Internal Server Error");
             }
         }
 
@@ -311,36 +453,42 @@ namespace HMS.Controllers
                     _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
                 var list = await (
-                    from cc in _context.CommissionConfigs.AsNoTracking()
-                    join jc in _context.JobConfigs.AsNoTracking()
-                        on cc.JobConfigId equals jc.JobConfigId
-                    where cc.OrgId == orgId
-                    orderby cc.CreatedAt descending
-                    select new CommissionConfigDTO
-                    {
-                        // -------- CommissionConfig --------
-                        CommissionConfigId = cc.CommissionConfigId,
-                        CommissionName = cc.CommissionName,
-                        RunFrom = cc.RunFrom,
-                        RunTo = cc.RunTo,
-                        CreatedAt = cc.CreatedAt,
-                        CreatedBy = cc.CreatedBy,
-                        Conditions = cc.Conditions,
-                        JobConfigId = cc.JobConfigId,
+                                from cc in _context.CommissionConfigs.AsNoTracking()
+                                join jc in _context.JobConfigs.AsNoTracking()
+                                    on cc.JobConfigId equals jc.JobConfigId
+                                join je in _context.JobExtns.AsNoTracking()
+                                    on jc.JobConfigId equals je.JobConfigId
+                                where cc.OrgId == orgId
+                                orderby cc.CreatedAt descending
+                                select new CommissionConfigDTO
+                                {
+                                    // -------- CommissionConfig --------
+                                    CommissionConfigId = cc.CommissionConfigId,
+                                    CommissionName = jc.JobName,
+                                    RunFrom = jc.StartAt,
+                                    RunTo = jc.EndAt,
+                                    Formula=cc.Formula,
+                                    CreatedAt = cc.CreatedAt,
+                                    CreatedBy = cc.CreatedBy,
+                                    JobConfigId = cc.JobConfigId,
 
-                        // -------- JobConfig --------
-                        JobType = jc.JobType,
-                        Enabled = jc.Enabled,
-                        TriggerType = jc.TriggerType,
-                        CronExpression = jc.CronExpression,
-                        IntervalSeconds = jc.IntervalSeconds,
-                        Parameters = jc.Parameters,
-                        UpdatedAt = jc.UpdatedAt,
-                        TargetType = jc.TargetType,
-                        TargetMethod = jc.TargetMethod,
-                        Args = jc.Args
-                    }
-                ).ToListAsync();
+                                    // -------- JobExtns --------
+                                    FilterCondition = je.Filter,
+                                    Comments = je.Comments,
+
+                                    // -------- JobConfig --------
+                                    JobType = jc.JobType,
+                                    Enabled = jc.Enabled,
+                                    TriggerType = jc.TriggerType,
+                                    CronExpression = jc.CronExpression,
+                                    IntervalSeconds = jc.IntervalSeconds,
+                                    Parameters = jc.Parameters,
+                                    UpdatedAt = jc.UpdatedAt,
+                                    TargetType = jc.TargetType,
+                                    TargetMethod = jc.TargetMethod,
+                                    Args = jc.Args
+                                }
+                            ).ToListAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
@@ -351,6 +499,121 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "GetCommissionConfigList API failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+        
+        [HttpPost("JobExecutionHistory/{jobConfigId}")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetJobExecutionHistory([FromRoute] int? jobConfigId)        
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = 0;
+
+            try
+            {
+                orgId = Convert.ToInt32(
+                    _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var query =
+                    from h in _context.JobExeHists.AsNoTracking()
+                    join jc in _context.JobConfigs.AsNoTracking()
+                        on h.JobConfigId equals jc.JobConfigId
+                    join je in _context.JobExtns.AsNoTracking()
+                        on jc.JobConfigId equals je.JobConfigId
+                    where h.OrgId == orgId
+                    select new JobExecutionHistoryDto
+                    {
+                        JobExeHistId = h.JobExeHistId,
+                        JobConfigId = h.JobConfigId,
+                        JobName = jc.JobName,
+
+                        StartedAt = h.StartedAt,
+                        FinishedAt = h.FinishedAt,
+                        ExeStatus = h.ExeStatus,
+                        DownloadLink = h.DownloadLnk,
+
+                        Comments = je.Comments
+                    };
+
+                if (jobConfigId.HasValue)
+                    query = query.Where(x => x.JobConfigId == jobConfigId.Value);
+
+                var list = await query
+                    .OrderByDescending(x => x.StartedAt)
+                    .ToListAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.jobExecutionHistory = list;
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "GetJobExecutionHistory failed OrgId={OrgId}", orgId);
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpPost("CommissionJobConfigPaginatedList")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetCommissionJobConfigList([FromBody] PaginationRequest request)
+        {
+            HmsResponse response = new HmsResponse();
+
+            request.PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber;
+            request.PageSize = request.PageSize <= 0 ? 10 :  request.PageSize;
+            
+            try
+            {
+                int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var results = await _db.ExecuteQueryAsync<CommissionConfigDTO>(
+                    "Commission",
+                    "GetConfigList",
+                    new
+                    {
+                        p_orgid = orgId,
+                        p_page_number = request.PageNumber,
+                        p_page_size = request.PageSize
+                    });
+
+                var configList = results?.ToList() ?? new List<CommissionConfigDTO>();
+                if(configList.Any())
+                {
+                    int totalItems = configList.FirstOrDefault()?.TotalCount ?? 0;
+
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "SUCCESS";
+                    response.responseBody.commissionConfig = configList;
+                    response.responseBody.pagination = new
+                    {
+                        currentPage = request.PageNumber,
+                        totalPages = (int)Math.Ceiling(totalItems / (double)request.PageSize),
+                        pageSize = request.PageSize,
+                        totalItems = totalItems
+                    };
+                    return Ok(response);
+                }
+                else
+                {
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                 && x.Area == "CommissionConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                    return NoContent();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch paginated commission list ");
                 return StatusCode(500, "Internal server error");
             }
         }

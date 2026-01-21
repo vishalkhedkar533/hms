@@ -83,8 +83,52 @@ const configcommission = (data = {}, headers = {}) => {
   return apiClient.post(APIRoutes.CONFIGCOMMISSION, data, { headers });
 };
 const updateConditionConfig = (data = {}, headers = {}) => {
-  console.log("update Condition Config commission with:", data);
-  return apiClient.patch(APIRoutes.UPDATECONDITIONCONFIG, data, { headers });
+  // console.log("update Condition Config commission with:", data);
+  return apiClient.post(APIRoutes.UPDATECONDITIONCONFIG, data, { headers });
+};
+const configList = (data = { pageNumber: 0, pageSize: 0 }, headers = {}) => {
+  // console.log("config commission list:", data);
+  return apiClient.post(APIRoutes.CONFIGLIST, data, { headers });
+};
+const updateCron = (data = {}, headers = {}) => {
+  console.log("config commission cron:", data);
+  return apiClient.post(APIRoutes.UPDATECRON, data, { headers });
+};
+const updateStatus = (data = {}, headers = {}) => {
+  console.log("config commission STATUS:", data);
+  return apiClient.post(APIRoutes.UPDATESTATUS, data, { headers });
+};
+const searchFieldsConfig = (data = {}, headers = {}) => {
+  console.log("### search fields:", data);
+  console.log("### search fields headers:", headers);
+  return apiClient.get(APIRoutes.COMMISSIONSEARCHFIELDS, { 
+    params: data, 
+    headers: headers 
+  });
+};
+
+const editAgentDetails = (data = {}, headers = {}) => {
+  console.log("Edit agent details:", data);
+  // Extract agentId and sectionName from data for URL path
+  const { agentId, sectionName } = data;
+  // Send full data object in body (including agentId and sectionName as per API spec)
+  return apiClient.post(`${APIRoutes.EDITAGENT}/${agentId}/${sectionName}`, data, { headers });
+};
+const executiveHistoryList = (data = {}, headers = {}) => {
+  console.log("config commission executive history list:", data);
+  const { commissionConfigId } = data;
+  const pathId =  commissionConfigId;
+  if (!pathId) {
+    throw new Error("commissionConfigId is required for executive history list");
+  }
+  return apiClient.post(`${APIRoutes.EXECUTIVEHISTORYLIST}/${pathId}`, data, { headers });
+};
+
+const editCommission = (data = {}, headers = {}) => {
+  const { commissionConfigId } = data;
+  const ConfigId = commissionConfigId;
+  console.log("config  Edit commission steps:", data);
+  return apiClient.post(`${APIRoutes.UPDATECOMMISSIONBYID}/${ConfigId}`, data, { headers });
 };
 
 
@@ -104,5 +148,12 @@ module.exports = {
   adjustCommission,
   approveCommission,
   configcommission,
-  updateConditionConfig
+  updateConditionConfig,
+  configList,
+  updateCron, 
+  updateStatus,
+  searchFieldsConfig,
+  editAgentDetails,
+  executiveHistoryList ,
+  editCommission                           
 };

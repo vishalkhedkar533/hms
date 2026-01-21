@@ -282,17 +282,85 @@ export interface IApproveCommissionResponseBody {
   records: IApproveRecords[]
 
 }
-export interface IConfigCommissionResponseBody {
-  commissionId: number
+// Response structure: responseBody.commissionConfig[0].commissionConfigId
+export interface ICommissionConfigItem {
+  commissionConfigId: number
   commissionName: string
   status: string
 }
+
+export interface IConfigCommissionResponseBody {
+  commissionConfig: ICommissionConfigItem[]
+}
 export interface IConfigCommissionRequest {
   commissionName: string
-  triggerCycle: 'daily' | 'monthly' | 'yearly' | 'quarterly'
   runFrom: string
   runTo: string
   createdAt?: string
+  comments:string
+  filterConditions?: string
+  commissionConfigId?: number
+  targetType: string
+  targetMethod: string
+
+}
+export interface IexecutiveJobListResponseBody {
+  jobConfigId: number
+  jobType: string
+  jobExeHistId:number
+  startedAt:string
+  finishedAt:string
+  exeStatus: 'SUCCESS' | 'FAILED' | string
+  downloadLink:string
+  duration:string
+  
+}
+export interface IExecutiveHistoryResponseBody {
+  executiveJobList: IexecutiveJobListResponseBody[]
+}
+export interface IExecutiveHistoryRequest {
+  commissionConfigId: number
+}
+export interface IUpdateCronRequest {
+  commissionConfigId: number
+  jobType: string
+  triggerType: string
+  cronExpression: string
+}
+export interface IUpdateStatusRequest {
+  commissionConfigId: number
+  enabled: boolean
+}
+export interface IConfigCommissionListRequest {
+  pageNumber: number
+  pageSize: number
+}
+export interface ICommissionSearchFieldsRequest {
+  commissionConfigId: number
+}
+
+export interface ICommissionField {
+  propertyName: string
+  columnName: string
+  description: string
+  dataType: 'number' | 'string' | 'date'
+  isNullable: boolean
+}
+
+export interface ICommissionMetadata {
+  agent?: ICommissionField[]
+  commrate?: ICommissionField[]
+  owner?: ICommissionField[]
+  insured?: ICommissionField[]
+  customer?: ICommissionField[]
+  premium?: ICommissionField[]
+  policy?: ICommissionField[]
+  lastExec?: ICommissionField[]
+  [key: string]: ICommissionField[] | undefined
+}
+
+export interface ICommissionSearchFieldsResponseBody {
+  metaDataResponse: ICommissionMetadata[]
 }
 
 

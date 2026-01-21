@@ -35,6 +35,7 @@
     <ProjectReference Include="..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
     <ProjectReference Include="..\..\CommonLibrary\Communication\Communication.csproj" />
     <ProjectReference Include="..\..\Models\Models\Models.csproj" />
+    <ProjectReference Include="..\..\SharedModels\SharedModels.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Update="InputStructures\excelStructureValidator.json">

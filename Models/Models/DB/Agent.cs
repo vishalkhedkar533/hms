@@ -18,11 +18,11 @@ namespace Models.DB
           .OnDelete(DeleteBehavior.SetNull);
 });
      */
-    [Table("agent", Schema = "hms")] // ✅ lowercase to match DB
+    [Table("agent", Schema = "hms")]
     public class Agent
     {
         [Key]
-        [Column("agent_id")] // ✅ lowercase
+        [Column("agent_id")]
         [SwaggerSchema("Primary key for the agent.")]
         public int AgentId { get; set; }
 
@@ -59,34 +59,35 @@ namespace Models.DB
         [StringLength(20)]
         [Column("suffix")]
         public string? Suffix { get; set; }
+
         [Column("dob", TypeName = "date")]
-        public DateTime? DOB { get; set; }
+        public DateTime? Dob { get; set; }
 
         [StringLength(40)]
         [Column("nationality")]
         public string? Nationality { get; set; }
+
         [StringLength(22)]
         [Column("preferred_language")]
         public string? PreferredLanguage { get; set; }
+
         [StringLength(20)]
         [Column("agent_level")]
         public string? AgentLevel { get; set; }
+
         [StringLength(20)]
         [Column("staff_code")]
         public string? StaffCode { get; set; }
 
-        [Column("supervisor_id")] // ✅ matches DB
-        public int? SupervisorId { get; set; }
-
         [Column("contracted_date", TypeName = "date")]
-        public DateTime? ContractedDate { get; set; }
+        public DateOnly? ContractedDate { get; set; }
 
         [StringLength(20)]
         [Column("agent_status_code")]
         public string? AgentStatusCode { get; set; }
 
         [Column("status_date", TypeName = "date")]
-        public DateTime? StatusDate { get; set; }
+        public DateOnly? StatusDate { get; set; }
 
         [Required]
         [Column("is_licensed")]
@@ -128,6 +129,9 @@ namespace Models.DB
         [ConcurrencyCheck]
         public int? RowVersion { get; set; }
 
+        [Column("supervisor_id")]
+        public int? SupervisorId { get; set; }
+
         [Required]
         [Column("is_active")]
         public bool IsActive { get; set; } = true;
@@ -135,15 +139,19 @@ namespace Models.DB
         [StringLength(50)]
         [Column("email")]
         public string? Email { get; set; }
+
         [StringLength(20)]
         [Column("mobileno")]
         public string? MobileNo { get; set; }
+
         [StringLength(100)]
         [Column("applicationdocketno")]
         public string? ApplicationDocketNo { get; set; }
+
         [StringLength(200)]
         [Column("father_husband_nm")]
-        public string? Father_Husband_Nm { get; set; }
+        public string? FatherHusbandNm { get; set; }
+
         [StringLength(50)]
         [Column("employeecode")]
         public string? EmployeeCode { get; set; }
@@ -151,15 +159,13 @@ namespace Models.DB
         [Column("startdate")]
         public DateTime? StartDate { get; set; }
 
+        [Required]
         [Column("panaadharlinkflag")]
         public bool PanAadharLinkFlag { get; set; }
 
+        [Required]
         [Column("sec206abflag")]
         public bool Sec206abFlag { get; set; }
-
-        [StringLength(50)]
-        [Column("packageid")]
-        public string? PackageID { get; set; }
 
         [StringLength(50)]
         [Column("taxstatus")]
@@ -168,9 +174,10 @@ namespace Models.DB
         [StringLength(50)]
         [Column("stateeid")]
         public string? StateEid { get; set; }
+
         [StringLength(50)]
         [Column("urn")]
-        public string? URN { get; set; }
+        public string? Urn { get; set; }
 
         [StringLength(200)]
         [Column("additionalcomment")]
@@ -208,14 +215,18 @@ namespace Models.DB
 
         [StringLength(100)]
         [Column("cmsagenttype")]
-        public string? CMSAgentType { get; set; }
+        public string? CmsAgentType { get; set; }
+
+        [StringLength(50)]
+        [Column("packageid")]
+        public string? PackageId { get; set; }
 
         [StringLength(50)]
         [Column("servicetaxno")]
         public string? ServiceTaxNo { get; set; }
 
         [Column("ulipflag")]
-        public bool UlipFlag { get; set; }
+        public bool? UlipFlag { get; set; }
 
         [StringLength(100)]
         [Column("traininggrouptype")]
@@ -226,10 +237,10 @@ namespace Models.DB
         public string? Ifs { get; set; }
 
         [Column("refreshertrainingcompleted")]
-        public bool RefresherTrainingCompleted { get; set; }
+        public bool? RefresherTrainingCompleted { get; set; }
 
         [Column("ismigrated")]
-        public bool IsMigrated { get; set; }
+        public bool? IsMigrated { get; set; }
 
         [StringLength(50)]
         [Column("mainpartnerclientcode")]
@@ -237,7 +248,7 @@ namespace Models.DB
 
         [StringLength(50)]
         [Column("agentmaincodevweid")]
-        public string? AgentMaincodevwEid { get; set; }
+        public string? AgentMaincodeVweid { get; set; }
 
         [Column("registrationdate")]
         public DateTime? RegistrationDate { get; set; }
@@ -273,7 +284,7 @@ namespace Models.DB
         public DateTime? LastPromotionDate { get; set; }
 
         [Column("hrdoj")]
-        public DateTime? HRDoj { get; set; }
+        public DateTime? HrDoj { get; set; }
 
         [Column("fgvaluetrngdate")]
         public DateTime? FgValueTrngDate { get; set; }
@@ -316,48 +327,69 @@ namespace Models.DB
         [StringLength(50)]
         [Column("licensestatus")]
         public string? LicenseStatus { get; set; }
-        [ForeignKey(nameof(SupervisorId))]
-        public Agent? Supervisor { get; set; }
+
         [Column("orgid")]
         public int? OrgId { get; set; }
+
         [Column("bankacctype")]
         public int? BankAccType { get; set; }
-        [Column("gender")]
-        public int? Gender { get; set; }
-        [Column("title")]
-        public int? Title { get; set; }
+
         [Column("channel")]
         public int? Channel { get; set; }
+
         [Column("subchannel")]
-        public int? SubChannel { get; set; } = 0;
-        [Column("occupation")]
-        public int? Occupation { get; set; }
+        public int? SubChannel { get; set; }
+
         [Column("agent_type_cat")]
         public int? AgentTypeCat { get; set; }
+
         [Column("agent_class")]
         public int? AgentClass { get; set; }
+
         [Column("martial_status")]
         public int? MaritalStatus { get; set; }
+
         [Column("education")]
         public int? Education { get; set; }
+
         [Column("state")]
         public int? State { get; set; }
+
         [Column("country")]
         public int? Country { get; set; }
+
+        [Column("gender")]
+        public int? Gender { get; set; }
+
+        [Column("title")]
+        public int? Title { get; set; }
+
+        [Column("occupation")]
+        public int? Occupation { get; set; }
+
         [Column("agent_sub_type_code")]
         public int? AgentSubTypeCode { get; set; }
-        [Column("location_code")]
-        public int? LocationCode { get; set; }
-        [Column("agent_type_code")]
-        public int? AgentTypeCode { get; set; }
+
         [Column("designation_code")]
         public int? DesignationCode { get; set; }
+
+        [Column("agent_type_code")]
+        public int? AgentTypeCode { get; set; }
+
+        [Column("location_code")]
+        public int? LocationCode { get; set; }
+
         [Column("candidatetype")]
         public int? CandidateType { get; set; }
-        [Column("commissionclass")]
-        public int? CommissionClass { get; set; }
+
         [Column("agenttype")]
         public int? AgentType { get; set; }
 
+        [Column("commissionclass")]
+        public int? CommissionClass { get; set; }
+
+        // Navigation Property
+        [ForeignKey(nameof(SupervisorId))]
+        public virtual Agent? Supervisor { get; set; }
     }
 }

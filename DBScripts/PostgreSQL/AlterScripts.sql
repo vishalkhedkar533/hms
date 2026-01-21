@@ -1,4 +1,3 @@
-ALTER TABLE hms."user"
 ADD COLUMN "FailedLoginAttempts" INTEGER NOT NULL DEFAULT 0,
 ADD COLUMN "LockoutEndTime" TIMESTAMP WITH TIME ZONE;
 -- 1. Add IS_ACTIVE
@@ -251,3 +250,104 @@ REFERENCES scheduler.job_config(job_config_id)
 
 ALTER TABLE comss.commission_config
 DROP COLUMN trigger_cycle;
+
+alter table insu_core.policy
+add column isStaffPolicy bool;
+
+alter table insu_core.policy
+add column PolicySourceCode int;
+
+alter table insu_core.policy
+add column insuredPAN varchar(10);
+
+alter table insu_core.policy
+add column proposerPAN varchar(10);
+
+alter table insu_core.policy
+add column insuredDOB date;
+
+alter table insu_core.policy
+add column proposerDOB date;
+
+alter table insu_core.policy
+add column loginDt date;
+
+alter table insu_core.policy
+add column insuredGender int;
+
+alter table insu_core.policy
+add column proposerGender int;
+
+alter table insu_core.policy
+add column maturityAgeInMonths int;
+
+alter table insu_core.policy
+add column modalBasePremium decimal;
+
+alter table insu_core.policy
+add column modalBaseRiderPremium decimal;
+
+alter table hms.agent add column ActivePermAddress int4 null;
+alter table hms.agent add column ActiveMailAddress int4 null;
+update hms.agent set ActivePermAddress = "ActivePermAddress";
+update hms.agent set ActiveMailAddress = "ActiveMailAddress";
+alter table hms.agent drop column "ActivePermAddress";
+alter table hms.agent drop column "ActiveMailAddress";
+
+ALTER TABLE comss.commission_config 
+ADD COLUMN filter_condition VARCHAR(500);
+
+ALTER TABLE comss.commission_config 
+ADD COLUMN comments VARCHAR(2000) NULL;
+
+ALTER TABLE scheduler.job_config
+ADD COLUMN comments VARCHAR(2000) NULL;
+alter table insu_core.ins_policy add column prod_code varchar(10)
+
+ALTER TABLE scheduler.job_config
+DROP COLUMN comments;
+
+ALTER TABLE comss.commission_config
+DROP COLUMN filter_condition;
+
+ALTER TABLE comss.commission_config
+DROP COLUMN comments;
+
+alter table insu_core.ins_policy add column prod_code varchar(10);
+
+alter table comss.comm_rate add column pol_yr_from int4 null;
+alter table comss.comm_rate add column pol_yr_to int4 null;
+
+alter table insu_core.premium_collected add column prem_coll_yr int4 null;
+alter table insu_core.premium_collected add column prem_coll_qtr int4 null;
+alter table insu_core.premium_collected add column prem_coll_fin_yr varchar(10) null;
+
+alter table comss.comm_rate alter column pol_yr_from set not null;
+alter table comss.comm_rate alter column pol_yr_to set not null;
+
+alter table insu_core.premium_collected alter column prem_coll_yr set not null;
+alter table insu_core.premium_collected alter column prem_coll_qtr set not null;
+alter table insu_core.premium_collected alter column prem_coll_fin_yr set not null;
+
+alter table comss.commission_config alter conditions TYPE varchar(10000);
+alter table comss.commission_config add formula varchar(10000);
+alter table comss.commission_config drop column conditions ;
+
+alter table insu_core.tmp_ins_policy add column prod_code varchar(10)
+alter table comss.commission_config drop column conditions ;
+
+ALTER TABLE comss.commission_config DROP COLUMN run_from;
+ALTER TABLE comss.commission_config DROP COLUMN run_to;
+ALTER TABLE comss.commission_config DROP COLUMN next_run_dt;
+ALTER TABLE comss.commission_config DROP COLUMN last_run_dt;
+ALTER TABLE comss.commission_config DROP COLUMN commission_name;
+
+
+alter TABLE scheduler.job_exe_hist add FireInstanceId bigint;
+alter TABLE scheduler.job_exe_hist add TriggerObject varchar(4000);
+alter TABLE scheduler.job_exe_hist add JobDetailObject varchar(4000);
+alter TABLE scheduler.job_exe_hist add FireTimeUtc TIMESTAMP WITH TIME ZONE;
+alter TABLE scheduler.job_exe_hist add LogLevel varchar(10);
+create index idx_FireInstanceId on scheduler.job_exe_hist(FireInstanceId);
+
+ALTER TABLE comss.comm_job_exe_dtls add status varchar (20) not null default 'PENDING' /*PENDING/APPROVED/HOLD/REJECTED*/;

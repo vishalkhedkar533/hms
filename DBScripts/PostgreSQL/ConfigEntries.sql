@@ -102,3 +102,7 @@ VALUES(2, 'PREMIUM_COLLECTED_TYPE', 4, 'Top Up', null, true);
 
 INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
 VALUES(2, 'PREMIUM_COLLECTED_TYPE', 5, 'Premium Reversal', null, true);
+
+insert into hms.errorMaster (error_id,area,error_msg) values (1401, 'CommissionConstants', 'Commission Config Not Found.' );
+
+insert into hms.errorMaster (error_id,area,error_msg) values (1501, 'JobConstants', 'Job Not Found.' );

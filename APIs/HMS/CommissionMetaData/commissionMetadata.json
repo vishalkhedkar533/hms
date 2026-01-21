@@ -6,6 +6,11 @@
       "dataType": "number"
     },
     {
+      "name": "pt",
+      "description": "Number - Policy Threshold",
+      "dataType": "number"
+    },
+    {
       "name": "name",
       "description": "Text - Policy Holder Name",
       "dataType": "string"

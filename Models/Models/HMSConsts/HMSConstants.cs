@@ -25,4 +25,12 @@
         public const int CORRESPONDENCE_1 = 1302;
         public const int CORRESPONDENCE_2 = 1303;
     }
+    public static class CommissionConstants  //14x series
+    {
+        public const int COMMISSION_NOTFOUND = 1401;
+    }
+    public static class JobConstants  //15x series
+    {
+        public const int JOB_NOTFOUND = 1501;
+    }
 }

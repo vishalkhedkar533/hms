@@ -1823,13 +1823,9 @@ CREATE TABLE IF NOT EXISTS scheduler.job_config
 
 CREATE SCHEMA IF NOT EXISTS insu_core ;
 
--- insu_core."policy" definition
+-- DROP TABLE insu_core.policy;
 
--- Drop table
-
--- DROP TABLE insu_core."policy";
-
-CREATE TABLE insu_core."policy" (
+CREATE TABLE insu_core.ins_policy (
 	policyref serial4 NOT NULL,
 	orgid int4 NOT NULL,
 	policyno varchar(20) NULL,
@@ -1845,19 +1841,182 @@ CREATE TABLE insu_core."policy" (
 );
 
 
--- insu_core."policy" foreign keys
+ALTER TABLE insu_core.ins_policy ADD CONSTRAINT fk_pol_agent FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id) ON DELETE CASCADE;
+ALTER TABLE insu_core.ins_policy ADD CONSTRAINT fk_pol_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 
-ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_agent FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id) ON DELETE CASCADE;
-ALTER TABLE insu_core."policy" ADD CONSTRAINT fk_pol_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
-
-CREATE TABLE insu_core."premium_collected" (
-	premiuCollId serial4 NOT NULL,
+-- DROP TABLE insu_core.premium_collected;
+CREATE TABLE insu_core.premium_collected (
+	premiucollid serial4 NOT NULL,
 	orgid int4 NOT NULL,
 	policyref int4 NULL,
-	premium_received_dt date null,
-	premium_type int4 null, /*select * from hmsmaster.keyvalueentries where entrycategory = 'PREMIUM_COLLECTED_TYPE'*/
-	premium_amt decimal null,
-	CONSTRAINT premiuCollId_pkey PRIMARY KEY (premiuCollId)
+	premium_received_dt date NULL,
+	premium_type int4 NULL,
+	premium_amt numeric NULL,
+	CONSTRAINT premiucollid_pkey PRIMARY KEY (premiucollid)
 );
 
-ALTER TABLE insu_core."premium_collected" ADD CONSTRAINT fk_prem_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+ALTER TABLE insu_core.premium_collected ADD CONSTRAINT fk_prem_org 
+            FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+--drop table scheduler.job_exe_hist
+
+create table scheduler.job_exe_hist(
+	job_exe_hist_id SERIAL primary key,
+	job_config_id int4 not null,
+	started_at TIMESTAMPTZ not null default now(),
+	finished_at TIMESTAMPTZ  default now(),
+	exe_status varchar(10) not null,/*CREATED > STARTED > PROCESSING > FAILURE OR FINISHED*/
+	download_lnk varchar(1000) null, /*when the user clicks on the link the API will check if the file is available*/
+	/*if the file is not available it will recreate the data from Commission Calculation Table and download the file*/
+	/*file will be saved server at path <orgId>/<job_config_id>/job_exe_hist_id/commission_extract.xlsx*/
+	orgId int not null,
+
+	constraint fk_job_hist_cfg
+        foreign key (job_config_id) references scheduler.job_config(job_config_id),
+        
+    constraint fk_job_hist_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+CREATE TABLE insu_core.tmp_ins_policy (
+	tmp_ins_policyid 		 SERIAL primary key,
+    orgid                     varchar(20)  NOT NULL,
+    policyno                  varchar(20)  NOT NULL,
+    policysuffix              varchar(10)  NOT NULL,
+    riskstartdt               varchar(20)  NULL,
+    riskenddt                 varchar(20)  NULL,
+    policyterm                varchar(10)  NULL,
+    prempayingterm            varchar(10)  NULL,
+    proposerclientid           varchar(20)  NULL,
+    lifeinsuredclientid        varchar(20)  NULL,
+    agent_id                  varchar(20)  NULL,
+    isstaffpolicy              varchar(10)  NULL,
+    policysourcecode           varchar(10)  NULL,
+    insuredpan                varchar(20)  NULL,
+    proposerpan               varchar(20)  NULL,
+    insureddob                varchar(20)  NULL,
+    proposerdob               varchar(20)  NULL,
+    logindt                   varchar(20)  NULL,
+    insuredgender              varchar(10)  NULL,
+    proposergender             varchar(10)  NULL,
+    maturityageinmonths        varchar(10)  NULL,
+    modalbasepremium           varchar(20)  NULL,
+    modalbaseriderpremium      varchar(20)  NULL,
+    comments                  varchar(100)  NULL,
+    reason                    varchar(100)  NULL,
+    created_at                timestamp  DEFAULT now()
+);
+
+CREATE UNIQUE INDEX uq_ins_policy_org_polno_suffix
+ON insu_core.ins_policy (orgid, policyno, policysuffix);
+
+--drop table insu_core.customer
+create table insu_core.customer(
+	clientid serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	pas_clientid varchar(10) null,
+	isstaff bool default false,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ null,
+    dob DATE null,
+    gender int null,
+    constraint fk_pas_cust_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+--drop table comss.comm_rate
+create table comss.comm_rate(
+	comm_rate serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	prod_code varchar(10) null,
+	comm_rate_from DATE null,
+	comm_rate_to DATE null,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+	created_by VARCHAR(100),
+    updated_at TIMESTAMPTZ null,
+    updated_by VARCHAR(100),
+    constraint fk_pas_comm_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+--drop table comss.comm_calc_rslt
+create table comss.comm_calc_rslt(
+	comm_calc_rslt_id serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	prod_code varchar(10) null,
+    constraint fk_comm_rslt_org 
+        foreign key (orgId) references app_subscription.organisation(orgId)
+);
+
+--drop table scheduler.job_extns;
+
+CREATE TABLE scheduler.job_extns (
+    job_config_id int4 NOT NULL,
+    orgId int NOT NULL,
+    comments varchar(500),
+    filter varchar(10000),
+
+    -- Unique constraint ensures one extension per job config
+    CONSTRAINT uq_job_config_id UNIQUE (job_config_id),
+
+    CONSTRAINT fk_job_hist_cfg
+        FOREIGN KEY (job_config_id) REFERENCES scheduler.job_config(job_config_id),
+        
+    CONSTRAINT fk_job_hist_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId)
+);
+
+--drop table comss.comm_job_exe_dtls;
+
+CREATE TABLE comss.comm_job_exe_dtls (
+    comm_job_exe_dtls_id serial4 NOT NULL,
+    job_exe_hist_id int4 NOT NULL,
+    orgId int NOT NULL,
+    agent_id int not null,
+    premiucollid  int not null,
+    premium_amt int not null,
+    formula varchar(10000),
+    comm_amt int4 not null default 0, 
+    logs varchar(10000),
+    CONSTRAINT fk_job_exe_hist
+        FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id),
+    
+    CONSTRAINT fk_job_hist_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId),
+    
+    CONSTRAINT fk_agnt_id
+        FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id),
+    
+    CONSTRAINT fk_prem_coll_id
+        FOREIGN KEY (premiucollid) REFERENCES insu_core.premium_collected(premiucollid)      
+);
+--drop table scheduler.job_exe_logs
+
+create table scheduler.job_exe_logs(
+    job_exe_log_id serial4 NOT NULL,
+    orgId int NOT NULL,
+    job_exe_hist_id int4 NOT NULL,
+    created_on TIMESTAMP NOT null default now(),
+    exe_logs varchar(10000),
+    CONSTRAINT fk_job_exe_log
+        FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id),
+    
+    CONSTRAINT fk_job_log_org 
+        FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId)
+);
+
+create index idx_exe_logs on scheduler.job_exe_logs(orgId,job_exe_hist_id);
+create table insu_core.tmp_premium_collected (
+	tmp_premium_coll_id SERIAL primary key,
+    orgid varchar(20) not null,
+    policyref varchar(20) not null,
+    premium_received_dt varchar(20) null,
+    premium_type varchar(20) null,
+    premium_amt varchar(20) null,
+    prem_coll_yr varchar(20) null,
+    prem_coll_qtr varchar(20) null,
+    prem_coll_fin_yr varchar(20) null,
+    comments varchar(20) null,
+    reason varchar(200) null,
+    created_at timestamp default now()
+);
+

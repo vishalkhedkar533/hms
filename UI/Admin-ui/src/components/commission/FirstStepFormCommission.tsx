@@ -1,187 +1,399 @@
-import { useEffect, useState } from 'react'
-import { useEncryption } from '@/store/encryptionStore'
-import encryptionService from '@/services/encryptionService'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useState, useRef } from 'react'
 import { commissionService } from '@/services/commissionService'
-import Loader from '../Loader'
 import { IConfigCommissionRequest } from '@/models/commission'
 import DynamicFormBuilder from '../form/DynamicFormBuilder'
 import { z } from 'zod'
+import { showToast } from '@/components/ui/sonner'
+import { NOTIFICATION_CONSTANTS } from '@/utils/constant'
+import CommissionFormulaEditorFilter from './ComissionConfigFormulaEditorFilter'
+import Button from '@/components/ui/button'
+import Loader from '@/components/Loader'
+
 
 
 interface FirstStepFormCommissionProps {
   responseBody?: {
     processedRecordsLog: any[]
-  }
+  } 
+  commissionConfigId?: number | null
+  initialData?: any
+  isEditMode?: boolean
+  isLoading?: boolean
   onSaveSuccess: (id: number) => void
 }
 
+// Helper function to format date in local timezone (YYYY-MM-DD)
+const formatDateToLocal = (dateString: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
-const FirstStepFormCommission: React.FC<FirstStepFormCommissionProps> = ({  onSaveSuccess}) => {
+const FirstStepFormCommission: React.FC<FirstStepFormCommissionProps> = ({ 
+  commissionConfigId,
+  initialData,
+  isEditMode = false,
+  isLoading = false,
+  onSaveSuccess
+}) => {
   const [formValues, setFormValues] = useState<IConfigCommissionRequest>({
-    commissionName: '',
-    triggerCycle: 'daily',
-    runFrom: '',
-    runTo: '',
+    commissionName: initialData?.commissionName || '',
+    runFrom: initialData?.runFrom ? formatDateToLocal(initialData.runFrom) : '',
+    runTo: initialData?.runTo ? formatDateToLocal(initialData.runTo) : '',
+    comments: initialData?.comments || '',
+    filterConditions: initialData?.filterConditions || '',
+    targetType: initialData?.targetType || '',
+    targetMethod: initialData?.targetMethod || '',
   })
-  const [localError, setLocalError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [filterFormula, setFilterFormula] = useState<string>(initialData?.filterConditions || '')
+  const hiddenSubmitButtonRef = useRef<HTMLButtonElement | null>(null)
+  const formDataRef = useRef<Record<string, any> | null>(null)
+  // Keep an up-to-date reference to `saving` for async handlers (avoids stale-closure reads)
+  const savingRef = useRef<boolean>(false)
 
-  const handleChange = (key: keyof IConfigCommissionRequest, value: any) => {
-    setFormValues((prev) => ({
-      ...prev,
-      [key]: value,
-    }))
-  }
+  useEffect(() => {
+    savingRef.current = saving
+  }, [saving])
 
-   const formatDateToISO = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toISOString();
-  }
-
+  //  const formatDateToISO = (dateString: string) => {
+  //   if (!dateString) return '';
+  //   const date = new Date(dateString);
+  //   return date.toISOString();
+  // }
+  const toYMD = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
  const commissionStepOneFormConfig = {
-    gridCols: 2,
+    gridCols: 9,
     schema: z.object({
       commissionName: z.string().min(1),
-      triggerCycle: z.string(),
       runFrom: z.string(),
       runTo: z.string(),
+      comments: z.string().optional(),
     }),
     fields: [
       {
         name: 'commissionName',
         label: 'Commission Name',
         type: 'text',
-        colSpan: 1,
+        colSpan: 3,
+        variant: 'standard',
+      },
+      { name: 'runFrom', label: 'Run From', type: 'date', colSpan: 3 },
+      { name: 'runTo', label: 'Run To', type: 'date', colSpan: 3 },
+      {
+        name: 'targetType',
+        label: 'Target Type',
+        type: 'text',
+        colSpan: 3,
+        variant: 'standard',
+      },    {
+        name: 'targetMethod',
+        label: 'Target Method',
+        type: 'text',
+        colSpan: 3,
         variant: 'standard',
       },
       {
-        name: 'triggerCycle',
-        label: 'Trigger Cycle',
-        type: 'select',
-        colSpan: 1,
-        options: [
-          { label: 'Daily', value: 'daily' },
-          { label: 'Weekly', value: 'weekly' },
-          { label: 'Monthly', value: 'monthly' },
-        ],
+        name: 'comments',
+        label: 'Comments',
+        type: 'textarea',
+        colSpan: 9,
+        variant: 'standard',
       },
-      { name: 'runFrom', label: 'Run From', type: 'date', colSpan: 1 },
-      { name: 'runTo', label: 'Run To', type: 'date', colSpan: 1 },
     ],
+    // Hidden button to trigger form submission with validation
     buttons: {
       gridCols: 6,
       items: [
         {
-          label: saving ? 'Saving...' : 'Save & Continue',
+          label: 'Save & Continue',
           type: 'submit',
           variant: 'orange',
           colSpan: 2,
           size: 'md',
-          className: 'mt-4',
+          className: 'hidden',
           disabled: saving,
         },
       ],
     },
   }
 
+useEffect(() => {
+  if (initialData && isEditMode) {
+    console.log("Initial data received:", initialData);
+    console.log("Filter condition value:", initialData.filterCondition);
+    
+    // Use empty strings for form state (for display), but we'll send null to backend
+    const updatedFormValues = {
+      commissionName: initialData.commissionName || '',
+      runFrom: initialData.runFrom ? formatDateToLocal(initialData.runFrom) : '',
+      runTo: initialData.runTo ? formatDateToLocal(initialData.runTo) : '',
+      comments: initialData.comments || '',
+      filterConditions: initialData.filterCondition || initialData.filterConditions || '',
+      targetType: initialData.targetType || '',
+      targetMethod: initialData.targetMethod || '',
+    }
+    console.log("Updated form values:", updatedFormValues);
+    
+    setFormValues(updatedFormValues)
+    setFilterFormula(initialData.filterCondition || initialData.filterConditions || '')
+    console.log("Filter formula set to:", initialData.filterCondition || initialData.filterConditions || '')
+  }
+}, [initialData, isEditMode])
 
+// Find and store reference to hidden submit button
+// Re-run when form key changes (edit mode re-renders)
+useEffect(() => {
+  const findSubmitButton = () => {
+    // Try multiple selectors to find the hidden submit button
+    // First, try to find button with hidden class
+    let submitBtn = document.querySelector('button[type="submit"].hidden') as HTMLButtonElement
+    
+    // If not found, try finding any submit button within a hidden container
+    if (!submitBtn) {
+      const buttons = document.querySelectorAll('button[type="submit"]')
+      buttons.forEach((btn) => {
+        const buttonElement = btn as HTMLButtonElement
+        if (buttonElement.classList.contains('hidden') || buttonElement.closest('.hidden')) {
+          submitBtn = buttonElement
+        }
+      })
+    }
+    
+    // If still not found, try finding by aria-label or text content
+    if (!submitBtn) {
+      const allButtons = document.querySelectorAll('button[type="submit"]')
+      allButtons.forEach((btn) => {
+        const buttonElement = btn as HTMLButtonElement
+        const text = buttonElement.textContent?.trim()
+        if (text === 'Save & Continue') {
+          submitBtn = buttonElement
+        }
+      })
+    }
+    
+    if (submitBtn) {
+      hiddenSubmitButtonRef.current = submitBtn
+    }
+  }
+  
+  // Small delay to ensure DynamicFormBuilder has rendered
+  // Increase delay slightly for edit mode to account for re-rendering
+  const delay = isEditMode ? 200 : 100
+  const timer = setTimeout(findSubmitButton, delay)
+  
+  // Also try again after a longer delay as fallback
+  const fallbackTimer = setTimeout(findSubmitButton, 500)
+  
+  return () => {
+    clearTimeout(timer)
+    clearTimeout(fallbackTimer)
+  }
+}, [isEditMode, commissionConfigId]) // Re-run when edit mode or ID changes
+
+  // Show loader when in edit mode and data is loading or not yet available
+  // This check must be AFTER all hooks are called to avoid "Rendered more hooks" error
+  const isDataLoading = isLoading || (isEditMode && !initialData)
+  
+  if (isDataLoading) {
+    return <Loader />
+  }
+
+// Helper function to convert empty strings to null (backend requirement)
+const emptyStringToNull = (value: any): any => {
+  if (value === '' || (typeof value === 'string' && value.trim() === '')) {
+    return null;
+  }
+  return value;
+};
+
+// Helper function to convert date to YYYY-MM-DD format
+const formatDateToYYYYMMDD = (dateValue: string | Date | null | undefined): string | null => {
+  if (!dateValue) return null;
+  
+  let date: Date;
+  
+  // If it's already a Date object
+  if (dateValue instanceof Date) {
+    date = dateValue;
+  } 
+  // If it's a string, try to parse it
+  else if (typeof dateValue === 'string') {
+    // Check if it's already in YYYY-MM-DD format
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return dateValue;
+    }
+    // Try parsing the date string (handles formats like "15 Jan 2025" from DatePicker)
+    date = new Date(dateValue);
+    // If parsing failed, return null
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date format:', dateValue);
+      return null;
+    }
+  } else {
+    return null;
+  }
+  
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 // Update the handleSave function
 const handleSave = async (data: Record<string, any>) => {
   try {
     setSaving(true)
-    const formattedRunFrom = data.runFrom ? new Date(data.runFrom).toISOString().split('T')[0] : '';
-    const formattedRunTo = data.runTo ? new Date(data.runTo).toISOString().split('T')[0] : '';
 
-    const payload: IConfigCommissionRequest = {
-      commissionName: data.commissionName,
-      triggerCycle: data.triggerCycle,
+    // 1️⃣ Merge existing + updated values
+    const mergedData = {
+      ...formValues,   // existing DB values
+      ...data,         // edited values
+    }
+
+ 
+
+    // 2️⃣ Format dates to YYYY-MM-DD format
+    const formattedRunFrom = formatDateToYYYYMMDD(mergedData.runFrom);
+    const formattedRunTo = formatDateToYYYYMMDD(mergedData.runTo);
+
+    console.log('Formatted dates:', {
       runFrom: formattedRunFrom,
       runTo: formattedRunTo,
+    });
+
+    // 3️⃣ Build payload with actual values (no empty string defaults)
+    // Get actual values, use null if empty/undefined instead of empty strings
+    const rawPayload = {
+      commissionName: mergedData.commissionName || null,
+      runFrom: formattedRunFrom, // Already returns null if empty
+      runTo: formattedRunTo, // Already returns null if empty
+      comments: mergedData.comments || null,
+      filterConditions: filterFormula?.trim() || null,
+      targetType: mergedData.targetType || null,
+      targetMethod: mergedData.targetMethod || null,
+      commissionConfigId: 0,
     }
 
-    const response = await commissionService.configCommission(payload)
-
-    console.log("Full API Response:", response)
-    
-    if (!response) {
-      throw new Error('No response received from API')
+    // 4️⃣ Convert any remaining empty strings to null (backend requirement)
+    const backendPayload: any = {
+      commissionName: emptyStringToNull(rawPayload.commissionName),
+      runFrom: emptyStringToNull(rawPayload.runFrom),
+      runTo: emptyStringToNull(rawPayload.runTo),
+      comments: emptyStringToNull(rawPayload.comments),
+      filterConditions: emptyStringToNull(rawPayload.filterConditions),
+      targetType: emptyStringToNull(rawPayload.targetType),
+      targetMethod: emptyStringToNull(rawPayload.targetMethod),
+      commissionConfigId: rawPayload.commissionConfigId,
     }
-    
-    // Check for success - errorCode 1101 or 0 (common success codes)
-    const isSuccess = response?.responseHeader?.errorCode === 1101 || response?.responseHeader?.errorMessage === "SUCCESS"
-    
-    if (isSuccess) {
-      // Handle both possible response structures (array or single object)
-      const responseBody = response.responseBody as any
-      const commissionConfigId = 
-        responseBody?.commissionConfig?.[0]?.commissionConfigId
-      
-      // ✅ MOVE TO STEP 2
+
+    // 5️⃣ VERY IMPORTANT: add ID in edit
+    if (isEditMode) {
       if (!commissionConfigId) {
-        console.error('Response body:', response.responseBody)
-        throw new Error('Commission ID not returned from API')
+        throw new Error('commissionConfigId missing in edit mode')
       }
-      // Pass the commissionConfigId to the onSaveSuccess callback
-      onSaveSuccess(commissionConfigId);
-    } else {
-      const errorCode = response?.responseHeader?.errorCode
-      const errorMessage = response?.responseHeader?.errorMessage || 'Failed to save commission configuration'
-      console.error('API Error Details:', {
-        errorCode,
-        errorMessage,
-        fullResponse: response
-      })
-      alert(`Error ${errorCode || 'Unknown'}: ${errorMessage}`)
+      backendPayload.commissionConfigId = commissionConfigId
     }
-  } catch (error: any) {
-    console.error('Error saving commission config:', error)
-    const errorMessage = error?.message || error?.response?.data?.message || 'Something went wrong while saving'
-    alert(errorMessage)
+
+    // 6️⃣ Call SAME API (backend handles create/update)
+    const response = await commissionService.configCommission(backendPayload)
+    console.log("create response", response)
+
+    const isSuccess =
+      response?.responseHeader?.errorCode === 1101 ||
+      response?.responseHeader?.errorMessage === 'SUCCESS'
+
+    if (!isSuccess) {
+      throw new Error(response?.responseHeader?.errorMessage || 'Save failed')
+    }
+
+    // 7️⃣ Persist updated state (convert null back to empty strings for form display)
+    setFormValues({
+      commissionName: backendPayload.commissionName ?? '',
+      runFrom: backendPayload.runFrom ?? '',
+      runTo: backendPayload.runTo ?? '',
+      comments: backendPayload.comments ?? '',
+      filterConditions: backendPayload.filterConditions ?? '',
+      targetType: backendPayload.targetType ?? '',
+      targetMethod: backendPayload.targetMethod ?? '',
+    })
+
+    showToast(
+      NOTIFICATION_CONSTANTS.SUCCESS,
+      isEditMode ? 'Commission updated successfully' : 'Commission created successfully'
+    )
+
+    // Extract commissionConfigId from response - check multiple possible field names
+    // The API might return commissionId or commissionConfigId
+    const responseId = response?.responseBody?.commissionConfig?.[0]?.commissionConfigId
+    
+    // Use existing ID if in edit mode, otherwise use the ID from response
+    const finalId = isEditMode && commissionConfigId 
+      ? commissionConfigId 
+      : (responseId || commissionConfigId);
+    
+    console.log("Step 1 Save - commissionConfigId:", {
+      isEditMode,
+      existingId: commissionConfigId,
+      responseId,
+      finalId,
+      responseBody: response?.responseBody,
+      fullResponse: response
+    });
+
+    // Validate that we have a valid ID before proceeding
+    if (!finalId || finalId === 0) {
+      const errorMsg = "Failed to get Commission Config ID from server response. Please check the console for details.";
+      console.error("Error: No valid commissionConfigId found after save.", {
+        response,
+        responseBody: response?.responseBody,
+        checkedFields: {
+          commissionConfigId: response?.responseBody?.commissionConfig?.[0]?.commissionConfigId,
+          //pls keep this address is right.      
+        }
+      });
+      showToast(NOTIFICATION_CONSTANTS.ERROR, 'Save completed but ID missing', {
+        description: errorMsg
+      });
+      // Don't proceed to next step if ID is missing
+      return;
+    }
+
+    onSaveSuccess(finalId)
+
+  } catch (err: any) {
+    console.error(err)
+    showToast(NOTIFICATION_CONSTANTS.ERROR, 'Save failed', {
+      description: err.message || 'Something went wrong',
+    })
   } finally {
     setSaving(false)
   }
 }
 
-
-  const encryptionEnabled = useEncryption()
-  const keyReady = !!encryptionService.getHrm_Key()
-  const canFetch = !encryptionEnabled || keyReady
-
-  const {
-    data: processedRecordsLog,
-    isLoading: processcommissionLoading,
-    isError: processcommissionQueryError,
-    error: processcommissionQueryErrorObj,
-  } = useQuery<FirstStepFormCommissionProps>({
-    queryKey: ['process-commission'],
-    enabled: canFetch,
-    queryFn: () => commissionService.processCommission(),
-    staleTime: 1000 * 60 * 60, // 1 hour
-    keepPreviousData: true,
-    refetchOnWindowFocus: false,
-    retry: 1,
-  })
-
-  useEffect(() => {
-    if (processcommissionQueryError) {
-      const msg =
-        (processcommissionQueryErrorObj as any)?.message ||
-        'Failed to fetch commission processing data'
-      setLocalError(msg)
-    } else {
-      setLocalError(null)
-    }
-  }, [processcommissionQueryError, processcommissionQueryErrorObj])
-
-
-  const loading = processcommissionLoading
-  if (loading) return <Loader />
-  if (localError)
-    return <div className="p-4 text-red-600">Error: {localError}</div>
+  // Reference format for useQuery API calls:
+  // const {
+  //   data,
+  //   isLoading,
+  //   isError,
+  //   error,
+  // } = useQuery({
+  //   queryKey: ['unique-key'],
+  //   enabled: canFetch, // optional: encryption check
+  //   queryFn: () => commissionService.someMethod(params),
+  //   staleTime: 1000 * 60 * 60, // 1 hour
+  //   refetchOnWindowFocus: false,
+  //   retry: 1,
+  // })
 
 return (
     <div className="bg-white p-6 rounded-md space-y-6">
@@ -192,16 +404,128 @@ return (
         </h4>
       </div>
 
-      {/* Dynamic Form */}
+      {/* Dynamic Form - First */}
       <DynamicFormBuilder
+        key={isEditMode && initialData ? `edit-${commissionConfigId}` : 'new'}
         config={{
           ...commissionStepOneFormConfig,
-          defaultValues: {
-            triggerCycle: 'daily',
-          },
+          defaultValues: formValues,
         }}
         onSubmit={handleSave}
       />
+
+      <CommissionFormulaEditorFilter
+  key={isEditMode && initialData ? `filter-edit-${commissionConfigId}` : 'filter-new'}
+  onFormulaChange={(formula) => setFilterFormula(formula)}
+  // Use only initialData for initialFormula, not filterFormula state to prevent toggling loop
+  initialFormula={initialData?.filterCondition || initialData?.filterConditions || ''}
+/>
+
+      {/* Save Button - At the end */}
+      <div className="flex justify-start mt-4">
+        <Button
+          type="button"
+          variant="orange"
+          size="md"
+          onClick={async () => {
+            if (savingRef.current) {
+              console.log('Save already in progress, ignoring click')
+              return
+            }
+            
+            console.log('Save button clicked, attempting to save...')
+            
+            // Try to trigger form submission first (preferred method for validation)
+            // Try clicking the hidden submit button
+            const submitBtn = hiddenSubmitButtonRef.current || 
+                            (document.querySelector('button[type="submit"].hidden') as HTMLButtonElement)
+            
+            if (submitBtn) {
+              try {
+                console.log('Attempting to trigger form submission via hidden submit button...')
+                if (!hiddenSubmitButtonRef.current) {
+                  hiddenSubmitButtonRef.current = submitBtn
+                }
+                // Trigger click event
+                submitBtn.click()
+                // Wait a bit to see if form submission was triggered
+                await new Promise(resolve => setTimeout(resolve, 200))
+                // If saving state changed, form submission worked
+                if (savingRef.current) {
+                  console.log('Form submission successful')
+                  return
+                }
+              } catch (e) {
+                console.warn('Failed to trigger form submission:', e)
+              }
+            }
+            
+            // Fallback: Direct save - read current form values from DOM and call handleSave
+            console.log('Form submission not triggered; reading form values directly...')
+            
+            // Helper to get form field values
+            const getFormValue = (name: string): string => {
+              // Try by id first (most reliable)
+              const byId = document.getElementById(name) as HTMLInputElement | HTMLTextAreaElement
+              if (byId?.value) return byId.value
+              
+              // Try by name attribute
+              const byName = document.querySelector(`input[name="${name}"], textarea[name="${name}"]`) as HTMLInputElement | HTMLTextAreaElement
+              if (byName?.value) return byName.value
+              
+              return ''
+            }
+            
+            // Get date values - DatePicker component structure
+            const getDateValue = (name: string): string => {
+              // Try standard input first
+              const input = document.getElementById(name) as HTMLInputElement
+              if (input?.value) return input.value
+              
+              // DatePicker might render the value in a button or span
+              // Look for the DatePicker container and try to find the displayed value
+              const container = document.querySelector(`[id*="${name}"], [data-field="${name}"]`) as HTMLElement
+              if (container) {
+                // Check for any input inside
+                const inputInside = container.querySelector('input') as HTMLInputElement
+                if (inputInside?.value) return inputInside.value
+              }
+              
+              return ''
+            }
+            
+            // Collect current form data
+            const currentData: Record<string, any> = {
+              commissionName: getFormValue('commissionName') || formValues.commissionName || '',
+              runFrom: getDateValue('runFrom') || formValues.runFrom || '',
+              runTo: getDateValue('runTo') || formValues.runTo || '',
+              comments: getFormValue('comments') || formValues.comments || '',
+            }
+            
+            console.log('Form data collected:', currentData)
+            console.log('Form values state:', formValues)
+            
+            // Validate required fields
+            if (!currentData.commissionName || !currentData.runFrom || !currentData.runTo) {
+              console.error('Validation failed:', { currentData })
+              showToast(NOTIFICATION_CONSTANTS.ERROR, 'Validation Error', {
+                description: 'Please fill in all required fields (Commission Name, Run From, Run To)'
+              })
+              return
+            }
+            
+            // Call handleSave directly with current form data
+            console.log('Calling handleSave with:', currentData)
+            await handleSave(currentData)
+          }}
+          disabled={saving}
+          isLoading={saving}
+          loadingText="Saving..."
+        >
+          {saving ? 'Saving...' : 'Save & Continue'}
+        </Button>
+      </div>
+
     </div>
   )
 

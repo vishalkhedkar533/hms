@@ -899,7 +899,7 @@ namespace HMS.Controllers
                     if (!string.IsNullOrWhiteSpace(agentDto.AgentClassification))
                         agent.AgentClassification = agentDto.AgentClassification;
                     if (!string.IsNullOrWhiteSpace(agentDto.CMSAgentType))
-                        agent.CMSAgentType = agentDto.CMSAgentType;
+                        agent.CmsAgentType = agentDto.CMSAgentType;
                     if (agentDto.CommissionClass.HasValue)
                         agent.CommissionClass = agentDto.CommissionClass;
                     break;
@@ -963,7 +963,7 @@ namespace HMS.Controllers
                     if (!string.IsNullOrWhiteSpace(agentDto.MainPartnerClientCode))
                         agent.MainPartnerClientCode = agentDto.MainPartnerClientCode;
                     if (!string.IsNullOrWhiteSpace(agentDto.AgentMaincodevwEid))
-                        agent.AgentMaincodevwEid = agentDto.AgentMaincodevwEid;
+                        agent.AgentMaincodeVweid = agentDto.AgentMaincodevwEid;
                     if (agentDto.RegistrationDate.HasValue)
                         agent.RegistrationDate = agentDto.RegistrationDate;
                     if (!string.IsNullOrWhiteSpace(agentDto.Vertical))
@@ -1133,7 +1133,7 @@ namespace HMS.Controllers
                     if (agentDto.LastPromotionDate.HasValue)
                         agent.LastPromotionDate = agentDto.LastPromotionDate;
                     if (agentDto.HRDoj.HasValue)
-                        agent.HRDoj = agentDto.HRDoj;
+                        agent.HrDoj = agentDto.HRDoj;
                     if (agentDto.LastWorkingDate.HasValue)
                         agent.LastWorkingDate = agentDto.LastWorkingDate;
                     break;

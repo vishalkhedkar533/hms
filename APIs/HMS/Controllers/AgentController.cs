@@ -721,6 +721,77 @@ namespace HMS.Controllers
                     return NoContent();
                 }
 
+                // Collect updated fields to include in response
+                var updatedFields = new List<UpdatedAgentField>();
+
+                // Helper to record changes
+                void RecordChange(string field, object? oldVal, object? newVal)
+                {
+                    var oldS = oldVal == null ? string.Empty : (oldVal is DateTime odt ? odt.ToString("o") : oldVal.ToString());
+                    var newS = newVal == null ? string.Empty : (newVal is DateTime ndt ? ndt.ToString("o") : newVal.ToString());
+                    if (oldS != newS)
+                    {
+                        updatedFields.Add(new UpdatedAgentField { FieldName = field, OldValue = oldS ?? string.Empty, NewValue = newS ?? string.Empty });
+                    }
+                }
+
+                // Snapshot of scalar fields to compare after modification
+                var snapshot = new Dictionary<string, object?>()
+                {
+                    { "Title", agent.Title },
+                    { "FirstName", agent.FirstName },
+                    { "MiddleName", agent.MiddleName },
+                    { "LastName", agent.LastName },
+                    { "FatherHusbandNm", agent.FatherHusbandNm },
+                    { "Gender", agent.Gender },
+                    { "Dob", agent.Dob },
+                    { "MaritalStatus", agent.MaritalStatus },
+                    { "Nationality", agent.Nationality },
+                    { "PreferredLanguage", agent.PreferredLanguage },
+                    { "Email", agent.Email },
+                    { "MobileNo", agent.MobileNo },
+                    { "CnctPersonName", agent.CnctPersonName },
+                    { "CnctPersonMobileNo", agent.CnctPersonMobileNo },
+                    { "CnctPersonEmail", agent.CnctPersonEmail },
+                    { "CnctPersonDesig", agent.CnctPersonDesig },
+                    { "AgentCode", agent.AgentCode },
+                    { "AgentType", agent.AgentType },
+                    { "AgentTypeCode", agent.AgentTypeCode },
+                    { "AgentSubTypeCode", agent.AgentSubTypeCode },
+                    { "AgentClass", agent.AgentClass },
+                    { "AgentLevel", agent.AgentLevel },
+                    { "StaffCode", agent.StaffCode },
+                    { "SupervisorId", agent.SupervisorId },
+                    { "LicenseNo", agent.LicenseNo },
+                    { "LicenseType", agent.LicenseType },
+                    { "LicenseIssueDate", agent.LicenseIssueDate },
+                    { "LicenseExpiryDate", agent.LicenseExpiryDate },
+                    { "LicenseStatus", agent.LicenseStatus },
+                    { "IsLicensed", agent.IsLicensed },
+                    { "PanAadharLinkFlag", agent.PanAadharLinkFlag },
+                    { "Sec206abFlag", agent.Sec206abFlag },
+                    { "TaxStatus", agent.TaxStatus },
+                    { "ServiceTaxNo", agent.ServiceTaxNo },
+                    { "MainPartnerClientCode", agent.MainPartnerClientCode },
+                    { "ApplicationDocketNo", agent.ApplicationDocketNo },
+                    { "EmployeeCode", agent.EmployeeCode },
+                    { "StartDate", agent.StartDate },
+                    { "AppointmentDate", agent.AppointmentDate },
+                    { "IncorporationDate", agent.IncorporationDate },
+                    { "AgentTypeCategory", agent.AgentTypeCategory },
+                    { "AgentClassification", agent.AgentClassification },
+                    { "CmsAgentType", agent.CmsAgentType },
+                    { "CommissionClass", agent.CommissionClass },
+                    { "BankAccType", agent.BankAccType },
+                    { "UlipFlag", agent.UlipFlag },
+                    { "IsMigrated", agent.IsMigrated },
+                    { "AgentMaincodeVweid", agent.AgentMaincodeVweid },
+                    { "RegistrationDate", agent.RegistrationDate },
+                    { "Vertical", agent.Vertical },
+                    { "TrainingGroupType", agent.TrainingGroupType },
+                    { "RefresherTrainingCompleted", agent.RefresherTrainingCompleted }
+                };
+
                 switch ((sectionName ?? string.Empty).ToLowerInvariant())
             {
                 case "personal_details":
@@ -776,12 +847,16 @@ namespace HMS.Controllers
                     // Update existing addresses if provided in DTO (don't create new AddressID here)
                     if (agentDto.PermanentAddres != null)
                     {
+                        int idx = 0;
                         foreach (var addr in agentDto.PermanentAddres)
                         {
                             var existing = await _context.Address
                                 .FirstOrDefaultAsync(a => a.RefKey == agent.AgentId && a.RefType == ReferenceType.Agent && a.AddressType == addr.AddressType);
                             if (existing != null)
                             {
+                                // record address fields before change (section level note)
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "PermanentAddres", OldValue = string.Empty, NewValue = "updated" });
+
                                 existing.AddressLine1 = addr.AddressLine1;
                                 existing.AddressLine2 = addr.AddressLine2;
                                 existing.AddressLine3 = addr.AddressLine3;
@@ -792,16 +867,20 @@ namespace HMS.Controllers
                                 existing.Landmark = addr.Landmark;
                                 _context.Address.Update(existing);
                             }
+                            idx++;
                         }
                     }
                     if (agentDto.MailingAddres != null)
                     {
+                        int idx = 0;
                         foreach (var addr in agentDto.MailingAddres)
                         {
                             var existing = await _context.Address
                                 .FirstOrDefaultAsync(a => a.RefKey == agent.AgentId && a.RefType == ReferenceType.Agent && a.AddressType == addr.AddressType);
                             if (existing != null)
                             {
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "MailingAddres", OldValue = string.Empty, NewValue = "updated" });
+
                                 existing.AddressLine1 = addr.AddressLine1;
                                 existing.AddressLine2 = addr.AddressLine2;
                                 existing.AddressLine3 = addr.AddressLine3;
@@ -812,6 +891,7 @@ namespace HMS.Controllers
                                 existing.Landmark = addr.Landmark;
                                 _context.Address.Update(existing);
                             }
+                            idx++;
                         }
                     }
                     break;
@@ -912,6 +992,9 @@ namespace HMS.Controllers
                     // Upsert bank account record if bank account data provided
                     if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
                     {
+                        // record that bank details section updated
+                        updatedFields.Add(new UpdatedAgentField { FieldName = "bank_details", OldValue = string.Empty, NewValue = "updated" });
+
                         var b = agentDto.bankAccounts.First();
                         var existingBank = await _context.BankAccount
                             .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
@@ -980,6 +1063,9 @@ namespace HMS.Controllers
                     // Upsert PersonalInfo record (use first item if list provided)
                     if (agentDto.personalInfo != null && agentDto.personalInfo.Any())
                     {
+                        // record that personal info section updated
+                        updatedFields.Add(new UpdatedAgentField { FieldName = "personalInfo", OldValue = string.Empty, NewValue = "updated" });
+
                         var p = agentDto.personalInfo.First();
                         var existingPI = await _context.PersonalInfo
                             .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
@@ -1035,6 +1121,9 @@ namespace HMS.Controllers
                 case "nominees":
                     if (agentDto.nominees != null && agentDto.nominees.Any())
                     {
+                        // record that nominees section updated
+                        updatedFields.Add(new UpdatedAgentField { FieldName = "nominees", OldValue = string.Empty, NewValue = "updated" });
+
                         foreach (var n in agentDto.nominees)
                         {
                             if (n.NomineeID != 0)
@@ -1072,6 +1161,9 @@ namespace HMS.Controllers
                     // Update or create addresses: use AddressID if provided, otherwise match by RefKey+RefType+AddressType
                     if (agentDto.PermanentAddres != null)
                     {
+                        // section-level note
+                        updatedFields.Add(new UpdatedAgentField { FieldName = "PermanentAddres", OldValue = string.Empty, NewValue = "updated" });
+
                         foreach (var addr in agentDto.PermanentAddres)
                         {
                             Address? existing = null;
@@ -1095,6 +1187,8 @@ namespace HMS.Controllers
                     }
                     if (agentDto.MailingAddres != null)
                     {
+                        updatedFields.Add(new UpdatedAgentField { FieldName = "MailingAddres", OldValue = string.Empty, NewValue = "updated" });
+
                         foreach (var addr in agentDto.MailingAddres)
                         {
                             Address? existing = null;
@@ -1168,11 +1262,29 @@ namespace HMS.Controllers
                 agent.ModifiedBy = username;
                 agent.ModifiedDate = DateTime.UtcNow;
 
+                // Compare snapshot and record scalar changes
+                foreach (var kv in snapshot)
+                {
+                    var propName = kv.Key;
+                    var oldVal = kv.Value;
+                    object? newVal = null;
+                    try
+                    {
+                        var pinfo = agent.GetType().GetProperty(propName);
+                        if (pinfo != null)
+                            newVal = pinfo.GetValue(agent);
+                    }
+                    catch { }
+
+                    RecordChange(propName, oldVal, newVal);
+                }
+
                 await _context.SaveChangesAsync();
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
                 hmsResponse.responseBody.updatedAgentSectionName = sectionName;
+                hmsResponse.responseBody.updatedAgentFields = updatedFields;
                 return Ok(hmsResponse);
             }
             catch (DbUpdateConcurrencyException)

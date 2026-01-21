@@ -29,7 +29,8 @@ namespace Models.DTO
         public HoldCommissionResponseDto? holdCommission { get; set; } = null;
         public AdjustCommissionResponseDto? adjustCommission { get; set; }
         public ApproveCommissionResponseDto? approveCommission { get; set; }
-        public List<CommissionConfigDTO>? commissionConfig { get; set; } = null;
+        public List<CommissionConfigDTO>? commissionConfig { get; set; } = null; 
+        public string? updatedAgentSectionName { get; set; } = null;
         public List<JobExecutionHistoryDto>? jobExecutionHistory { get; set; } = null;
         public MetaDataResponse? metaDataResponse { get; set; } = null;
 

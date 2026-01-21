@@ -9,6 +9,7 @@ using Models.DB;
 using Models.DTO;
 using Models.DTO.CommissionMgmt.Dashboard;
 using Models.HMSConsts;
+using System.Linq;
 
 namespace HMS.Controllers
 {
@@ -153,7 +154,7 @@ namespace HMS.Controllers
         [HttpPost("ProcessCommission")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public IActionResult GetProcessCommissionLog()
+        public IActionResult GetProcessCommissionLog([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             HmsResponse response = new HmsResponse();
             int orgId = 0;
@@ -163,68 +164,75 @@ namespace HMS.Controllers
                 _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
             );
 
+                var allLogs = new List<ProcessCommissionLogDto>
+                {
+                    new ProcessCommissionLogDto
+                    {
+                        ProcessId=101,
+                        ProcessedDate = new DateTime(2025, 5, 12),
+                        Period = "May 6",
+                        RecordsCount = 1250,
+                        Status = "In Process",
+                        CanViewDetails = true,
+                        CanDownload = false
+                    },
+                    new ProcessCommissionLogDto
+                    {
+                        ProcessId=102,
+                        ProcessedDate = new DateTime(2025, 5, 11),
+                        Period = "May 13",
+                        RecordsCount = 2250,
+                        Status = "Completed",
+                        CanViewDetails = false,
+                        CanDownload = true
+                    },
+                    new ProcessCommissionLogDto
+                    {
+                        ProcessId=103,
+                        ProcessedDate = new DateTime(2025, 5, 10),
+                        Period = "Jun 25",
+                        RecordsCount = 1152,
+                        Status = "Completed",
+                        CanViewDetails = false,
+                        CanDownload = true
+                    },
+                    new ProcessCommissionLogDto
+                    {
+                        ProcessId=104,
+                        ProcessedDate = new DateTime(2025, 5, 10),
+                        Period = "Aug 5",
+                        RecordsCount = 933,
+                        Status = "Completed",
+                        CanViewDetails = false,
+                        CanDownload = true
+                    },
+                    new ProcessCommissionLogDto
+                    {
+                        ProcessId=105,
+                        ProcessedDate = new DateTime(2025, 5, 9),
+                        Period = "July 10",
+                        RecordsCount = 825,
+                        Status = "Completed",
+                        CanViewDetails = false,
+                        CanDownload = true
+                    }
+                };
+
+                var totalRecords = allLogs.Count;
+                var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+                var paged = allLogs.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
                 var processCommissionData = new ProcessCommissionResponseDto
                 {
                     OrgId = orgId,
                     PeriodType = "Monthly",
-                    ProcessedRecordsLog = new List<ProcessCommissionLogDto>
-                    {
-                        new ProcessCommissionLogDto
-                        {
-                            ProcessId=101,
-                            ProcessedDate = new DateTime(2025, 5, 12),
-                            Period = "May 6",
-                            RecordsCount = 1250,
-                            Status = "In Process",
-                            CanViewDetails = true,
-                            CanDownload = false
-                        },
-                        new ProcessCommissionLogDto
-                        {
-                            ProcessId=102,
-                            ProcessedDate = new DateTime(2025, 5, 11),
-                            Period = "May 13",
-                            RecordsCount = 2250,
-                            Status = "Completed",
-                            CanViewDetails = false,
-                            CanDownload = true
-                        },
-                        new ProcessCommissionLogDto
-                        {
-                            ProcessId=103,
-                            ProcessedDate = new DateTime(2025, 5, 10),
-                            Period = "Jun 25",
-                            RecordsCount = 1152,
-                            Status = "Completed",
-                            CanViewDetails = false,
-                            CanDownload = true
-                        },
-                        new ProcessCommissionLogDto
-                        {
-                            ProcessId=104,
-                            ProcessedDate = new DateTime(2025, 5, 10),
-                            Period = "Aug 5",
-                            RecordsCount = 933,
-                            Status = "Completed",
-                            CanViewDetails = false,
-                            CanDownload = true
-                        },
-                        new ProcessCommissionLogDto
-                        {
-                            ProcessId=105,
-                            ProcessedDate = new DateTime(2025, 5, 9),
-                            Period = "July 10",
-                            RecordsCount = 825,
-                            Status = "Completed",
-                            CanViewDetails = false,
-                            CanDownload = true
-                        }
-                    }
+                    ProcessedRecordsLog = paged
                 };
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.processCommission = processCommissionData;
+                response.responseBody.pagination = new { PageNumber = pageNumber, PageSize = pageSize, TotalRecords = totalRecords, TotalPages = totalPages };
                 return Ok(response);
             }
             catch (Exception ex)
@@ -237,7 +245,7 @@ namespace HMS.Controllers
         [HttpPost("HoldCommission")]
         [Authorize]
         [MenuAuthorize(1002)]
-        public IActionResult GetHoldCommission()
+        public IActionResult GetHoldCommission([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             HmsResponse response = new HmsResponse();
             int orgId = 0;
@@ -248,40 +256,47 @@ namespace HMS.Controllers
                     _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
                 );
 
+                var allRecords = new List<HoldCommissionRecordDto>
+                {
+                    new HoldCommissionRecordDto
+                    {
+                        HoldId = 201,
+                        AgentName = "Ramesh Yadav",
+                        Reason = "Incorrect Slab",
+                        Amount = 22300,
+                        HeldOn = new DateTime(2025, 7, 12),
+                        Status = "On Hold",
+                        CanRelease = true
+                    },
+                    new HoldCommissionRecordDto
+                    {
+                        HoldId = 202,
+                        AgentName = "Mohan Pratap",
+                        Reason = "Documentation Issue",
+                        Amount = 18300,
+                        HeldOn = new DateTime(2025, 7, 12),
+                        Status = "Released",
+                        CanRelease = false
+                    }
+                };
+
+                var totalRecords = allRecords.Count;
+                var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+                var paged = allRecords.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
                 var holdCommissionData = new HoldCommissionResponseDto
                 {
                     OrgId = orgId,
                     AmountOnHold = 245890,
                     CurrentlyOnHold = 20,
                     ReleasedThisMonth = 11,
-                    Records = new List<HoldCommissionRecordDto>
-                    {
-                        new ()
-                        {
-                            HoldId = 201,
-                            AgentName = "Ramesh Yadav",
-                            Reason = "Incorrect Slab",
-                            Amount = 22300,
-                            HeldOn = new DateTime(2025, 7, 12),
-                            Status = "On Hold",
-                            CanRelease = true
-                        },
-                        new ()
-                        {
-                            HoldId = 202,
-                            AgentName = "Mohan Pratap",
-                            Reason = "Documentation Issue",
-                            Amount = 18300,
-                            HeldOn = new DateTime(2025, 7, 12),
-                            Status = "Released",
-                            CanRelease = false
-                        }
-                    }
+                    Records = paged
                 };
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.holdCommission = holdCommissionData;
+                response.responseBody.pagination = new { PageNumber = pageNumber, PageSize = pageSize, TotalRecords = totalRecords, TotalPages = totalPages };
 
                 return Ok(response);
             }
@@ -295,7 +310,7 @@ namespace HMS.Controllers
         [HttpPost("AdjustCommission")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public IActionResult GetAdjustCommission()
+        public IActionResult GetAdjustCommission([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             HmsResponse response = new HmsResponse();
             int orgId = 0;
@@ -306,6 +321,34 @@ namespace HMS.Controllers
                     _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
                 );
 
+                var allRecords = new List<AdjustCommissionLogDto>
+                {
+                    new AdjustCommissionLogDto
+                    {
+                        AdjustmentId = 301,
+                        Date = new DateTime(2025, 5, 12),
+                        Period = "May 6",
+                        AdjustmentType = "TDS",
+                        UploadedBy = "Rakesh",
+                        RecordsCount = 1250,
+                        Status = "Rejected"
+                    },
+                    new AdjustCommissionLogDto
+                    {
+                        AdjustmentId = 302,
+                        Date = new DateTime(2025, 5, 11),
+                        Period = "May 13",
+                        AdjustmentType = "Commission",
+                        UploadedBy = "Mahesh",
+                        RecordsCount = 2250,
+                        Status = "Approved"
+                    }
+                };
+
+                var totalRecords = allRecords.Count;
+                var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+                var paged = allRecords.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
                 var adjustCommissionData = new AdjustCommissionResponseDto
                 {
                     OrgId = orgId,
@@ -313,34 +356,13 @@ namespace HMS.Controllers
                     PendingReview = 24,
                     Rejected = 20,
                     TotalRecords = 76,
-                    Records = new List<AdjustCommissionLogDto>
-            {
-                new ()
-                {
-                    AdjustmentId = 301,
-                    Date = new DateTime(2025, 5, 12),
-                    Period = "May 6",
-                    AdjustmentType = "TDS",
-                    UploadedBy = "Rakesh",
-                    RecordsCount = 1250,
-                    Status = "Rejected"
-                },
-                new ()
-                {
-                    AdjustmentId = 302,
-                    Date = new DateTime(2025, 5, 11),
-                    Period = "May 13",
-                    AdjustmentType = "Commission",
-                    UploadedBy = "Mahesh",
-                    RecordsCount = 2250,
-                    Status = "Approved"
-                }
-            }
+                    Records = paged
                 };
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.adjustCommission = adjustCommissionData;
+                response.responseBody.pagination = new { PageNumber = pageNumber, PageSize = pageSize, TotalRecords = totalRecords, TotalPages = totalPages };
 
                 return Ok(response);
             }
@@ -354,7 +376,7 @@ namespace HMS.Controllers
         [HttpPost("ApproveCommission")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public IActionResult GetApproveCommission()
+        public IActionResult GetApproveCommission([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
         {
             HmsResponse response = new HmsResponse();
             int orgId = 0;
@@ -365,42 +387,49 @@ namespace HMS.Controllers
                     _authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"
                 );
 
+                var allRecords = new List<ApproveCommissionLogDto>
+                {
+                    new ApproveCommissionLogDto
+                    {
+                        ApprovalId = 401,
+                        Date = new DateTime(2025, 5, 8),
+                        Period = "Aug 5",
+                        SubmittedBy = "HO Finance",
+                        Amount = 4290450,
+                        Status = "Pending",
+                        CanApprove = true,
+                        CanDownload = false
+                    },
+                    new ApproveCommissionLogDto
+                    {
+                        ApprovalId = 402,
+                        Date = new DateTime(2025, 5, 11),
+                        Period = "May 13",
+                        SubmittedBy = "Zone Office",
+                        Amount = 2890450,
+                        Status = "Approved",
+                        CanApprove = false,
+                        CanDownload = true
+                    }
+                };
+
+                var totalRecords = allRecords.Count;
+                var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+                var paged = allRecords.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToList();
+
                 var approveCommissionData = new ApproveCommissionResponseDto
                 {
                     OrgId = orgId,
                     TotalAmountApproved = 245890,
                     TotalRecords = 431,
                     PendingApproval = 2,
-                    Records = new List<ApproveCommissionLogDto>
-                    {
-                        new ()
-                        {
-                            ApprovalId = 401,
-                            Date = new DateTime(2025, 5, 8),
-                            Period = "Aug 5",
-                            SubmittedBy = "HO Finance",
-                            Amount = 4290450,
-                            Status = "Pending",
-                            CanApprove = true,
-                            CanDownload = false
-                        },
-                        new ()
-                        {
-                            ApprovalId = 402,
-                            Date = new DateTime(2025, 5, 11),
-                            Period = "May 13",
-                            SubmittedBy = "Zone Office",
-                            Amount = 2890450,
-                            Status = "Approved",
-                            CanApprove = false,
-                            CanDownload = true
-                        }
-                    }
+                    Records = paged
                 };
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.approveCommission = approveCommissionData;
+                response.responseBody.pagination = new { PageNumber = pageNumber, PageSize = pageSize, TotalRecords = totalRecords, TotalPages = totalPages };
 
                 return Ok(response);
             }

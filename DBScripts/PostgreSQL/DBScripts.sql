@@ -2019,3 +2019,21 @@ create table insu_core.tmp_premium_collected (
     reason varchar(200) null,
     created_at timestamp default now()
 );
+
+
+-- comss.comm_job_exe_dtls definition
+-- Drop table
+-- DROP TABLE comss.comm_processing;
+
+CREATE TABLE comss.comm_process_hist (
+    comm_processing_id serial4 NOT NULL,
+	comm_job_exe_dtls_id int4 NOT NULL,	
+	orgid int4 NOT NULL,
+	comm_amt int4 DEFAULT 0 NOT NULL,
+	status varchar (20) NOT null /*PENDING/APPROVED/HOLD/REJECTED*/,
+	created_at timestamp default now(),
+    created_by      VARCHAR(100) NOT NULL
+);
+
+ALTER TABLE comss.comm_process_hist ADD CONSTRAINT fk_comm_job_exe_dtls_id FOREIGN KEY (comm_job_exe_dtls_id) REFERENCES comss.comm_job_exe_dtls(comm_job_exe_dtls_id);
+ALTER TABLE comss.comm_process_hist ADD CONSTRAINT fk_comm_proc_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);

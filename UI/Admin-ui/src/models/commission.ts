@@ -331,6 +331,10 @@ export interface IUpdateStatusRequest {
   commissionConfigId: number
   enabled: boolean
 }
+export interface IConfigCommissionListRequest {
+  pageNumber: number
+  pageSize: number
+}
 export interface ICommissionSearchFieldsRequest {
   commissionConfigId: number
 }
@@ -351,6 +355,7 @@ export interface ICommissionMetadata {
   customer?: ICommissionField[]
   premium?: ICommissionField[]
   policy?: ICommissionField[]
+  lastExec?: ICommissionField[]
   [key: string]: ICommissionField[] | undefined
 }
 

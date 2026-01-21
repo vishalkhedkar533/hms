@@ -21,8 +21,8 @@ namespace Models.DB
         public ReferenceType? RefType { get; set; }
 
         [Required]
-        [Column("DateOfBirth")]
-        public DateTime DateOfBirth { get; set; }
+        [Column("DateOfBirth",TypeName ="date")]
+        public DateOnly DateOfBirth { get; set; }
 
         [Column("PanNumber")]
         [StringLength(10)]

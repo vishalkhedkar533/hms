@@ -11,61 +11,90 @@ import { useEncryption } from '@/store/encryptionStore'
 import encryptionService from '@/services/encryptionService'
 import Loader from '@/components/Loader'
 import { Checkbox } from '@/components/ui/checkbox'
-
+import lodash from 'lodash'
+const { debounce } = lodash
 
 const ConfigCommissionList: React.FC = () => {
   const navigate = useNavigate()
-  const [page, setPage] = useState(1)
+  const [page, setPage] = useState(1) // Page state starting from 1
+  const [pageSize] = useState(10) // Default page size
   const [searchTerm, setSearchTerm] = useState('')
   const [localError, setLocalError] = useState<string | null>(null)
 
-    const encryptionEnabled = useEncryption()
-    const keyReady = !!encryptionService.getHrm_Key()
-    const canFetch = !encryptionEnabled || keyReady
+  const encryptionEnabled = useEncryption()
+  const keyReady = !!encryptionService.getHrm_Key()
+  const canFetch = !encryptionEnabled || keyReady
 
-   const {
-      data: comissionConfigList,
-      isLoading: configCommissionListLoading,
-      isError: configCommissionListQueryError,
-      error: configCommissionListQueryErrorObj,
-    } = useQuery<any>({
-      queryKey: ['config-commission-list'],
-      enabled: canFetch,
-      queryFn: () => commissionService.configCommissionList({} as any),
-      staleTime: 1000 * 60 * 60, // 1 hour
-      refetchOnWindowFocus: false,
-      retry: 1,
-    })
+  // Create a debounced search function
+  const debouncedSearch = debounce((value: string) => {
+    // Reset to page 1 when searching
+    setPage(1);
+  }, 500);
 
-  // Extract data from API response following the same pattern as other commission components
-  const dashboardData = comissionConfigList?.responseBody?.commissionConfig
-  console.log('config commission list data:', dashboardData)
+  // Update the query to include page and pageSize in queryKey and pass them to the API
+  const {
+    data: comissionConfigList,
+    isLoading: configCommissionListLoading,
+    isError: configCommissionListQueryError,
+    error: configCommissionListQueryErrorObj,
+  } = useQuery<any>({
+    queryKey: ['config-commission-list', page, pageSize, searchTerm], // Include searchTerm to trigger refetch when it changes
+    enabled: canFetch,
+    queryFn: () => commissionService.configCommissionList({ 
+      pageNumber: page, // API uses 1-based indexing
+      pageSize: pageSize
+    }),
+    staleTime: 1000 * 60 * 5, // Reduced to 5 minutes to ensure fresh data
+    refetchOnWindowFocus: false,
+    retry: 1,
+  })
 
-  // Filter data based on search term
-  const apiData = dashboardData || []
-  const filteredData = apiData.filter(
+  // Extract data from API response
+  const dashboardData = comissionConfigList?.responseBody?.commissionConfig || []
+  const paginationData = comissionConfigList?.responseBody?.pagination || {}
+  
+  console.log('Current page:', page)
+  console.log('API response page:', paginationData.currentPage)
+  console.log('Dashboard data:', dashboardData)
+  console.log('Full response:', comissionConfigList)
+
+  // If API doesn't support search, filter on client side
+  // But only if you're sure the API is properly paginating
+  const filteredData = dashboardData.filter(
     (item: any) =>
       item.commissionName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.status?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.triggerType?.toLowerCase().includes(searchTerm.toLowerCase())||
-      item.conditions?.toLowerCase().includes(searchTerm.toLowerCase())
+      item.triggerType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.jobType?.toLowerCase().includes(searchTerm.toLowerCase())
   )
-    useEffect(() => {
-        if (configCommissionListQueryError) {
-          const msg =
-            (configCommissionListQueryErrorObj as any)?.message ||
-            'Failed to fetch commission processing data'
-          setLocalError(msg)
-        } else {
-          setLocalError(null)
-        }
-      }, [configCommissionListQueryError, configCommissionListQueryErrorObj])
-    
-    
-      const loading = configCommissionListLoading
-      if (loading) return <Loader />
-      if (localError)
-        return <div className="p-4 text-red-600">Error: {localError}</div>
+
+  useEffect(() => {
+    if (configCommissionListQueryError) {
+      const msg =
+        (configCommissionListQueryErrorObj as any)?.message ||
+        'Failed to fetch commission processing data'
+      setLocalError(msg)
+    } else {
+      setLocalError(null)
+    }
+  }, [configCommissionListQueryError, configCommissionListQueryErrorObj])
+
+  // Handle page change properly
+  const handlePageChange = (newPage: number) => {
+    console.log('Changing to page:', newPage)
+    setPage(newPage)
+  }
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    debouncedSearch(value)
+  }
+
+  const loading = configCommissionListLoading
+  if (loading) return <Loader />
+  if (localError)
+    return <div className="p-4 text-red-600">Error: {localError}</div>
 
   const columns = [
     {
@@ -110,51 +139,37 @@ const ConfigCommissionList: React.FC = () => {
         <span className="text-gray-700">{row.jobType}</span>
       ),
     },
-    // {
-    //   header: 'Enabled',
-    //   accessor: (row: any) => (
-    //     <Switch className="text-gray-700">{row.enabled}</Switch>
-    //   ),
-    // },
-
     {
       header: 'Actions',
       accessor: (_row: any) => (
         <div className='flex gap-2'>
-
-       
-       
-         
-            <Button
-              variant="blue"
-              onClick={() =>
-                navigate({
-                  to: RoutePaths.CONFIG_COMMISSION_NEW,
-                  search: {
-                    commissionConfigId: _row.commissionConfigId || '',
-                  },
-                })
-              }
-            >
-              Edit 
-            </Button>
-     
-  
-        <Button
-          variant="blue"
-          onClick={() =>
-            navigate({
-              to: RoutePaths.COMMISSION_HISTORY,
-              search: {
-                // commissionName: _row.commissionName || '',
-                commissionId:  _row.commissionConfigId || '',
-              },
-            })
-          }
-        >
-          History
-        </Button>
-         </div>
+          <Button
+            variant="blue"
+            onClick={() =>
+              navigate({
+                to: RoutePaths.CONFIG_COMMISSION_NEW,
+                search: {
+                  commissionConfigId: _row.commissionConfigId || '',
+                },
+              })
+            }
+          >
+            Edit 
+          </Button>
+          <Button
+            variant="blue"
+            onClick={() =>
+              navigate({
+                to: RoutePaths.COMMISSION_HISTORY,
+                search: {
+                  commissionId:  _row.commissionConfigId || '',
+                },
+              })
+            }
+          >
+            History
+          </Button>
+        </div>
       ),
     },
   ]
@@ -172,7 +187,7 @@ const ConfigCommissionList: React.FC = () => {
                 type="text"
                 placeholder="Search..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={handleSearchChange}
                 className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <Button
@@ -182,19 +197,18 @@ const ConfigCommissionList: React.FC = () => {
                 New
               </Button>
             </div>
-            
           </div>
         </CardHeader>
         <CardContent>
           <DataTable columns={columns} data={filteredData} />
           <div className="flex justify-between items-center mt-4">
             <span className="font-semibold text-lg text-gray-700">
-              Page {page} / {Math.ceil(filteredData.length / 10)}
+              Page {page} of {paginationData.totalPages || 1} ({paginationData.totalItems || 0} total items)
             </span>
             <Pagination
-              totalPages={Math.ceil(filteredData.length / 10)}
+              totalPages={paginationData.totalPages || 1}
               currentPage={page}
-              onPageChange={setPage}
+              onPageChange={handlePageChange}
             />
           </div>
         </CardContent>
@@ -204,4 +218,3 @@ const ConfigCommissionList: React.FC = () => {
 }
 
 export default ConfigCommissionList
-

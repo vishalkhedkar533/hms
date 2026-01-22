@@ -29,11 +29,21 @@ namespace Models.DTO
         public HoldCommissionResponseDto? holdCommission { get; set; } = null;
         public AdjustCommissionResponseDto? adjustCommission { get; set; }
         public ApproveCommissionResponseDto? approveCommission { get; set; }
-        public List<CommissionConfigDTO>? commissionConfig { get; set; } = null;
+        public List<CommissionConfigDTO>? commissionConfig { get; set; } = null; 
+        public string? updatedAgentSectionName { get; set; } = null;
+        // New: list of fields updated in last operation
+        public List<UpdatedAgentField>? updatedAgentFields { get; set; } = null;
         public List<JobExecutionHistoryDto>? jobExecutionHistory { get; set; } = null;
         public MetaDataResponse? metaDataResponse { get; set; } = null;
 
         public object? pagination { get; set; }
+    }
+
+    public class UpdatedAgentField
+    {
+        public string FieldName { get; set; } = string.Empty;
+        public string OldValue { get; set; } = string.Empty;
+        public string NewValue { get; set; } = string.Empty;
     }
 
     public class LoginResponse

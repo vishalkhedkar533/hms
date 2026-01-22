@@ -350,4 +350,4 @@ alter TABLE scheduler.job_exe_hist add FireTimeUtc TIMESTAMP WITH TIME ZONE;
 alter TABLE scheduler.job_exe_hist add LogLevel varchar(10);
 create index idx_FireInstanceId on scheduler.job_exe_hist(FireInstanceId);
 
-
+ALTER TABLE comss.comm_job_exe_dtls add status varchar (20) not null default 'PENDING' /*PENDING/APPROVED/HOLD/REJECTED*/;

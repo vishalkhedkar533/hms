@@ -2019,3 +2019,4 @@ create table insu_core.tmp_premium_collected (
     reason varchar(200) null,
     created_at timestamp default now()
 );
+

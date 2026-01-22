@@ -2,6 +2,7 @@
 using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,8 @@ using Models.DB;
 using Models.DTO;
 using Models.DTO.CommissionMgmt.Dashboard;
 using Models.HMSConsts;
-using System.Linq;
+using System.ComponentModel;
+using MiniExcelLibs;
 
 namespace HMS.Controllers
 {
@@ -18,23 +20,26 @@ namespace HMS.Controllers
     public class CommissionMgmtController : ControllerBase
     {
         private readonly HMSContext _context;
-        private readonly IConfiguration _config;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
         private readonly IAuthClaimService _authClaimService;
         private readonly IMapper _mapper;
         private readonly ILogger<CommissionMgmtController> _logger;
+        private readonly DatabaseService _db;
+
 
         public CommissionMgmtController(
             HMSContext context,
-            IConfiguration config,
+            Microsoft.Extensions.Configuration.IConfiguration config,
             IAuthClaimService authClaimService,
             IMapper mapper,
-            ILogger<CommissionMgmtController> logger)
+            ILogger<CommissionMgmtController> logger,DatabaseService databaseService)
         {
             _context = context;
             _config = config;
             _authClaimService = authClaimService;
             _mapper = mapper;
             _logger = logger;
+            _db    = databaseService;
         }
 
         [HttpPost("Dashboard")]
@@ -438,6 +443,119 @@ namespace HMS.Controllers
                 _logger.LogError(ex, "ApproveCommission API failed OrgId={OrgId}", orgId);
                 return StatusCode(500, "Internal server error");
             }
+        }
+
+        [HttpPost("ProcessCommissions")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> ProcessCommissionRecord([FromBody] PaginationRequest paginationRequest)
+        {
+            HmsResponse response = new HmsResponse();
+
+            paginationRequest.PageNumber = paginationRequest.PageNumber <= 0 ? 1 : paginationRequest.PageNumber;
+            paginationRequest.PageSize = paginationRequest.PageSize <= 0 ? 10 : paginationRequest.PageSize;
+
+            try
+            {
+                int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var results = await _db.ExecuteQueryAsync<ProcessCommissionDTO>(
+                    "Commission",
+                    "GetProcessComissionList",
+                    new
+                    {
+                        p_orgid = orgId,
+                        p_page_number = paginationRequest.PageNumber,
+                        p_page_size = paginationRequest.PageSize
+                    });
+
+                var processList = results?.ToList() ?? new List<ProcessCommissionDTO>();
+
+                if (processList.Any())
+                {
+                    int totalItems = processList.First().TotalCount;
+
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "SUCCESS";
+                    response.responseBody.processCommissionList = processList;
+                    response.responseBody.pagination = new
+                    {
+                        currentPage = paginationRequest.PageNumber,
+                        totalPages = (int)Math.Ceiling(totalItems / (double)paginationRequest.PageSize),
+                        pageSize = paginationRequest.PageSize,
+                        totalItems = totalItems
+                    };
+
+                    return Ok(response);
+                }
+                else
+                {
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
+                                 && x.Area == "CommissionConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                    return NoContent();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch process commission list");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        private byte[] GenerateCommissionExcel(List<ProcessCommissionExcelDTO> data)
+        {
+            var excelData = data.Select(x => new
+            {
+                Agent_Id = x.AgentId,
+                Premium_Collection_Id = x.PremiumCollectionId,
+                Premium_Amount = x.PremiumAmount,
+                Formula = x.Formula,
+                Commission_Amount = x.CommissionAmount,
+                Status = x.Status,
+                Logs = x.Logs
+            });
+
+            using var stream = new MemoryStream();
+            stream.SaveAs(excelData);
+            return stream.ToArray();
+        }
+
+        [HttpGet("DownloadCommissionExcel/{jobExeHistId}")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> DownloadCommissionExcel(int jobExeHistId)
+        {
+            int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            try
+            {
+                var data = (await _db.ExecuteQueryAsync<ProcessCommissionExcelDTO>(
+                "Commission",
+                "GetProcessCommissionExcel",
+                new
+                {
+                    p_orgid = orgId,
+                    p_job_exe_hist_id = jobExeHistId
+                }
+            ))?.ToList() ?? new List<ProcessCommissionExcelDTO>();
+
+                if (!data.Any())
+                    return NoContent();
+
+                var fileBytes = GenerateCommissionExcel(data);
+
+                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Commission_{jobExeHistId}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to download file");
+                return StatusCode(500, "Internal server error");
+            }
+            
         }
     }
 }

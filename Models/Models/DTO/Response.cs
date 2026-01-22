@@ -31,12 +31,12 @@ namespace Models.DTO
         public ApproveCommissionResponseDto? approveCommission { get; set; }
         public List<CommissionConfigDTO>? commissionConfig { get; set; } = null; 
         public string? updatedAgentSectionName { get; set; } = null;
-        // New: list of fields updated in last operation
         public List<UpdatedAgentField>? updatedAgentFields { get; set; } = null;
         public List<JobExecutionHistoryDto>? jobExecutionHistory { get; set; } = null;
         public MetaDataResponse? metaDataResponse { get; set; } = null;
-
         public object? pagination { get; set; }
+        public List<ProcessCommissionDTO>? processCommissionList { get; set; }
+        public FileDownloadDto? fileDownload { get; set; } = null;
     }
 
     public class UpdatedAgentField
@@ -67,6 +67,14 @@ namespace Models.DTO
         public string username { get; set; }
         public string otp { get; set; }
         
+    }
+
+    public class FileDownloadDto
+    {
+        public string FileName { get; set; } = string.Empty;
+        public string ContentType { get; set; } = string.Empty;
+        public string FileBase64 { get; set; } = string.Empty;
+        public long FileSize { get; set; }
     }
 
 }

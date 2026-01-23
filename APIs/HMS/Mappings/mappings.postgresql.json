@@ -44,11 +44,11 @@
       },
       "GetProcessComissionList": {
         "Function": "na",
-        "Script": "SELECT jeh.job_exe_hist_id AS \"JobExeHistId\", jeh.job_config_id AS \"JobConfigId\", jc.job_name AS \"CommissionName\", jeh.started_at AS \"StartedAt\", jeh.finished_at AS \"FinishedAt\", jeh.exe_status AS \"ExeStatus\", jeh.download_lnk AS \"DownloadLnk\", jeh.orgid AS \"OrgId\", COUNT(*) OVER() AS \"TotalCount\" FROM scheduler.job_exe_hist jeh JOIN scheduler.job_config jc ON jeh.job_config_id = jc.job_config_id WHERE jeh.orgid = @p_orgid ORDER BY jeh.started_at DESC LIMIT @p_page_size OFFSET ((@p_page_number - 1) * @p_page_size);"
+        "Script": "SELECT jeh.job_exe_hist_id AS \"JobExeHistId\", jeh.job_config_id AS \"JobConfigId\", jc.job_name AS \"CommissionName\", jeh.started_at AS \"StartedAt\", jeh.finished_at AS \"FinishedAt\", jeh.totalrecs AS \"Records\", jeh.exe_status AS \"ExeStatus\", jeh.download_lnk AS \"DownloadLnk\", jeh.orgid AS \"OrgId\", COUNT(*) OVER() AS \"TotalCount\" FROM scheduler.job_exe_hist jeh JOIN scheduler.job_config jc ON jeh.job_config_id = jc.job_config_id WHERE jeh.orgid = @p_orgid ORDER BY jeh.started_at DESC LIMIT @p_page_size OFFSET ((@p_page_number - 1) * @p_page_size);"
       },
       "GetProcessCommissionExcel": {
         "Function": "na",
-        "Script": "SELECT cjed.comm_job_exe_dtls_id AS \"CommJobExeDtlsId\", cjed.job_exe_hist_id AS \"JobExeHistId\", cjed.agent_id AS \"AgentId\", cjed.premiucollid AS \"PremiumCollectionId\", cjed.premium_amt AS \"PremiumAmount\", cjed.formula AS \"Formula\", cjed.comm_amt AS \"CommissionAmount\", cjed.status AS \"Status\", cjed.logs AS \"Logs\" FROM comss.comm_job_exe_dtls cjed WHERE cjed.orgid = @p_orgid AND cjed.job_exe_hist_id = @p_job_exe_hist_id ORDER BY cjed.comm_job_exe_dtls_id;"
+        "Script": "SELECT cjed.comm_job_exe_dtls_id AS \"CommJobExeDtlsId\", cjed.job_exe_hist_id AS \"JobExeHistId\", cjed.agent_id AS \"AgentId\", a.agent_name AS \"AgentName\", k.entrydesc AS \"Channel\", cjed.premiucollid AS \"PremiumCollectionId\", cjed.premium_amt AS \"PremiumAmount\", cjed.formula AS \"Formula\", cjed.comm_amt AS \"CommissionAmount\", cjed.status AS \"Status\", cjed.logs AS \"Logs\" FROM comss.comm_job_exe_dtls cjed LEFT JOIN hms.agent a ON a.agent_id = cjed.agent_id LEFT JOIN (SELECT entryidentity, MAX(entrydesc) AS entrydesc FROM hmsmaster.keyvalueentries GROUP BY entryidentity) k ON k.entryidentity = a.channel WHERE cjed.orgid = @p_orgid AND cjed.job_exe_hist_id = @p_job_exe_hist_id ORDER BY cjed.comm_job_exe_dtls_id;"
       }
     }
   }

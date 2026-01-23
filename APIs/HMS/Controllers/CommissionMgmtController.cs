@@ -512,6 +512,8 @@ namespace HMS.Controllers
             var excelData = data.Select(x => new
             {
                 Agent_Id = x.AgentId,
+                Agent_Name = x.AgentName,
+                Channel = x.Channel,
                 Premium_Collection_Id = x.PremiumCollectionId,
                 Premium_Amount = x.PremiumAmount,
                 Formula = x.Formula,
@@ -525,7 +527,7 @@ namespace HMS.Controllers
             return stream.ToArray();
         }
 
-        [HttpGet("DownloadCommissionExcel/{jobExeHistId}")]
+        [HttpPost("DownloadCommissionExcel/{jobExeHistId}")]
         [Authorize]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> DownloadCommissionExcel(int jobExeHistId)

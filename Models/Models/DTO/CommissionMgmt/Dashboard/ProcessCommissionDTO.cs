@@ -7,6 +7,7 @@
         public string CommissionName { get; set; } = null!;
         public DateTime StartedAt { get; set; }
         public DateTime? FinishedAt { get; set; }
+        public int? Records { get; set; }
         public string ExeStatus { get; set; } = null!;
         public string? DownloadLnk { get; set; }
         public int OrgId { get; set; }
@@ -15,6 +16,10 @@
     public class ProcessCommissionExcelDTO
     {
         public int AgentId { get; set; }
+
+        public string AgentName { get; set; } = null!;
+
+        public string Channel { get; set; } = null!;
         public int PremiumCollectionId { get; set; }
         public int PremiumAmount { get; set; }
         public string? Formula { get; set; }

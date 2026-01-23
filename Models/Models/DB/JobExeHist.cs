@@ -21,6 +21,9 @@ namespace Models.DB
         [Description("Job - last executed on")]
         public DateTime? FinishedAt { get; set; }
 
+        [Column("totalrecs")]
+        public int? Records { get; set; }
+
         [MaxLength(10)]
         [Column("exe_status")]
         public string ExeStatus { get; set; } = null!;

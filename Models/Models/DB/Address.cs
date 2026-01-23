@@ -13,19 +13,15 @@ namespace Models.DB
         [DatabaseGenerated(DatabaseGeneratedOption.None)] // Since it's not SERIAL/IDENTITY in SQL
         public long AddressID { get; set; }
 
-        [Required]
-        [StringLength(50)]
         [Column]
-        public AddressType AddressType { get; set; } //enum AddressType
+        public AddressType? AddressType { get; set; } //enum AddressType
 
-        [Required]
         [Column]
         public int RefKey { get; set; }
 
         [Column]
         public ReferenceType? RefType { get; set; }//enum RefType
 
-        [Required]
         [StringLength(255)]
         [Column]
         public string? AddressLine1 { get; set; }
@@ -38,7 +34,6 @@ namespace Models.DB
         [Column]
         public string? AddressLine3 { get; set; }
 
-        [Required]
         [StringLength(100)]
         [Column]
         public string? City { get; set; } 

@@ -794,6 +794,16 @@ namespace HMS.Controllers
 
                  switch ((sectionName ?? string.Empty).ToLowerInvariant())
                   {
+                      case "individual_agent_action":
+                        if (agentDto.Channel.HasValue)
+                            agent.Channel = agentDto.Channel; 
+                        if (agentDto.SubChannel.HasValue)
+                            agent.SubChannel = agentDto.SubChannel; 
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass; 
+                        
+                        break;
+
                       case "personal_details":
                     if (agentDto.Title.HasValue)
                         agent.Title = agentDto.Title;
@@ -957,6 +967,8 @@ namespace HMS.Controllers
                             var existingBank = await _context.BankAccount
                                 .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
                             if (existingBank != null)
+
+
                             {
                                 // capture old values
                                 var oldAccountHolder = existingBank.AccountHolderName ?? string.Empty;
@@ -1145,7 +1157,98 @@ namespace HMS.Controllers
                         break;
                     }
 
-                      case "official_details":
+                    case "address_config":
+                        {
+                            if (agentDto.PermanentAddres != null && agentDto.PermanentAddres.Any())
+                            {
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "address_config", OldValue = string.Empty, NewValue = "updated" });
+
+                                var addrDto = agentDto.PermanentAddres.First();
+
+                                var existingAddress = await _context.Address
+                                    .FirstOrDefaultAsync(x =>
+                                        x.RefKey == agent.AgentId &&
+                                        x.RefType == ReferenceType.Agent);
+
+                                if (existingAddress != null)
+                                {
+
+                                    var oldAddressType = existingAddress.AddressType?.ToString() ?? string.Empty;
+                                    var oldAddressLine1 = existingAddress.AddressLine1 ?? string.Empty;
+                                    var oldAddressLine2 = existingAddress.AddressLine2 ?? string.Empty;
+                                    var oldAddressLine3 = existingAddress.AddressLine3 ?? string.Empty;
+                                    var oldCity = existingAddress.City ?? string.Empty;
+                                    var oldState = existingAddress.State ?? string.Empty;
+                                    var oldCountry = existingAddress.Country ?? string.Empty;
+                                    var oldPin = existingAddress.PIN ?? string.Empty;
+                                    var oldLandmark = existingAddress.Landmark ?? string.Empty;
+
+                                    existingAddress.AddressType = addrDto.AddressType ?? existingAddress.AddressType;
+                                    existingAddress.AddressLine1 = addrDto.AddressLine1 ?? existingAddress.AddressLine1;
+                                    existingAddress.AddressLine2 = addrDto.AddressLine2 ?? existingAddress.AddressLine2;
+                                    existingAddress.AddressLine3 = addrDto.AddressLine3 ?? existingAddress.AddressLine3;
+                                    existingAddress.City = addrDto.City ?? existingAddress.City;
+                                    existingAddress.State = addrDto.State ?? existingAddress.State;
+                                    existingAddress.Country = addrDto.Country ?? existingAddress.Country;
+                                    existingAddress.PIN = addrDto.PIN ?? existingAddress.PIN;
+                                    existingAddress.Landmark = addrDto.Landmark ?? existingAddress.Landmark;
+
+                                    _context.Address.Update(existingAddress);
+
+                                    void AddIfChanged(string fieldName, string oldV, string newV)
+                                    {
+                                        if ((oldV ?? string.Empty) != (newV ?? string.Empty))
+                                        {
+                                            updatedFields.Add(new UpdatedAgentField { FieldName = fieldName, OldValue = oldV ?? string.Empty, NewValue = newV ?? string.Empty });
+                                        }
+                                    }
+
+                                    AddIfChanged("AddressType",oldAddressType,existingAddress.AddressType?.ToString());
+                                    AddIfChanged("AddressLine1", oldAddressLine1, existingAddress.AddressLine1);
+                                    AddIfChanged("AddressLine2", oldAddressLine2, existingAddress.AddressLine2);
+                                    AddIfChanged("AddressLine3", oldAddressLine3, existingAddress.AddressLine3);
+                                    AddIfChanged("City", oldCity, existingAddress.City);
+                                    AddIfChanged("State", oldState, existingAddress.State);
+                                    AddIfChanged("Country", oldCountry, existingAddress.Country);
+                                    AddIfChanged("PIN", oldPin, existingAddress.PIN);
+                                    AddIfChanged("Landmark", oldLandmark, existingAddress.Landmark);
+
+                                }
+                                else
+                                {
+                                    var newAddress = new Address
+                                    {
+                                        RefKey = agent.AgentId,
+                                        RefType = ReferenceType.Agent,
+                                        AddressType = addrDto.AddressType,
+                                        AddressLine1 = addrDto.AddressLine1,
+                                        AddressLine2 = addrDto.AddressLine2,
+                                        AddressLine3 = addrDto.AddressLine3,
+                                        City = addrDto.City,
+                                        State = addrDto.State,
+                                        Country = addrDto.Country,
+                                        PIN = addrDto.PIN,
+                                        Landmark = addrDto.Landmark
+                                    };
+
+                                    await _context.Address.AddAsync(newAddress);
+
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressType", OldValue = string.Empty, NewValue = newAddress.AddressType?.ToString() ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine1", OldValue = string.Empty, NewValue = newAddress.AddressLine1 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine2", OldValue = string.Empty, NewValue = newAddress.AddressLine2 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine3", OldValue = string.Empty, NewValue = newAddress.AddressLine2 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "City", OldValue = string.Empty, NewValue = newAddress.City ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "State", OldValue = string.Empty, NewValue = newAddress.State ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "Country", OldValue = string.Empty, NewValue = newAddress.Country ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "PIN", OldValue = string.Empty, NewValue = newAddress.PIN ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "Landmark", OldValue = string.Empty, NewValue = newAddress.Landmark ?? string.Empty });
+
+                                }
+                            }
+                            break;
+                        }
+
+                    case "official_details":
                           if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
                               agent.AgentCode = agentDto.AgentCode;
 
@@ -1302,61 +1405,6 @@ namespace HMS.Controllers
                                     NomineeAge = n.NomineeAge
                                 };
                                 await _context.Nominee.AddAsync(newNom);
-                            }
-                        }
-                    }
-                    break;
-
-                      case "address_config":
-                    // Update or create addresses: use AddressID if provided, otherwise match by RefKey+RefType+AddressType
-                    if (agentDto.PermanentAddres != null)
-                    {
-                        // section-level note
-                        updatedFields.Add(new UpdatedAgentField { FieldName = "PermanentAddres", OldValue = string.Empty, NewValue = "updated" });
-
-                        foreach (var addr in agentDto.PermanentAddres)
-                        {
-                            Address? existing = null;
-                            if (addr.AddressID != 0)
-                                existing = await _context.Address.FirstOrDefaultAsync(a => a.AddressID == addr.AddressID && a.RefKey == agent.AgentId);
-                            if (existing == null)
-                                existing = await _context.Address.FirstOrDefaultAsync(a => a.RefKey == agent.AgentId && a.RefType == ReferenceType.Agent && a.AddressType == addr.AddressType);
-                            if (existing != null)
-                            {
-                                existing.AddressLine1 = addr.AddressLine1 ?? existing.AddressLine1;
-                                existing.AddressLine2 = addr.AddressLine2 ?? existing.AddressLine2;
-                                existing.AddressLine3 = addr.AddressLine3 ?? existing.AddressLine3;
-                                existing.City = addr.City ?? existing.City;
-                                existing.State = addr.State ?? existing.State;
-                                existing.Country = addr.Country ?? existing.Country;
-                                existing.PIN = addr.PIN ?? existing.PIN;
-                                existing.Landmark = addr.Landmark ?? existing.Landmark;
-                                _context.Address.Update(existing);
-                            }
-                        }
-                    }
-                    if (agentDto.MailingAddres != null)
-                    {
-                        updatedFields.Add(new UpdatedAgentField { FieldName = "MailingAddres", OldValue = string.Empty, NewValue = "updated" });
-
-                        foreach (var addr in agentDto.MailingAddres)
-                        {
-                            Address? existing = null;
-                            if (addr.AddressID != 0)
-                                existing = await _context.Address.FirstOrDefaultAsync(a => a.AddressID == addr.AddressID && a.RefKey == agent.AgentId);
-                            if (existing == null)
-                                existing = await _context.Address.FirstOrDefaultAsync(a => a.RefKey == agent.AgentId && a.RefType == ReferenceType.Agent && a.AddressType == addr.AddressType);
-                            if (existing != null)
-                            {
-                                existing.AddressLine1 = addr.AddressLine1 ?? existing.AddressLine1;
-                                existing.AddressLine2 = addr.AddressLine2 ?? existing.AddressLine2;
-                                existing.AddressLine3 = addr.AddressLine3 ?? existing.AddressLine3;
-                                existing.City = addr.City ?? existing.City;
-                                existing.State = addr.State ?? existing.State;
-                                existing.Country = addr.Country ?? existing.Country;
-                                existing.PIN = addr.PIN ?? existing.PIN;
-                                existing.Landmark = addr.Landmark ?? existing.Landmark;
-                                _context.Address.Update(existing);
                             }
                         }
                     }

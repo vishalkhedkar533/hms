@@ -1161,6 +1161,8 @@ namespace HMS.Controllers
                         {
                             if (agentDto.PermanentAddres != null && agentDto.PermanentAddres.Any())
                             {
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "address_config", OldValue = string.Empty, NewValue = "updated" });
+
                                 var addrDto = agentDto.PermanentAddres.First();
 
                                 var existingAddress = await _context.Address
@@ -1170,6 +1172,18 @@ namespace HMS.Controllers
 
                                 if (existingAddress != null)
                                 {
+
+                                    var oldAddressType = existingAddress.AddressType?.ToString() ?? string.Empty;
+                                    var oldAddressLine1 = existingAddress.AddressLine1 ?? string.Empty;
+                                    var oldAddressLine2 = existingAddress.AddressLine2 ?? string.Empty;
+                                    var oldAddressLine3 = existingAddress.AddressLine3 ?? string.Empty;
+                                    var oldCity = existingAddress.City ?? string.Empty;
+                                    var oldState = existingAddress.State ?? string.Empty;
+                                    var oldCountry = existingAddress.Country ?? string.Empty;
+                                    var oldPin = existingAddress.PIN ?? string.Empty;
+                                    var oldLandmark = existingAddress.Landmark ?? string.Empty;
+
+                                    existingAddress.AddressType = addrDto.AddressType ?? existingAddress.AddressType;
                                     existingAddress.AddressLine1 = addrDto.AddressLine1 ?? existingAddress.AddressLine1;
                                     existingAddress.AddressLine2 = addrDto.AddressLine2 ?? existingAddress.AddressLine2;
                                     existingAddress.AddressLine3 = addrDto.AddressLine3 ?? existingAddress.AddressLine3;
@@ -1181,12 +1195,24 @@ namespace HMS.Controllers
 
                                     _context.Address.Update(existingAddress);
 
-                                    updatedFields.Add(new UpdatedAgentField
+                                    void AddIfChanged(string fieldName, string oldV, string newV)
                                     {
-                                        FieldName = "PermanentAddress",
-                                        OldValue = "existing",
-                                        NewValue = "updated"
-                                    });
+                                        if ((oldV ?? string.Empty) != (newV ?? string.Empty))
+                                        {
+                                            updatedFields.Add(new UpdatedAgentField { FieldName = fieldName, OldValue = oldV ?? string.Empty, NewValue = newV ?? string.Empty });
+                                        }
+                                    }
+
+                                    AddIfChanged("AddressType",oldAddressType,existingAddress.AddressType?.ToString());
+                                    AddIfChanged("AddressLine1", oldAddressLine1, existingAddress.AddressLine1);
+                                    AddIfChanged("AddressLine2", oldAddressLine2, existingAddress.AddressLine2);
+                                    AddIfChanged("AddressLine3", oldAddressLine3, existingAddress.AddressLine3);
+                                    AddIfChanged("City", oldCity, existingAddress.City);
+                                    AddIfChanged("State", oldState, existingAddress.State);
+                                    AddIfChanged("Country", oldCountry, existingAddress.Country);
+                                    AddIfChanged("PIN", oldPin, existingAddress.PIN);
+                                    AddIfChanged("Landmark", oldLandmark, existingAddress.Landmark);
+
                                 }
                                 else
                                 {
@@ -1207,18 +1233,20 @@ namespace HMS.Controllers
 
                                     await _context.Address.AddAsync(newAddress);
 
-                                    updatedFields.Add(new UpdatedAgentField
-                                    {
-                                        FieldName = "PermanentAddress",
-                                        OldValue = string.Empty,
-                                        NewValue = "created"
-                                    });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressType", OldValue = string.Empty, NewValue = newAddress.AddressType?.ToString() ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine1", OldValue = string.Empty, NewValue = newAddress.AddressLine1 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine2", OldValue = string.Empty, NewValue = newAddress.AddressLine2 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine3", OldValue = string.Empty, NewValue = newAddress.AddressLine2 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "City", OldValue = string.Empty, NewValue = newAddress.City ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "State", OldValue = string.Empty, NewValue = newAddress.State ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "Country", OldValue = string.Empty, NewValue = newAddress.Country ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "PIN", OldValue = string.Empty, NewValue = newAddress.PIN ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "Landmark", OldValue = string.Empty, NewValue = newAddress.Landmark ?? string.Empty });
+
                                 }
                             }
-
                             break;
                         }
-
 
                     case "official_details":
                           if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))

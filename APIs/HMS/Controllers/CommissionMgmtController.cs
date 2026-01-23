@@ -527,37 +527,52 @@ namespace HMS.Controllers
             return stream.ToArray();
         }
 
+
         [HttpPost("DownloadCommissionExcel/{jobExeHistId}")]
         [Authorize]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> DownloadCommissionExcel(int jobExeHistId)
         {
+            HmsResponse response = new HmsResponse();
             int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
             try
             {
                 var data = (await _db.ExecuteQueryAsync<ProcessCommissionExcelDTO>(
-                "Commission",
-                "GetProcessCommissionExcel",
-                new
-                {
-                    p_orgid = orgId,
-                    p_job_exe_hist_id = jobExeHistId
-                }
-            ))?.ToList() ?? new List<ProcessCommissionExcelDTO>();
+                    "Commission",
+                    "GetProcessCommissionExcel",
+                    new
+                    {
+                        p_orgid = orgId,
+                        p_job_exe_hist_id = jobExeHistId
+                    }
+                ))?.ToList() ?? new List<ProcessCommissionExcelDTO>();
 
                 if (!data.Any())
-                    return NoContent();
+                {
+                    response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
+                    response.responseHeader.ErrorMessage = "No data found";
+                    return Ok(response);
+                }
 
                 var fileBytes = GenerateCommissionExcel(data);
 
-                return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Commission_{jobExeHistId}.xlsx");
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.fileDownload = new FileDownloadDto
+                {
+                    FileName = $"Commission_{jobExeHistId}.xlsx",
+                    FileSize = fileBytes.Length,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    FileBase64 = Convert.ToBase64String(fileBytes)
+                };
+                return Ok(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to download file");
                 return StatusCode(500, "Internal server error");
             }
-            
         }
     }
 }

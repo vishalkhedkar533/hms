@@ -5,7 +5,6 @@ using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
-using Humanizer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,10 +12,8 @@ using Models.DB;
 using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
-using Mono.TextTemplating;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System.Diagnostics.Metrics;
 
 namespace HMS.Controllers
 {
@@ -704,19 +701,110 @@ namespace HMS.Controllers
             [FromBody] AgentDto agentDto)
         {
             ModelState.Clear();
+            HmsResponse hmsResponse = new HmsResponse();
             var username = HttpContext?.User?.Identity?.Name ?? "System";
             var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-            var agent = await _context.Agents
-                .FirstOrDefaultAsync(a => a.AgentId == id && a.OrgId == orgId);
-
-            if (agent == null)
-                return NotFound($"Agent with ID {id} not found");
-
-            switch (sectionName.ToLower())
+            try
             {
-                case "personal_details":
+                var agent = await _context.Agents.FirstOrDefaultAsync(a => a.AgentId == id && a.OrgId == orgId);
 
+                if (agent == null)
+                {
+                    hmsResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                    hmsResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    return NoContent();
+                }
+
+                var updatedFields = new List<UpdatedAgentField>();
+
+                // Helper to record changes
+                void RecordChange(string field, object? oldVal, object? newVal)
+                {
+                    var oldS = oldVal == null ? string.Empty : (oldVal is DateTime odt ? odt.ToString("o") : oldVal.ToString());
+                    var newS = newVal == null ? string.Empty : (newVal is DateTime ndt ? ndt.ToString("o") : newVal.ToString());
+                    if (oldS != newS)
+                    {
+                        updatedFields.Add(new UpdatedAgentField { FieldName = field, OldValue = oldS ?? string.Empty, NewValue = newS ?? string.Empty });
+                    }
+                }
+
+                // Snapshot of scalar fields to compare after modification
+                var snapshot = new Dictionary<string, object?>()
+                {
+                    { "Title", agent.Title },
+                    { "FirstName", agent.FirstName },
+                    { "MiddleName", agent.MiddleName },
+                    { "LastName", agent.LastName },
+                    { "FatherHusbandNm", agent.FatherHusbandNm },
+                    { "Gender", agent.Gender },
+                    { "Dob", agent.Dob },
+                    { "MaritalStatus", agent.MaritalStatus },
+                    { "Nationality", agent.Nationality },
+                    { "PreferredLanguage", agent.PreferredLanguage },
+                    { "Email", agent.Email },
+                    { "MobileNo", agent.MobileNo },
+                    { "CnctPersonName", agent.CnctPersonName },
+                    { "CnctPersonMobileNo", agent.CnctPersonMobileNo },
+                    { "CnctPersonEmail", agent.CnctPersonEmail },
+                    { "CnctPersonDesig", agent.CnctPersonDesig },
+                    { "AgentCode", agent.AgentCode },
+                    { "AgentType", agent.AgentType },
+                    { "AgentTypeCode", agent.AgentTypeCode },
+                    { "AgentSubTypeCode", agent.AgentSubTypeCode },
+                    { "AgentClass", agent.AgentClass },
+                    { "AgentLevel", agent.AgentLevel },
+                    { "StaffCode", agent.StaffCode },
+                    { "SupervisorId", agent.SupervisorId },
+                    { "LicenseNo", agent.LicenseNo },
+                    { "LicenseType", agent.LicenseType },
+                    { "LicenseIssueDate", agent.LicenseIssueDate },
+                    { "LicenseExpiryDate", agent.LicenseExpiryDate },
+                    { "LicenseStatus", agent.LicenseStatus },
+                    { "IsLicensed", agent.IsLicensed },
+                    { "PanAadharLinkFlag", agent.PanAadharLinkFlag },
+                    { "Sec206abFlag", agent.Sec206abFlag },
+                    { "TaxStatus", agent.TaxStatus },
+                    { "ServiceTaxNo", agent.ServiceTaxNo },
+                    { "MainPartnerClientCode", agent.MainPartnerClientCode },
+                    { "ApplicationDocketNo", agent.ApplicationDocketNo },
+                    { "EmployeeCode", agent.EmployeeCode },
+                    { "StartDate", agent.StartDate },
+                    { "AppointmentDate", agent.AppointmentDate },
+                    { "IncorporationDate", agent.IncorporationDate },
+                    { "AgentTypeCategory", agent.AgentTypeCategory },
+                    { "AgentClassification", agent.AgentClassification },
+                    { "CmsAgentType", agent.CmsAgentType },
+                    { "CommissionClass", agent.CommissionClass },
+                    { "BankAccType", agent.BankAccType },
+                    { "UlipFlag", agent.UlipFlag },
+                    { "IsMigrated", agent.IsMigrated },
+                    { "AgentMaincodeVweid", agent.AgentMaincodeVweid },
+                    { "RegistrationDate", agent.RegistrationDate },
+                    { "Vertical", agent.Vertical },
+                    { "TrainingGroupType", agent.TrainingGroupType },
+                    { "RefresherTrainingCompleted", agent.RefresherTrainingCompleted },
+                    { "Education", agent.Education },
+                    { "Occupation", agent.Occupation },
+                    { "Urn", agent.Urn },
+                    { "AdditionalComment", agent.AdditionalComment }
+                };
+
+                 switch ((sectionName ?? string.Empty).ToLowerInvariant())
+                  {
+                      case "individual_agent_action":
+                        if (agentDto.Channel.HasValue)
+                            agent.Channel = agentDto.Channel; 
+                        if (agentDto.SubChannel.HasValue)
+                            agent.SubChannel = agentDto.SubChannel; 
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass; 
+                        
+                        break;
+
+                      case "personal_details":
                     if (agentDto.Title.HasValue)
                         agent.Title = agentDto.Title;
 
@@ -738,47 +826,664 @@ namespace HMS.Controllers
                     if (agentDto.DOB.HasValue)
                         agent.Dob = agentDto.DOB;
 
-                    if (agentDto.MaritalStatus.HasValue)
-                        agent.MaritalStatus = agentDto.MaritalStatus;
+                    //if (agentDto.MaritalStatus.HasValue)
+                    //    agent.MaritalStatus = agentDto.MaritalStatus;
+
+                    //if (!string.IsNullOrWhiteSpace(agentDto.Nationality))
+                    //    agent.Nationality = agentDto.Nationality;
+
+                    //if (!string.IsNullOrWhiteSpace(agentDto.PreferredLanguage))
+                    //    agent.PreferredLanguage = agentDto.PreferredLanguage;
 
                     break;
 
-                case "contact_details":
+                      case "contact_information":
+                        
+                    if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
+                        agent.MobileNo = agentDto.MobileNo;
 
                     if (!string.IsNullOrWhiteSpace(agentDto.Email))
                         agent.Email = agentDto.Email;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.MobileNo))
-                        agent.MobileNo = agentDto.MobileNo;
+                    // Update contact person fields
+                    if (!string.IsNullOrWhiteSpace(agentDto.CnctPersonName))
+                        agent.CnctPersonName = agentDto.CnctPersonName;
+                    if (!string.IsNullOrWhiteSpace(agentDto.CnctPersonMobileNo))
+                        agent.CnctPersonMobileNo = agentDto.CnctPersonMobileNo;
+                    if (!string.IsNullOrWhiteSpace(agentDto.CnctPersonEmail))
+                        agent.CnctPersonEmail = agentDto.CnctPersonEmail;
+                    if (!string.IsNullOrWhiteSpace(agentDto.CnctPersonDesig))
+                        agent.CnctPersonDesig = agentDto.CnctPersonDesig;
+
+                        // Upsert work/residence contact numbers in PersonalInfo
+                        if (agentDto.personalInfo != null && agentDto.personalInfo.Any())
+                        {
+                            var p = agentDto.personalInfo.First();
+                            var existingPI = await _context.PersonalInfo
+                                .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
+                            if (existingPI != null)
+                            {
+                                var oldWork = existingPI.WorkContactNo ?? string.Empty;
+                                var oldRes = existingPI.ResidenceContactNo ?? string.Empty;
+                                var newWork = p.WorkContactNo ?? string.Empty;
+                                var newRes = p.ResidenceContactNo ?? string.Empty;
+
+                                if (!string.Equals(oldWork, newWork, StringComparison.Ordinal))
+                                {
+                                    existingPI.WorkContactNo = p.WorkContactNo ?? existingPI.WorkContactNo;
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "WorkContactNo", OldValue = oldWork, NewValue = newWork });
+                                }
+
+                                if (!string.Equals(oldRes, newRes, StringComparison.Ordinal))
+                                {
+                                    existingPI.ResidenceContactNo = p.ResidenceContactNo ?? existingPI.ResidenceContactNo;
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "ResidenceContactNo", OldValue = oldRes, NewValue = newRes });
+                                }
+
+                                // If DTO includes Email/Mobile in personalInfo, keep PersonalInfo in sync
+                                if (!string.IsNullOrWhiteSpace(p.Email))
+                                    existingPI.Email = p.Email;
+                                if (!string.IsNullOrWhiteSpace(p.MobileNo))
+                                    existingPI.MobileNo = p.MobileNo;
+
+                                _context.PersonalInfo.Update(existingPI);
+                            }
+                            else
+                            {
+                                // create a new PersonalInfo only for contact numbers if provided
+                                if (!string.IsNullOrWhiteSpace(p.WorkContactNo) || !string.IsNullOrWhiteSpace(p.ResidenceContactNo)
+                                    || !string.IsNullOrWhiteSpace(p.Email) || !string.IsNullOrWhiteSpace(p.MobileNo))
+                                {
+                                    var newPI = new PersonalInfo
+                                    {
+                                        RefKey = agent.AgentId,
+                                        RefType = ReferenceType.Agent,
+                                        WorkContactNo = p.WorkContactNo ?? string.Empty,
+                                        ResidenceContactNo = p.ResidenceContactNo ?? string.Empty,
+                                        Email = p.Email,
+                                        MobileNo = p.MobileNo,
+                                        DateOfBirth = p.DateOfBirth == default ? existingPI?.DateOfBirth ?? default : p.DateOfBirth
+                                    };
+                                    await _context.PersonalInfo.AddAsync(newPI);
+
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "WorkContactNo", OldValue = string.Empty, NewValue = p.WorkContactNo ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "ResidenceContactNo", OldValue = string.Empty, NewValue = p.ResidenceContactNo ?? string.Empty });
+                                }
+                            }
+                        }
 
                     break;
 
-                case "official_details":
+                      case "employee_info":
+                    if (!string.IsNullOrWhiteSpace(agentDto.ApplicationDocketNo))
+                        agent.ApplicationDocketNo = agentDto.ApplicationDocketNo;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
-                        agent.AgentCode = agentDto.AgentCode;
+                    if (agentDto.CandidateType.HasValue)
+                        agent.CandidateType = agentDto.CandidateType;
 
                     if (agentDto.AgentType.HasValue)
                         agent.AgentType = agentDto.AgentType;
 
+                    if (!string.IsNullOrWhiteSpace(agentDto.EmployeeCode))
+                        agent.EmployeeCode = agentDto.EmployeeCode;
+
+                    if (agentDto.StartDate.HasValue)
+                        agent.StartDate = agentDto.StartDate;
+
+                    if (agentDto.AppointmentDate.HasValue)
+                        agent.AppointmentDate = agentDto.AppointmentDate;
+
+                    if (agentDto.IncorporationDate.HasValue)
+                        agent.IncorporationDate = agentDto.IncorporationDate;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.AgentTypeCategory))
+                        agent.AgentTypeCat = agentDto.AgentTypeCat;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.AgentClassification))
+                        agent.AgentClass = agentDto.AgentClass;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.CMSAgentType))
+                        agent.CmsAgentType = agentDto.CMSAgentType;
+
                     break;
 
-                default:
-                    return BadRequest("Invalid section name");
-            }
+                      case "financial_details":
+                          agent.PanAadharLinkFlag = agentDto.PanAadharLinkFlag;
+                          agent.Sec206abFlag = agentDto.Sec206abFlag;
+                          if (!string.IsNullOrWhiteSpace(agentDto.TaxStatus))
+                              agent.TaxStatus = agentDto.TaxStatus;
+                          if (!string.IsNullOrWhiteSpace(agentDto.ServiceTaxNo))
+                              agent.ServiceTaxNo = agentDto.ServiceTaxNo;
+                          if (!string.IsNullOrWhiteSpace(agentDto.MaskedPanNumber))
+                              agent.PanNumber = agentDto.MaskedPanNumber;
 
-            agent.ModifiedBy = username;
-            agent.ModifiedDate = DateTime.UtcNow;
 
-            try
-            {
+                        if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
+                        {
+                            // record that bank details section updated
+                            updatedFields.Add(new UpdatedAgentField { FieldName = "financial_details", OldValue = string.Empty, NewValue = "updated" });
+
+                            var b = agentDto.bankAccounts.First();
+                            var existingBank = await _context.BankAccount
+                                .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
+                            if (existingBank != null)
+
+
+                            {
+                                // capture old values
+                                var oldAccountHolder = existingBank.AccountHolderName ?? string.Empty;
+                                var oldAccountNumber = existingBank.AccountNumber ?? string.Empty;
+                                var oldIFSC = existingBank.IFSC ?? string.Empty;
+                                var oldMICR = existingBank.MICR ?? string.Empty;
+                                var oldBankName = existingBank.BankName ?? string.Empty;
+                                var oldBranchName = existingBank.BranchName ?? string.Empty;
+                                var oldAccountType = existingBank.AccountType.ToString();
+                                var oldActiveSince = existingBank.ActiveSince?.ToString("o") ?? string.Empty;
+                                var oldFactoringHouse = existingBank.FactoringHouse ?? string.Empty;
+                                var oldPrefPayment = existingBank.PreferredPaymentMode.ToString();
+
+                                // apply updates
+                                existingBank.AccountHolderName = b.AccountHolderName ?? existingBank.AccountHolderName;
+                                existingBank.AccountNumber = b.AccountNumber ?? existingBank.AccountNumber;
+                                existingBank.IFSC = b.IFSC ?? existingBank.IFSC;
+                                existingBank.MICR = b.MICR ?? existingBank.MICR;
+                                existingBank.BankName = b.BankName ?? existingBank.BankName;
+                                existingBank.BranchName = b.BranchName ?? existingBank.BranchName;
+                                existingBank.AccountType = b.AccountType != 0 ? b.AccountType : existingBank.AccountType;
+                                existingBank.ActiveSince = b.ActiveSince ?? existingBank.ActiveSince;
+                                existingBank.FactoringHouse = b.FactoringHouse ?? existingBank.FactoringHouse;
+                                existingBank.PreferredPaymentMode = b.PreferredPaymentMode;
+                                _context.BankAccount.Update(existingBank);
+
+                                // record field-level changes for bank account
+                                void AddIfChanged(string fieldName, string oldV, string newV)
+                                {
+                                    if ((oldV ?? string.Empty) != (newV ?? string.Empty))
+                                    {
+                                        updatedFields.Add(new UpdatedAgentField { FieldName = fieldName, OldValue = oldV ?? string.Empty, NewValue = newV ?? string.Empty });
+                                    }
+                                }
+
+                                AddIfChanged("AccountHolderName", oldAccountHolder, existingBank.AccountHolderName);
+                                AddIfChanged("AccountNumber", oldAccountNumber, existingBank.AccountNumber);
+                                AddIfChanged("IFSC", oldIFSC, existingBank.IFSC);
+                                AddIfChanged("MICR", oldMICR, existingBank.MICR);
+                                AddIfChanged("BankName", oldBankName, existingBank.BankName);
+                                AddIfChanged("BranchName", oldBranchName, existingBank.BranchName);
+                                AddIfChanged("AccountType", oldAccountType, existingBank.AccountType.ToString());
+                                AddIfChanged("ActiveSince", oldActiveSince, existingBank.ActiveSince?.ToString("o") ?? string.Empty);
+                                AddIfChanged("FactoringHouse", oldFactoringHouse, existingBank.FactoringHouse);
+                                AddIfChanged("PreferredPaymentMode", oldPrefPayment, existingBank.PreferredPaymentMode.ToString());
+                            }
+                            else
+                            {
+                                var newBank = new BankAccount
+                                {
+                                    RefKey = agent.AgentId,
+                                    RefType = ReferenceType.Agent,
+                                    AccountHolderName = b.AccountHolderName ?? (agent.FirstName + " " + agent.LastName)?.Trim(),
+                                    AccountNumber = b.AccountNumber ?? string.Empty,
+                                    IFSC = b.IFSC ?? string.Empty,
+                                    MICR = b.MICR,
+                                    BankName = b.BankName,
+                                    BranchName = b.BranchName,
+                                    AccountType = b.AccountType != 0 ? b.AccountType : 1,
+                                    ActiveSince = b.ActiveSince ?? DateTime.Now,
+                                    FactoringHouse = b.FactoringHouse,
+                                    PreferredPaymentMode = b.PreferredPaymentMode
+                                };
+                                await _context.BankAccount.AddAsync(newBank);
+
+                                // record created bank account fields
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "AccountHolderName", OldValue = string.Empty, NewValue = newBank.AccountHolderName ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "AccountNumber", OldValue = string.Empty, NewValue = newBank.AccountNumber ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "IFSC", OldValue = string.Empty, NewValue = newBank.IFSC ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "MICR", OldValue = string.Empty, NewValue = newBank.MICR ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "BankName", OldValue = string.Empty, NewValue = newBank.BankName ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "BranchName", OldValue = string.Empty, NewValue = newBank.BranchName ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "AccountType", OldValue = string.Empty, NewValue = newBank.AccountType.ToString() });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "ActiveSince", OldValue = string.Empty, NewValue = newBank.ActiveSince?.ToString("o") ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "FactoringHouse", OldValue = string.Empty, NewValue = newBank.FactoringHouse ?? string.Empty });
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "PreferredPaymentMode", OldValue = string.Empty, NewValue = newBank.PreferredPaymentMode.ToString() });
+                            }
+                        }
+                        break;
+
+                      case "other_personal_details":
+                    {
+                        // 1) Agent-level fields come from AgentDto
+                        if (agentDto.MaritalStatus.HasValue)
+                            agent.MaritalStatus = agentDto.MaritalStatus;
+
+                        if (agentDto.Education.HasValue)
+                            agent.Education = agentDto.Education;
+
+                        if (agentDto.Occupation.HasValue)
+                            agent.Occupation = agentDto.Occupation;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.URN))
+                            agent.Urn = agentDto.URN;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.AdditionalComment))
+                            agent.AdditionalComment = agentDto.AdditionalComment;
+
+                        // 2) PersonalInfo fields come from agentDto.personalInfo[0]
+                        if (agentDto.personalInfo != null && agentDto.personalInfo.Any())
+                        {
+                            updatedFields.Add(new UpdatedAgentField { FieldName = "personalInfo", OldValue = string.Empty, NewValue = "updated" });
+
+                            var p = agentDto.personalInfo.First();
+                            var existingPI = await _context.PersonalInfo
+                                .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
+
+                            if (existingPI != null)
+                            {
+                                if (p.DateOfBirth != default) existingPI.DateOfBirth = p.DateOfBirth;
+                                existingPI.WorkProfile = p.WorkProfile ?? existingPI.WorkProfile;
+                                existingPI.AnnualIncome = p.AnnualIncome ?? existingPI.AnnualIncome;
+                                existingPI.BloodGroup = p.BloodGroup ?? existingPI.BloodGroup;
+                                existingPI.BirthPlace = p.BirthPlace ?? existingPI.BirthPlace;
+
+                                // keep other personalInfo fields in sync
+                                existingPI.PanNumber = p.PanNumber ?? existingPI.PanNumber;
+                                existingPI.Email = p.Email ?? existingPI.Email;
+                                existingPI.MobileNo = p.MobileNo ?? existingPI.MobileNo;
+                                existingPI.WorkContactNo = p.WorkContactNo ?? existingPI.WorkContactNo;
+                                existingPI.ResidenceContactNo = p.ResidenceContactNo ?? existingPI.ResidenceContactNo;
+                                if (p.MartialStatus != null) existingPI.MartialStatus = p.MartialStatus;
+                                existingPI.EducationCode = p.EducationCode ?? existingPI.EducationCode;
+                                existingPI.EducationLevel = p.EducationLevel ?? existingPI.EducationLevel;
+                                existingPI.WorkExpMonths = p.WorkExpMonths ?? existingPI.WorkExpMonths;
+
+                                _context.PersonalInfo.Update(existingPI);
+                            }
+                            else if (p.DateOfBirth != default)
+                            {
+                                var newPI = new PersonalInfo
+                                {
+                                    RefKey = agent.AgentId,
+                                    RefType = ReferenceType.Agent,
+                                    DateOfBirth = p.DateOfBirth,
+                                    WorkProfile = p.WorkProfile,
+                                    AnnualIncome = p.AnnualIncome,
+                                    BloodGroup = p.BloodGroup,
+                                    BirthPlace = p.BirthPlace,
+                                    PanNumber = p.PanNumber,
+                                    Email = p.Email,
+                                    MobileNo = p.MobileNo,
+                                    WorkContactNo = p.WorkContactNo,
+                                    ResidenceContactNo = p.ResidenceContactNo,
+                                    MartialStatus = p.MartialStatus,
+                                    EducationCode = p.EducationCode,
+                                    EducationLevel = p.EducationLevel,
+                                    WorkExpMonths = p.WorkExpMonths
+                                };
+                                await _context.PersonalInfo.AddAsync(newPI);
+                            }
+                        }
+
+                        // 3) Nominee fields come from agentDto.nominees[0]
+                        if (agentDto.nominees != null && agentDto.nominees.Any())
+                        {
+                            var n = agentDto.nominees.First();
+                            if (n != null)
+                            {
+                                var existingNom = await _context.Nominee.FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
+                                if (existingNom != null)
+                                {
+                                    existingNom.NomineeName = n.NomineeName ?? existingNom.NomineeName;
+                                    existingNom.Relationship = n.Relationship ?? existingNom.Relationship;
+                                    existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
+                                    existingNom.IsActive = n.IsActive;
+                                    _context.Nominee.Update(existingNom);
+                                }
+                            }
+                            else
+                            {
+                                var newNom = new Nominee
+                                {
+                                    RefKey = agent.AgentId,
+                                    RefType = ReferenceType.Agent,
+                                    NomineeName = n.NomineeName,
+                                    Relationship = n.Relationship,
+                                    PercentageShare = n.PercentageShare,
+                                    IsActive = n.IsActive,
+                                    NomineeAge = n.NomineeAge
+                                };
+                                await _context.Nominee.AddAsync(newNom);
+                            }
+                        }
+
+                        break;
+                    }
+
+                    case "address_config":
+                        {
+                            if (agentDto.PermanentAddres != null && agentDto.PermanentAddres.Any())
+                            {
+                                updatedFields.Add(new UpdatedAgentField { FieldName = "address_config", OldValue = string.Empty, NewValue = "updated" });
+
+                                var addrDto = agentDto.PermanentAddres.First();
+
+                                var existingAddress = await _context.Address
+                                    .FirstOrDefaultAsync(x =>
+                                        x.RefKey == agent.AgentId &&
+                                        x.RefType == ReferenceType.Agent);
+
+                                if (existingAddress != null)
+                                {
+
+                                    var oldAddressType = existingAddress.AddressType?.ToString() ?? string.Empty;
+                                    var oldAddressLine1 = existingAddress.AddressLine1 ?? string.Empty;
+                                    var oldAddressLine2 = existingAddress.AddressLine2 ?? string.Empty;
+                                    var oldAddressLine3 = existingAddress.AddressLine3 ?? string.Empty;
+                                    var oldCity = existingAddress.City ?? string.Empty;
+                                    var oldState = existingAddress.State ?? string.Empty;
+                                    var oldCountry = existingAddress.Country ?? string.Empty;
+                                    var oldPin = existingAddress.PIN ?? string.Empty;
+                                    var oldLandmark = existingAddress.Landmark ?? string.Empty;
+
+                                    existingAddress.AddressType = addrDto.AddressType ?? existingAddress.AddressType;
+                                    existingAddress.AddressLine1 = addrDto.AddressLine1 ?? existingAddress.AddressLine1;
+                                    existingAddress.AddressLine2 = addrDto.AddressLine2 ?? existingAddress.AddressLine2;
+                                    existingAddress.AddressLine3 = addrDto.AddressLine3 ?? existingAddress.AddressLine3;
+                                    existingAddress.City = addrDto.City ?? existingAddress.City;
+                                    existingAddress.State = addrDto.State ?? existingAddress.State;
+                                    existingAddress.Country = addrDto.Country ?? existingAddress.Country;
+                                    existingAddress.PIN = addrDto.PIN ?? existingAddress.PIN;
+                                    existingAddress.Landmark = addrDto.Landmark ?? existingAddress.Landmark;
+
+                                    _context.Address.Update(existingAddress);
+
+                                    void AddIfChanged(string fieldName, string oldV, string newV)
+                                    {
+                                        if ((oldV ?? string.Empty) != (newV ?? string.Empty))
+                                        {
+                                            updatedFields.Add(new UpdatedAgentField { FieldName = fieldName, OldValue = oldV ?? string.Empty, NewValue = newV ?? string.Empty });
+                                        }
+                                    }
+
+                                    AddIfChanged("AddressType",oldAddressType,existingAddress.AddressType?.ToString());
+                                    AddIfChanged("AddressLine1", oldAddressLine1, existingAddress.AddressLine1);
+                                    AddIfChanged("AddressLine2", oldAddressLine2, existingAddress.AddressLine2);
+                                    AddIfChanged("AddressLine3", oldAddressLine3, existingAddress.AddressLine3);
+                                    AddIfChanged("City", oldCity, existingAddress.City);
+                                    AddIfChanged("State", oldState, existingAddress.State);
+                                    AddIfChanged("Country", oldCountry, existingAddress.Country);
+                                    AddIfChanged("PIN", oldPin, existingAddress.PIN);
+                                    AddIfChanged("Landmark", oldLandmark, existingAddress.Landmark);
+
+                                }
+                                else
+                                {
+                                    var newAddress = new Address
+                                    {
+                                        RefKey = agent.AgentId,
+                                        RefType = ReferenceType.Agent,
+                                        AddressType = addrDto.AddressType,
+                                        AddressLine1 = addrDto.AddressLine1,
+                                        AddressLine2 = addrDto.AddressLine2,
+                                        AddressLine3 = addrDto.AddressLine3,
+                                        City = addrDto.City,
+                                        State = addrDto.State,
+                                        Country = addrDto.Country,
+                                        PIN = addrDto.PIN,
+                                        Landmark = addrDto.Landmark
+                                    };
+
+                                    await _context.Address.AddAsync(newAddress);
+
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressType", OldValue = string.Empty, NewValue = newAddress.AddressType?.ToString() ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine1", OldValue = string.Empty, NewValue = newAddress.AddressLine1 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine2", OldValue = string.Empty, NewValue = newAddress.AddressLine2 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AddressLine3", OldValue = string.Empty, NewValue = newAddress.AddressLine2 ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "City", OldValue = string.Empty, NewValue = newAddress.City ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "State", OldValue = string.Empty, NewValue = newAddress.State ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "Country", OldValue = string.Empty, NewValue = newAddress.Country ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "PIN", OldValue = string.Empty, NewValue = newAddress.PIN ?? string.Empty });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "Landmark", OldValue = string.Empty, NewValue = newAddress.Landmark ?? string.Empty });
+
+                                }
+                            }
+                            break;
+                        }
+
+                    case "official_details":
+                          if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
+                              agent.AgentCode = agentDto.AgentCode;
+
+                          if (agentDto.AgentType.HasValue)
+                              agent.AgentType = agentDto.AgentType;
+
+                          if (agentDto.AgentTypeCode.HasValue)
+                              agent.AgentTypeCode = agentDto.AgentTypeCode;
+
+                          if (agentDto.AgentSubTypeCode.HasValue)
+                              agent.AgentSubTypeCode = agentDto.AgentSubTypeCode;
+
+                          if (agentDto.AgentClass.HasValue)
+                              agent.AgentClass = agentDto.AgentClass;
+
+                          if (!string.IsNullOrWhiteSpace(agentDto.AgentLevel))
+                              agent.AgentLevel = agentDto.AgentLevel;
+
+                          if (!string.IsNullOrWhiteSpace(agentDto.StaffCode))
+                              agent.StaffCode = agentDto.StaffCode;
+
+                          if (agentDto.SupervisorId.HasValue)
+                              agent.SupervisorId = agentDto.SupervisorId;
+
+                          break;
+
+                      case "license_details":
+                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseNo))
+                        agent.LicenseNo = agentDto.LicenseNo;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseType))
+                        agent.LicenseType = agentDto.LicenseType;
+
+                    if (agentDto.LicenseIssueDate.HasValue)
+                        agent.LicenseIssueDate = agentDto.LicenseIssueDate;
+
+                    if (agentDto.LicenseExpiryDate.HasValue)
+                        agent.LicenseExpiryDate = agentDto.LicenseExpiryDate;
+
+                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseStatus))
+                        agent.LicenseStatus = agentDto.LicenseStatus;
+
+                    // keep boolean in sync if provided
+                    agent.IsLicensed = agentDto.IsLicensed;
+
+                    break;
+
+                      case "bank_details":
+                          // Update Agent.BankAccType if provided
+                          if (agentDto.BankAccType.HasValue)
+                              agent.BankAccType = agentDto.BankAccType;
+
+                          // Upsert bank account record if bank account data provided
+                          if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
+                          {
+                              // record that bank details section updated
+                              updatedFields.Add(new UpdatedAgentField { FieldName = "bank_details", OldValue = string.Empty, NewValue = "updated" });
+
+                              var b = agentDto.bankAccounts.First();
+                              var existingBank = await _context.BankAccount
+                                  .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
+                              if (existingBank != null)
+                              {
+                                  existingBank.AccountHolderName = b.AccountHolderName ?? existingBank.AccountHolderName;
+                                  existingBank.AccountNumber = b.AccountNumber ?? existingBank.AccountNumber;
+                                  existingBank.IFSC = b.IFSC ?? existingBank.IFSC;
+                                  existingBank.MICR = b.MICR ?? existingBank.MICR;
+                                  existingBank.BankName = b.BankName ?? existingBank.BankName;
+                                  existingBank.BranchName = b.BranchName ?? existingBank.BranchName;
+                                  existingBank.AccountType = b.AccountType != 0 ? b.AccountType : existingBank.AccountType;
+                                  existingBank.ActiveSince = b.ActiveSince ?? existingBank.ActiveSince;
+                                  existingBank.FactoringHouse = b.FactoringHouse ?? existingBank.FactoringHouse;
+                                  existingBank.PreferredPaymentMode = b.PreferredPaymentMode;
+                                  _context.BankAccount.Update(existingBank);
+                              }
+                              else
+                              {
+                                  var newBank = new BankAccount
+                                  {
+                                      RefKey = agent.AgentId,
+                                      RefType = ReferenceType.Agent,
+                                      AccountHolderName = b.AccountHolderName ?? (agent.FirstName + " " + agent.LastName)?.Trim(),
+                                      AccountNumber = b.AccountNumber ?? string.Empty,
+                                      IFSC = b.IFSC ?? string.Empty,
+                                      MICR = b.MICR,
+                                      BankName = b.BankName,
+                                      BranchName = b.BranchName,
+                                      AccountType = b.AccountType != 0 ? b.AccountType : 1,
+                                      ActiveSince = b.ActiveSince ?? DateTime.Now,
+                                      FactoringHouse = b.FactoringHouse,
+                                      PreferredPaymentMode = b.PreferredPaymentMode
+                                  };
+                                  await _context.BankAccount.AddAsync(newBank);
+                              }
+                          }
+
+                          break;
+
+                      case "product_details":
+                    // Ulip and product related flags
+                    agent.UlipFlag = agentDto.UlipFlag;
+                    break;
+
+                      case "others_details":
+                    // Miscellaneous fields
+                    agent.IsMigrated = agentDto.IsMigrated;
+                    if (!string.IsNullOrWhiteSpace(agentDto.MainPartnerClientCode))
+                        agent.MainPartnerClientCode = agentDto.MainPartnerClientCode;
+                    if (!string.IsNullOrWhiteSpace(agentDto.AgentMaincodevwEid))
+                        agent.AgentMaincodeVweid = agentDto.AgentMaincodevwEid;
+                    if (agentDto.RegistrationDate.HasValue)
+                        agent.RegistrationDate = agentDto.RegistrationDate;
+                    if (!string.IsNullOrWhiteSpace(agentDto.Vertical))
+                        agent.Vertical = agentDto.Vertical;
+                    break;
+
+                      case "training_details":
+                          if (!string.IsNullOrWhiteSpace(agentDto.TrainingGroupType))
+                              agent.TrainingGroupType = agentDto.TrainingGroupType;
+                          agent.RefresherTrainingCompleted = agentDto.RefresherTrainingCompleted;
+                          break;
+
+                      case "nominees":
+                    if (agentDto.nominees != null && agentDto.nominees.Any())
+                    {
+                        // record that nominees section updated
+                        updatedFields.Add(new UpdatedAgentField { FieldName = "nominees", OldValue = string.Empty, NewValue = "updated" });
+
+                        foreach (var n in agentDto.nominees)
+                        {
+                            if (n.NomineeID != 0)
+                            {
+                                var existingNom = await _context.Nominee.FirstOrDefaultAsync(x => x.NomineeID == n.NomineeID && x.RefKey == agent.AgentId);
+                                if (existingNom != null)
+                                {
+                                    existingNom.NomineeName = n.NomineeName ?? existingNom.NomineeName;
+                                    existingNom.Relationship = n.Relationship ?? existingNom.Relationship;
+                                    existingNom.PercentageShare = n.PercentageShare != 0 ? n.PercentageShare : existingNom.PercentageShare;
+                                    existingNom.IsActive = n.IsActive;
+                                    existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
+                                    _context.Nominee.Update(existingNom);
+                                }
+                            }
+                            else
+                            {
+                                var newNom = new Nominee
+                                {
+                                    RefKey = agent.AgentId,
+                                    RefType = ReferenceType.Agent,
+                                    NomineeName = n.NomineeName,
+                                    Relationship = n.Relationship,
+                                    PercentageShare = n.PercentageShare,
+                                    IsActive = n.IsActive,
+                                    NomineeAge = n.NomineeAge
+                                };
+                                await _context.Nominee.AddAsync(newNom);
+                            }
+                        }
+                    }
+                    break;
+
+                      case "branch_details":
+                    if (!string.IsNullOrWhiteSpace(agentDto.BranchCode))
+                        agent.BranchCode = agentDto.BranchCode;
+                    if (!string.IsNullOrWhiteSpace(agentDto.BranchName))
+                        agent.BranchName = agentDto.BranchName;
+                    break;
+
+                      case "organisation_details":
+                    if (agentDto.ConfirmationDate.HasValue)
+                        agent.ConfirmationDate = agentDto.ConfirmationDate;
+                    if (agentDto.IncrementDate.HasValue)
+                        agent.IncrementDate = agentDto.IncrementDate;
+                    if (agentDto.LastPromotionDate.HasValue)
+                        agent.LastPromotionDate = agentDto.LastPromotionDate;
+                    if (agentDto.HRDoj.HasValue)
+                        agent.HrDoj = agentDto.HRDoj;
+                    if (agentDto.LastWorkingDate.HasValue)
+                        agent.LastWorkingDate = agentDto.LastWorkingDate;
+                    break;
+
+                      case "other_training":
+                    if (agentDto.Ic36TrngCompletionDate.HasValue)
+                        agent.Ic36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
+                    if (agentDto.STrngCompletionDate.HasValue)
+                        agent.STrngCompletionDate = agentDto.STrngCompletionDate;
+                    if (agentDto.FgRockstarTrainingDate.HasValue)
+                        agent.FgRockstarTrainingDate = agentDto.FgRockstarTrainingDate;
+                    if (agentDto.FgValueTrngDate.HasValue)
+                        agent.FgValueTrngDate = agentDto.FgValueTrngDate;
+                    if (agentDto.HSecPolicyTrngDate.HasValue)
+                        agent.HSecPolicyTrngDate = agentDto.HSecPolicyTrngDate;
+                    if (agentDto.ItSecPolicyTrngDate.HasValue)
+                        agent.ItSecPolicyTrngDate = agentDto.ItSecPolicyTrngDate;
+                    if (agentDto.NpsTrngCompletionDate.HasValue)
+                        agent.NpsTrngCompletionDate = agentDto.NpsTrngCompletionDate;
+                    if (agentDto.WhistleBlowerTrngDate.HasValue)
+                        agent.WhistleBlowerTrngDate = agentDto.WhistleBlowerTrngDate;
+                    if (agentDto.GovPolicyTrngDate.HasValue)
+                        agent.GovPolicyTrngDate = agentDto.GovPolicyTrngDate;
+                    if (agentDto.InductionTrngDate.HasValue)
+                        agent.InductionTrngDate = agentDto.InductionTrngDate;
+                    break;
+
+                      default:
+                          return BadRequest("Invalid section name");
+                  }
+
+                agent.ModifiedBy = username;
+                agent.ModifiedDate = DateTime.UtcNow;
+
+                // Compare snapshot and record scalar changes
+                foreach (var kv in snapshot)
+                {
+                    var propName = kv.Key;
+                    var oldVal = kv.Value;
+                    object? newVal = null;
+                    try
+                    {
+                        var pinfo = agent.GetType().GetProperty(propName);
+                        if (pinfo != null)
+                            newVal = pinfo.GetValue(agent);
+                    }
+                    catch { }
+
+                    RecordChange(propName, oldVal, newVal);
+                }
+
                 await _context.SaveChangesAsync();
 
-                return Ok(new
-                {
-                    message = $"{sectionName} updated successfully",
-                    agentId = agent.AgentId
-                });
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hmsResponse.responseBody.updatedAgentSectionName = sectionName;
+                hmsResponse.responseBody.updatedAgentFields = updatedFields;
+                return Ok(hmsResponse);
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -786,10 +1491,9 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating agent {AgentId}", id);
-                return StatusCode(500, "Internal server error");
+                _logger.LogError(ex, "Error updating agent {AgentId}",id);
+                return StatusCode(500, "Internal Server Error");
             }
         }
-
     }
 }

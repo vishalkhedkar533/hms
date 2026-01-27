@@ -106,3 +106,30 @@ VALUES(2, 'PREMIUM_COLLECTED_TYPE', 5, 'Premium Reversal', null, true);
 insert into hms.errorMaster (error_id,area,error_msg) values (1401, 'CommissionConstants', 'Commission Config Not Found.' );
 
 insert into hms.errorMaster (error_id,area,error_msg) values (1501, 'JobConstants', 'Job Not Found.' );
+
+INSERT INTO hmsmaster.keyvalueentries
+(orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES
+-- LICENSE TYPE
+(2, 'LICENSE_TYPE', 1, 'Permanent',        0, true),
+(2, 'LICENSE_TYPE', 2, 'Temporary',        0, true),
+(2, 'LICENSE_TYPE', 3, 'Provisional',      0, true),
+(2, 'LICENSE_TYPE', 4, 'Contract',         0, true),
+
+-- LICENSE STATUS
+(2, 'LICENSE_STATUS', 1, 'Active',         0, true),
+(2, 'LICENSE_STATUS', 2, 'Inactive',       0, true),
+(2, 'LICENSE_STATUS', 3, 'Expired',        0, true),
+(2, 'LICENSE_STATUS', 4, 'Suspended',      0, true),
+
+-- VERTICAL
+(2, 'VERTICAL', 1, 'Healthcare',            0, true),
+(2, 'VERTICAL', 2, 'Pharmaceutical',        0, true),
+(2, 'VERTICAL', 3, 'Medical Devices',       0, true),
+(2, 'VERTICAL', 4, 'Wellness',               0, true),
+
+-- TRAINING GROUP
+(2, 'TRAINING_GROUP', 1, 'General',          0, true),
+(2, 'TRAINING_GROUP', 2, 'Advanced',         0, true),
+(2, 'TRAINING_GROUP', 3, 'Compliance',       0, true),
+(2, 'TRAINING_GROUP', 4, 'Technical',        0, true);

@@ -1307,58 +1307,119 @@ namespace HMS.Controllers
                             agent.Vertical = agentDto.Vertical;
                         break;
 
-                      case "bank_details":
-                          // Update Agent.BankAccType if provided
-                          if (agentDto.BankAccType.HasValue)
-                              agent.BankAccType = agentDto.BankAccType;
+                    case "bank_details":
+                        {
+                            updatedFields.Add(new UpdatedAgentField
+                            {
+                                FieldName = "bank_details",
+                                OldValue = string.Empty,
+                                NewValue = "updated"
+                            });
 
-                          // Upsert bank account record if bank account data provided
-                          if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
-                          {
-                              // record that bank details section updated
-                              updatedFields.Add(new UpdatedAgentField { FieldName = "bank_details", OldValue = string.Empty, NewValue = "updated" });
+                            if (agentDto.BankAccType.HasValue)
+                            {
+                                var oldBankAccType = agent.BankAccType?.ToString() ?? string.Empty;
+                                agent.BankAccType = agentDto.BankAccType;
+                                RecordChange("BankAccType", oldBankAccType, agent.BankAccType?.ToString());
+                            }
 
-                              var b = agentDto.bankAccounts.First();
-                              var existingBank = await _context.BankAccount
-                                  .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
-                              if (existingBank != null)
-                              {
-                                  existingBank.AccountHolderName = b.AccountHolderName ?? existingBank.AccountHolderName;
-                                  existingBank.AccountNumber = b.AccountNumber ?? existingBank.AccountNumber;
-                                  existingBank.IFSC = b.IFSC ?? existingBank.IFSC;
-                                  existingBank.MICR = b.MICR ?? existingBank.MICR;
-                                  existingBank.BankName = b.BankName ?? existingBank.BankName;
-                                  existingBank.BranchName = b.BranchName ?? existingBank.BranchName;
-                                  existingBank.AccountType = b.AccountType != 0 ? b.AccountType : existingBank.AccountType;
-                                  existingBank.ActiveSince = b.ActiveSince ?? existingBank.ActiveSince;
-                                  existingBank.FactoringHouse = b.FactoringHouse ?? existingBank.FactoringHouse;
-                                  existingBank.PreferredPaymentMode = b.PreferredPaymentMode;
-                                  _context.BankAccount.Update(existingBank);
-                              }
-                              else
-                              {
-                                  var newBank = new BankAccount
-                                  {
-                                      RefKey = agent.AgentId,
-                                      RefType = ReferenceType.Agent,
-                                      AccountHolderName = b.AccountHolderName ?? (agent.FirstName + " " + agent.LastName)?.Trim(),
-                                      AccountNumber = b.AccountNumber ?? string.Empty,
-                                      IFSC = b.IFSC ?? string.Empty,
-                                      MICR = b.MICR,
-                                      BankName = b.BankName,
-                                      BranchName = b.BranchName,
-                                      AccountType = b.AccountType != 0 ? b.AccountType : 1,
-                                      ActiveSince = b.ActiveSince ?? DateTime.Now,
-                                      FactoringHouse = b.FactoringHouse,
-                                      PreferredPaymentMode = b.PreferredPaymentMode
-                                  };
-                                  await _context.BankAccount.AddAsync(newBank);
-                              }
-                          }
+                            if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
+                            {
+                                var b = agentDto.bankAccounts.First();
 
-                          break;
+                                var existingBank = await _context.BankAccount
+                                    .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
 
-                      case "other_training":
+                                if (existingBank != null)
+                                {
+                                    // Capture old values
+                                    var oldAccountHolder = existingBank.AccountHolderName ?? string.Empty;
+                                    var oldAccountNumber = existingBank.AccountNumber ?? string.Empty;
+                                    var oldIFSC = existingBank.IFSC ?? string.Empty;
+                                    var oldMICR = existingBank.MICR ?? string.Empty;
+                                    var oldBankName = existingBank.BankName ?? string.Empty;
+                                    var oldBranchName = existingBank.BranchName ?? string.Empty;
+                                    var oldAccountType = existingBank.AccountType.ToString();
+                                    var oldFactoringHouse = existingBank.FactoringHouse ?? string.Empty;
+                                    var oldPrefPayment = existingBank.PreferredPaymentMode.ToString();
+
+                                    // Apply updates
+                                    existingBank.AccountHolderName = b.AccountHolderName ?? existingBank.AccountHolderName;
+                                    existingBank.AccountNumber = b.AccountNumber ?? existingBank.AccountNumber;
+                                    existingBank.IFSC = b.IFSC ?? existingBank.IFSC;
+                                    existingBank.MICR = b.MICR ?? existingBank.MICR;
+                                    existingBank.BankName = b.BankName ?? existingBank.BankName;
+                                    existingBank.BranchName = b.BranchName ?? existingBank.BranchName;
+                                    existingBank.AccountType = b.AccountType != 0 ? b.AccountType : existingBank.AccountType;
+                                    existingBank.FactoringHouse = b.FactoringHouse ?? existingBank.FactoringHouse;
+                                    existingBank.PreferredPaymentMode = b.PreferredPaymentMode;
+                                    existingBank.ActiveSince =existingBank.ActiveSince.HasValue? DateTime.SpecifyKind(existingBank.ActiveSince.Value, DateTimeKind.Utc): DateTime.UtcNow;
+
+                                    _context.BankAccount.Update(existingBank);
+
+                                    // Record field-level changes
+                                    void AddIfChanged(string field, string oldV, string newV)
+                                    {
+                                        if ((oldV ?? string.Empty) != (newV ?? string.Empty))
+                                        {
+                                            updatedFields.Add(new UpdatedAgentField
+                                            {
+                                                FieldName = field,
+                                                OldValue = oldV ?? string.Empty,
+                                                NewValue = newV ?? string.Empty
+                                            });
+                                        }
+                                    }
+
+                                    AddIfChanged("AccountHolderName", oldAccountHolder, existingBank.AccountHolderName);
+                                    AddIfChanged("AccountNumber", oldAccountNumber, existingBank.AccountNumber);
+                                    AddIfChanged("IFSC", oldIFSC, existingBank.IFSC);
+                                    AddIfChanged("MICR", oldMICR, existingBank.MICR);
+                                    AddIfChanged("BankName", oldBankName, existingBank.BankName);
+                                    AddIfChanged("BranchName", oldBranchName, existingBank.BranchName);
+                                    AddIfChanged("AccountType", oldAccountType, existingBank.AccountType.ToString());
+                                    AddIfChanged("FactoringHouse", oldFactoringHouse, existingBank.FactoringHouse);
+                                    AddIfChanged("PreferredPaymentMode", oldPrefPayment, existingBank.PreferredPaymentMode.ToString());
+                                }
+                                else
+                                {
+                                    // Create new bank account
+                                    var newBank = new BankAccount
+                                    {
+                                        RefKey = agent.AgentId,
+                                        RefType = ReferenceType.Agent,
+                                        AccountHolderName = b.AccountHolderName ?? $"{agent.FirstName} {agent.LastName}".Trim(),
+                                        AccountNumber = b.AccountNumber ?? string.Empty,
+                                        IFSC = b.IFSC ?? string.Empty,
+                                        MICR = b.MICR,
+                                        BankName = b.BankName,
+                                        BranchName = b.BranchName,
+                                        AccountType = b.AccountType != 0 ? b.AccountType : 1,
+                                        FactoringHouse = b.FactoringHouse,
+                                        PreferredPaymentMode = b.PreferredPaymentMode,
+                                        ActiveSince = DateTime.UtcNow,
+                                    };
+
+                                    await _context.BankAccount.AddAsync(newBank);
+
+                                    // Record created fields
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AccountHolderName", OldValue = "", NewValue = newBank.AccountHolderName ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AccountNumber", OldValue = "", NewValue = newBank.AccountNumber ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "IFSC", OldValue = "", NewValue = newBank.IFSC ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "MICR", OldValue = "", NewValue = newBank.MICR ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "BankName", OldValue = "", NewValue = newBank.BankName ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "BranchName", OldValue = "", NewValue = newBank.BranchName ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AccountType", OldValue = "", NewValue = newBank.AccountType.ToString() });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "FactoringHouse", OldValue = "", NewValue = newBank.FactoringHouse ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "PreferredPaymentMode", OldValue = "", NewValue = newBank.PreferredPaymentMode.ToString() });
+                                }
+                            }
+
+                            break;
+                        }
+
+
+                    case "other_training":
                     if (agentDto.Ic36TrngCompletionDate.HasValue)
                         agent.Ic36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
 
@@ -1390,9 +1451,9 @@ namespace HMS.Controllers
                         agent.InductionTrngDate = agentDto.InductionTrngDate;
                     break;
 
-                       //Below Case Not implemented as per discussion 
-
-                      case "official_details":
+                    //Below Case Not implemented as per discussion 
+                    #region Not Implemented
+                    case "official_details":
                         if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
                             agent.AgentCode = agentDto.AgentCode;
 
@@ -1477,6 +1538,7 @@ namespace HMS.Controllers
                         if (agentDto.LastWorkingDate.HasValue)
                             agent.LastWorkingDate = agentDto.LastWorkingDate;
                         break;
+                    #endregion
                     default:
                           return BadRequest("Invalid section name");
                   }

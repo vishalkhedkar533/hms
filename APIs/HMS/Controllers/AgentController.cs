@@ -14,6 +14,7 @@ using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using NuGet.Packaging;
 
 namespace HMS.Controllers
 {
@@ -939,8 +940,8 @@ namespace HMS.Controllers
                     if (!string.IsNullOrWhiteSpace(agentDto.AgentTypeCategory))
                         agent.AgentTypeCat = agentDto.AgentTypeCat;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.AgentClassification))
-                        agent.AgentClass = agentDto.AgentClass;
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass;
 
                     if (!string.IsNullOrWhiteSpace(agentDto.CMSAgentType))
                         agent.CmsAgentType = agentDto.CMSAgentType;
@@ -1157,7 +1158,7 @@ namespace HMS.Controllers
                         break;
                     }
 
-                    case "address_config":
+                      case "address_config":
                         {
                             if (agentDto.PermanentAddres != null && agentDto.PermanentAddres.Any())
                             {
@@ -1248,53 +1249,63 @@ namespace HMS.Controllers
                             break;
                         }
 
-                    case "official_details":
-                          if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
-                              agent.AgentCode = agentDto.AgentCode;
-
-                          if (agentDto.AgentType.HasValue)
-                              agent.AgentType = agentDto.AgentType;
-
-                          if (agentDto.AgentTypeCode.HasValue)
-                              agent.AgentTypeCode = agentDto.AgentTypeCode;
-
-                          if (agentDto.AgentSubTypeCode.HasValue)
-                              agent.AgentSubTypeCode = agentDto.AgentSubTypeCode;
-
-                          if (agentDto.AgentClass.HasValue)
-                              agent.AgentClass = agentDto.AgentClass;
-
-                          if (!string.IsNullOrWhiteSpace(agentDto.AgentLevel))
-                              agent.AgentLevel = agentDto.AgentLevel;
-
-                          if (!string.IsNullOrWhiteSpace(agentDto.StaffCode))
-                              agent.StaffCode = agentDto.StaffCode;
-
-                          if (agentDto.SupervisorId.HasValue)
-                              agent.SupervisorId = agentDto.SupervisorId;
-
-                          break;
-
                       case "license_details":
-                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseNo))
-                        agent.LicenseNo = agentDto.LicenseNo;
+                        if (!string.IsNullOrWhiteSpace(agentDto.CnctPersonName))
+                        agent.CnctPersonName = agentDto.CnctPersonName;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseType))
-                        agent.LicenseType = agentDto.LicenseType;
+                        if (agentDto.AgentType.HasValue)
+                            agent.AgentType = agentDto.AgentType;
 
-                    if (agentDto.LicenseIssueDate.HasValue)
-                        agent.LicenseIssueDate = agentDto.LicenseIssueDate;
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass;
 
-                    if (agentDto.LicenseExpiryDate.HasValue)
-                        agent.LicenseExpiryDate = agentDto.LicenseExpiryDate;
+                        if (!string.IsNullOrWhiteSpace(agentDto.LicenseStatus))
+                            agent.LicenseStatus = agentDto.LicenseStatus;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseStatus))
-                        agent.LicenseStatus = agentDto.LicenseStatus;
+                        if (agentDto.LicenseExpiryDate.HasValue)
+                            agent.LicenseExpiryDate = agentDto.LicenseExpiryDate;
 
-                    // keep boolean in sync if provided
-                    agent.IsLicensed = agentDto.IsLicensed;
+                        if (agentDto.LicenseIssueDate.HasValue)
+                            agent.LicenseIssueDate = agentDto.LicenseIssueDate;
+
+                        if(!string.IsNullOrWhiteSpace(agentDto.LicenseType))
+                            agent.LicenseType = agentDto.LicenseType;
+
+                        if(!string.IsNullOrWhiteSpace(agentDto.LicenseNo))
+                            agent.LicenseNo = agentDto.LicenseNo;
+
+                        agent.IsLicensed = agentDto.IsLicensed;
 
                     break;
+
+                      case "training_details":
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.TrainingGroupType))
+                            agent.TrainingGroupType = agentDto.TrainingGroupType;
+
+                        agent.RefresherTrainingCompleted = agentDto.RefresherTrainingCompleted;
+                        break;
+
+                      case "product_details":
+                        agent.UlipFlag = agentDto.UlipFlag;
+                        break;
+
+                      case "others_details":
+
+                        agent.IsMigrated = agentDto.IsMigrated;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.MainPartnerClientCode))
+                            agent.MainPartnerClientCode = agentDto.MainPartnerClientCode;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.AgentMaincodevwEid))
+                            agent.AgentMaincodeVweid = agentDto.AgentMaincodevwEid;
+
+                        if (agentDto.RegistrationDate.HasValue)
+                            agent.RegistrationDate = agentDto.RegistrationDate;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.Vertical))
+                            agent.Vertical = agentDto.Vertical;
+                        break;
 
                       case "bank_details":
                           // Update Agent.BankAccType if provided
@@ -1347,120 +1358,132 @@ namespace HMS.Controllers
 
                           break;
 
-                      case "product_details":
-                    // Ulip and product related flags
-                    agent.UlipFlag = agentDto.UlipFlag;
-                    break;
-
-                      case "others_details":
-                    // Miscellaneous fields
-                    agent.IsMigrated = agentDto.IsMigrated;
-                    if (!string.IsNullOrWhiteSpace(agentDto.MainPartnerClientCode))
-                        agent.MainPartnerClientCode = agentDto.MainPartnerClientCode;
-                    if (!string.IsNullOrWhiteSpace(agentDto.AgentMaincodevwEid))
-                        agent.AgentMaincodeVweid = agentDto.AgentMaincodevwEid;
-                    if (agentDto.RegistrationDate.HasValue)
-                        agent.RegistrationDate = agentDto.RegistrationDate;
-                    if (!string.IsNullOrWhiteSpace(agentDto.Vertical))
-                        agent.Vertical = agentDto.Vertical;
-                    break;
-
-                      case "training_details":
-                          if (!string.IsNullOrWhiteSpace(agentDto.TrainingGroupType))
-                              agent.TrainingGroupType = agentDto.TrainingGroupType;
-                          agent.RefresherTrainingCompleted = agentDto.RefresherTrainingCompleted;
-                          break;
-
-                      case "nominees":
-                    if (agentDto.nominees != null && agentDto.nominees.Any())
-                    {
-                        // record that nominees section updated
-                        updatedFields.Add(new UpdatedAgentField { FieldName = "nominees", OldValue = string.Empty, NewValue = "updated" });
-
-                        foreach (var n in agentDto.nominees)
-                        {
-                            if (n.NomineeID != 0)
-                            {
-                                var existingNom = await _context.Nominee.FirstOrDefaultAsync(x => x.NomineeID == n.NomineeID && x.RefKey == agent.AgentId);
-                                if (existingNom != null)
-                                {
-                                    existingNom.NomineeName = n.NomineeName ?? existingNom.NomineeName;
-                                    existingNom.Relationship = n.Relationship ?? existingNom.Relationship;
-                                    existingNom.PercentageShare = n.PercentageShare != 0 ? n.PercentageShare : existingNom.PercentageShare;
-                                    existingNom.IsActive = n.IsActive;
-                                    existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
-                                    _context.Nominee.Update(existingNom);
-                                }
-                            }
-                            else
-                            {
-                                var newNom = new Nominee
-                                {
-                                    RefKey = agent.AgentId,
-                                    RefType = ReferenceType.Agent,
-                                    NomineeName = n.NomineeName,
-                                    Relationship = n.Relationship,
-                                    PercentageShare = n.PercentageShare,
-                                    IsActive = n.IsActive,
-                                    NomineeAge = n.NomineeAge
-                                };
-                                await _context.Nominee.AddAsync(newNom);
-                            }
-                        }
-                    }
-                    break;
-
-                      case "branch_details":
-                    if (!string.IsNullOrWhiteSpace(agentDto.BranchCode))
-                        agent.BranchCode = agentDto.BranchCode;
-                    if (!string.IsNullOrWhiteSpace(agentDto.BranchName))
-                        agent.BranchName = agentDto.BranchName;
-                    break;
-
-                      case "organisation_details":
-                    if (agentDto.ConfirmationDate.HasValue)
-                        agent.ConfirmationDate = agentDto.ConfirmationDate;
-                    if (agentDto.IncrementDate.HasValue)
-                        agent.IncrementDate = agentDto.IncrementDate;
-                    if (agentDto.LastPromotionDate.HasValue)
-                        agent.LastPromotionDate = agentDto.LastPromotionDate;
-                    if (agentDto.HRDoj.HasValue)
-                        agent.HrDoj = agentDto.HRDoj;
-                    if (agentDto.LastWorkingDate.HasValue)
-                        agent.LastWorkingDate = agentDto.LastWorkingDate;
-                    break;
-
                       case "other_training":
                     if (agentDto.Ic36TrngCompletionDate.HasValue)
                         agent.Ic36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
+
                     if (agentDto.STrngCompletionDate.HasValue)
                         agent.STrngCompletionDate = agentDto.STrngCompletionDate;
+
                     if (agentDto.FgRockstarTrainingDate.HasValue)
                         agent.FgRockstarTrainingDate = agentDto.FgRockstarTrainingDate;
+
                     if (agentDto.FgValueTrngDate.HasValue)
                         agent.FgValueTrngDate = agentDto.FgValueTrngDate;
+
                     if (agentDto.HSecPolicyTrngDate.HasValue)
                         agent.HSecPolicyTrngDate = agentDto.HSecPolicyTrngDate;
+
                     if (agentDto.ItSecPolicyTrngDate.HasValue)
                         agent.ItSecPolicyTrngDate = agentDto.ItSecPolicyTrngDate;
+
                     if (agentDto.NpsTrngCompletionDate.HasValue)
                         agent.NpsTrngCompletionDate = agentDto.NpsTrngCompletionDate;
+
                     if (agentDto.WhistleBlowerTrngDate.HasValue)
                         agent.WhistleBlowerTrngDate = agentDto.WhistleBlowerTrngDate;
+
                     if (agentDto.GovPolicyTrngDate.HasValue)
                         agent.GovPolicyTrngDate = agentDto.GovPolicyTrngDate;
+
                     if (agentDto.InductionTrngDate.HasValue)
                         agent.InductionTrngDate = agentDto.InductionTrngDate;
                     break;
 
-                      default:
+                       //Below Case Not implemented as per discussion 
+
+                      case "official_details":
+                        if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
+                            agent.AgentCode = agentDto.AgentCode;
+
+                        if (agentDto.AgentType.HasValue)
+                            agent.AgentType = agentDto.AgentType;
+
+                        if (agentDto.AgentTypeCode.HasValue)
+                            agent.AgentTypeCode = agentDto.AgentTypeCode;
+
+                        if (agentDto.AgentSubTypeCode.HasValue)
+                            agent.AgentSubTypeCode = agentDto.AgentSubTypeCode;
+
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.AgentLevel))
+                            agent.AgentLevel = agentDto.AgentLevel;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.StaffCode))
+                            agent.StaffCode = agentDto.StaffCode;
+
+                        if (agentDto.SupervisorId.HasValue)
+                            agent.SupervisorId = agentDto.SupervisorId;
+
+                        break;
+                      
+                      case "nominees":
+                        if (agentDto.nominees != null && agentDto.nominees.Any())
+                        {
+                            // record that nominees section updated
+                            updatedFields.Add(new UpdatedAgentField { FieldName = "nominees", OldValue = string.Empty, NewValue = "updated" });
+
+                            foreach (var n in agentDto.nominees)
+                            {
+                                if (n.NomineeID != 0)
+                                {
+                                    var existingNom = await _context.Nominee.FirstOrDefaultAsync(x => x.NomineeID == n.NomineeID && x.RefKey == agent.AgentId);
+                                    if (existingNom != null)
+                                    {
+                                        existingNom.NomineeName = n.NomineeName ?? existingNom.NomineeName;
+                                        existingNom.Relationship = n.Relationship ?? existingNom.Relationship;
+                                        existingNom.PercentageShare = n.PercentageShare != 0 ? n.PercentageShare : existingNom.PercentageShare;
+                                        existingNom.IsActive = n.IsActive;
+                                        existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
+                                        _context.Nominee.Update(existingNom);
+                                    }
+                                }
+                                else
+                                {
+                                    var newNom = new Nominee
+                                    {
+                                        RefKey = agent.AgentId,
+                                        RefType = ReferenceType.Agent,
+                                        NomineeName = n.NomineeName,
+                                        Relationship = n.Relationship,
+                                        PercentageShare = n.PercentageShare,
+                                        IsActive = n.IsActive,
+                                        NomineeAge = n.NomineeAge
+                                    };
+                                    await _context.Nominee.AddAsync(newNom);
+                                }
+                            }
+                        }
+                        break;
+                      
+                      case "branch_details":
+                        if (!string.IsNullOrWhiteSpace(agentDto.BranchCode))
+                            agent.BranchCode = agentDto.BranchCode;
+                        if (!string.IsNullOrWhiteSpace(agentDto.BranchName))
+                            agent.BranchName = agentDto.BranchName;
+                        break;
+                      
+                      case "organisation_details":
+                        if (agentDto.ConfirmationDate.HasValue)
+                            agent.ConfirmationDate = agentDto.ConfirmationDate;
+                        if (agentDto.IncrementDate.HasValue)
+                            agent.IncrementDate = agentDto.IncrementDate;
+                        if (agentDto.LastPromotionDate.HasValue)
+                            agent.LastPromotionDate = agentDto.LastPromotionDate;
+                        if (agentDto.HRDoj.HasValue)
+                            agent.HrDoj = agentDto.HRDoj;
+                        if (agentDto.LastWorkingDate.HasValue)
+                            agent.LastWorkingDate = agentDto.LastWorkingDate;
+                        break;
+                    default:
                           return BadRequest("Invalid section name");
                   }
 
                 agent.ModifiedBy = username;
                 agent.ModifiedDate = DateTime.UtcNow;
 
-                // Compare snapshot and record scalar changes
                 foreach (var kv in snapshot)
                 {
                     var propName = kv.Key;

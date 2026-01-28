@@ -729,7 +729,6 @@ namespace HMS.Controllers
 
                 var updatedFields = new List<UpdatedAgentField>();
 
-                // Helper to record changes
                 void RecordChange(string field, object? oldVal, object? newVal)
                 {
                     var oldS = oldVal == null ? string.Empty : (oldVal is DateTime odt ? odt.ToString("o") : oldVal.ToString());
@@ -740,7 +739,6 @@ namespace HMS.Controllers
                     }
                 }
 
-                // Snapshot of scalar fields to compare after modification
                 var snapshot = new Dictionary<string, object?>()
                 {
                     { "Title", agent.Title },
@@ -764,6 +762,7 @@ namespace HMS.Controllers
                     { "AgentTypeCode", agent.AgentTypeCode },
                     { "AgentSubTypeCode", agent.AgentSubTypeCode },
                     { "AgentClass", agent.AgentClass },
+                    { "AgentTypeCat", agent.AgentTypeCat },
                     { "AgentLevel", agent.AgentLevel },
                     { "StaffCode", agent.StaffCode },
                     { "SupervisorId", agent.SupervisorId },
@@ -777,14 +776,14 @@ namespace HMS.Controllers
                     { "Sec206abFlag", agent.Sec206abFlag },
                     { "TaxStatus", agent.TaxStatus },
                     { "ServiceTaxNo", agent.ServiceTaxNo },
+                    { "PANNumber", agent.PanNumber },
                     { "MainPartnerClientCode", agent.MainPartnerClientCode },
                     { "ApplicationDocketNo", agent.ApplicationDocketNo },
+                    { "CandidateType", agent.CandidateType },
                     { "EmployeeCode", agent.EmployeeCode },
                     { "StartDate", agent.StartDate },
                     { "AppointmentDate", agent.AppointmentDate },
                     { "IncorporationDate", agent.IncorporationDate },
-                    { "AgentTypeCategory", agent.AgentTypeCategory },
-                    { "AgentClassification", agent.AgentClassification },
                     { "CmsAgentType", agent.CmsAgentType },
                     { "CommissionClass", agent.CommissionClass },
                     { "BankAccType", agent.BankAccType },
@@ -798,7 +797,19 @@ namespace HMS.Controllers
                     { "Education", agent.Education },
                     { "Occupation", agent.Occupation },
                     { "Urn", agent.Urn },
-                    { "AdditionalComment", agent.AdditionalComment }
+                    { "AdditionalComment", agent.AdditionalComment },
+                    { "Channel", agent.Channel },
+                    { "SubChannel", agent.SubChannel },
+                    { "Ic36TrngCompletionDate", agent.Ic36TrngCompletionDate },
+                    { "STrngCompletionDate", agent.STrngCompletionDate },
+                    { "FgRockstarTrainingDate", agent.FgRockstarTrainingDate },
+                    { "FgValueTrngDate", agent.FgValueTrngDate },
+                    { "HSecPolicyTrngDate", agent.HSecPolicyTrngDate },
+                    { "ItSecPolicyTrngDate", agent.ItSecPolicyTrngDate },
+                    { "NpsTrngCompletionDate", agent.NpsTrngCompletionDate },
+                    { "WhistleBlowerTrngDate", agent.WhistleBlowerTrngDate },
+                    { "GovPolicyTrngDate", agent.GovPolicyTrngDate },
+                    { "InductionTrngDate", agent.InductionTrngDate }
                 };
 
                  switch ((sectionName ?? string.Empty).ToLowerInvariant())
@@ -808,8 +819,8 @@ namespace HMS.Controllers
                             agent.Channel = agentDto.Channel; 
                         if (agentDto.SubChannel.HasValue)
                             agent.SubChannel = agentDto.SubChannel; 
-                        if (agentDto.AgentClass.HasValue)
-                            agent.AgentClass = agentDto.AgentClass; 
+                        if (agentDto.CommissionClass.HasValue)
+                            agent.CommissionClass = agentDto.CommissionClass; 
                         
                         break;
 
@@ -945,8 +956,8 @@ namespace HMS.Controllers
                     if (agentDto.IncorporationDate.HasValue)
                         agent.IncorporationDate = agentDto.IncorporationDate;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.AgentTypeCategory))
-                        agent.AgentTypeCat = agentDto.AgentTypeCat;
+                        if (agentDto.AgentTypeCat.HasValue)
+                            agent.AgentTypeCat = agentDto.AgentTypeCat;
 
                         if (agentDto.AgentClass.HasValue)
                             agent.AgentClass = agentDto.AgentClass;
@@ -969,15 +980,10 @@ namespace HMS.Controllers
 
                         if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
                         {
-                            // record that bank details section updated
-                            updatedFields.Add(new UpdatedAgentField { FieldName = "financial_details", OldValue = string.Empty, NewValue = "updated" });
-
                             var b = agentDto.bankAccounts.First();
                             var existingBank = await _context.BankAccount
                                 .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
                             if (existingBank != null)
-
-
                             {
                                 // capture old values
                                 var oldAccountHolder = existingBank.AccountHolderName ?? string.Empty;
@@ -1076,11 +1082,8 @@ namespace HMS.Controllers
                         if (!string.IsNullOrWhiteSpace(agentDto.AdditionalComment))
                             agent.AdditionalComment = agentDto.AdditionalComment;
 
-                        // 2) PersonalInfo fields come from agentDto.personalInfo[0]
                         if (agentDto.personalInfo != null && agentDto.personalInfo.Any())
                         {
-                            updatedFields.Add(new UpdatedAgentField { FieldName = "personalInfo", OldValue = string.Empty, NewValue = "updated" });
-
                             var p = agentDto.personalInfo.First();
                             var existingPI = await _context.PersonalInfo
                                 .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
@@ -1131,7 +1134,6 @@ namespace HMS.Controllers
                             }
                         }
 
-                        // 3) Nominee fields come from agentDto.nominees[0]
                         if (agentDto.nominees != null && agentDto.nominees.Any())
                         {
                             var n = agentDto.nominees.First();
@@ -1170,8 +1172,6 @@ namespace HMS.Controllers
                         {
                             if (agentDto.PermanentAddres != null && agentDto.PermanentAddres.Any())
                             {
-                                updatedFields.Add(new UpdatedAgentField { FieldName = "address_config", OldValue = string.Empty, NewValue = "updated" });
-
                                 var addrDto = agentDto.PermanentAddres.First();
 
                                 var existingAddress = await _context.Address
@@ -1315,15 +1315,8 @@ namespace HMS.Controllers
                             agent.Vertical = agentDto.Vertical;
                         break;
 
-                    case "bank_details":
+                      case "bank_details":
                         {
-                            updatedFields.Add(new UpdatedAgentField
-                            {
-                                FieldName = "bank_details",
-                                OldValue = string.Empty,
-                                NewValue = "updated"
-                            });
-
                             if (agentDto.BankAccType.HasValue)
                             {
                                 var oldBankAccType = agent.BankAccType?.ToString() ?? string.Empty;
@@ -1426,8 +1419,7 @@ namespace HMS.Controllers
                             break;
                         }
 
-
-                    case "other_training":
+                      case "other_training":
                     if (agentDto.Ic36TrngCompletionDate.HasValue)
                         agent.Ic36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
 

@@ -152,12 +152,12 @@ namespace Models.DTO
         public string? CandidateTypeDesc { get; set; }
         public string? CommissionClassDesc { get; set; }
         public string? AgentTypeDesc { get; set; }
-        public int? LicenceType { get; set; }
-        public int? LicenceStatus { get; set; }
+        public int? LicenseType { get; set; }
+        public int? LicenseStatus { get; set; }
         public int? Vertical { get; set; }
         public int? TrainingGroupType { get; set; }
-        public string? LicenceTypeDesc { get; set; }
-        public string? LicenceStatusDesc { get; set; }
+        public string? LicenseTypeDesc { get; set; }
+        public string? LicenseStatusDesc { get; set; }
         public string? VerticalDesc { get; set; }
         public string? TrainingGroupTypeDesc { get; set; }
     }

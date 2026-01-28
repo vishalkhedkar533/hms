@@ -200,14 +200,17 @@ export interface ICommissionMgmtDashboard {
 // Commission process 
 
 // ================================
-export interface IProcessedRecordsLog {
-  processId: number
-  processedDate: string // ISO date string
-  period: string
-  recordsCount: number
-  status: 'In Process' | 'Completed' | string
-  canDownload: boolean
-  canViewDetails: boolean
+export interface IProcessCommissionList {
+  totalCount: number
+  orgId:number
+  downloadLnk:null
+  finishedAt: string
+  records: number
+  exeStatus: string
+  startedAt: string
+  commissionName: string
+  jobConfigId:number
+  jobExeHistId:number
 }
 export interface IHoldRecords {
   holdId: number
@@ -252,9 +255,8 @@ export interface ICommissionMgmtResponseBody {
 }
 export interface IProcessCommissionResponseBody {
 
-orgId: number
-  periodType: string
-  processedRecordsLog: IProcessedRecordsLog[]
+  pagination:{}
+  processCommissionList: IProcessCommissionList[]
 
 }
 export interface IHoldCommissionResponseBody {
@@ -321,6 +323,7 @@ export interface IExecutiveHistoryResponseBody {
 export interface IExecutiveHistoryRequest {
   jobConfigId: number
 }
+
 export interface IUpdateCronRequest {
   commissionConfigId: number
   jobType: string
@@ -334,6 +337,13 @@ export interface IUpdateStatusRequest {
 export interface IConfigCommissionListRequest {
   pageNumber: number
   pageSize: number
+}
+export interface IProcessCommissionRequest {
+  pageNumber: number
+  pageSize: number
+}
+export interface IDownloadRecordRequest {
+  jobExeHistId: number
 }
 export interface ICommissionSearchFieldsRequest {
   commissionConfigId: number
@@ -363,6 +373,17 @@ export interface ICommissionSearchFieldsResponseBody {
   metaDataResponse: ICommissionMetadata[]
 }
 
+export interface IFileDownload {
+  fileName: string
+  contentType: string
+  fileBase64: string
+  fileSize: number
+}
+
+export interface IDownloadRecordResponseBody {
+  fileDownload: IFileDownload | null
+}
+
 
 
 
@@ -376,6 +397,6 @@ export interface ICommissionMgmtApiResponse {
 
  responseHeader: IResponseHeader;
 
- responseBody: ICommissionMgmtResponseBody;
+ responseBody: ICommissionMgmtResponseBody | IDownloadRecordResponseBody;
 
 }

@@ -182,16 +182,16 @@ export interface IAgent {
   // keyValueEntry: IkeyValueEntry[]
   
   //Acct Activation Date missing
-  factoringHouse: string
-  accountHolderName: string
-  panNumber?: string
-  bankName?: string
-  branchName: string
-  accountNumber: string
-  accountType: string
-  micr: string
-  ifsc: string
-  preferredPaymentMode: string
+  // factoringHouse: string
+  // accountHolderName: string
+  // panNumber?: string
+  // bankName?: string
+  // branchName: string
+  // accountNumber: string
+  // accountType: string
+  // micr: string
+  // ifsc: string
+  // preferredPaymentMode: string
 
   // heirarchy
 
@@ -321,8 +321,12 @@ export interface IPeopleHierarchy {
   supervisors?: IPeopleHierarchy | null
 }
 
-export interface IEditAgentPayload {
-  id: number | string
+
+export interface IEditAgentRequest {
+  agentId: number
   sectionName: string
-  [key: string]: any
+}
+
+export interface IEditAgentResponseBody {
+  updatedAgentFields: IAgent[]
 }

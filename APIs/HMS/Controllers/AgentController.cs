@@ -555,8 +555,8 @@ namespace HMS.Controllers
                 agentDTO.AgentTypeDesc = AgentType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentType ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.CommissionClassDesc = CommissionClass.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.CommissionClass ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.CandidateTypeDesc = CandidateType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.CandidateType ?? -1000))?.EntryDesc?? string.Empty;
-                agentDTO.LicenceTypeDesc = LicenceType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.LicenceType ?? -1000))?.EntryDesc?? string.Empty;
-                agentDTO.LicenceStatusDesc = LicenceStatus.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.LicenceStatus ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.LicenseTypeDesc = LicenceType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.LicenseType ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.LicenseStatusDesc = LicenceStatus.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.LicenseStatus ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.VerticalDesc = Vertical.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Vertical ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.TrainingGroupTypeDesc = TraningGroupType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.TrainingGroupType ?? -1000))?.EntryDesc?? string.Empty;
 
@@ -1267,11 +1267,11 @@ namespace HMS.Controllers
                         if (agentDto.AgentClass.HasValue)
                             agent.AgentClass = agentDto.AgentClass;
 
-                        if (agentDto.LicenceType.HasValue)
-                            agent.LicenseType = agentDto.LicenceType;
+                        if (agentDto.LicenseType.HasValue)
+                            agent.LicenseType = agentDto.LicenseType;
 
-                        if (agentDto.LicenceStatus.HasValue)
-                            agent.LicenseStatus = agentDto.LicenceStatus;
+                        if (agentDto.LicenseStatus.HasValue)
+                            agent.LicenseStatus = agentDto.LicenseStatus;
 
                         if (agentDto.LicenseExpiryDate.HasValue)
                             agent.LicenseExpiryDate = agentDto.LicenseExpiryDate;
@@ -1569,7 +1569,24 @@ namespace HMS.Controllers
 
                     RecordChange(propName, oldVal, newVal);
                 }
+                if (updatedFields.Any())
+                {
+                    var auditEntries = updatedFields.Select(f => new AgentAuditTrail
+                    {
+                        AgentId = id,
+                        FieldName = f.FieldName,
+                        OldValue = f.OldValue,
+                        NewValue = f.NewValue,
+                        ChangedBy = username,
+                        ChangedDate = DateTime.UtcNow,
+                        CreatedBy = username,
+                        CreatedDate = DateTime.UtcNow,
+                        ModifiedBy = username,
+                        ModifiedDate = DateTime.UtcNow
+                    }).ToList();
 
+                    await _context.AgentAuditTrail.AddRangeAsync(auditEntries);
+                }
                 await _context.SaveChangesAsync();
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;

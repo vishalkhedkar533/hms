@@ -511,6 +511,7 @@ namespace HMS.Controllers
         {
             var excelData = data.Select(x => new
             {
+                // Agent / Commission details
                 Agent_Id = x.AgentId,
                 Agent_Name = x.AgentName,
                 Channel = x.Channel,
@@ -519,7 +520,38 @@ namespace HMS.Controllers
                 Formula = x.Formula,
                 Commission_Amount = x.CommissionAmount,
                 Status = x.Status,
-                Logs = x.Logs
+                Logs = x.Logs,
+
+                // Premium Collected details
+                Policy_Ref = x.PolicyRef,
+                Premium_Received_Date = x.PremiumReceivedDate,
+                Premium_Type = x.PremiumType,
+                Premium_Collection_Year = x.PremiumCollectionYear,
+                Premium_Collection_Quarter = x.PremiumCollectionQuarter,
+                Premium_Collection_Fin_Year = x.PremiumCollectionFinYear,
+
+                // Policy details
+                Policy_No = x.PolicyNo,
+                Policy_Suffix = x.PolicySuffix,
+                Risk_Start_Date = x.RiskStartDate,
+                Risk_End_Date = x.RiskEndDate,
+                Policy_Term = x.PolicyTerm,
+                Premium_Paying_Term = x.PremiumPayingTerm,
+                Proposer_Client_Id = x.ProposerClientId,
+                Life_Insured_Client_Id = x.LifeInsuredClientId,
+                Is_Staff_Policy = x.IsStaffPolicy,
+                Policy_Source_Code = x.PolicySourceCode,
+                Insured_PAN = x.InsuredPAN,
+                Proposer_PAN = x.ProposerPAN,
+                Insured_DOB = x.InsuredDOB,
+                Proposer_DOB = x.ProposerDOB,
+                Login_Date = x.LoginDate,
+                Insured_Gender = x.InsuredGender,
+                Proposer_Gender = x.ProposerGender,
+                Maturity_Age_In_Months = x.MaturityAgeInMonths,
+                Modal_Base_Premium = x.ModalBasePremium,
+                Modal_Base_Rider_Premium = x.ModalBaseRiderPremium,
+                Product_Code = x.ProductCode
             });
 
             using var stream = new MemoryStream();
@@ -528,10 +560,11 @@ namespace HMS.Controllers
         }
 
 
+
         [HttpPost("DownloadCommissionExcel/{jobExeHistId}")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> DownloadCommissionExcel(int jobExeHistId)
+        public async Task<IActionResult> DownloadCommissionExcel([FromRoute] int jobExeHistId)
         {
             HmsResponse response = new HmsResponse();
             int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");

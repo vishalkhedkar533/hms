@@ -528,6 +528,10 @@ namespace HMS.Controllers
                 var AgentType = AgentProfileMst.Where(x => x.EntryCategory == "AGNT_TYP");
                 var CommissionClass = AgentProfileMst.Where(x => x.EntryCategory == "COMMISSION_CLASS");
                 var CandidateType = AgentProfileMst.Where(x => x.EntryCategory == "CANDIDATE_TYP");
+                var LicenceType = AgentProfileMst.Where(x => x.EntryCategory == "LICENSE_TYPE");
+                var LicenceStatus = AgentProfileMst.Where(x => x.EntryCategory == "LICENSE_STATUS");
+                var Vertical = AgentProfileMst.Where(x => x.EntryCategory == "VERTICAL");
+                var TraningGroupType = AgentProfileMst.Where(x => x.EntryCategory == "TRAINING_GROUP");
 
                 foreach (var bankAcc in agentDTO.bankAccounts)
                 {
@@ -551,6 +555,10 @@ namespace HMS.Controllers
                 agentDTO.AgentTypeDesc = AgentType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentType ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.CommissionClassDesc = CommissionClass.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.CommissionClass ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.CandidateTypeDesc = CandidateType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.CandidateType ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.LicenceTypeDesc = LicenceType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.LicenceType ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.LicenceStatusDesc = LicenceStatus.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.LicenceStatus ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.VerticalDesc = Vertical.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Vertical ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.TrainingGroupTypeDesc = TraningGroupType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.TrainingGroupType ?? -1000))?.EntryDesc?? string.Empty;
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;
@@ -1259,17 +1267,17 @@ namespace HMS.Controllers
                         if (agentDto.AgentClass.HasValue)
                             agent.AgentClass = agentDto.AgentClass;
 
-                        if (!string.IsNullOrWhiteSpace(agentDto.LicenseStatus))
-                            agent.LicenseStatus = agentDto.LicenseStatus;
+                        if (agentDto.LicenceType.HasValue)
+                            agent.LicenseType = agentDto.LicenceType;
+
+                        if (agentDto.LicenceStatus.HasValue)
+                            agent.LicenseStatus = agentDto.LicenceStatus;
 
                         if (agentDto.LicenseExpiryDate.HasValue)
                             agent.LicenseExpiryDate = agentDto.LicenseExpiryDate;
 
                         if (agentDto.LicenseIssueDate.HasValue)
                             agent.LicenseIssueDate = agentDto.LicenseIssueDate;
-
-                        if(!string.IsNullOrWhiteSpace(agentDto.LicenseType))
-                            agent.LicenseType = agentDto.LicenseType;
 
                         if(!string.IsNullOrWhiteSpace(agentDto.LicenseNo))
                             agent.LicenseNo = agentDto.LicenseNo;
@@ -1280,7 +1288,7 @@ namespace HMS.Controllers
 
                       case "training_details":
 
-                        if (!string.IsNullOrWhiteSpace(agentDto.TrainingGroupType))
+                        if (agentDto.TrainingGroupType.HasValue)
                             agent.TrainingGroupType = agentDto.TrainingGroupType;
 
                         agent.RefresherTrainingCompleted = agentDto.RefresherTrainingCompleted;
@@ -1303,7 +1311,7 @@ namespace HMS.Controllers
                         if (agentDto.RegistrationDate.HasValue)
                             agent.RegistrationDate = agentDto.RegistrationDate;
 
-                        if (!string.IsNullOrWhiteSpace(agentDto.Vertical))
+                        if (agentDto.Vertical.HasValue)
                             agent.Vertical = agentDto.Vertical;
                         break;
 

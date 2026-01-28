@@ -228,9 +228,8 @@ namespace Models.DB
         [Column("ulipflag")]
         public bool? UlipFlag { get; set; }
 
-        [StringLength(100)]
         [Column("traininggrouptype")]
-        public string? TrainingGroupType { get; set; }
+        public int? TrainingGroupType { get; set; }
 
         [StringLength(100)]
         [Column("ifs")]
@@ -253,9 +252,8 @@ namespace Models.DB
         [Column("registrationdate")]
         public DateTime? RegistrationDate { get; set; }
 
-        [StringLength(100)]
         [Column("vertical")]
-        public string? Vertical { get; set; }
+        public int? Vertical { get; set; }
 
         [StringLength(50)]
         [Column("branchcode")]
@@ -314,9 +312,8 @@ namespace Models.DB
         [Column("licenseno")]
         public string? LicenseNo { get; set; }
 
-        [StringLength(50)]
         [Column("licensetype")]
-        public string? LicenseType { get; set; }
+        public int? LicenseType { get; set; }
 
         [Column("licenseissuedate")]
         public DateTime? LicenseIssueDate { get; set; }
@@ -324,9 +321,8 @@ namespace Models.DB
         [Column("licenseexpirydate")]
         public DateTime? LicenseExpiryDate { get; set; }
 
-        [StringLength(50)]
         [Column("licensestatus")]
-        public string? LicenseStatus { get; set; }
+        public int? LicenseStatus { get; set; }
 
         [Column("orgid")]
         public int? OrgId { get; set; }

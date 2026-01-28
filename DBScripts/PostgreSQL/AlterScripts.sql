@@ -351,3 +351,17 @@ alter TABLE scheduler.job_exe_hist add LogLevel varchar(10);
 create index idx_FireInstanceId on scheduler.job_exe_hist(FireInstanceId);
 
 ALTER TABLE comss.comm_job_exe_dtls add status varchar (20) not null default 'PENDING' /*PENDING/APPROVED/HOLD/REJECTED*/;
+
+ALTER TABLE hms.agent DROP COLUMN vertical;
+ALTER TABLE hms.agent DROP COLUMN licensetype;
+ALTER TABLE hms.agent DROP COLUMN licensestatus;
+ALTER TABLE hms.agent DROP COLUMN traininggrouptype;
+
+
+ALTER TABLE hms.agent ADD COLUMN vertical int4;
+ALTER TABLE hms.agent ADD COLUMN licensetype int4;
+ALTER TABLE hms.agent ADD COLUMN licensestatus int4;
+ALTER TABLE hms.agent ADD COLUMN traininggrouptype int4;
+
+
+

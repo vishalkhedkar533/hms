@@ -14,6 +14,7 @@ using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using NuGet.Packaging;
 
 namespace HMS.Controllers
 {
@@ -939,8 +940,8 @@ namespace HMS.Controllers
                     if (!string.IsNullOrWhiteSpace(agentDto.AgentTypeCategory))
                         agent.AgentTypeCat = agentDto.AgentTypeCat;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.AgentClassification))
-                        agent.AgentClass = agentDto.AgentClass;
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass;
 
                     if (!string.IsNullOrWhiteSpace(agentDto.CMSAgentType))
                         agent.CmsAgentType = agentDto.CMSAgentType;
@@ -1157,7 +1158,7 @@ namespace HMS.Controllers
                         break;
                     }
 
-                    case "address_config":
+                      case "address_config":
                         {
                             if (agentDto.PermanentAddres != null && agentDto.PermanentAddres.Any())
                             {
@@ -1248,219 +1249,303 @@ namespace HMS.Controllers
                             break;
                         }
 
-                    case "official_details":
-                          if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
-                              agent.AgentCode = agentDto.AgentCode;
-
-                          if (agentDto.AgentType.HasValue)
-                              agent.AgentType = agentDto.AgentType;
-
-                          if (agentDto.AgentTypeCode.HasValue)
-                              agent.AgentTypeCode = agentDto.AgentTypeCode;
-
-                          if (agentDto.AgentSubTypeCode.HasValue)
-                              agent.AgentSubTypeCode = agentDto.AgentSubTypeCode;
-
-                          if (agentDto.AgentClass.HasValue)
-                              agent.AgentClass = agentDto.AgentClass;
-
-                          if (!string.IsNullOrWhiteSpace(agentDto.AgentLevel))
-                              agent.AgentLevel = agentDto.AgentLevel;
-
-                          if (!string.IsNullOrWhiteSpace(agentDto.StaffCode))
-                              agent.StaffCode = agentDto.StaffCode;
-
-                          if (agentDto.SupervisorId.HasValue)
-                              agent.SupervisorId = agentDto.SupervisorId;
-
-                          break;
-
                       case "license_details":
-                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseNo))
-                        agent.LicenseNo = agentDto.LicenseNo;
+                        if (!string.IsNullOrWhiteSpace(agentDto.CnctPersonName))
+                        agent.CnctPersonName = agentDto.CnctPersonName;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseType))
-                        agent.LicenseType = agentDto.LicenseType;
+                        if (agentDto.AgentType.HasValue)
+                            agent.AgentType = agentDto.AgentType;
 
-                    if (agentDto.LicenseIssueDate.HasValue)
-                        agent.LicenseIssueDate = agentDto.LicenseIssueDate;
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass;
 
-                    if (agentDto.LicenseExpiryDate.HasValue)
-                        agent.LicenseExpiryDate = agentDto.LicenseExpiryDate;
+                        if (!string.IsNullOrWhiteSpace(agentDto.LicenseStatus))
+                            agent.LicenseStatus = agentDto.LicenseStatus;
 
-                    if (!string.IsNullOrWhiteSpace(agentDto.LicenseStatus))
-                        agent.LicenseStatus = agentDto.LicenseStatus;
+                        if (agentDto.LicenseExpiryDate.HasValue)
+                            agent.LicenseExpiryDate = agentDto.LicenseExpiryDate;
 
-                    // keep boolean in sync if provided
-                    agent.IsLicensed = agentDto.IsLicensed;
+                        if (agentDto.LicenseIssueDate.HasValue)
+                            agent.LicenseIssueDate = agentDto.LicenseIssueDate;
 
-                    break;
+                        if(!string.IsNullOrWhiteSpace(agentDto.LicenseType))
+                            agent.LicenseType = agentDto.LicenseType;
 
-                      case "bank_details":
-                          // Update Agent.BankAccType if provided
-                          if (agentDto.BankAccType.HasValue)
-                              agent.BankAccType = agentDto.BankAccType;
+                        if(!string.IsNullOrWhiteSpace(agentDto.LicenseNo))
+                            agent.LicenseNo = agentDto.LicenseNo;
 
-                          // Upsert bank account record if bank account data provided
-                          if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
-                          {
-                              // record that bank details section updated
-                              updatedFields.Add(new UpdatedAgentField { FieldName = "bank_details", OldValue = string.Empty, NewValue = "updated" });
+                        agent.IsLicensed = agentDto.IsLicensed;
 
-                              var b = agentDto.bankAccounts.First();
-                              var existingBank = await _context.BankAccount
-                                  .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
-                              if (existingBank != null)
-                              {
-                                  existingBank.AccountHolderName = b.AccountHolderName ?? existingBank.AccountHolderName;
-                                  existingBank.AccountNumber = b.AccountNumber ?? existingBank.AccountNumber;
-                                  existingBank.IFSC = b.IFSC ?? existingBank.IFSC;
-                                  existingBank.MICR = b.MICR ?? existingBank.MICR;
-                                  existingBank.BankName = b.BankName ?? existingBank.BankName;
-                                  existingBank.BranchName = b.BranchName ?? existingBank.BranchName;
-                                  existingBank.AccountType = b.AccountType != 0 ? b.AccountType : existingBank.AccountType;
-                                  existingBank.ActiveSince = b.ActiveSince ?? existingBank.ActiveSince;
-                                  existingBank.FactoringHouse = b.FactoringHouse ?? existingBank.FactoringHouse;
-                                  existingBank.PreferredPaymentMode = b.PreferredPaymentMode;
-                                  _context.BankAccount.Update(existingBank);
-                              }
-                              else
-                              {
-                                  var newBank = new BankAccount
-                                  {
-                                      RefKey = agent.AgentId,
-                                      RefType = ReferenceType.Agent,
-                                      AccountHolderName = b.AccountHolderName ?? (agent.FirstName + " " + agent.LastName)?.Trim(),
-                                      AccountNumber = b.AccountNumber ?? string.Empty,
-                                      IFSC = b.IFSC ?? string.Empty,
-                                      MICR = b.MICR,
-                                      BankName = b.BankName,
-                                      BranchName = b.BranchName,
-                                      AccountType = b.AccountType != 0 ? b.AccountType : 1,
-                                      ActiveSince = b.ActiveSince ?? DateTime.Now,
-                                      FactoringHouse = b.FactoringHouse,
-                                      PreferredPaymentMode = b.PreferredPaymentMode
-                                  };
-                                  await _context.BankAccount.AddAsync(newBank);
-                              }
-                          }
-
-                          break;
-
-                      case "product_details":
-                    // Ulip and product related flags
-                    agent.UlipFlag = agentDto.UlipFlag;
-                    break;
-
-                      case "others_details":
-                    // Miscellaneous fields
-                    agent.IsMigrated = agentDto.IsMigrated;
-                    if (!string.IsNullOrWhiteSpace(agentDto.MainPartnerClientCode))
-                        agent.MainPartnerClientCode = agentDto.MainPartnerClientCode;
-                    if (!string.IsNullOrWhiteSpace(agentDto.AgentMaincodevwEid))
-                        agent.AgentMaincodeVweid = agentDto.AgentMaincodevwEid;
-                    if (agentDto.RegistrationDate.HasValue)
-                        agent.RegistrationDate = agentDto.RegistrationDate;
-                    if (!string.IsNullOrWhiteSpace(agentDto.Vertical))
-                        agent.Vertical = agentDto.Vertical;
                     break;
 
                       case "training_details":
-                          if (!string.IsNullOrWhiteSpace(agentDto.TrainingGroupType))
-                              agent.TrainingGroupType = agentDto.TrainingGroupType;
-                          agent.RefresherTrainingCompleted = agentDto.RefresherTrainingCompleted;
-                          break;
 
-                      case "nominees":
-                    if (agentDto.nominees != null && agentDto.nominees.Any())
-                    {
-                        // record that nominees section updated
-                        updatedFields.Add(new UpdatedAgentField { FieldName = "nominees", OldValue = string.Empty, NewValue = "updated" });
+                        if (!string.IsNullOrWhiteSpace(agentDto.TrainingGroupType))
+                            agent.TrainingGroupType = agentDto.TrainingGroupType;
 
-                        foreach (var n in agentDto.nominees)
+                        agent.RefresherTrainingCompleted = agentDto.RefresherTrainingCompleted;
+                        break;
+
+                      case "product_details":
+                        agent.UlipFlag = agentDto.UlipFlag;
+                        break;
+
+                      case "others_details":
+
+                        agent.IsMigrated = agentDto.IsMigrated;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.MainPartnerClientCode))
+                            agent.MainPartnerClientCode = agentDto.MainPartnerClientCode;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.AgentMaincodevwEid))
+                            agent.AgentMaincodeVweid = agentDto.AgentMaincodevwEid;
+
+                        if (agentDto.RegistrationDate.HasValue)
+                            agent.RegistrationDate = agentDto.RegistrationDate;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.Vertical))
+                            agent.Vertical = agentDto.Vertical;
+                        break;
+
+                    case "bank_details":
                         {
-                            if (n.NomineeID != 0)
+                            updatedFields.Add(new UpdatedAgentField
                             {
-                                var existingNom = await _context.Nominee.FirstOrDefaultAsync(x => x.NomineeID == n.NomineeID && x.RefKey == agent.AgentId);
-                                if (existingNom != null)
+                                FieldName = "bank_details",
+                                OldValue = string.Empty,
+                                NewValue = "updated"
+                            });
+
+                            if (agentDto.BankAccType.HasValue)
+                            {
+                                var oldBankAccType = agent.BankAccType?.ToString() ?? string.Empty;
+                                agent.BankAccType = agentDto.BankAccType;
+                                RecordChange("BankAccType", oldBankAccType, agent.BankAccType?.ToString());
+                            }
+
+                            if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
+                            {
+                                var b = agentDto.bankAccounts.First();
+
+                                var existingBank = await _context.BankAccount
+                                    .FirstOrDefaultAsync(x => x.RefKey == agent.AgentId && x.RefType == ReferenceType.Agent);
+
+                                if (existingBank != null)
                                 {
-                                    existingNom.NomineeName = n.NomineeName ?? existingNom.NomineeName;
-                                    existingNom.Relationship = n.Relationship ?? existingNom.Relationship;
-                                    existingNom.PercentageShare = n.PercentageShare != 0 ? n.PercentageShare : existingNom.PercentageShare;
-                                    existingNom.IsActive = n.IsActive;
-                                    existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
-                                    _context.Nominee.Update(existingNom);
+                                    // Capture old values
+                                    var oldAccountHolder = existingBank.AccountHolderName ?? string.Empty;
+                                    var oldAccountNumber = existingBank.AccountNumber ?? string.Empty;
+                                    var oldIFSC = existingBank.IFSC ?? string.Empty;
+                                    var oldMICR = existingBank.MICR ?? string.Empty;
+                                    var oldBankName = existingBank.BankName ?? string.Empty;
+                                    var oldBranchName = existingBank.BranchName ?? string.Empty;
+                                    var oldAccountType = existingBank.AccountType.ToString();
+                                    var oldFactoringHouse = existingBank.FactoringHouse ?? string.Empty;
+                                    var oldPrefPayment = existingBank.PreferredPaymentMode.ToString();
+
+                                    // Apply updates
+                                    existingBank.AccountHolderName = b.AccountHolderName ?? existingBank.AccountHolderName;
+                                    existingBank.AccountNumber = b.AccountNumber ?? existingBank.AccountNumber;
+                                    existingBank.IFSC = b.IFSC ?? existingBank.IFSC;
+                                    existingBank.MICR = b.MICR ?? existingBank.MICR;
+                                    existingBank.BankName = b.BankName ?? existingBank.BankName;
+                                    existingBank.BranchName = b.BranchName ?? existingBank.BranchName;
+                                    existingBank.AccountType = b.AccountType != 0 ? b.AccountType : existingBank.AccountType;
+                                    existingBank.FactoringHouse = b.FactoringHouse ?? existingBank.FactoringHouse;
+                                    existingBank.PreferredPaymentMode = b.PreferredPaymentMode;
+                                    existingBank.ActiveSince =existingBank.ActiveSince.HasValue? DateTime.SpecifyKind(existingBank.ActiveSince.Value, DateTimeKind.Utc): DateTime.UtcNow;
+
+                                    _context.BankAccount.Update(existingBank);
+
+                                    // Record field-level changes
+                                    void AddIfChanged(string field, string oldV, string newV)
+                                    {
+                                        if ((oldV ?? string.Empty) != (newV ?? string.Empty))
+                                        {
+                                            updatedFields.Add(new UpdatedAgentField
+                                            {
+                                                FieldName = field,
+                                                OldValue = oldV ?? string.Empty,
+                                                NewValue = newV ?? string.Empty
+                                            });
+                                        }
+                                    }
+
+                                    AddIfChanged("AccountHolderName", oldAccountHolder, existingBank.AccountHolderName);
+                                    AddIfChanged("AccountNumber", oldAccountNumber, existingBank.AccountNumber);
+                                    AddIfChanged("IFSC", oldIFSC, existingBank.IFSC);
+                                    AddIfChanged("MICR", oldMICR, existingBank.MICR);
+                                    AddIfChanged("BankName", oldBankName, existingBank.BankName);
+                                    AddIfChanged("BranchName", oldBranchName, existingBank.BranchName);
+                                    AddIfChanged("AccountType", oldAccountType, existingBank.AccountType.ToString());
+                                    AddIfChanged("FactoringHouse", oldFactoringHouse, existingBank.FactoringHouse);
+                                    AddIfChanged("PreferredPaymentMode", oldPrefPayment, existingBank.PreferredPaymentMode.ToString());
+                                }
+                                else
+                                {
+                                    // Create new bank account
+                                    var newBank = new BankAccount
+                                    {
+                                        RefKey = agent.AgentId,
+                                        RefType = ReferenceType.Agent,
+                                        AccountHolderName = b.AccountHolderName ?? $"{agent.FirstName} {agent.LastName}".Trim(),
+                                        AccountNumber = b.AccountNumber ?? string.Empty,
+                                        IFSC = b.IFSC ?? string.Empty,
+                                        MICR = b.MICR,
+                                        BankName = b.BankName,
+                                        BranchName = b.BranchName,
+                                        AccountType = b.AccountType != 0 ? b.AccountType : 1,
+                                        FactoringHouse = b.FactoringHouse,
+                                        PreferredPaymentMode = b.PreferredPaymentMode,
+                                        ActiveSince = DateTime.UtcNow,
+                                    };
+
+                                    await _context.BankAccount.AddAsync(newBank);
+
+                                    // Record created fields
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AccountHolderName", OldValue = "", NewValue = newBank.AccountHolderName ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AccountNumber", OldValue = "", NewValue = newBank.AccountNumber ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "IFSC", OldValue = "", NewValue = newBank.IFSC ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "MICR", OldValue = "", NewValue = newBank.MICR ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "BankName", OldValue = "", NewValue = newBank.BankName ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "BranchName", OldValue = "", NewValue = newBank.BranchName ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "AccountType", OldValue = "", NewValue = newBank.AccountType.ToString() });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "FactoringHouse", OldValue = "", NewValue = newBank.FactoringHouse ?? "" });
+                                    updatedFields.Add(new UpdatedAgentField { FieldName = "PreferredPaymentMode", OldValue = "", NewValue = newBank.PreferredPaymentMode.ToString() });
                                 }
                             }
-                            else
-                            {
-                                var newNom = new Nominee
-                                {
-                                    RefKey = agent.AgentId,
-                                    RefType = ReferenceType.Agent,
-                                    NomineeName = n.NomineeName,
-                                    Relationship = n.Relationship,
-                                    PercentageShare = n.PercentageShare,
-                                    IsActive = n.IsActive,
-                                    NomineeAge = n.NomineeAge
-                                };
-                                await _context.Nominee.AddAsync(newNom);
-                            }
+
+                            break;
                         }
-                    }
-                    break;
 
-                      case "branch_details":
-                    if (!string.IsNullOrWhiteSpace(agentDto.BranchCode))
-                        agent.BranchCode = agentDto.BranchCode;
-                    if (!string.IsNullOrWhiteSpace(agentDto.BranchName))
-                        agent.BranchName = agentDto.BranchName;
-                    break;
 
-                      case "organisation_details":
-                    if (agentDto.ConfirmationDate.HasValue)
-                        agent.ConfirmationDate = agentDto.ConfirmationDate;
-                    if (agentDto.IncrementDate.HasValue)
-                        agent.IncrementDate = agentDto.IncrementDate;
-                    if (agentDto.LastPromotionDate.HasValue)
-                        agent.LastPromotionDate = agentDto.LastPromotionDate;
-                    if (agentDto.HRDoj.HasValue)
-                        agent.HrDoj = agentDto.HRDoj;
-                    if (agentDto.LastWorkingDate.HasValue)
-                        agent.LastWorkingDate = agentDto.LastWorkingDate;
-                    break;
-
-                      case "other_training":
+                    case "other_training":
                     if (agentDto.Ic36TrngCompletionDate.HasValue)
                         agent.Ic36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
+
                     if (agentDto.STrngCompletionDate.HasValue)
                         agent.STrngCompletionDate = agentDto.STrngCompletionDate;
+
                     if (agentDto.FgRockstarTrainingDate.HasValue)
                         agent.FgRockstarTrainingDate = agentDto.FgRockstarTrainingDate;
+
                     if (agentDto.FgValueTrngDate.HasValue)
                         agent.FgValueTrngDate = agentDto.FgValueTrngDate;
+
                     if (agentDto.HSecPolicyTrngDate.HasValue)
                         agent.HSecPolicyTrngDate = agentDto.HSecPolicyTrngDate;
+
                     if (agentDto.ItSecPolicyTrngDate.HasValue)
                         agent.ItSecPolicyTrngDate = agentDto.ItSecPolicyTrngDate;
+
                     if (agentDto.NpsTrngCompletionDate.HasValue)
                         agent.NpsTrngCompletionDate = agentDto.NpsTrngCompletionDate;
+
                     if (agentDto.WhistleBlowerTrngDate.HasValue)
                         agent.WhistleBlowerTrngDate = agentDto.WhistleBlowerTrngDate;
+
                     if (agentDto.GovPolicyTrngDate.HasValue)
                         agent.GovPolicyTrngDate = agentDto.GovPolicyTrngDate;
+
                     if (agentDto.InductionTrngDate.HasValue)
                         agent.InductionTrngDate = agentDto.InductionTrngDate;
                     break;
 
-                      default:
+                    //Below Case Not implemented as per discussion 
+                    #region Not Implemented
+                    case "official_details":
+                        if (!string.IsNullOrWhiteSpace(agentDto.AgentCode))
+                            agent.AgentCode = agentDto.AgentCode;
+
+                        if (agentDto.AgentType.HasValue)
+                            agent.AgentType = agentDto.AgentType;
+
+                        if (agentDto.AgentTypeCode.HasValue)
+                            agent.AgentTypeCode = agentDto.AgentTypeCode;
+
+                        if (agentDto.AgentSubTypeCode.HasValue)
+                            agent.AgentSubTypeCode = agentDto.AgentSubTypeCode;
+
+                        if (agentDto.AgentClass.HasValue)
+                            agent.AgentClass = agentDto.AgentClass;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.AgentLevel))
+                            agent.AgentLevel = agentDto.AgentLevel;
+
+                        if (!string.IsNullOrWhiteSpace(agentDto.StaffCode))
+                            agent.StaffCode = agentDto.StaffCode;
+
+                        if (agentDto.SupervisorId.HasValue)
+                            agent.SupervisorId = agentDto.SupervisorId;
+
+                        break;
+                      
+                      case "nominees":
+                        if (agentDto.nominees != null && agentDto.nominees.Any())
+                        {
+                            // record that nominees section updated
+                            updatedFields.Add(new UpdatedAgentField { FieldName = "nominees", OldValue = string.Empty, NewValue = "updated" });
+
+                            foreach (var n in agentDto.nominees)
+                            {
+                                if (n.NomineeID != 0)
+                                {
+                                    var existingNom = await _context.Nominee.FirstOrDefaultAsync(x => x.NomineeID == n.NomineeID && x.RefKey == agent.AgentId);
+                                    if (existingNom != null)
+                                    {
+                                        existingNom.NomineeName = n.NomineeName ?? existingNom.NomineeName;
+                                        existingNom.Relationship = n.Relationship ?? existingNom.Relationship;
+                                        existingNom.PercentageShare = n.PercentageShare != 0 ? n.PercentageShare : existingNom.PercentageShare;
+                                        existingNom.IsActive = n.IsActive;
+                                        existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
+                                        _context.Nominee.Update(existingNom);
+                                    }
+                                }
+                                else
+                                {
+                                    var newNom = new Nominee
+                                    {
+                                        RefKey = agent.AgentId,
+                                        RefType = ReferenceType.Agent,
+                                        NomineeName = n.NomineeName,
+                                        Relationship = n.Relationship,
+                                        PercentageShare = n.PercentageShare,
+                                        IsActive = n.IsActive,
+                                        NomineeAge = n.NomineeAge
+                                    };
+                                    await _context.Nominee.AddAsync(newNom);
+                                }
+                            }
+                        }
+                        break;
+                      
+                      case "branch_details":
+                        if (!string.IsNullOrWhiteSpace(agentDto.BranchCode))
+                            agent.BranchCode = agentDto.BranchCode;
+                        if (!string.IsNullOrWhiteSpace(agentDto.BranchName))
+                            agent.BranchName = agentDto.BranchName;
+                        break;
+                      
+                      case "organisation_details":
+                        if (agentDto.ConfirmationDate.HasValue)
+                            agent.ConfirmationDate = agentDto.ConfirmationDate;
+                        if (agentDto.IncrementDate.HasValue)
+                            agent.IncrementDate = agentDto.IncrementDate;
+                        if (agentDto.LastPromotionDate.HasValue)
+                            agent.LastPromotionDate = agentDto.LastPromotionDate;
+                        if (agentDto.HRDoj.HasValue)
+                            agent.HrDoj = agentDto.HRDoj;
+                        if (agentDto.LastWorkingDate.HasValue)
+                            agent.LastWorkingDate = agentDto.LastWorkingDate;
+                        break;
+                    #endregion
+                    default:
                           return BadRequest("Invalid section name");
                   }
 
                 agent.ModifiedBy = username;
                 agent.ModifiedDate = DateTime.UtcNow;
 
-                // Compare snapshot and record scalar changes
                 foreach (var kv in snapshot)
                 {
                     var propName = kv.Key;

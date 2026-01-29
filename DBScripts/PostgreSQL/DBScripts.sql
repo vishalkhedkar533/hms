@@ -2020,3 +2020,29 @@ create table insu_core.tmp_premium_collected (
     created_at timestamp default now()
 );
 
+CREATE SEQUENCE hms.geo_hierarchy_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 9008
+	CACHE 1
+	NO CYCLE;
+
+-- DROP TABLE hms.geo_hierarchy;
+CREATE TABLE hms.geo_hierarchy (
+	geo_hierarchy_id int8 DEFAULT nextval('hms.geo_hierarchy_id_seq'::regclass) NOT NULL,
+	channel_code varchar(20) NOT NULL,
+	created_by varchar(100) NOT NULL,
+	created_date timestamp NOT NULL,
+	modified_by varchar(100) NULL,
+	modified_date timestamp NULL,
+	hierarchy_path public.ltree NULL,
+	orgid int4 NULL,
+	CONSTRAINT geo_hierarchy_pkey PRIMARY KEY (geo_hierarchy_id)
+);
+
+-- hms.agent_hierarchy foreign keys
+ALTER TABLE hms.geo_hierarchy 
+ADD CONSTRAINT fk_channel_code 
+FOREIGN KEY (channel_code) 
+REFERENCES hms.channel_master (channel_code) ON DELETE CASCADE;

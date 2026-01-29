@@ -125,6 +125,13 @@ namespace Models.Mapping
                 .ForMember(d => d.CandidateTypeDesc, s => s.Ignore())
                 .ForMember(d => d.AgentTypeDesc, s => s.Ignore())
                 .ForMember(d => d.CommissionClassDesc, s => s.Ignore())
+                .ForMember(d => d.LicenseType, o => o.MapFrom(s => s.LicenseType))
+                .ForMember(d => d.LicenseStatus, o => o.MapFrom(s => s.LicenseStatus))
+                .ForMember(d => d.LicenseTypeDesc, o => o.Ignore())
+                .ForMember(d => d.LicenseStatusDesc, o => o.Ignore())
+                .ForMember(d => d.VerticalDesc, o => o.Ignore())
+                .ForMember(d => d.TrainingGroupTypeDesc, o => o.Ignore())
+                
                 ;
             // ================================
             // AgentDto → Agent
@@ -179,6 +186,11 @@ namespace Models.Mapping
                 .ForMember(d => d.CommissionClass, o => o.MapFrom(s => s.CommissionClass))
                 .ForMember(d => d.AgentType, o => o.MapFrom(s => s.AgentType))
                 .ForMember(d => d.Country, o => o.MapFrom(s => s.Country))
+
+                .ForMember(d => d.LicenseType, o => o.MapFrom(s => s.LicenseType))
+                .ForMember(d => d.LicenseStatus, o => o.MapFrom(s => s.LicenseStatus))
+                .ForMember(d => d.Vertical, o => o.MapFrom(s => s.Vertical))
+                .ForMember(d => d.TrainingGroupType, o => o.MapFrom(s => s.TrainingGroupType))
                 ;
         }
     }

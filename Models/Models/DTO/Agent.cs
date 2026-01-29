@@ -75,14 +75,12 @@ namespace Models.DTO
         public List<Address>? PermanentAddres { get; set; }
         public List<Address>? MailingAddres { get; set; }
         public bool UlipFlag { get; set; } = false;
-        public string? TrainingGroupType { get; set; }
         public string? Ifs { get; set; }
         public bool RefresherTrainingCompleted { get; set; }
         public bool IsMigrated { get; set; }
         public string? MainPartnerClientCode { get; set; }
         public string? AgentMaincodevwEid { get; set; }
         public DateTime? RegistrationDate { get; set; }
-        public string? Vertical { get; set; }
         public string? BranchCode { get; set; }
         public string? BranchName { get; set; }
         public DateTime? Ic36TrngCompletionDate { get; set; }
@@ -101,10 +99,8 @@ namespace Models.DTO
         public DateTime? InductionTrngDate { get; set; }
         public DateTime? LastWorkingDate { get; set; }
         public string? LicenseNo { get; set; }
-        public string? LicenseType { get; set; }
         public DateTime? LicenseIssueDate { get; set; }
         public DateTime? LicenseExpiryDate { get; set; }
-        public string? LicenseStatus { get; set; }
         public string? Comments { get; set; }
         public string? Reason { get; set; }
         public int? OrgId { get; set; }
@@ -156,6 +152,14 @@ namespace Models.DTO
         public string? CandidateTypeDesc { get; set; }
         public string? CommissionClassDesc { get; set; }
         public string? AgentTypeDesc { get; set; }
+        public int? LicenseType { get; set; }
+        public int? LicenseStatus { get; set; }
+        public int? Vertical { get; set; }
+        public int? TrainingGroupType { get; set; }
+        public string? LicenseTypeDesc { get; set; }
+        public string? LicenseStatusDesc { get; set; }
+        public string? VerticalDesc { get; set; }
+        public string? TrainingGroupTypeDesc { get; set; }
     }
     public class AgentListRequest
     {

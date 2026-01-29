@@ -37,6 +37,7 @@ namespace Models.DTO
         public object? pagination { get; set; }
         public List<ProcessCommissionDTO>? processCommissionList { get; set; }
         public FileDownloadDto? fileDownload { get; set; } = null;
+        public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
     }
 
     public class UpdatedAgentField

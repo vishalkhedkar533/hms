@@ -2046,3 +2046,53 @@ ALTER TABLE hms.geo_hierarchy
 ADD CONSTRAINT fk_channel_code 
 FOREIGN KEY (channel_code) 
 REFERENCES hms.channel_master (channel_code) ON DELETE CASCADE;
+
+-- Drop the old one first to avoid confusion
+DROP FUNCTION IF EXISTS hms.get_geo_hierarchy_by_channel(text, bigint);
+
+CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_code text, p_orgid bigint)
+ RETURNS jsonb
+ LANGUAGE sql
+AS $function$
+WITH RECURSIVE hierarchy_cte AS (
+    -- Step 1: Get the path for the specific channel
+    SELECT 
+        gh.hierarchy_path,
+        string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
+    FROM hms.geo_hierarchy gh
+    WHERE gh.channel_code = p_channel_code AND gh.orgid = p_orgid::int
+),
+json_tree AS (
+    -- Step 2: Start from the leaf (lowest designation level)
+    SELECT 
+        array_length(labels, 1) AS lvl,
+        jsonb_build_object(
+            'designationId', dm.designation_id,
+            'designationName', dm.designation_name,
+            'designationCode', dm.designation_code,
+            'supervisors', NULL
+        ) AS node,
+        labels
+    FROM hierarchy_cte h
+    JOIN hms.designation_master dm ON dm.designation_id = h.labels[array_length(h.labels, 1)]::int8
+
+    UNION ALL
+
+    -- Step 3: Move up the path and join for names
+    SELECT 
+        j.lvl - 1,
+        jsonb_build_object(
+            'designationId', dm.designation_id,
+            'designationName', dm.designation_name,
+            'designationCode', dm.designation_code,
+            'supervisors', j.node
+        ) AS node,
+        j.labels
+    FROM json_tree j
+    JOIN hms.designation_master dm ON dm.designation_id = j.labels[j.lvl - 1]::int8
+    WHERE j.lvl > 1
+)
+SELECT jsonb_agg(node)
+FROM json_tree
+WHERE lvl = 1;
+$function$;

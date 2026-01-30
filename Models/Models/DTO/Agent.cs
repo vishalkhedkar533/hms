@@ -235,7 +235,7 @@ namespace Models.DTO
         public long DesignationId { get; set; }
         public string? DesignationName { get; set; }
         public string? DesignationCode { get; set; }
-        public GeoHierarchyDto? Supervisors { get; set; } 
+        public GeoHierarchyDto? ParentLocation { get; set; } 
         public string? HierarchyPath { get; set; } = string.Empty;
     }
 

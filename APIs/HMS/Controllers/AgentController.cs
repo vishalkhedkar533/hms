@@ -1597,5 +1597,40 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
+
+        [HttpPost("GeoHierarchy")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetGeoHierarchy([FromBody] GeoSearchRequest request)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            var stringResponse = await _db.ExecuteQueryAsync<string>(
+                "Agent", 
+                "get_geo_hierarchy",
+                new
+                {
+                    p_channel_code = request.ChannelCode,
+                    p_orgid = orgId
+                });
+
+            if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+            {
+                List<GeoHierarchyDto> geoData = JsonConvert.DeserializeObject<List<GeoHierarchyDto>>(
+                    stringResponse.FirstOrDefault(),
+                    new JsonSerializerSettings
+                    {
+                        NullValueHandling = NullValueHandling.Ignore,
+                        ContractResolver = new CamelCasePropertyNamesContractResolver()
+                    });
+
+                hMSResponse.responseHeader.ErrorCode = 1101;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.geoHierarchy = geoData;
+                return Ok(hMSResponse);
+            }
+
+            return NotFound("Hierarchy not found.");
+        }
     }
 }

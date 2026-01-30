@@ -133,3 +133,5 @@ VALUES
 (2, 'TRAINING_GROUP', 2, 'Advanced',         0, true),
 (2, 'TRAINING_GROUP', 3, 'Compliance',       0, true),
 (2, 'TRAINING_GROUP', 4, 'Technical',        0, true);
+
+select * from hmsmaster.keyvalueentries k where k.entrycategory  in('CHANNEL_NAME', 'SUB_CHANNEL','DESIGNATION')

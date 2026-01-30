@@ -820,6 +820,7 @@ CREATE TABLE hms.HIERARCHY_ORG_UNIT (
         REFERENCES hms.LOCATION_MASTER (LOCATION_CODE)*/
 );
 
+
 CREATE TABLE hms.CHANNEL_MASTER (
     CHANNEL_CODE     VARCHAR(20) PRIMARY KEY,
     CHANNEL_NAME     VARCHAR(100) NOT NULL,
@@ -832,38 +833,32 @@ CREATE TABLE hms.CHANNEL_MASTER (
     ROWVERSION       INTEGER
 );
 
-CREATE TABLE hms.SUBCHANNEL_MASTER (
-    SUBCHANNEL_CODE   VARCHAR(20) PRIMARY KEY,
-    CHANNEL_CODE      VARCHAR(20) NOT NULL,
-    SUBCHANNEL_NAME   VARCHAR(100) NOT NULL,
-    DESCRIPTION       TEXT,
-    IS_ACTIVE         BOOLEAN NOT NULL,
-    CREATED_BY        VARCHAR(100) NOT NULL,
-    CREATED_DATE      TIMESTAMP NOT NULL,
-    MODIFIED_BY       VARCHAR(100),
-    MODIFIED_DATE     TIMESTAMP,
-    ROWVERSION        INTEGER,
+
+
+CREATE SEQUENCE hms.designation_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 9008
+	CACHE 1
+	NO CYCLE; 
+
+CREATE TABLE hms.designation_master (
+    designation_id int8 DEFAULT nextval('hms.designation_id_seq'::regclass) not null PRIMARY KEY,
+    designation_code   VARCHAR(20) not null unique,
+    designation_name   VARCHAR(100) NOT NULL,
+    channel_code       VARCHAR(20),
+    designation_level  INTEGER,
+    is_active          BOOLEAN NOT NULL,
+    created_by         VARCHAR(100) NOT NULL,
+    created_date       TIMESTAMP NOT NULL,
+    modified_by        VARCHAR(100),
+    modified_date      TIMESTAMP,
+    rowversion         INTEGER,
 
     CONSTRAINT fk_channel_code
-        FOREIGN KEY (CHANNEL_CODE)
-        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
-);
-
-CREATE TABLE hms.DESIGNATION_MASTER (
-    DESIGNATION_CODE   VARCHAR(20) PRIMARY KEY,
-    DESIGNATION_NAME   VARCHAR(100) NOT NULL,
-    CHANNEL_CODE       VARCHAR(20),
-    LEVEL              INTEGER,
-    IS_ACTIVE          BOOLEAN NOT NULL,
-    CREATED_BY         VARCHAR(100) NOT NULL,
-    CREATED_DATE       TIMESTAMP NOT NULL,
-    MODIFIED_BY        VARCHAR(100),
-    MODIFIED_DATE      TIMESTAMP,
-    ROWVERSION         INTEGER,
-
-    CONSTRAINT fk_channel_code
-        FOREIGN KEY (CHANNEL_CODE)
-        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
+        FOREIGN KEY (channel_code)
+        REFERENCES hms.channel_master (channel_code)
 );
 
 CREATE TABLE hms.ROLE_MASTER (
@@ -2032,6 +2027,7 @@ CREATE SEQUENCE hms.geo_hierarchy_id_seq
 CREATE TABLE hms.geo_hierarchy (
 	geo_hierarchy_id int8 DEFAULT nextval('hms.geo_hierarchy_id_seq'::regclass) NOT NULL,
 	channel_code varchar(20) NOT NULL,
+	designation_code varchar(20) NOT NULL,
 	created_by varchar(100) NOT NULL,
 	created_date timestamp NOT NULL,
 	modified_by varchar(100) NULL,
@@ -2096,3 +2092,24 @@ SELECT jsonb_agg(node)
 FROM json_tree
 WHERE lvl = 1;
 $function$;
+ALTER TABLE hms.geo_hierarchy 
+ADD CONSTRAINT fk_designation_code 
+FOREIGN KEY (designation_code) 
+REFERENCES hms.designation_master (designation_code) ON DELETE CASCADE;
+
+CREATE TABLE hms.SUBCHANNEL_MASTER (
+    SUBCHANNEL_CODE   VARCHAR(20) PRIMARY KEY,
+    CHANNEL_CODE      VARCHAR(20) NOT NULL,
+    SUBCHANNEL_NAME   VARCHAR(100) NOT NULL,
+    DESCRIPTION       TEXT,
+    IS_ACTIVE         BOOLEAN NOT NULL,
+    CREATED_BY        VARCHAR(100) NOT NULL,
+    CREATED_DATE      TIMESTAMP NOT NULL,
+    MODIFIED_BY       VARCHAR(100),
+    MODIFIED_DATE     TIMESTAMP,
+    ROWVERSION        INTEGER,
+    orgid             int4 NULL,
+    CONSTRAINT fk_channel_code
+        FOREIGN KEY (CHANNEL_CODE)
+        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
+);

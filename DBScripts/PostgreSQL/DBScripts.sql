@@ -849,21 +849,30 @@ CREATE TABLE hms.SUBCHANNEL_MASTER (
         REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
 );
 
-CREATE TABLE hms.DESIGNATION_MASTER (
-    DESIGNATION_CODE   VARCHAR(20) PRIMARY KEY,
-    DESIGNATION_NAME   VARCHAR(100) NOT NULL,
-    CHANNEL_CODE       VARCHAR(20),
-    LEVEL              INTEGER,
-    IS_ACTIVE          BOOLEAN NOT NULL,
-    CREATED_BY         VARCHAR(100) NOT NULL,
-    CREATED_DATE       TIMESTAMP NOT NULL,
-    MODIFIED_BY        VARCHAR(100),
-    MODIFIED_DATE      TIMESTAMP,
-    ROWVERSION         INTEGER,
+CREATE SEQUENCE hms.designation_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 9008
+	CACHE 1
+	NO CYCLE; 
+
+CREATE TABLE hms.designation_master (
+    designation_id int8 DEFAULT nextval('hms.designation_id_seq'::regclass) not null PRIMARY KEY,
+    designation_code   VARCHAR(20) not null unique,
+    designation_name   VARCHAR(100) NOT NULL,
+    channel_code       VARCHAR(20),
+    designation_level  INTEGER,
+    is_active          BOOLEAN NOT NULL,
+    created_by         VARCHAR(100) NOT NULL,
+    created_date       TIMESTAMP NOT NULL,
+    modified_by        VARCHAR(100),
+    modified_date      TIMESTAMP,
+    rowversion         INTEGER,
 
     CONSTRAINT fk_channel_code
-        FOREIGN KEY (CHANNEL_CODE)
-        REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
+        FOREIGN KEY (channel_code)
+        REFERENCES hms.channel_master (channel_code)
 );
 
 CREATE TABLE hms.ROLE_MASTER (

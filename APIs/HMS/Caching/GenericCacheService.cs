@@ -104,23 +104,47 @@ namespace HMS.Caching
 
         // 🔹 Strongly Typed
         public async Task<IEnumerable<T>> GetRecordsAsync<T>(string schema,
-            string table,
-            Int64 OrgID = 0,
-            string FilterCriteria = "",
-            int? refreshIntervalMinutes = null) where T : class
+    string table,
+    Int64 OrgID = 0,
+    string FilterCriteria = "",
+    int? refreshIntervalMinutes = null) where T : class
         {
             string cacheKey = $"{OrgID}.{schema}.{table}.{FilterCriteria}";
 
             if (!_cache.TryGetValue(cacheKey, out IEnumerable<T> records))
             {
-                StringBuilder sql = new StringBuilder();
-                sql.Append($"SELECT * FROM {QuoteIdentifier(schema)}.{QuoteIdentifier(table)} WHERE orgid= {OrgID}");
+                string selectColumns = "*";
+                string rowFilters = string.Empty;
 
-                if (!FilterCriteria.Equals(string.Empty)) sql.Append(FilterCriteria);
+                // Logic to handle column mapping Aliases vs standard Filtering
+                if (!string.IsNullOrEmpty(FilterCriteria))
+                {
+                    if (FilterCriteria.Contains(" AS ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // If it contains 'AS', we treat it as our SELECT list
+                        selectColumns = FilterCriteria.TrimStart(' ', 'A', 'N', 'D');
+                    }
+                    else
+                    {
+                        // Otherwise, it's a standard WHERE clause addition
+                        rowFilters = FilterCriteria;
+                    }
+                }
+
+                StringBuilder sql = new StringBuilder();
+                // Place columns in SELECT and filters in WHERE
+                sql.Append($"SELECT {selectColumns} FROM {QuoteIdentifier(schema)}.{QuoteIdentifier(table)} ");
+                sql.Append($"WHERE orgid = {OrgID}");
+
+                if (!string.IsNullOrEmpty(rowFilters))
+                {
+                    sql.Append(rowFilters);
+                }
 
                 if (_connection.State != ConnectionState.Open)
                     await _connection.OpenAsync();
 
+                // Log sql.ToString() here to verify the generated query
                 records = await _connection.QueryAsync<T>(sql.ToString());
 
                 _cache.Set(cacheKey, records, GetCacheOptions());

@@ -424,3 +424,7 @@ ALTER TABLE hmsmaster.subchannel_master DROP CONSTRAINT subchannel_master_pkey;
 
 ALTER TABLE hmsmaster.subchannel_master add column sub_channel_id int8 
 DEFAULT nextval('hmsmaster.subchannel_id_seq'::regclass) not null PRIMARY key;
+
+ALTER TABLE hmsmaster.designation_master  ADD COLUMN "orgid" INT null;
+ALTER TABLE hmsmaster.designation_master add CONSTRAINT fk_chann_mst_org
+FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId);

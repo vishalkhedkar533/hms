@@ -2051,7 +2051,7 @@ CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_code text,
  LANGUAGE sql
 AS $function$
 WITH RECURSIVE hierarchy_cte AS (
-    -- Step 1: Get the path for the specific channel
+    -- Step 1: Get the path from hms schema
     SELECT 
         gh.hierarchy_path,
         string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
@@ -2059,33 +2059,34 @@ WITH RECURSIVE hierarchy_cte AS (
     WHERE gh.channel_code = p_channel_code AND gh.orgid = p_orgid::int
 ),
 json_tree AS (
-    -- Step 2: Start from the leaf (lowest designation level)
+    -- Step 2: Leaf node (Agent)
     SELECT 
         array_length(labels, 1) AS lvl,
         jsonb_build_object(
             'designationId', dm.designation_id,
             'designationName', dm.designation_name,
             'designationCode', dm.designation_code,
-            'supervisors', NULL
+            'parentLocation', NULL -- Matches DTO Property Name
         ) AS node,
         labels
     FROM hierarchy_cte h
-    JOIN hms.designation_master dm ON dm.designation_id = h.labels[array_length(h.labels, 1)]::int8
+    -- Note: Join with hmsmaster schema
+    JOIN hmsmaster.designation_master dm ON dm.designation_id = h.labels[array_length(h.labels, 1)]::int8
 
     UNION ALL
 
-    -- Step 3: Move up the path and join for names
+    -- Step 3: Recursive parents
     SELECT 
         j.lvl - 1,
         jsonb_build_object(
             'designationId', dm.designation_id,
             'designationName', dm.designation_name,
             'designationCode', dm.designation_code,
-            'supervisors', j.node
+            'parentLocation', j.node -- Matches DTO Property Name
         ) AS node,
         j.labels
     FROM json_tree j
-    JOIN hms.designation_master dm ON dm.designation_id = j.labels[j.lvl - 1]::int8
+    JOIN hmsmaster.designation_master dm ON dm.designation_id = j.labels[j.lvl - 1]::int8
     WHERE j.lvl > 1
 )
 SELECT jsonb_agg(node)

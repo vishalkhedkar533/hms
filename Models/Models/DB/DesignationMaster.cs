@@ -4,76 +4,79 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
-    /*
-     * modelBuilder.Entity<DesignationMaster>(entity =>
-{
-    entity.ToTable("DESIGNATION_MASTER", "hms");
-
-    entity.HasOne(d => d.ChannelMaster)
-          .WithMany()
-          .HasForeignKey(d => d.ChannelCode)
-          .HasConstraintName("fk_channel_code")
-          .OnDelete(DeleteBehavior.Restrict);
-});
-
-     */
-    [Table("DESIGNATION_MASTER", Schema = "hms")]
+    /// <summary>
+    /// Represents a designation 
+    /// </summary>
+    [Table("designation_master", Schema = "hmsmaster")]
     public class DesignationMaster
     {
         [Key]
-        [Column("DESIGNATION_CODE")]
+        [Column("designation_id")]
+        [SwaggerSchema("Primary key: unique identifier for the designation.")]
+        public long DesignationId { get; set; } 
+
+        [Required]
+        [Column("designation_code")]
         [StringLength(20)]
-        [SwaggerSchema("Primary key: designation code.")]
+        [SwaggerSchema("Unique code for the designation.")]
         public string DesignationCode { get; set; } = null!;
 
         [Required]
-        [Column("DESIGNATION_NAME")]
+        [Column("designation_name")]
         [StringLength(100)]
         [SwaggerSchema("Name of the designation.")]
         public string DesignationName { get; set; } = null!;
 
-        [Column("CHANNEL_CODE")]
+        [Column("channel_code")]
         [StringLength(20)]
-        [SwaggerSchema("Foreign key referencing channel code.")]
+        [SwaggerSchema("Channel code associated with this designation.")]
         public string? ChannelCode { get; set; }
 
-        [Column("LEVEL")]
+        [Column("designation_level")]
         [SwaggerSchema("Hierarchy level of the designation.")]
-        public int? Level { get; set; }
+        public int? DesignationLevel { get; set; } // Updated name to match SQL
 
         [Required]
-        [Column("IS_ACTIVE")]
+        [Column("is_active")]
         [SwaggerSchema("Indicates if the designation is active.")]
         public bool IsActive { get; set; }
 
         [Required]
-        [Column("CREATED_BY")]
+        [Column("created_by")]
         [StringLength(100)]
         [SwaggerSchema("User who created the record.")]
-        public string CreatedBy { get; set; } = null!;
+        public string CreatedBy { get; set; } = "System";
 
         [Required]
-        [Column("CREATED_DATE")]
-        [SwaggerSchema("Date and time when the record was created.")]
-        public DateTime CreatedDate { get; set; }
+        [Column("created_date")]
+        [SwaggerSchema("Date and time the record was created.")]
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-        [Column("MODIFIED_BY")]
+        [Column("modified_by")]
         [StringLength(100)]
         [SwaggerSchema("User who last modified the record.")]
         public string? ModifiedBy { get; set; }
 
-        [Column("MODIFIED_DATE")]
-        [SwaggerSchema("Date and time of last modification.")]
+        [Column("modified_date")]
+        [SwaggerSchema("Date and time of the last modification.")]
         public DateTime? ModifiedDate { get; set; }
 
-        [Column("ROWVERSION")]
+        [Column("rowversion")]
         [ConcurrencyCheck]
         [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
         public int? RowVersion { get; set; }
 
-        // Navigation property
-        [ForeignKey(nameof(ChannelCode))]
-        [SwaggerSchema("The related channel.")]
-        public ChannelMaster? ChannelMaster { get; set; }
+        [Column("channel_id")]
+        [SwaggerSchema("Foreign key referencing the channel master ID.")]
+        public long? ChannelId { get; set; }
+
+        [Column("orgid")]
+        [SwaggerSchema("Organization ID reference.")]
+        public int? OrgId { get; set; } 
+
+        // Navigation properties
+        [ForeignKey(nameof(ChannelId))]
+        [SwaggerSchema("The related channel master entity.")]
+        public virtual ChannelMaster? ChannelMaster { get; set; }
     }
 }

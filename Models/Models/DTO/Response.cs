@@ -38,6 +38,7 @@ namespace Models.DTO
         public List<ProcessCommissionDTO>? processCommissionList { get; set; }
         public FileDownloadDto? fileDownload { get; set; } = null;
         public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
+        public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
     }
 
     public class UpdatedAgentField

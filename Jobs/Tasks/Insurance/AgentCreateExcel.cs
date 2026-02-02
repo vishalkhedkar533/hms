@@ -108,6 +108,7 @@ namespace Tasks.Insurance
                         rowCount++;
                         row.OrgId = task.OrgId;
                         List<string> errors = new();
+                        SanitizeStringProperties(row, errors);
 
                         // Validation logic
                         ValidateMaster(row.AgentClassDesc, agentClassDict, v => row.AgentClass = v, "Agent Class", errors);
@@ -285,7 +286,7 @@ namespace Tasks.Insurance
                         writer.Write(r.BirthPlace ?? "");
 
                         // 131-136
-                        writer.Write(r.MartialStatus ?? 0);
+                        writer.Write(r.MaritalStatusDesc ?? "");
                         writer.Write(r.EducationCode?.ToString() ?? "");
                         writer.Write(r.EducationLevel ?? "");
                         writer.Write(r.WorkProfile ?? "");
@@ -377,6 +378,30 @@ namespace Tasks.Insurance
                 }
             }
             return isValid;
+        }
+
+        private static void SanitizeStringProperties(Agent row, List<string> errors)
+        {
+            foreach (var prop in typeof(Agent).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (prop.PropertyType != typeof(string))
+                {
+                    continue;
+                }
+
+                var value = (string?)prop.GetValue(row);
+                if (string.IsNullOrEmpty(value))
+                {
+                    continue;
+                }
+
+                var sanitized = value.Replace("\0", string.Empty);
+                if (!string.Equals(value, sanitized, StringComparison.Ordinal))
+                {
+                    errors.Add($"Col '{prop.Name}' contains invalid characters.");
+                    prop.SetValue(row, sanitized);
+                }
+            }
         }
         #endregion
     }

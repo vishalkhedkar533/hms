@@ -107,10 +107,12 @@ namespace HMS.Caching
     string table,
     Int64 OrgID = 0,
     string FilterCriteria = "",
+    string ColumnAliases = "",
     int? refreshIntervalMinutes = null) where T : class
         {
             string cacheKey = $"{OrgID}.{schema}.{table}.{FilterCriteria}";
-
+            // AND channel_id AS entryIdentity, channel_name AS entryDesc,
+            // channel_code AS entryCategory, is_active AS activeStatus, orgid
             if (!_cache.TryGetValue(cacheKey, out IEnumerable<T> records))
             {
                 string selectColumns = "*";
@@ -119,16 +121,12 @@ namespace HMS.Caching
                 // Logic to handle column mapping Aliases vs standard Filtering
                 if (!string.IsNullOrEmpty(FilterCriteria))
                 {
-                    if (FilterCriteria.Contains(" AS ", StringComparison.OrdinalIgnoreCase))
-                    {
-                        // If it contains 'AS', we treat it as our SELECT list
-                        selectColumns = FilterCriteria.TrimStart(' ', 'A', 'N', 'D');
-                    }
-                    else
-                    {
-                        // Otherwise, it's a standard WHERE clause addition
-                        rowFilters = FilterCriteria;
-                    }
+                    // Otherwise, it's a standard WHERE clause addition
+                    rowFilters = FilterCriteria;
+                }
+                if (!string.IsNullOrEmpty(ColumnAliases))
+                {
+                    selectColumns = ColumnAliases;
                 }
 
                 StringBuilder sql = new StringBuilder();

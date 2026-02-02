@@ -24,10 +24,10 @@ export const agentService = {
     sectionName: string,
     agentid: number,
   ) => {
-    console.log('EDIT_AGENT route:', APIRoutes.EDIT_AGENT)
-    console.log('EDIT_AGENT data:', data)
-     console.log('🔍 Agent ID:', agentid)
-        console.log('🔍 Section Name:', sectionName)
+    // console.log('EDIT_AGENT route:', APIRoutes.EDIT_AGENT)
+    // console.log('EDIT_AGENT data:', data)
+    //  console.log('🔍 Agent ID:', agentid)
+    //     console.log('🔍 Section Name:', sectionName)
     try {
       const response = await callApi<ApiResponse<IEditAgentResponseBody>>(
         APIRoutes.EDIT_AGENT,
@@ -53,5 +53,29 @@ export const agentService = {
     )
     console.log('agent', response)
     return response.responseBody?.agents?.[0] || null
+  },
+
+  fetchGeoHierarchy: async (channelCategory: string) => {
+    const response = await callApi<ApiResponse<any>>(
+      APIRoutes.GEO_HIERARCHY,
+      [channelCategory],
+    )
+    // console.log('geoHierarchy full response:', response)
+    // console.log('geoHierarchy responseBody:', response?.responseBody)
+    
+    // Handle different possible response structures
+    if (response?.responseBody) {
+      // Case 1: peopleHeirarchy is directly in responseBody
+      if (response.responseBody.geoHierarchy) {
+        return response.responseBody
+      }
+      // Case 2: peopleHeirarchy is nested in agents[0]
+      if (response.responseBody.agents?.[0]?.geoHierarchy) {
+        return response.responseBody.agents[0]
+      }
+      // Case 3: responseBody itself is the object we need
+      return response.responseBody
+    }
+    return null
   },
 }

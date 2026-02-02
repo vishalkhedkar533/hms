@@ -31,9 +31,9 @@ const License = ({ agent, getOptions }: LicenseDetailProps) => {
       licenseStatus: agent.licenseStatus,
       licenseExpiryDate: agent.licenseExpiryDate,
       cnctPersonName: agent.cnctPersonName,
-      agentTypeCategory: agent.agentTypeCategory,
-      agentClassification: agent.agentClassification,
-      ulipFlag: agent.ulipFlag,
+      agentTypeCat:agent.agentTypeCat,
+ agentClass: agent.agentClass,
+       ulipFlag: agent.ulipFlag,
       trainingGroupType: agent.trainingGroupType,
       ifs: agent.ifs,
       refresherTrainingCompleted: agent.refresherTrainingCompleted,
@@ -53,8 +53,8 @@ const License = ({ agent, getOptions }: LicenseDetailProps) => {
     sectionName: 'license_details',
     defaultValues: {
       cnctPersonName: agent.cnctPersonName,
-      agentTypeCategory: agent.agentTypeCategory,
-      agentClassification: agent.agentClassification,
+      agentTypeCat:agent.agentTypeCat,
+       agentClass: agent.agentClass,
       licenseStatus: agent.licenseStatus,
       licenseExpiryDate: agent.licenseExpiryDate,
       licenseIssueDate: agent.licenseIssueDate,
@@ -63,8 +63,8 @@ const License = ({ agent, getOptions }: LicenseDetailProps) => {
     },
     schema: z.object({
          cnctPersonName:  z.string().optional(),
-      agentTypeCategory:  z.union([z.string(), z.number()]).optional(),
-      agentClassification:  z.union([z.string(), z.number()]).optional(),
+      agentTypeCat:  z.union([z.string(), z.number()]).optional(),
+      agentClass:  z.union([z.string(), z.number()]).optional(),
       licenseStatus:  z.string().optional(),
       licenseExpiryDate:  z.string().optional(),
       licenseIssueDate:  z.string().optional(),
@@ -82,7 +82,7 @@ const License = ({ agent, getOptions }: LicenseDetailProps) => {
         variant: 'standard',
       },
       {
-        name: 'agentTypeCategory',
+        name: 'agentTypeCat',
         label: 'Agent Type Category',
         type: 'select',
         colSpan: 1,
@@ -91,7 +91,7 @@ const License = ({ agent, getOptions }: LicenseDetailProps) => {
         options: getOptions(MASTER_DATA_KEYS.AGENT_TYPE_CATEGORY),
       },
       {
-        name: 'agentClassification',
+        name: 'agentClass',
         label: 'Agent Classification',
         type: 'select',
         colSpan: 1,
@@ -423,7 +423,7 @@ const License = ({ agent, getOptions }: LicenseDetailProps) => {
           <h2 className="text-xl font-semibold text-gray-900 mb-6 font-poppins font-semibold text-[20px]">
             License Details
           </h2>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <span className="font-medium text-gray-700">Edit</span>
             <Switch
               checked={isEdit}

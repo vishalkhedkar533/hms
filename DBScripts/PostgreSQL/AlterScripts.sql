@@ -428,3 +428,6 @@ DEFAULT nextval('hmsmaster.subchannel_id_seq'::regclass) not null PRIMARY key;
 ALTER TABLE hmsmaster.designation_master  ADD COLUMN "orgid" INT null;
 ALTER TABLE hmsmaster.designation_master add CONSTRAINT fk_chann_mst_org
 FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId);
+
+alter table hmsmaster.mastertables add columnalias varchar(3000)
+

@@ -26,5 +26,6 @@
         /// Maps to FilterCriteria (varchar(1000)). NULLable.
         /// </summary>
         public string? FilterCriteria { get; set; } = string.Empty;
+        public string? columnalias { get; set; } = string.Empty;
     }
 }

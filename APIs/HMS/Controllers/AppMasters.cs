@@ -47,6 +47,7 @@ namespace HMS.Controllers
                     "mastertables",
                     Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
                     $" AND EntryCategory = '{EntryCategory}'",
+                    "",
                     refreshInterval))
                 .ToList().FirstOrDefault();
 
@@ -66,6 +67,7 @@ namespace HMS.Controllers
                     , masterTableConfigs?.TableName
                     , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                     , (masterTableConfigs?.FilterCriteria ?? string.Empty)
+                    , (masterTableConfigs?.columnalias ?? string.Empty)
                     , refreshInterval)).ToList();
 
                 if (result == null)
@@ -98,6 +100,7 @@ namespace HMS.Controllers
                     "mastertables",
                     Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
                     $" AND EntryCategory = '{EntryCategory}'",
+                    "",
                     refreshInterval))
                 .ToList().FirstOrDefault();
 
@@ -107,7 +110,7 @@ namespace HMS.Controllers
             var result = await _cacheService.RefreshCacheAsync(masterTableConfigs.SchemaName
                 , masterTableConfigs.TableName
                 , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
-                , EntryCategory);
+                , EntryCategory );
             return Ok(result);
         }
 
@@ -122,6 +125,7 @@ namespace HMS.Controllers
                     "mastertables",
                     Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
                     $" AND EntryCategory = '{EntryCategory}'",
+                    string.Empty,
                     refreshInterval)).Result.ToList().FirstOrDefault();
 
 

@@ -375,6 +375,7 @@ namespace HMS.Controllers
                     "mastertables",
                     Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"),
                     $" AND EntryCategory = '{EntryCategory}'",
+                    string.Empty,
                     refreshInterval)).Result.FirstOrDefault();
 
             var result = (_cacheService.GetRecordsAsync<KeyValueEntry>(
@@ -382,6 +383,7 @@ namespace HMS.Controllers
                 , masterTableConfigs?.TableName
                 , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
                 , (masterTableConfigs?.FilterCriteria ?? string.Empty)
+                , (masterTableConfigs?.columnalias ?? string.Empty)
                 , refreshInterval)).Result.ToList<KeyValueEntry>();
             return result;
         }

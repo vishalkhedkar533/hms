@@ -135,3 +135,33 @@ VALUES
 (2, 'TRAINING_GROUP', 4, 'Technical',        0, true);
 
 select * from hmsmaster.keyvalueentries k where k.entrycategory  in('CHANNEL_NAME', 'SUB_CHANNEL','DESIGNATION')
+
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (2, 'Channel', 'hmsmaster', 'channel_master', ' AND channel_id AS entryIdentity, channel_name AS entryDesc, channel_code AS entryCategory, is_active AS activeStatus, orgid');
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (2, 'SubChannel', 'hmsmaster', 'subchannel_master', ' AND sub_channel_id AS entryIdentity, subchannel_name AS entryDesc, subchannel_code AS entryCategory, channel_id AS entryParentId, is_active AS activeStatus, orgid');
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (2, 'Designation', 'hmsmaster', 'designation_master', ' AND designation_id AS entryIdentity, designation_name AS entryDesc, channel_code AS entryCategory, channel_id AS entryParentId, is_active AS activeStatus');
+
+update hmsmaster.mastertables 
+set columnalias = filtercriteria 
+where entrycategory in ('Channel','SubChannel','Designation');
+
+update hmsmaster.mastertables 
+set filtercriteria  = null
+where entrycategory in ('Channel','SubChannel','Designation');
+
+update hmsmaster.mastertables 
+set columnalias = 'channel_id AS entryIdentity, channel_name AS entryDesc, channel_code AS entryCategory, is_active AS activeStatus, orgid' 
+where entrycategory in ('Channel');
+
+update hmsmaster.mastertables 
+set columnalias = 'sub_channel_id AS entryIdentity, subchannel_name AS entryDesc, subchannel_code AS entryCategory, channel_id AS entryParentId, is_active AS activeStatus, orgid' 
+where entrycategory in ('SubChannel');
+
+update hmsmaster.mastertables 
+set columnalias = 'designation_id AS entryIdentity, designation_name AS entryDesc, channel_code AS entryCategory, channel_id AS entryParentId, is_active AS activeStatus' 
+where entrycategory in ('Designation');

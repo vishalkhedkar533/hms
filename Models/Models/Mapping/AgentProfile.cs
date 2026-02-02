@@ -61,6 +61,7 @@ namespace Models.Mapping
                 .ForMember(d => d.CommissionClass, o => o.MapFrom(s => s.CommissionClass))
                 .ForMember(d => d.AgentType, o => o.MapFrom(s => s.AgentType))
                 .ForMember(d => d.Country, o => o.MapFrom(s => s.Country))
+                .ForMember(d => d.State, o => o.MapFrom(s => s.State))
                 .ForMember(d => d.Father_Husband_Nm, o => o.MapFrom(s => s.FatherHusbandNm))
                 // PAN masking
                 .ForMember(d => d.MaskedPanNumber,
@@ -102,7 +103,7 @@ namespace Models.Mapping
                 .ForMember(d => d.AddressLine2, o => o.Ignore())
                 .ForMember(d => d.AddressLine3, o => o.Ignore())
                 .ForMember(d => d.City, o => o.Ignore())
-                .ForMember(d => d.State, o => o.Ignore())
+                .ForMember(d => d.State, o => o.MapFrom(s => s.State))
                 .ForMember(d => d.Pin, o => o.Ignore())
                 .ForMember(d => d.Landmark, o => o.Ignore())
                 .ForMember(d => d.Supervisor_Code, o => o.Ignore())
@@ -131,7 +132,7 @@ namespace Models.Mapping
                 .ForMember(d => d.LicenseStatusDesc, o => o.Ignore())
                 .ForMember(d => d.VerticalDesc, o => o.Ignore())
                 .ForMember(d => d.TrainingGroupTypeDesc, o => o.Ignore())
-                
+
                 ;
             // ================================
             // AgentDto → Agent

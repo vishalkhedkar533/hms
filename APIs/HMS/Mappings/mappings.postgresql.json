@@ -30,10 +30,10 @@
         "Function": "na",
         "Script": "select a.agent_id AgentId , a.agent_code AgentCode, a.first_name FirstName, a.middle_name MiddleName, a.last_name LastName, a.agent_name AgentName, a.channel_code ChannelCode, a.sub_channel_code SubChannelCode, a.designation_code DesignationCode, a.pan_number PanNumber , a.aadhaar_number aadhaar_number from hms.agent a where exists (SELECT c.agent_id FROM hms.agent_hierarchy AS p JOIN hms.agent_hierarchy AS c ON c.hierarchy_path <@ p.hierarchy_path AND nlevel(c.hierarchy_path) = nlevel(p.hierarchy_path) + 1 WHERE c.agent_id = a.agent_id and p.agent_id = @p_agent_id and a.orgid = @p_orgid)"
       },
-      "get_reportees_by_channel_designation": {
-        "Function": "na",
-        "Script": "select a.agent_id AgentId , a.agent_code AgentCode, a.first_name FirstName, a.middle_name MiddleName, a.last_name LastName, a.agent_name AgentName, a.channel ChannelCode, a.subchannel SubChannelCode, a.designation_code DesignationCode, a.pan_number PanNumber , a.aadhaar_number aadhaar_number from hms.agent a where exists ( select c.agent_id from hms.agent_hierarchy as p join hms.agent_hierarchy as c on c.hierarchy_path <@ p.hierarchy_path and nlevel(c.hierarchy_path) = nlevel(p.hierarchy_path) + 1 where c.agent_id = a.agent_id and a.channel = @channel and a.designation_code = @designation_code and a.orgid = @p_orgid)"
-      },
+        "get_reportees_by_channel_designation": {
+          "Function": "na",
+          "Script": "SELECT a.agent_name AS AgentName, dm.designation_name AS AgentDesignation, a.agent_code AS AgentCode, lm.entrydesc AS Location, a.agent_id AS AgentId FROM hms.agent a LEFT JOIN hmsmaster.designation_master dm ON a.designation_code::int8 = dm.designation_id LEFT JOIN hmsmaster.keyvalueentries lm ON a.location_code::int4 = lm.entryidentity AND lm.entrycategory = 'LOCATION' WHERE a.orgid = @p_orgid AND a.channel::int8 = @channel AND a.designation_code::int8 = @designation_code AND EXISTS (SELECT 1 FROM hms.agent_hierarchy as p JOIN hms.agent_hierarchy as c ON c.hierarchy_path <@ p.hierarchy_path AND nlevel(c.hierarchy_path) = nlevel(p.hierarchy_path) + 1 WHERE c.agent_id = a.agent_id)"
+        },
       "get_geo_hierarchy": {
         "Function": "hms.get_geo_hierarchy_by_channel",
         "Script": "SELECT hms.get_geo_hierarchy_by_channel(@p_channel_code, @p_orgid)"

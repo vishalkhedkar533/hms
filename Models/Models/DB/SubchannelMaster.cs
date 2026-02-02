@@ -4,32 +4,27 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
-    /*
-     * modelBuilder.Entity<SubchannelMaster>(entity =>
-{
-    entity.ToTable("SUBCHANNEL_MASTER", "hms");
-
-    entity.HasOne(e => e.ChannelMaster)
-          .WithMany()
-          .HasForeignKey(e => e.ChannelCode)
-          .HasConstraintName("fk_channel_code")
-          .OnDelete(DeleteBehavior.Restrict);
-});
-
-     */
-    [Table("subchannel_master", Schema = "hms")]
+    /// <summary>
+    /// Represents a subchannel master
+    /// </summary>
+    [Table("subchannel_master", Schema = "hmsmaster")]
     public class SubchannelMaster
     {
         [Key]
+        [Column("sub_channel_id")]
+        [SwaggerSchema("Primary key: unique identifier for the subchannel.")]
+        public long SubChannelId { get; set; } // Matches int8 primary key
+
+        [Required]
         [Column("subchannel_code")]
         [StringLength(20)]
-        [SwaggerSchema("Primary key: subchannel code.")]
+        [SwaggerSchema("Unique code for the subchannel.")]
         public string SubchannelCode { get; set; } = null!;
 
         [Required]
         [Column("channel_code")]
         [StringLength(20)]
-        [SwaggerSchema("Foreign key referencing channel code.")]
+        [SwaggerSchema("Code of the parent channel.")]
         public string ChannelCode { get; set; } = null!;
 
         [Required]
@@ -48,15 +43,24 @@ namespace Models.DB
         public bool IsActive { get; set; }
 
         [Required]
+        [Column("orgid")]
+        [SwaggerSchema("Organization ID reference.")]
+        public int? OrgId { get; set; } 
+
+        [Column("channel_id")]
+        [SwaggerSchema("Foreign key referencing the channel master ID.")]
+        public long? ChannelId { get; set; }
+
+        [Required]
         [Column("created_by")]
         [StringLength(100)]
         [SwaggerSchema("User who created the record.")]
-        public string CreatedBy { get; set; } = null!;
+        public string CreatedBy { get; set; } = "System";
 
         [Required]
         [Column("created_date")]
-        [SwaggerSchema("Date and time when the record was created.")]
-        public DateTime CreatedDate { get; set; }
+        [SwaggerSchema("Date and time the record was created.")]
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
 
         [Column("modified_by")]
         [StringLength(100)]
@@ -73,8 +77,8 @@ namespace Models.DB
         public int? RowVersion { get; set; }
 
         // Navigation property
-        [SwaggerSchema("The related channel.")]
-        [ForeignKey(nameof(ChannelCode))]
-        public ChannelMaster? ChannelMaster { get; set; }
+        [ForeignKey(nameof(ChannelId))]
+        [SwaggerSchema("The related channel master entity.")]
+        public virtual ChannelMaster? ChannelMaster { get; set; }
     }
 }

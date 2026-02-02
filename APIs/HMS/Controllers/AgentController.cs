@@ -1,4 +1,5 @@
 using AutoMapper;
+using Azure;
 using CommonLibrary;
 using CommonLibrary.Background;
 using HMS.Caching;
@@ -1606,9 +1607,10 @@ namespace HMS.Controllers
         {
             HmsResponse hMSResponse = new HmsResponse();
             long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-            var stringResponse = await _db.ExecuteQueryAsync<string>(
-                "Agent", 
+            try
+            {
+                var stringResponse = await _db.ExecuteQueryAsync<string>(
+                "Agent",
                 "get_geo_hierarchy",
                 new
                 {
@@ -1616,75 +1618,101 @@ namespace HMS.Controllers
                     p_orgid = orgId
                 });
 
-            if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
-            {
-                List<GeoHierarchyDto> geoData = JsonConvert.DeserializeObject<List<GeoHierarchyDto>>(
-                    stringResponse.FirstOrDefault(),
-                    new JsonSerializerSettings
-                    {
-                        NullValueHandling = NullValueHandling.Ignore,
-                        ContractResolver = new CamelCasePropertyNamesContractResolver()
-                    });
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+                {
+                    List<GeoHierarchyDto> geoData = JsonConvert.DeserializeObject<List<GeoHierarchyDto>>(
+                        stringResponse.FirstOrDefault(),
+                        new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
 
-                hMSResponse.responseHeader.ErrorCode = 1101;
-                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                hMSResponse.responseBody.geoHierarchy = geoData;
-                return Ok(hMSResponse);
+                    hMSResponse.responseHeader.ErrorCode = 1101;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.geoHierarchy = geoData;
+                    return Ok(hMSResponse);
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    return NotFound(hMSResponse);
+                }
+
             }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error Occure In GeoHeirarchy");
 
-            return NotFound("Hierarchy not found.");
+                return StatusCode(500, "Internal Server Error");
+            }
         }
 
         [HttpPost("GeoHierarchyByChannelDesignation")]
         [MenuAuthorize(1001)]
         public async Task<IActionResult> GetGeoHierarchyByChannelDesignation([FromBody] GeoHierarchyByChannelDesignationRequest request)
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.ChannelCode) || string.IsNullOrWhiteSpace(request.DesignationCode))
-                return BadRequest("ChannelCode and DesignationCode are required.");
-
             var channelCode = request.ChannelCode.Trim();
             var designationCode = request.DesignationCode.Trim();
             var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-            var channelId = await _context.ChannelMaster
+            try
+            {
+                var channelId = await _context.ChannelMaster
                 .AsNoTracking()
                 .Where(c => c.ChannelCode == channelCode && c.OrgId == orgId)
                 .Select(c => (long?)c.ChannelId)
                 .FirstOrDefaultAsync();
 
-            if (!channelId.HasValue)
-                return NotFound("Channel code not found.");
+                if (!channelId.HasValue)
+                    return NotFound("Channel code not found.");
 
-            var designationId = await _context.DesignationMaster
-                .AsNoTracking()
-                .Where(d => d.DesignationCode == designationCode && d.OrgId == orgId)
-                .Select(d => (long?)d.DesignationId)
-                .FirstOrDefaultAsync();
+                var designationId = await _context.DesignationMaster
+                    .AsNoTracking()
+                    .Where(d => d.DesignationCode == designationCode && d.OrgId == orgId)
+                    .Select(d => (long?)d.DesignationId)
+                    .FirstOrDefaultAsync();
 
-            if (!designationId.HasValue)
-                return NotFound("Designation code not found.");
+                if (!designationId.HasValue)
+                    return NotFound("Designation code not found.");
 
-            HmsResponse hMSResponse = new HmsResponse();
+                HmsResponse hMSResponse = new HmsResponse();
 
-            var reportees = await _db.ExecuteQueryAsync<GeoHierarchyAgentDto>(
-                "Agent",
-                "get_reportees_by_channel_designation",
-                new
+                var reportees = await _db.ExecuteQueryAsync<GeoHierarchyAgentDto>(
+                    "Agent",
+                    "get_reportees_by_channel_designation",
+                    new
+                    {
+                        channel = channelId.Value,
+                        designation_code = designationId.Value,
+                        p_orgid = orgId
+                    });
+
+                if (reportees != null)
                 {
-                    channel = channelId.Value,
-                    designation_code = designationId.Value,
-                    p_orgid = orgId
-                });
-
-            if (reportees != null)
-            {
-                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                hMSResponse.responseBody.geoAgentHierarchy = reportees.ToList();
-                return Ok(hMSResponse);
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.geoAgentHierarchy = reportees.ToList();
+                    return Ok(hMSResponse);
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    return NotFound(hMSResponse);
+                }
             }
-
-            return NotFound("Hierarchy not found.");
+            catch(Exception ex)
+            {
+                _logger.LogError(ex, "Error Occure In GeoHeirarchyByChannelDesignation");
+                return StatusCode(500, "Internal Server Error");
+            }
         }
     }
 }

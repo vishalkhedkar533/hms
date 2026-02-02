@@ -1,0 +1,95 @@
+{
+  "Maharashtra": {
+    "calculationPeriod": "Monthly",
+    "fixedAnnualRateForProfessionals": 2500,
+    "slabs": [
+      {
+        "minIncome": 0,
+        "maxIncome": 7500,
+        "rate": 0
+      },
+      {
+        "minIncome": 7501,
+        "maxIncome": 10000,
+        "rate": 175
+      },
+      {
+        "minIncome": 10001,
+        "maxIncome": null,
+        "rate": 200,
+        "specialRates": {
+          "february": 300,
+          "femaleThreshold": 25000
+        }
+      }
+    ]
+  },
+  "Karnataka": {
+    "calculationPeriod": "Monthly",
+    "fixedAnnualRateForProfessionals": 2500,
+    "slabs": [
+      {
+        "minIncome": 0,
+        "maxIncome": 25000,
+        "rate": 0
+      },
+      {
+        "minIncome": 25001,
+        "maxIncome": null,
+        "rate": 200,
+        "specialRates": { "february": 300 }
+      }
+    ]
+  },
+  "Kerala": {
+    "calculationPeriod": "HalfYearly",
+    "slabs": [
+      {
+        "minIncome": 0,
+        "maxIncome": 11999,
+        "rate": 0
+      },
+      {
+        "minIncome": 12000,
+        "maxIncome": 17999,
+        "rate": 120
+      },
+      {
+        "minIncome": 125000,
+        "maxIncome": null,
+        "rate": 1250
+      }
+    ]
+  },
+  "Bihar": {
+    "calculationPeriod": "Annual",
+    "fixedAnnualRateForProfessionals": 2500,
+    "slabs": [
+      {
+        "minIncome": 0,
+        "maxIncome": 300000,
+        "rate": 0
+      },
+      {
+        "minIncome": 300001,
+        "maxIncome": 500000,
+        "rate": 1000
+      },
+      {
+        "minIncome": 1000001,
+        "maxIncome": null,
+        "rate": 2500
+      }
+    ]
+  },
+  "Delhi": {
+    "calculationPeriod": "Monthly",
+    "slabs": [
+      {
+        "minIncome": 0,
+        "maxIncome": null,
+        "rate": 0
+      }
+    ]
+  }
+}

@@ -518,14 +518,14 @@ namespace HMS.Controllers
                 var AgentProfileMst = GetMasterData("AgentProfileMst").ToList();
                 var BankAccType = AgentProfileMst.Where(x=> x.EntryCategory == "BANK_ACC_TYP");
                 var AgentClass = AgentProfileMst.Where(x => x.EntryCategory == "AGENT_CLASS");
-                var SalesSubChannels = AgentProfileMst.Where(x => x.EntryCategory == "SUB_CHANNEL");
+                //var SalesSubChannels = AgentProfileMst.Where(x => x.EntryCategory == "SUB_CHANNEL");
                 var State = AgentProfileMst.Where(x => x.EntryCategory == "STATE_NAME");
                 var Occupations = AgentProfileMst.Where(x => x.EntryCategory == "OCCUPATION");
                 var MaritalStatus = AgentProfileMst.Where(x => x.EntryCategory == "MARITAL_STATUS");
                 var Gender = AgentProfileMst.Where(x => x.EntryCategory == "GENDER");
                 var EducationQualification = AgentProfileMst.Where(x => x.EntryCategory == "EDUCATION_CODE");
                 var Country = AgentProfileMst.Where(x => x.EntryCategory == "COUNTRY");
-                var SalesChannels = AgentProfileMst.Where(x => x.EntryCategory == "CHANNEL_NAME");
+                //var SalesChannels = AgentProfileMst.Where(x => x.EntryCategory == "CHANNEL_NAME");
                 var AgentTypeCategory = AgentProfileMst.Where(x => x.EntryCategory == "AGENT_TYPE_CAT");
                 var Salutation = AgentProfileMst.Where(x => x.EntryCategory == "TITLE");
                 var AgentType = AgentProfileMst.Where(x => x.EntryCategory == "AGNT_TYP");
@@ -535,6 +535,9 @@ namespace HMS.Controllers
                 var LicenceStatus = AgentProfileMst.Where(x => x.EntryCategory == "LICENSE_STATUS");
                 var Vertical = AgentProfileMst.Where(x => x.EntryCategory == "VERTICAL");
                 var TraningGroupType = AgentProfileMst.Where(x => x.EntryCategory == "TRAINING_GROUP");
+                var Channel = GetMasterData("Channel").ToList();
+                var SubChannel = GetMasterData("SubChannel").ToList();
+                var Designation = GetMasterData("Designation").ToList();
 
                 foreach (var bankAcc in agentDTO.bankAccounts)
                 {
@@ -545,14 +548,12 @@ namespace HMS.Controllers
                 }
 
                 agentDTO.AgentClassDesc = AgentClass.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentClass ??  -1000))?.EntryDesc ?? string.Empty;
-                agentDTO.SubChannelDesc = SalesSubChannels.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.SubChannel ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.StateDesc = State.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.State ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.OccupationDesc = Occupations.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Occupation ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.MaritalStatusDesc = MaritalStatus.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.MaritalStatus ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.GenderDesc = Gender.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Gender ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.EducationDesc = EducationQualification.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Education ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.CountryDesc = Country.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Country ?? -1000))?.EntryDesc ?? string.Empty;
-                agentDTO.ChannelDesc = SalesChannels.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Channel ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.AgentTypeCodeDesc = AgentTypeCategory.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentTypeCode ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.TitleDesc = Salutation.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Title ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.AgentTypeDesc = AgentType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.AgentType ?? -1000))?.EntryDesc?? string.Empty;
@@ -562,6 +563,9 @@ namespace HMS.Controllers
                 agentDTO.LicenseStatusDesc = LicenceStatus.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.LicenseStatus ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.VerticalDesc = Vertical.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.Vertical ?? -1000))?.EntryDesc?? string.Empty;
                 agentDTO.TrainingGroupTypeDesc = TraningGroupType.SingleOrDefault(x=> x.EntryIdentity.Equals(agentDTO?.TrainingGroupType ?? -1000))?.EntryDesc?? string.Empty;
+                agentDTO.ChannelDesc = Channel.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.Channel ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.SubChannelDesc = SubChannel.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.SubChannel ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.DesignationCodeDesc = Designation.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.DesignationCode ?? -1000))?.EntryDesc ?? string.Empty;
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;

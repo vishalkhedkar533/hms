@@ -2136,12 +2136,13 @@ FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 
 CREATE INDEX uqOrgID ON hmsmaster.financialperiod(orgid);
 
---drop table comss.agent_period_comms
+--drop table comss.comms_ledger
 
-CREATE TABLE comss.agent_period_comms (
+CREATE TABLE comss.comms_ledger (
 	agent_period_comms_id serial4 NOT NULL,
 	orgid int4 NULL,
 	agent_id int4 not null,
+	EntryDate date NULL,
 	FinPeriodFrom date NULL,
 	FinPeriodTo date NULL,
 	comm_amt int4 not null default 0,
@@ -2150,11 +2151,17 @@ CREATE TABLE comss.agent_period_comms (
 	igst decimal DEFAULT 0 null,
 	cgst decimal DEFAULT 0 null,
 	sgst decimal DEFAULT 0 null,
-	ugst decimal DEFAULT 0 null
+	ugst decimal DEFAULT 0 null,
+	bal_comm_amt int4 not null default 0,
+	job_exe_hist_id int4 not null
 );
 
-ALTER TABLE comss.agent_period_comms 
-ADD CONSTRAINT fk_agnt_period_comms_org 
+ALTER TABLE comss.comms_ledger 
+ADD CONSTRAINT fk_comm_ledger_org 
 FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 
-CREATE INDEX uqOrgID ON comss.agent_period_comms (orgid);
+ALTER TABLE comss.comms_ledger 
+ADD CONSTRAINT fk_comm_ledger_exe_hist 
+FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id);
+
+CREATE INDEX uqOrgID ON comss.comms_ledger (orgid,agent_id, EntryDate,FinPeriodFrom,FinPeriodTo);

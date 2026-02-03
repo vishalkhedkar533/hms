@@ -244,7 +244,8 @@ namespace Tasks.Insurance
                     var LastAgentCommission = LastAgentCommissionEntries.FirstOrDefault(ac => ac.AgentID == agentComm.AgentID);
                     operationMapping = _mappingProvider.GetScriptForOperation("Commission", "InsertCommsLedger")
                         ?? throw new InvalidOperationException("Operation mapping for Commission/UpdateAgentBalance not found.");
-                    AgentCommission.FirstOrDefault(ac => ac.AgentID == agentComm.AgentID);
+                    #region CalculateCommissionTax
+                    #endregion CalculateCommissionTax
                     conn.Execute(operationMapping.Script, new
                     {
                         orgid = orgId,

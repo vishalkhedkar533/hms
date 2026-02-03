@@ -105,6 +105,10 @@ namespace Tasks.Insurance
                     var batchList = batch.ToList();
                     foreach (var row in batchList)
                     {
+                        if (string.IsNullOrWhiteSpace(row.AgentCode) && string.IsNullOrWhiteSpace(row.AgentName))
+                        {
+                            continue;
+                        }
                         rowCount++;
                         row.OrgId = task.OrgId;
                         List<string> errors = new();
@@ -123,7 +127,8 @@ namespace Tasks.Insurance
                     var bulkSql = _mappingProvider.GetScriptForOperation("Agent", "BulkCopyTempAgent")?.Script;
                     if (string.IsNullOrWhiteSpace(bulkSql))
                         throw new Exception("Bulk COPY SQL for BulkCopyTempAgent missing");
-
+                    var filteredBatch = batchList.Where(r => !string.IsNullOrWhiteSpace(r.AgentCode) || !string.IsNullOrWhiteSpace(r.AgentName)).ToList();
+                    if (filteredBatch.Count == 0) continue;
                     await using var writer = await _bulkOpsFactory.BeginBinaryImportAsync(conn, bulkSql, token);
                     foreach (var r in batchList)
                     {
@@ -297,7 +302,7 @@ namespace Tasks.Insurance
                     await writer.CompleteAsync(token);
                 }
 
-                // 7. Finalize and Move from Temp to Main Tables (Inlined)
+                //// 7. Finalize and Move from Temp to Main Tables (Inlined)
                 var finalizeSql = _mappingProvider.GetScriptForOperation("Agent", "FinalizeAgent")?.Script;
                 using (var tx = await conn.BeginTransactionAsync(token))
                 {
@@ -401,7 +406,7 @@ namespace Tasks.Insurance
                     errors.Add($"Col '{prop.Name}' contains invalid characters.");
                     prop.SetValue(row, sanitized);
                 }
-            }
+                }
         }
         #endregion
     }

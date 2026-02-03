@@ -2114,3 +2114,24 @@ CREATE TABLE hms.SUBCHANNEL_MASTER (
         FOREIGN KEY (CHANNEL_CODE)
         REFERENCES hms.CHANNEL_MASTER (CHANNEL_CODE)
 );
+
+--drop table hmsmaster.financialperiod
+
+CREATE TABLE hmsmaster.financialperiod (
+	periodid serial4 NOT NULL,
+	orgid int4 NULL,
+	effectivefrom date NULL,
+	effectiveto date NULL,
+	tds_thresholdlimit int4 DEFAULT 0 NULL,
+	tds_standardrate numeric DEFAULT 0 NULL,
+	nopanrate numeric DEFAULT 0 NULL,
+	CONSTRAINT financialperiod_pkey PRIMARY KEY (periodid)
+);
+
+-- hmsmaster.financialperiod foreign keys
+
+ALTER TABLE hmsmaster.financialperiod 
+ADD CONSTRAINT fk_fin_period_org 
+FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+
+CREATE INDEX uqOrgID ON hmsmaster.financialperiod(orgid);

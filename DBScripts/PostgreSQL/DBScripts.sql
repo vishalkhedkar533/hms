@@ -2135,3 +2135,26 @@ ADD CONSTRAINT fk_fin_period_org
 FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 
 CREATE INDEX uqOrgID ON hmsmaster.financialperiod(orgid);
+
+--drop table comss.agent_period_comms
+
+CREATE TABLE comss.agent_period_comms (
+	agent_period_comms_id serial4 NOT NULL,
+	orgid int4 NULL,
+	agent_id int4 not null,
+	FinPeriodFrom date NULL,
+	FinPeriodTo date NULL,
+	comm_amt int4 not null default 0,
+	proftax decimal DEFAULT 0 null,
+	tds decimal DEFAULT 0 null,
+	igst decimal DEFAULT 0 null,
+	cgst decimal DEFAULT 0 null,
+	sgst decimal DEFAULT 0 null,
+	ugst decimal DEFAULT 0 null
+);
+
+ALTER TABLE comss.agent_period_comms 
+ADD CONSTRAINT fk_agnt_period_comms_org 
+FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+
+CREATE INDEX uqOrgID ON comss.agent_period_comms (orgid);

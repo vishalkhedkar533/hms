@@ -432,7 +432,7 @@ FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId);
 alter table hmsmaster.mastertables add columnalias varchar(3000)
 alter table comss.comm_job_exe_dtls add ProfTax decimal DEFAULT 0 null;
 alter table comss.comm_job_exe_dtls add tds decimal DEFAULT 0 null;
-alter table comss.comm_job_exe_dtls add IGST decimal DEFAULT 0 null;
-alter table comss.comm_job_exe_dtls add CGST decimal DEFAULT 0 null;
-alter table comss.comm_job_exe_dtls add SGST decimal DEFAULT 0 null;
-alter table comss.comm_job_exe_dtls add UGST decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add igst decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add cgst decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add sgst decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add ugst decimal DEFAULT 0 null;

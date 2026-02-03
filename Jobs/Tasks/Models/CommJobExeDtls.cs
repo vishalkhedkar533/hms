@@ -34,15 +34,24 @@ namespace Tasks.Models
         [MaxLength(10000)]
         [Column("formula")]
         public string? Formula { get; set; }
-
         [Required]
         [Column("comm_amt")]
         public int CommAmt { get; set; } = 0;
-
         [MaxLength(10000)]
         [Column("logs")]
         public string? Logs { get; set; }
-
+        [Column("proftax")]
+        public decimal? ProfTax { get; set; } = 0;
+        [Column("tds")]
+        public decimal? Tds { get; set; } = 0;
+        [Column("igst")]
+        public decimal? Igst { get; set; } = 0;
+        [Column("cgst")]
+        public decimal? Cgst { get; set; } = 0;
+        [Column("sgst")]
+        public decimal? Sgst { get; set; } = 0;
+        [Column("ugst")]
+        public decimal? Ugst { get; set; } = 0;
         // Navigation Properties (Optional, for Entity Framework)
         /*
         [ForeignKey("JobExeHistId")]

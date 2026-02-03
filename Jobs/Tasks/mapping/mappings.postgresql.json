@@ -74,6 +74,10 @@
       "GetProcessedRecords": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "select comm_job_exe_dtls_id from comss.comm_job_exe_dtls cjed  where cjed.job_exe_hist_id = @job_exe_hist_id and cjed.orgid = @orgid and cjed.agent_id = @agent_id and cjed.premiucollid = @premiucollid"
+      },
+      "GetFinancialPeriod": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "select * from hmsmaster.financialperiod where orgid = @orgid LIMIT @NoOfRows"
       }
     },
     "Policy": {

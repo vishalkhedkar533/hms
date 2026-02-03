@@ -430,4 +430,9 @@ ALTER TABLE hmsmaster.designation_master add CONSTRAINT fk_chann_mst_org
 FOREIGN KEY (orgId) REFERENCES app_subscription.organisation(orgId);
 
 alter table hmsmaster.mastertables add columnalias varchar(3000)
-
+alter table comss.comm_job_exe_dtls add ProfTax decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add tds decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add IGST decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add CGST decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add SGST decimal DEFAULT 0 null;
+alter table comss.comm_job_exe_dtls add UGST decimal DEFAULT 0 null;

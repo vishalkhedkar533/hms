@@ -75,9 +75,17 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "select comm_job_exe_dtls_id from comss.comm_job_exe_dtls cjed  where cjed.job_exe_hist_id = @job_exe_hist_id and cjed.orgid = @orgid and cjed.agent_id = @agent_id and cjed.premiucollid = @premiucollid"
       },
-      "GetFinancialPeriod": {
+      "CalculatedCommission": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "select * from hmsmaster.financialperiod where orgid = @orgid LIMIT @NoOfRows"
+        "Script": "select agent_id AgentID,sum(comm_amt) TotalCommission from comss.comm_job_exe_dtls where orgid = @orgid and job_exe_hist_id = @job_exe_hist_id group by agent_id"
+      },
+      "GetLatestLedgerEntry": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT agent_period_comms_id, orgid, agent_id, entrydate, finperiodfrom, finperiodto, comm_amt, proftax, tds, igst, cgst, sgst, ugst, bal_comm_amt, job_exe_hist_id FROM ( SELECT *, ROW_NUMBER() OVER ( PARTITION BY agent_id ORDER BY entrydate DESC, agent_period_comms_id DESC ) AS row_num FROM comss.comms_ledger WHERE orgid = @orgid ) AS RankedComms WHERE row_num = 1;"
+      },
+      "InsertCommsLedger": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "INSERT INTO comss.comms_ledger (orgid, agent_id, entrydate, finperiodfrom, finperiodto, comm_amt, proftax, tds, igst, cgst, sgst, ugst, bal_comm_amt, job_exe_hist_id) VALUES(@orgid, @agent_id, @entrydate, @finperiodfrom, @finperiodto, @comm_amt, @proftax, @tds, @igst, @cgst, @sgst, @ugst, @bal_comm_amt, @job_exe_hist_id)"
       }
     },
     "Policy": {
@@ -120,7 +128,12 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "WITH src AS (\n    SELECT\n        orgid::int                                AS orgid,\n        NULLIF(policyref,'')::int                AS policyref,\n        NULLIF(premium_received_dt,'')::date     AS premium_received_dt,\n        NULLIF(premium_type,'')::int             AS premium_type,\n        NULLIF(premium_amt,'')::numeric          AS premium_amt,\n        NULLIF(prem_coll_yr,'')::int             AS prem_coll_yr,\n        NULLIF(prem_coll_qtr,'')::int            AS prem_coll_qtr,\n        prem_coll_fin_yr::varchar(10)             AS prem_coll_fin_yr\n    FROM insu_core.tmp_premium_collected\n    WHERE comments = 'Processed'\n),\ninserted AS (\n    INSERT INTO insu_core.premium_collected (\n        orgid,\n        policyref,\n        premium_received_dt,\n        premium_type,\n        premium_amt,\n        prem_coll_yr,\n        prem_coll_qtr,\n        prem_coll_fin_yr\n    )\n    SELECT\n        orgid,\n        policyref,\n        premium_received_dt,\n        premium_type,\n        premium_amt,\n        prem_coll_yr,\n        prem_coll_qtr,\n        prem_coll_fin_yr\n    FROM src\n    RETURNING premiucollid\n)\nSELECT COUNT(1) FROM inserted;"
       }
+    },
+    "Master": {
+      "GetFinancialPeriod": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "select periodid , orgid ,effectivefrom , effectiveto , tds_thresholdlimit , tds_standardrate , nopanrate from hmsmaster.financialperiod where CURRENT_DATE between effectivefrom  and effectiveto AND orgid = @orgid order by effectivefrom desc LIMIT @NoOfRows"
+      }
     }
   }
 }
-

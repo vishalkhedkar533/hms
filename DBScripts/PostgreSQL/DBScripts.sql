@@ -2136,10 +2136,20 @@ FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
 
 CREATE INDEX uqOrgID ON hmsmaster.financialperiod(orgid);
 
+-- comss.adhoc_commission_adhoccommissionid_seq definition
+
+-- DROP SEQUENCE comss.adhoc_commission_adhoccommissionid_seq;
+
+CREATE SEQUENCE comss.agent_period_comms_id_seq
+	MINVALUE 0
+	NO MAXVALUE
+	START 1
+	NO CYCLE;
+
 --drop table comss.comms_ledger
 
 CREATE TABLE comss.comms_ledger (
-	agent_period_comms_id serial4 NOT NULL,
+	agent_period_comms_id  int8 DEFAULT nextval('comss.agent_period_comms_id_seq'::regclass) NOT NULL,
 	orgid int4 NULL,
 	agent_id int4 not null,
 	EntryDate date NULL,

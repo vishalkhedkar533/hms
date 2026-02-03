@@ -211,6 +211,63 @@ namespace Tasks.Insurance
                     }
 
                 }
+
+                operationMapping = _mappingProvider.GetScriptForOperation("Master", "GetFinancialPeriod") 
+                    ?? throw new InvalidOperationException("Operation mapping for Master/GetFinancialPeriod not found.");
+
+                var FinancialPeriod = conn.QueryFirstOrDefault<FinancialPeriod>(operationMapping.Script,
+                    new
+                    {
+                        orgid = orgId,
+                    });
+
+                operationMapping = _mappingProvider.GetScriptForOperation("Commission", "CalculatedCommission")
+                    ?? throw new InvalidOperationException("Operation mapping for Commission/CalculatedCommission not found.");
+
+                var AgentCommission = conn.Query<AgentCommission>(operationMapping.Script,
+                    new
+                    {
+                        orgid = orgId,
+                        job_exe_hist_id = jobExeHist.JobExeHistId,
+                    });
+                operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetLatestLedgerEntry")
+                    ?? throw new InvalidOperationException("Operation mapping for Commission/GetLatestLedgerEntry not found.");
+
+                var LastAgentCommissionEntries = await conn.QueryAsync<AgentCommission>(operationMapping.Script,
+                        new
+                        {
+                            orgid = orgId
+                        }); 
+
+                foreach (var agentComm in AgentCommission)
+                {
+                    var LastAgentCommission = LastAgentCommissionEntries.FirstOrDefault(ac => ac.AgentID == agentComm.AgentID);
+                    operationMapping = _mappingProvider.GetScriptForOperation("Commission", "InsertCommsLedger")
+                        ?? throw new InvalidOperationException("Operation mapping for Commission/UpdateAgentBalance not found.");
+                    AgentCommission.FirstOrDefault(ac => ac.AgentID == agentComm.AgentID);
+                    conn.Execute(operationMapping.Script, new
+                    {
+                        orgid = orgId,
+                        agent_id = agentComm.AgentID,
+                        entrydate = DateTime.UtcNow,
+                        finperiodfrom = FinancialPeriod?.EffectiveFrom,
+                        finperiodto = FinancialPeriod?.EffectiveTo,
+                        comm_amt = agentComm.TotalCommission,
+                        prof_tax = agentComm.ProfTax,
+                        tds = agentComm.Tds,
+                        igst = agentComm.Igst,
+                        cgst = agentComm.Cgst,
+                        sgst = agentComm.Sgst,
+                        ugst = agentComm.Ugst,
+                        bal_comm_amt = LastAgentCommission?.BalCommAmt + (agentComm.TotalCommission - 
+                        agentComm.Tds - 
+                        agentComm.Igst - 
+                        agentComm.Cgst - 
+                        agentComm.Sgst - 
+                        agentComm.Ugst),
+                        job_exe_hist_id = jobExeHist.JobExeHistId
+                    });
+                }
             }
             catch (Exception ex)
             {

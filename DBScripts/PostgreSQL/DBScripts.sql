@@ -2165,3 +2165,33 @@ ADD CONSTRAINT fk_comm_ledger_exe_hist
 FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id);
 
 CREATE INDEX uqOrgID ON comss.comms_ledger (orgid,agent_id, EntryDate,FinPeriodFrom,FinPeriodTo);
+
+
+DROP TABLE hmsmaster.location_master;
+
+CREATE SEQUENCE hms.location_master_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+CREATE TABLE hmsmaster.location_master (
+    location_master_id  int8 DEFAULT nextval('hms.location_master_id_seq'::regclass) NOT NULL,
+    channel_id int8 not null,
+    orgid int4 NULL,
+	location_code varchar(20) NOT NULL,
+	location_name varchar(100) NOT NULL,
+	location_type varchar(20) NOT NULL,
+	is_active bool NOT NULL,
+	created_by varchar(100) NOT NULL,
+	created_date timestamp NOT NULL,
+	modified_by varchar(100) NULL,
+	modified_date timestamp NULL,
+	rowversion int4 NULL,
+	CONSTRAINT location_master_pkey PRIMARY KEY (location_code),
+	--CONSTRAINT fk_location_parent FOREIGN KEY (parent_location_code) REFERENCES hmsmaster.location_master(location_code),
+	CONSTRAINT fk_location_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id),
+	CONSTRAINT fk_location_org FOREIGN KEY (orgid) references  app_subscription.organisation(orgid)
+);

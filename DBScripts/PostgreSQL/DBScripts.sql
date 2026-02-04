@@ -2152,18 +2152,13 @@ CREATE TABLE comss.comms_ledger (
 	agent_period_comms_id  int8 DEFAULT nextval('comss.agent_period_comms_id_seq'::regclass) NOT NULL,
 	orgid int4 NULL,
 	agent_id int4 not null,
-	EntryDate date NULL,
+	job_exe_hist_id int4 not null ,
+	EntryDate timestamp NULL,
 	FinPeriodFrom date NULL,
 	FinPeriodTo date NULL,
-	comm_amt int4 not null default 0,
-	proftax decimal DEFAULT 0 null,
-	tds decimal DEFAULT 0 null,
-	igst decimal DEFAULT 0 null,
-	cgst decimal DEFAULT 0 null,
-	sgst decimal DEFAULT 0 null,
-	ugst decimal DEFAULT 0 null,
-	bal_comm_amt int4 not null default 0,
-	job_exe_hist_id int4 not null
+	trans_type varchar(20) not null default 0,
+	trans_amt decimal not null default 0,
+	bal_comm_amt decimal not null default 0
 );
 
 ALTER TABLE comss.comms_ledger 
@@ -2175,7 +2170,6 @@ ADD CONSTRAINT fk_comm_ledger_exe_hist
 FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id);
 
 CREATE INDEX uqOrgID ON comss.comms_ledger (orgid,agent_id, EntryDate,FinPeriodFrom,FinPeriodTo);
-
 
 DROP TABLE hmsmaster.location_master;
 

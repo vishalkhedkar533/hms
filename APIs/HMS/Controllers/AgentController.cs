@@ -816,7 +816,9 @@ namespace HMS.Controllers
                     { "NpsTrngCompletionDate", agent.NpsTrngCompletionDate },
                     { "WhistleBlowerTrngDate", agent.WhistleBlowerTrngDate },
                     { "GovPolicyTrngDate", agent.GovPolicyTrngDate },
-                    { "InductionTrngDate", agent.InductionTrngDate }
+                    { "InductionTrngDate", agent.InductionTrngDate },
+                    { "DesignationCode", agent.DesignationCode }
+
                 };
 
                  switch ((sectionName ?? string.Empty).ToLowerInvariant())
@@ -828,6 +830,8 @@ namespace HMS.Controllers
                             agent.SubChannel = agentDto.SubChannel; 
                         if (agentDto.CommissionClass.HasValue)
                             agent.CommissionClass = agentDto.CommissionClass; 
+                        if (agentDto.DesignationCode.HasValue)
+                            agent.DesignationCode = agentDto.DesignationCode; 
                         
                         break;
 

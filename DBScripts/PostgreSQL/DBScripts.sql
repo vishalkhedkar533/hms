@@ -2199,3 +2199,21 @@ CREATE TABLE hmsmaster.location_master (
 	CONSTRAINT fk_location_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id),
 	CONSTRAINT fk_location_org FOREIGN KEY (orgid) references  app_subscription.organisation(orgid)
 );
+
+CREATE SEQUENCE comss.fy_period_comms_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+CREATE TABLE comss.comms_fy_ledger (
+	fy_period_comms_id  int8 DEFAULT nextval('comss.fy_period_comms_id_seq'::regclass) NOT NULL,
+	orgid int4 NULL,
+	agent_id int4 not null,
+	EntryDate timestamp NULL,
+	FinPeriodFrom date NULL,
+	FinPeriodTo date NULL,
+	bal_comm_amt decimal not null default 0
+);

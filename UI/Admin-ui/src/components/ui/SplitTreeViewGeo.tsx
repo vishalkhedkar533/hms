@@ -35,6 +35,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { agentService } from '@/services/agentService';
+import { MASTER_DATA_KEYS } from '@/utils/constant';
 
 interface SplitTreeTableGeoProps {
   treeData: Array<any>;
@@ -47,6 +48,8 @@ interface SplitTreeTableGeoProps {
   isLoading?: boolean;
   channelCode?: string | null;
   designationCode?: string | null;
+  highlightDesignationCode?: string | null;
+  getOptions: (key: string) => any[];
 }
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
@@ -57,6 +60,8 @@ const SplitTreeTableGeo: React.FC<SplitTreeTableGeoProps> = ({
   isLoading = false,
   channelCode,
   designationCode,
+  highlightDesignationCode,
+  getOptions,
 }) => {
   // Tree view states
   const [expandedIds, setExpandedIds] = useState<Set<string>>(
@@ -225,13 +230,15 @@ const SplitTreeTableGeo: React.FC<SplitTreeTableGeoProps> = ({
     const hasChildren = item.children && item.children.length > 0;
     const isExpanded = expandedIds.has(item.id);
     const isSelected = selectedNode?.id === item.id;
+    const isHighlighted = highlightDesignationCode && item.agentCode?.toLowerCase() === highlightDesignationCode?.toLowerCase();
 
     return (
       <div key={item.id}>
         <div
           className={cn(
             'flex items-center gap-2 py-2 px-3 rounded-md cursor-pointer hover:bg-muted/50 transition-colors group',
-            isSelected && 'bg-primary/10 border-l-2 border-primary'
+            isSelected && 'bg-primary/10 border-l-2 border-primary',
+            isHighlighted && !isSelected && 'bg-orange-100 border-l-2 border-orange-500 dark:bg-orange-900/30 dark:border-orange-600'
           )}
           style={{ paddingLeft: `${level * 16 + 12}px` }}
           onClick={() => setSelectedNode(item)}
@@ -334,7 +341,24 @@ const SplitTreeTableGeo: React.FC<SplitTreeTableGeoProps> = ({
       <Card className="col-span-12 lg:col-span-8 xl:col-span-9 overflow-hidden flex flex-col">
         <CardHeader className="pb-3 border-b">
           <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+            <p>Select Location:</p>
+              <Select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getOptions(MASTER_DATA_KEYS.LOCATION).map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center justify-between">
+             
+             
               <CardTitle className="text-lg">
                 {selectedNode ? 'Details & Children' : 'All Employees'}
               </CardTitle>

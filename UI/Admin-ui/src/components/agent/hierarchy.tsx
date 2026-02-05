@@ -4,9 +4,11 @@ import SplitTreeTable from '../ui/SplitTreeView'
 import type { TreeViewItem } from '../ui/tree-view'
 import type { IAgentSearchByCodeRequest, IPeopleHierarchy } from '@/models/agent'
 import { agentService } from '@/services/agentService'
+import Loader from '../Loader'
 
 interface HierarchyProps {
   Agent: { agentId: number }
+  highlightAgentCode?: string
 }
 
 const buildUniqueSupervisorTree = (hierarchies: Array<IPeopleHierarchy>): Array<TreeViewItem> => {
@@ -49,7 +51,7 @@ const buildUniqueSupervisorTree = (hierarchies: Array<IPeopleHierarchy>): Array<
   return roots
 }
 
-export const Hierarchy = ({ Agent }: HierarchyProps) => {
+export const Hierarchy = ({ Agent, highlightAgentCode }: HierarchyProps) => {
   const requestData: IAgentSearchByCodeRequest = {
     agentId: Agent.agentId,
     FetchHierarchy: true,
@@ -61,12 +63,12 @@ export const Hierarchy = ({ Agent }: HierarchyProps) => {
     staleTime: 5 * 60 * 1000, // optional: cache for 5 minutes
   })
 
-  if (isLoading) return <div className="text-center p-4">Loading hierarchy...</div>
+  if (isLoading) return <Loader />
   if (isError) return <div className="text-center p-4 text-red-500">Failed to load hierarchy.</div>
 
   const treeData = agent?.peopleHeirarchy
     ? buildUniqueSupervisorTree(agent.peopleHeirarchy)
     : []
 
-  return <SplitTreeTable treeData={treeData} />
+  return <SplitTreeTable treeData={treeData} highlightAgentCode={highlightAgentCode} />
 }

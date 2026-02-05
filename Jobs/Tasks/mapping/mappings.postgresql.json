@@ -136,7 +136,7 @@
     "Master": {
       "GetFinancialPeriod": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "select periodid , orgid ,effectivefrom , effectiveto , tds_thresholdlimit , tds_standardrate , nopanrate from hmsmaster.financialperiod where CURRENT_DATE between effectivefrom  and effectiveto AND orgid = @orgid order by effectivefrom desc LIMIT @NoOfRows"
+        "Script": "SELECT periodid PeriodId, orgid OrgId, effectivefrom EffectiveFrom, effectiveto EffectiveTo, tds_thresholdlimit TdsThresholdLimit, tds_standardrate TdsStandardRate, nopanrate NoPanRate, igst IGST, sgst SGST, cgst CGST, ugst UGST FROM hmsmaster.financialperiod where orgid = @OrgId order by effectivefrom desc limit 1"
       },
       "KeyValueEntries": {
         "ConnectionStringKey": "CommissionDB",
@@ -146,7 +146,7 @@
     "Organisation": {
       "GetOrgDetails": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT orgid OrgId, subscriberid SubscriberId, orgname OrgName, state State WHERE orgid = @ FROM app_subscription.organisation"
+        "Script": "SELECT orgid OrgId, subscriberid SubscriberId, orgname OrgName, state State WHERE orgid = @OrgId FROM app_subscription.organisation"
       }
     }
   }

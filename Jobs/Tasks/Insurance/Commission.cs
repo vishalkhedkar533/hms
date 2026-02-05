@@ -309,21 +309,18 @@ namespace Tasks.Insurance
                         GenderList.FirstOrDefault(x => x.EntryIdentity == currAgent.Gender).EntryDesc, 
                         2);
 
-                   
-
                     GstCalculator gstCalculator = new GstCalculator(); 
                     var gstResult = gstCalculator.CalculateGst(agentComm.TotalCommission, 
-                        commission_config.GstRatePercent,
+                        financialPeriod,
                         StateList.FirstOrDefault(x => x.EntryIdentity == currAgent.State).EntryDesc.Equals(orgState));
-
 
                     Dictionary<string,decimal> deductibleAmount = new Dictionary<string, decimal>();
                     deductibleAmount.Add("CommAmt", agentComm.TotalCommission);
                     deductibleAmount.Add("TDS", TDS);
                     deductibleAmount.Add("ProffTax", ProffTax);
-                    deductibleAmount.Add("IGST", IGST);
-                    deductibleAmount.Add("CGST", CGST);
-                    deductibleAmount.Add("SGST", SGST);
+                    deductibleAmount.Add("IGST", gstResult.IGST);
+                    deductibleAmount.Add("CGST", gstResult.CGST);
+                    deductibleAmount.Add("SGST", gstResult.SGST);
                     deductibleAmount.Add("UGST", UGST);
                     operationMapping = _mappingProvider.GetScriptForOperation("Commission", "InsertCommsLedger")
                         ?? throw new InvalidOperationException("Operation mapping for Commission/UpdateAgentBalance not found.");

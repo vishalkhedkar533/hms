@@ -138,10 +138,6 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "select periodid , orgid ,effectivefrom , effectiveto , tds_thresholdlimit , tds_standardrate , nopanrate from hmsmaster.financialperiod where CURRENT_DATE between effectivefrom  and effectiveto AND orgid = @orgid order by effectivefrom desc LIMIT @NoOfRows"
       },
-      "GetStateList": {
-        "ConnectionStringKey": "CommissionDB",
-        "Script": "select periodid , orgid ,effectivefrom , effectiveto , tds_thresholdlimit , tds_standardrate , nopanrate from hmsmaster.financialperiod where CURRENT_DATE between effectivefrom  and effectiveto AND orgid = @orgid order by effectivefrom desc LIMIT @NoOfRows"
-      },
       "KeyValueEntries": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT k.orgid, k.entrycategory, k.entryidentity, k.entrydesc FROM hmsmaster.mastertables m JOIN hmsmaster.keyvalueentries k ON k.orgid = m.orgid WHERE m.orgid = @orgId AND m.entrycategory = @masterName"

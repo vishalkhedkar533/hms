@@ -19,6 +19,7 @@
     {
         public GstResult CalculateGst(decimal amount, decimal ratePercent, bool isInterState)
         {
+            //UGST it yet to be implemented, as it is applicable only for Union Territories without legislature
             decimal totalGst = amount * (ratePercent / 100);
 
             var result = new GstResult

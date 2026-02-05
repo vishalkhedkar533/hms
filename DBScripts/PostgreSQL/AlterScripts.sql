@@ -438,3 +438,8 @@ alter table comss.comm_job_exe_dtls add sgst decimal DEFAULT 0 null;
 alter table comss.comm_job_exe_dtls add ugst decimal DEFAULT 0 null;
 
 alter table app_subscription.organisation add column state int4;
+
+ALTER TABLE hmsmaster.financialperiod add column igst decimal default 0;
+ALTER TABLE hmsmaster.financialperiod add column sgst decimal default 0;
+ALTER TABLE hmsmaster.financialperiod add column cgst decimal default 0;
+ALTER TABLE hmsmaster.financialperiod add column ugst decimal default 0;

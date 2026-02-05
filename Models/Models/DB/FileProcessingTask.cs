@@ -37,6 +37,11 @@ namespace Models.DB
         [Column("fileextension")]
         public string FileExtension { get; set; }
 
+        [Required]
+        [MaxLength(50)]
+        [Column("filetype")]
+        public string FileType { get; set; }
+
         [Column("filesize")]
         public long? FileSize { get; set; }
 

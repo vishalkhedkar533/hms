@@ -44,6 +44,11 @@ namespace HMS.Controllers
             if (model.UserId <= 0)
                 return BadRequest("Invalid User ID.");
 
+            if (string.IsNullOrWhiteSpace(model.FileType))
+                return BadRequest("File type is required.");
+
+            var fileType = model.FileType.Trim().ToLowerInvariant();
+
             try
             {
                 int organisationId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
@@ -78,6 +83,7 @@ namespace HMS.Controllers
                     CreatedBy = model.UserId.ToString(),
                     FileName = uniqueFileName,
                     FileExtension = fileExtension,
+                    FileType = fileType,
                     FileSize = fileInfo.Length,
                     IsReadOnly = fileInfo.IsReadOnly,
                     FileCreationTime = fileInfo.CreationTime.ToUniversalTime(),
@@ -102,7 +108,8 @@ namespace HMS.Controllers
                     Message = "File uploaded and record created.",
                     FileTaskId = fileTask.Id,
                     FileName = uniqueFileName,
-                    FilePath = filePath
+                    FilePath = filePath,
+                    fileType = fileType,
                 });
             }
             catch (Exception ex)

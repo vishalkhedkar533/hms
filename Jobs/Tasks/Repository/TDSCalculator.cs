@@ -13,13 +13,13 @@ namespace Tasks.Repository
             bool hasValidPan, int orgID,FinancialPeriod financialPeriod)
         {            
             // Rule: TDS is only applicable if the total payment in the FY exceeds the threshold
-            if (totalPaymentInFY <= financialPeriod.TdsThresholdLimit)
+            if (totalPaymentInFY <= (financialPeriod.TdsThresholdLimit/100))
             {
                 return 0m;
             }
 
             // Rule: Determine rate based on PAN availability
-            decimal applicableRate = hasValidPan ? financialPeriod.TdsStandardRate : financialPeriod.NoPanRate;
+            decimal applicableRate = hasValidPan ? (financialPeriod.TdsStandardRate/100) : (financialPeriod.NoPanRate/100);
 
             // Rule: If this specific payment pushes the total over the threshold for the first time, 
             // you might need to deduct TDS on the entire amount paid so far. 

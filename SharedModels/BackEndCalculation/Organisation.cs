@@ -1,5 +1,6 @@
 ﻿namespace SharedModels.BackEndCalculation
 {
+    //app_subscription.organisation
     public class Organisation
     {
         public int OrgId { get; set; }

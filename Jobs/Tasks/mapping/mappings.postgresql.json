@@ -146,6 +146,12 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT k.orgid, k.entrycategory, k.entryidentity, k.entrydesc FROM hmsmaster.mastertables m JOIN hmsmaster.keyvalueentries k ON k.orgid = m.orgid WHERE m.orgid = @orgId AND m.entrycategory = @masterName"
       }
+    },
+    "Organisation": {
+      "GetOrgDetails": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT orgid OrgId, subscriberid SubscriberId, orgname OrgName, state State WHERE orgid = @ FROM app_subscription.organisation"
+      }
     }
   }
 }

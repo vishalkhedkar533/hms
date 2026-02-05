@@ -111,6 +111,15 @@ namespace Tasks.Insurance
                     orgid = orgId,
                     masterName = "GENDER"
                 });
+            operationMapping = _mappingProvider.GetScriptForOperation("Organisation", "GetOrgDetails")
+                ?? throw new InvalidOperationException("Operation mapping for Organisation/GetOrgDetails not found.");
+            var orgDetails = await conn.QueryAsync<Organisation>(operationMapping.Script,
+                new
+                {
+                    orgid = orgId
+                });
+
+            var orgState = StateList.FirstOrDefault(s => s.EntryIdentity == orgDetails.FirstOrDefault()?.State).EntryDesc;
 
             #region frameFormulafromDatabase
             var parameters = new[] {
@@ -299,6 +308,14 @@ namespace Tasks.Insurance
                         agentComm.TotalCommission, 
                         GenderList.FirstOrDefault(x => x.EntryIdentity == currAgent.Gender).EntryDesc, 
                         2);
+
+                   
+
+                    GstCalculator gstCalculator = new GstCalculator(); 
+                    var gstResult = gstCalculator.CalculateGst(agentComm.TotalCommission, 
+                        commission_config.GstRatePercent,
+                        StateList.FirstOrDefault(x => x.EntryIdentity == currAgent.State).EntryDesc.Equals(orgState));
+
 
                     Dictionary<string,decimal> deductibleAmount = new Dictionary<string, decimal>();
                     deductibleAmount.Add("CommAmt", agentComm.TotalCommission);

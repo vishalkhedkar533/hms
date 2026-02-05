@@ -13,7 +13,11 @@
         public decimal FinalAmount { get; set; }
         public string TransactionType { get; set; }
 
-        public static GstResult CalculateGst(decimal amount, decimal ratePercent, bool isInterState)
+    }
+
+    public class GstCalculator
+    {
+        public GstResult CalculateGst(decimal amount, decimal ratePercent, bool isInterState)
         {
             decimal totalGst = amount * (ratePercent / 100);
 

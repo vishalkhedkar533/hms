@@ -9,5 +9,8 @@ namespace Models.DTO
 
         // Additional data submitted with the file.
         public int UserId { get; set; }
+
+        // Selected file type (e.g., manager_update, policy, premium_collected, agent_create).
+        public string FileType { get; set; }
     }
 }

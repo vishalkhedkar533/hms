@@ -437,6 +437,9 @@ alter table comss.comm_job_exe_dtls add cgst decimal DEFAULT 0 null;
 alter table comss.comm_job_exe_dtls add sgst decimal DEFAULT 0 null;
 alter table comss.comm_job_exe_dtls add ugst decimal DEFAULT 0 null;
 
+ALTER TABLE hms.fileprocessingtasks ADD COLUMN filetype varchar(100) NOT NULL DEFAULT 'unknown';
+alter table comss.comm_job_exe_dtls add ugst decimal DEFAULT 0 null;
+
 alter table app_subscription.organisation add column state int4;
 
 ALTER TABLE hmsmaster.financialperiod add column igst decimal default 0;

@@ -109,7 +109,7 @@ namespace HMS.Controllers
                     FileTaskId = fileTask.Id,
                     FileName = uniqueFileName,
                     FilePath = filePath,
-                    fileType = fileType,
+                    FileType = fileType,
                 });
             }
             catch (Exception ex)

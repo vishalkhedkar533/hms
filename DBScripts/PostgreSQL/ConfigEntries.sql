@@ -165,3 +165,18 @@ where entrycategory in ('SubChannel');
 update hmsmaster.mastertables 
 set columnalias = 'designation_id AS entryIdentity, designation_name AS entryDesc, channel_code AS entryCategory, channel_id AS entryParentId, is_active AS activeStatus' 
 where entrycategory in ('Designation');
+
+INSERT INTO hmsmaster.keyvalueentries 
+(orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+(2, 'FILE_TYPE', 1, 'Agent CreationManager', NULL, true),
+(2, 'FILE_TYPE', 2, 'UpdateStatus', NULL, true),
+(2, 'FILE_TYPE', 3, 'UpdateLocation', NULL, true),
+(2, 'FILE_TYPE', 4, 'UpdateDesignation', NULL, true),
+(2, 'FILE_TYPE', 5, 'UpdatePolicy', NULL, true),
+(2, 'FILE_TYPE', 6, 'UploadCommision', NULL, true),
+(2, 'FILE_TYPE', 7, 'HoldCommision', NULL, true),
+(2, 'FILE_TYPE', 8, 'RejectCodeMovement', NULL, true);
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (2, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''FILE_TYPE''');

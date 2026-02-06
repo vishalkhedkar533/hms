@@ -39,6 +39,7 @@ namespace Models.DTO
         public FileDownloadDto? fileDownload { get; set; } = null;
         public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
         public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
+        public List<BatchListDto>? batches { get; set; } = null;
     }
 
     public class UpdatedAgentField

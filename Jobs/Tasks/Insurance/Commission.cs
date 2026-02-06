@@ -121,6 +121,23 @@ namespace Tasks.Insurance
 
             var orgState = StateList.FirstOrDefault(s => s.EntryIdentity == orgDetails.FirstOrDefault()?.State).EntryDesc;
 
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Master", "GetFinancialPeriod")
+                ?? throw new InvalidOperationException("Operation mapping for Master/GetFinancialPeriod not found.");
+
+            var financialPeriod = conn.QueryFirstOrDefault<FinancialPeriod>(operationMapping.Script,
+                new
+                {
+                    orgid = orgId,
+                });
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Agent", "GetAgentData")
+                ?? throw new InvalidOperationException("Operation mapping for Commission/UpdateAgentBalance not found.");
+            var orgAgent = await conn.QueryAsync<Agent>(operationMapping.Script,
+                new
+                {
+                    orgid = orgId
+                });
             #region frameFormulafromDatabase
             var parameters = new[] {
                  Expression.Parameter(typeof(PremiumCollected), "premium"),
@@ -206,9 +223,6 @@ namespace Tasks.Insurance
                     operationMapping = _mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable")
                         ?? throw new InvalidOperationException("Operation mapping for Commission/SaveCommissionPayable not found.");
 
-                    connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                        ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-
                     try
                     {
                         var comm_amt = compiledFormula.DynamicInvoke(record.PremiumCollected
@@ -240,17 +254,7 @@ namespace Tasks.Insurance
                             logs = exCalc.Message
                         });
                     }
-
                 }
-
-                operationMapping = _mappingProvider.GetScriptForOperation("Master", "GetFinancialPeriod") 
-                    ?? throw new InvalidOperationException("Operation mapping for Master/GetFinancialPeriod not found.");
-
-                var financialPeriod = conn.QueryFirstOrDefault<FinancialPeriod>(operationMapping.Script,
-                    new
-                    {
-                        orgid = orgId,
-                    });
 
                 operationMapping = _mappingProvider.GetScriptForOperation("Commission", "CalculatedCommission")
                     ?? throw new InvalidOperationException("Operation mapping for Commission/CalculatedCommission not found.");
@@ -261,6 +265,7 @@ namespace Tasks.Insurance
                         orgid = orgId,
                         job_exe_hist_id = jobExeHist.JobExeHistId,
                     });
+
                 operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetLatestLedgerEntry")
                     ?? throw new InvalidOperationException("Operation mapping for Commission/GetLatestLedgerEntry not found.");
 
@@ -278,14 +283,9 @@ namespace Tasks.Insurance
                         orgid = orgId
                     });
 
-                operationMapping = _mappingProvider.GetScriptForOperation("Agent", "GetAgentData")
-                    ?? throw new InvalidOperationException("Operation mapping for Commission/UpdateAgentBalance not found.");
-                var orgAgent = await conn.QueryAsync<Agent>(operationMapping.Script,
-                    new
-                    {
-                        orgid = orgId
-                    });
-
+                TDSCalculator tDSCalculator = new TDSCalculator();
+                var ptService = new PTService(@"Tasks\ProfTaxStructure\PTStructure.json");
+                GstCalculator gstCalculator = new GstCalculator();
                 foreach (var agentComm in AgentCommissionSummary)
                 {
                     var LastAgentCommission = LastAgentCommissionEntries.FirstOrDefault(ac => ac.AgentID == agentComm.AgentID);
@@ -294,14 +294,12 @@ namespace Tasks.Insurance
                     fp.FinPeriodTo == financialPeriod.EffectiveTo);
                     var currAgent = orgAgent.FirstOrDefault(a => a.AgentId == agentComm.AgentID);
                     #region CalculateCommissionTax
-                    TDSCalculator tDSCalculator = new TDSCalculator();
                     TDS = tDSCalculator.Calculate194H(AgentFYPayments.BalCommAmt, 
                         agentComm.TotalCommission,
                         string.IsNullOrEmpty(currAgent.PanNumber),
                         orgId, financialPeriod);
                     var lastAgentBal = LastAgentCommission?.BalCommAmt ?? 0;
 
-                    var ptService = new PTService(@"Tasks\ProfTaxStructure\PTStructure.json");
                     
                     ProffTax = ptService.CalculateTax(
                         StateList.FirstOrDefault(x=> x.EntryIdentity == currAgent.State).EntryDesc, 
@@ -309,7 +307,6 @@ namespace Tasks.Insurance
                         GenderList.FirstOrDefault(x => x.EntryIdentity == currAgent.Gender).EntryDesc, 
                         2);
 
-                    GstCalculator gstCalculator = new GstCalculator(); 
                     var gstResult = gstCalculator.CalculateGst(agentComm.TotalCommission, 
                         financialPeriod,
                         StateList.FirstOrDefault(x => x.EntryIdentity == currAgent.State).EntryDesc.Equals(orgState));
@@ -317,11 +314,11 @@ namespace Tasks.Insurance
                     Dictionary<string,decimal> deductibleAmount = new Dictionary<string, decimal>();
                     deductibleAmount.Add("CommAmt", agentComm.TotalCommission);
                     deductibleAmount.Add("TDS", TDS);
-                    deductibleAmount.Add("ProffTax", ProffTax);
-                    deductibleAmount.Add("IGST", gstResult.IGST);
-                    deductibleAmount.Add("CGST", gstResult.CGST);
-                    deductibleAmount.Add("SGST", gstResult.SGST);
-                    deductibleAmount.Add("UGST", UGST);
+                    deductibleAmount.Add("ProffTax", ProffTax * -1);
+                    deductibleAmount.Add("IGST", gstResult.IGST * -1);
+                    deductibleAmount.Add("CGST", gstResult.CGST * -1);
+                    deductibleAmount.Add("SGST", gstResult.SGST * -1);
+                    deductibleAmount.Add("UGST", UGST * -1);
                     operationMapping = _mappingProvider.GetScriptForOperation("Commission", "InsertCommsLedger")
                         ?? throw new InvalidOperationException("Operation mapping for Commission/UpdateAgentBalance not found.");
 

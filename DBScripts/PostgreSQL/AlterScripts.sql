@@ -442,3 +442,4 @@ ALTER TABLE hms.fileprocessingtasks ADD COLUMN filetype varchar(100) NOT NULL DE
 ALTER TABLE hmsmaster.channel_master 
 ADD COLUMN total_entries int8 DEFAULT 0,
 ADD COLUMN total_entries_mon int8 DEFAULT 0;
+alter table insu_core.premium_collected add column trans_id int4 default 0;

@@ -7,6 +7,7 @@ using SharedModels.BackEndCalculation;
 using System.Data.Common;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Tasks.Models;
 using Tasks.Repository;
 
@@ -75,42 +76,39 @@ namespace Tasks.Insurance
 
             JobExeHist LastExecutedJob = await conn.QuerySingleOrDefaultAsync<JobExeHist>(operationMapping.Script, new
             {
-                job_config_id = int.Parse(jobKey.Name),
-                orgid = orgId,
-                fireinstanceid = null as long?
+                JobConfigId = int.Parse(jobKey.Name),
+                orgId = orgId,
+                FireInstanceId = null as long?
             });
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "GetJobExtn")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
 
             var jobExtn = await conn.QueryFirstOrDefaultAsync<JobExtn>(
                 operationMapping.Script,
-                new { orgid = orgId, job_config_id = int.Parse(jobKey.Name) });
+                new { orgId = orgId, JobConfigId = int.Parse(jobKey.Name) });
 
             JobExeHist jobTriggerDetails = await _jobTriggerRepository.CreateJobTriggerDetails(_jobExecutionContext);
             operationMapping = _mappingProvider.GetScriptForOperation("Commission", "ConfigByID")
                 ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
 
-            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-
             var commission_config = await conn.QueryFirstOrDefaultAsync<CommissionConfig>(
                 operationMapping.Script,
-                new { job_config_id = int.Parse(jobKey.Name), 
-                    orgid = orgId});
+                new {
+                    JobConfigId = int.Parse(jobKey.Name),
+                    orgId = orgId});
 
-            operationMapping = _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries") 
-                ?? throw new InvalidOperationException("Operation mapping for Master/KeyValueEntries not found.");
-            var StateList = await conn.QueryAsync<KeyValueEntry>(operationMapping.Script,
-                new
-                {
-                    orgid = orgId,
-                    masterName = "STATE_NAME"
-                });
+            var MasterEntries = await conn.QueryAsync<MasterTable>(
+                _mappingProvider.GetScriptForOperation("Master", "MasterEntries")?.Script,
+                new { orgId = orgId , EntryCategory = "CommissionMsts" });
 
-            var GenderList = await conn.QueryAsync<KeyValueEntry>(operationMapping.Script,
-                new
-                {
-                    orgid = orgId,
-                    masterName = "GENDER"
-                });
+            var CommissionMasters = await conn.QueryAsync<KeyValueEntry>(
+                _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script.Replace("{{FilterCriteria}}",
+                MasterEntries?.FirstOrDefault()?.FilterCriteria ??  " 1=1"),new{orgid = orgId});
+
+            var StateList = CommissionMasters.Where(x=> x.EntryCategory.Equals("STATE_NAME")).ToList();
+            var GenderList = CommissionMasters.Where(x => x.EntryCategory.Equals("GENDER")).ToList();
+
             operationMapping = _mappingProvider.GetScriptForOperation("Organisation", "GetOrgDetails")
                 ?? throw new InvalidOperationException("Operation mapping for Organisation/GetOrgDetails not found.");
             var orgDetails = await conn.QueryAsync<Organisation>(operationMapping.Script,
@@ -120,7 +118,6 @@ namespace Tasks.Insurance
                 });
 
             var orgState = StateList.FirstOrDefault(s => s.EntryIdentity == orgDetails.FirstOrDefault()?.State).EntryDesc;
-
 
             operationMapping = _mappingProvider.GetScriptForOperation("Master", "GetFinancialPeriod")
                 ?? throw new InvalidOperationException("Operation mapping for Master/GetFinancialPeriod not found.");
@@ -181,7 +178,7 @@ namespace Tasks.Insurance
                         CommRate = rate
                     },
                     // The markers where each NEW object starts in the SELECT list:
-                    new { orgid = orgId, job_exe_hist_id = LastExecutedJob?.JobExeHistId, job_config_id = int.Parse(jobKey.Name) }, 
+                    new { orgId = orgId, JobExeHistId = LastExecutedJob?.JobExeHistId, JobConfigID = int.Parse(jobKey.Name) }, 
                     null, 
                     splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
                 );

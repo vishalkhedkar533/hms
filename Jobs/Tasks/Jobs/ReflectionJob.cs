@@ -6,6 +6,7 @@ using Tasks.Repository;
 
 namespace Jobs
 {
+    [DisallowConcurrentExecution]
     public sealed class ReflectionJob : IJob
     {
         private readonly IServiceProvider _serviceProvider;

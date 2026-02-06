@@ -34,16 +34,16 @@ namespace Tasks.Repository
             if (isInterState)
             {
                 // For Inter-state, 100% of GST goes to IGST
-                result.Igst = (financialPeriod.IGST /100);
-                result.Cgst = 0;
-                result.Sgst = 0;
+                result.IGST = (financialPeriod.IGST /100);
+                result.CGST = 0;
+                result.SGST = 0;
                 result.TransactionType = "Inter-state (IGST)";
             }
             else
             {
-                result.Cgst = financialPeriod.CGST /100;
-                result.Sgst = financialPeriod.SGST /100;
-                result.Igst = 0;
+                result.CGST = financialPeriod.CGST /100;
+                result.SGST = financialPeriod.SGST /100;
+                result.IGST = 0;
                 result.TransactionType = "Intra-state (CGST + SGST)";
             }
 

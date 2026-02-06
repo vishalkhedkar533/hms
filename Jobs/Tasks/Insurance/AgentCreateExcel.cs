@@ -86,7 +86,13 @@ namespace Tasks.Insurance
                 _logger.LogInformation("Processing TaskId={TaskId}, OrgId={OrgId}", task.Id, task.OrgId);
 
                 // 4. Fetch Master Data for current Task (Inlined)
-                var masterSql = _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script;
+                var MasterEntries = await conn.QueryAsync<MasterTable>(
+                    _mappingProvider.GetScriptForOperation("Master", "MasterEntries")?.Script,
+                    new { orgId = task.OrgId ?? 0, masterName = "AgentProfileMst" });
+
+                var masterSql = _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script.Replace("{{FilterCriteria}}", 
+                    MasterEntries.FirstOrDefault().FilterCriteria);
+
                 var masterRows = await conn.QueryAsync<KeyValueEntry>(masterSql, new { orgId = task.OrgId ?? 0, masterName = "AgentProfileMst" });
                 var agentClassDict = BuildLookup(masterRows.ToList(), "AGENT_CLASS");
 

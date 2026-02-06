@@ -165,3 +165,22 @@ where entrycategory in ('SubChannel');
 update hmsmaster.mastertables 
 set columnalias = 'designation_id AS entryIdentity, designation_name AS entryDesc, channel_code AS entryCategory, channel_id AS entryParentId, is_active AS activeStatus' 
 where entrycategory in ('Designation');
+
+--delete from hmsmaster.mastertables where orgid = 2 and entrycategory = 'CommissionMsts'
+
+INSERT INTO hmsmaster.mastertables (
+    orgid, 
+    entrycategory, 
+    schemaname, 
+    tablename, 
+    filtercriteria, 
+    columnalias
+) 
+VALUES (
+    2, 
+    'CommissionMsts', 
+    'hmsmaster', 
+    'keyvalueentries', 
+    ' AND k.entrycategory IN (''STATE_NAME'', ''GENDER'')', 
+    NULL
+);

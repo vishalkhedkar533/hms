@@ -100,19 +100,19 @@
       },
       "CalculatedCommission": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "select agent_id AgentID,sum(comm_amt) TotalCommission from comss.comm_job_exe_dtls where orgid = @orgid and job_exe_hist_id = @job_exe_hist_id group by agent_id"
+        "Script": "select agent_id AgentID,sum(comm_amt) TotalCommission from comss.comm_job_exe_dtls where orgid = @orgId and job_exe_hist_id = @JobExeHistId group by agent_id"
       },
       "GetLatestLedgerEntry": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT agent_period_comms_id, orgid, agent_id, entrydate, finperiodfrom, finperiodto, comm_amt, proftax, tds, igst, cgst, sgst, ugst, bal_comm_amt, job_exe_hist_id FROM ( SELECT *, ROW_NUMBER() OVER ( PARTITION BY agent_id ORDER BY entrydate DESC, agent_period_comms_id DESC ) AS row_num FROM comss.comms_ledger WHERE orgid = @orgid ) AS RankedComms WHERE row_num = 1 AND orgId= @orgId"
+        "Script": "SELECT agent_period_comms_id, orgid, agent_id, entrydate, finperiodfrom, finperiodto, comm_amt, proftax, tds, igst, cgst, sgst, ugst, bal_comm_amt, job_exe_hist_id FROM ( SELECT *, ROW_NUMBER() OVER ( PARTITION BY agent_id ORDER BY entrydate DESC, agent_period_comms_id DESC ) AS row_num FROM comss.comms_ledger WHERE orgid = @orgId ) AS RankedComms WHERE row_num = 1 AND orgId= @orgId"
       },
       "InsertCommsLedger": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "INSERT INTO comss.comms_ledger (orgid, agent_id, job_exe_hist_id, entrydate, finperiodfrom, finperiodto, trans_type, trans_amt, bal_comm_amt) VALUES(@orgid, @agent_id, @job_exe_hist_id, @entrydate, @finperiodfrom, @finperiodto, @trans_type, @trans_amt, @bal_comm_amt)"
+        "Script": "INSERT INTO comss.comms_ledger (orgid, agent_id, job_exe_hist_id, entrydate, finperiodfrom, finperiodto, trans_type, trans_amt, bal_comm_amt) VALUES(@orgId, @AgentID, @JobExeHistId, @EntryDate, @EffectiveFrom, @EffectiveTo, @TransType, @TransAmount, @LatestAgentBal)"
       },
       "FYCommPayments": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT fy_period_comms_id, orgid, agent_id, entrydate, finperiodfrom, finperiodto, bal_comm_amt FROM ( SELECT *, ROW_NUMBER() OVER (PARTITION BY agent_id ORDER BY finperiodfrom DESC, finperiodto DESC) as rn FROM comss.comms_fy_ledger ) t WHERE rn = 1 AND orgid = @orgid"
+        "Script": "SELECT fy_period_comms_id, orgid, agent_id, entrydate, finperiodfrom, finperiodto, bal_comm_amt FROM ( SELECT *, ROW_NUMBER() OVER (PARTITION BY agent_id ORDER BY finperiodfrom DESC, finperiodto DESC) as rn FROM comss.comms_fy_ledger ) t WHERE rn = 1 AND orgid = @orgId"
       }
     },
     "Policy": {

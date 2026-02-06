@@ -262,8 +262,8 @@ namespace Tasks.Insurance
                 var AgentCommissionSummary = conn.Query<AgentCommissionSummary>(operationMapping.Script,
                     new
                     {
-                        orgid = orgId,
-                        job_exe_hist_id = jobExeHist.JobExeHistId,
+                        orgId = orgId,
+                        JobExeHistId = jobExeHist.JobExeHistId,
                     });
 
                 operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetLatestLedgerEntry")
@@ -272,7 +272,7 @@ namespace Tasks.Insurance
                 var LastAgentCommissionEntries = await conn.QueryAsync<CommsLedger>(operationMapping.Script,
                         new
                         {
-                            orgid = orgId
+                            orgId = orgId
                         });
 
                 operationMapping = _mappingProvider.GetScriptForOperation("Commission", "FYCommPayments")
@@ -280,7 +280,7 @@ namespace Tasks.Insurance
                 var FYCommPayments = await conn.QueryAsync<CommsFinYearLedger>(operationMapping.Script,
                     new
                     {
-                        orgid = orgId
+                        orgId = orgId
                     });
 
                 TDSCalculator tDSCalculator = new TDSCalculator();
@@ -330,15 +330,15 @@ namespace Tasks.Insurance
                             //dont record zero value transactions
                             conn.Execute(operationMapping.Script, new
                             {
-                                orgid = orgId,
-                                agent_id = agentComm.AgentID,
-                                job_exe_hist_id = jobExeHist.JobExeHistId,
-                                entrydate = DateTime.UtcNow,
-                                finperiodfrom = financialPeriod?.EffectiveFrom,
-                                finperiodto = financialPeriod?.EffectiveTo,
-                                trans_type = item.Key,
-                                trans_amt = item.Value,
-                                bal_comm_amt = lastAgentBal
+                                orgId = orgId,
+                                AgentID = agentComm.AgentID,
+                                JobExeHistId = jobExeHist.JobExeHistId,
+                                EntryDate = DateTime.UtcNow,
+                                EffectiveFrom = financialPeriod?.EffectiveFrom,
+                                EffectiveTo = financialPeriod?.EffectiveTo,
+                                TransType = item.Key,
+                                TransAmount = item.Value,
+                                LatestAgentBal = lastAgentBal
                             });
                         }
                     }

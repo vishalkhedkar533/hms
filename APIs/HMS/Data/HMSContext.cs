@@ -11,6 +11,8 @@ namespace HMS.Data
         { }
         public DbSet<User> Users => Set<User>();
         public DbSet<Role> Roles => Set<Role>();
+        public DbSet<RoleMaster> RoleMasters => Set<RoleMaster>();
+        public DbSet<MenuMaster> MenuMasters => Set<MenuMaster>();
         public DbSet<ApiConfig> apiConfig => Set<ApiConfig>();
         public DbSet<UserRoleMapping> UserRoleMappings => Set<UserRoleMapping>();
         public DbSet<AgentMovementHistory> agentMovementHistory => Set<AgentMovementHistory>();

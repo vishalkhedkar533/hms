@@ -438,3 +438,7 @@ alter table comss.comm_job_exe_dtls add sgst decimal DEFAULT 0 null;
 alter table comss.comm_job_exe_dtls add ugst decimal DEFAULT 0 null;
 
 ALTER TABLE hms.fileprocessingtasks ADD COLUMN filetype varchar(100) NOT NULL DEFAULT 'unknown';
+
+ALTER TABLE hmsmaster.channel_master 
+ADD COLUMN total_entries int8 DEFAULT 0,
+ADD COLUMN total_entries_mon int8 DEFAULT 0;

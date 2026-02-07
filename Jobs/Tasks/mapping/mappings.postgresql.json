@@ -112,6 +112,10 @@
       "FYCommPayments": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT fy_period_comms_id, orgid, agent_id, entrydate, finperiodfrom, finperiodto, bal_comm_amt FROM ( SELECT *, ROW_NUMBER() OVER (PARTITION BY agent_id ORDER BY finperiodfrom DESC, finperiodto DESC) as rn FROM comss.comms_fy_ledger ) t WHERE rn = 1 AND orgid = @orgId"
+      },
+      "SaveAgentCommissionSummary": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "INSERT INTO comss.comms_fy_ledger (orgid, agent_id, entrydate, finperiodfrom, finperiodto, bal_comm_amt) VALUES(@orgId, @AgentID, now(), @FinPeriodFrom, @FinPeriodTo, @GrossCommission)"
       }
     },
     "Policy": {

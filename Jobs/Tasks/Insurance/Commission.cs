@@ -325,6 +325,17 @@ namespace Tasks.Insurance
                             });
                         }
                     }
+                    //@orgId, @AgentID, now(), @FinPeriodFrom, @FinPeriodTo, @GrossCommission
+                    conn.Execute(_mappingProvider.GetScriptForOperation("Commission", "SaveAgentCommissionSummary").Script, new
+                    {
+                        orgId = orgId,
+                        AgentID = agentComm.AgentID,
+                        JobExeHistId = jobExeHist.JobExeHistId,
+                        FinPeriodFrom = financialPeriod?.EffectiveFrom,
+                        FinPeriodTo = financialPeriod?.EffectiveTo,
+                        GrossCommission = agentComm.TotalCommission
+                    });
+
                     #endregion CalculateCommissionTax
                 }
             }

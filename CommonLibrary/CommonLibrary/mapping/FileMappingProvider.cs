@@ -106,8 +106,8 @@ namespace CommonLibrary.mapping
                     return opMapping;
                 }
             }
-
-            return null;
+            //will reach here if no mapping found for the given entity and operation
+            throw new InvalidOperationException($"Operation mapping for {entityName}/{operationName} not found.");
         }
     }
 }

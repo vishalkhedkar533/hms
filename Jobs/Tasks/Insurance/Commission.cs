@@ -106,6 +106,7 @@ namespace Tasks.Insurance
                 _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script.Replace("{{FilterCriteria}}",
                 MasterEntries?.FirstOrDefault()?.FilterCriteria ??  " 1=1"),new{orgid = orgId});
 
+            
             var StateList = CommissionMasters.Where(x=> x.EntryCategory.Equals("STATE_NAME")).ToList();
             var GenderList = CommissionMasters.Where(x => x.EntryCategory.Equals("GENDER")).ToList();
 
@@ -114,7 +115,7 @@ namespace Tasks.Insurance
             var orgDetails = await conn.QueryAsync<Organisation>(operationMapping.Script,
                 new
                 {
-                    orgid = orgId
+                    orgId = orgId
                 });
 
             var orgState = StateList.FirstOrDefault(s => s.EntryIdentity == orgDetails.FirstOrDefault()?.State).EntryDesc;
@@ -125,15 +126,14 @@ namespace Tasks.Insurance
             var financialPeriod = conn.QueryFirstOrDefault<FinancialPeriod>(operationMapping.Script,
                 new
                 {
-                    orgid = orgId,
+                    orgId = orgId,
                 });
 
-            operationMapping = _mappingProvider.GetScriptForOperation("Agent", "GetAgentData")
-                ?? throw new InvalidOperationException("Operation mapping for Commission/UpdateAgentBalance not found.");
-            var orgAgent = await conn.QueryAsync<Agent>(operationMapping.Script,
+            var orgAgent = await conn.QueryAsync<Agent>(
+                _mappingProvider.GetScriptForOperation("Agent", "GetAgentData").Script,
                 new
                 {
-                    orgid = orgId
+                    orgId = orgId
                 });
             #region frameFormulafromDatabase
             var parameters = new[] {

@@ -184,3 +184,33 @@ VALUES (
     ' AND k.entrycategory IN (''STATE_NAME'', ''GENDER'')', 
     NULL
 );
+INSERT INTO hmsmaster.keyvalueentries 
+(orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+(2, 'FILE_TYPE', 1, 'Agent CreationManager', NULL, true),
+(2, 'FILE_TYPE', 2, 'UpdateStatus', NULL, true),
+(2, 'FILE_TYPE', 3, 'UpdateLocation', NULL, true),
+(2, 'FILE_TYPE', 4, 'UpdateDesignation', NULL, true),
+(2, 'FILE_TYPE', 5, 'UpdatePolicy', NULL, true),
+(2, 'FILE_TYPE', 6, 'UploadCommision', NULL, true),
+(2, 'FILE_TYPE', 7, 'HoldCommision', NULL, true),
+(2, 'FILE_TYPE', 8, 'RejectCodeMovement', NULL, true);
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (2, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''FILE_TYPE''');
+
+INSERT INTO hmsmaster.location_master (
+    channel_id, 
+    orgid, 
+    location_code, 
+    location_name, 
+    location_type, 
+    is_active, 
+    created_by, 
+    created_date
+) VALUES 
+(1, 2, 'MUM-01', 'Mumbai - Corporate Agency', 'Regional Office', true, 'System', '2026-02-06 10:00:00'),
+(2, 2, 'PUN-02', 'Pune - Bancassurance', 'Branch Office', true, 'System', '2026-02-06 10:05:00'),
+(3, 2, 'NGP-03', 'Nagpur - Direct Sales', 'Satellite Office', true, 'System', '2026-02-06 10:10:00'),
+(4, 2, 'NSK-04', 'Nashik - General Agency', 'Branch Office', true, 'System', '2026-02-06 10:15:00'),
+(5, 2, 'AUR-05', 'Sambhajinagar - Broker Channel', 'Retail Outlet', true, 'System', '2026-02-06 10:20:00');

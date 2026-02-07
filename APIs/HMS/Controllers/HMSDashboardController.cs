@@ -1,9 +1,11 @@
 ﻿using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
@@ -18,13 +20,15 @@ namespace HMS.Controllers
         private readonly IConfiguration _config;
         private readonly ILogger<HMSDashboardController> _logger;
         private readonly IAuthClaimService _authClaimService;
+        private readonly DatabaseService _db;
 
-        public HMSDashboardController(HMSContext context, IConfiguration config, ILogger<HMSDashboardController> logger,IAuthClaimService authClaimService)
+        public HMSDashboardController(HMSContext context, IConfiguration config, ILogger<HMSDashboardController> logger, IAuthClaimService authClaimService, DatabaseService db)
         {
             _context = context;
             _config = config;
             _logger = logger;
             _authClaimService = authClaimService;
+            _db = db;
         }
 
         [HttpPost("GetHMSDashboard")]
@@ -97,6 +101,53 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error fetching HMS dashboard for User");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+
+        [HttpPost("channel-stats")]
+        [Authorize]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetChannelStats()
+        {
+            ChannelStatsResponse response = new ChannelStatsResponse();
+            var orgId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
+
+            try
+            {
+                var channels = (await _db.ExecuteQueryAsync<ChannelMaster>(
+                    "Dashboard",
+                    "GetChannelStats",
+                    new { p_orgid = orgId }))
+                    .ToList();
+
+                if (channels.Any())
+                {
+                    var totalEntities = channels.Sum(x => x.TotalEntities ?? 0);
+                    var terminatedEntities = channels.Sum(x => x.TerminatedEntities ?? 0);
+                    var activeEntities = totalEntities - terminatedEntities;
+
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "SUCCESS";
+                    response.responseBody.channels = channels;
+                    response.responseBody.totalEntities = totalEntities;
+                    response.responseBody.terminatedEntities = terminatedEntities;
+                    response.responseBody.activeEntities = activeEntities;
+
+                    return Ok(response);
+                }
+
+                response.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
+                response.responseHeader.ErrorMessage = await _context.errorMaster
+                    .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+
+                return NotFound(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching channel stats for org {OrgId}", orgId);
                 return StatusCode(500, "Internal Server Error");
             }
         }

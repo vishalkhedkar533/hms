@@ -4,8 +4,10 @@ using HMS.Data;
 using HMS.Security;
 using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.HMSConsts;
 
 namespace HMS.Controllers
 {
@@ -109,13 +111,120 @@ namespace HMS.Controllers
                     FileTaskId = fileTask.Id,
                     FileName = uniqueFileName,
                     FilePath = filePath,
-                    fileType = fileType,
+                    FileType = fileType,
                 });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during file upload.");
                 return StatusCode(500, "Internal server error during file upload.");
+            }
+        }
+
+        [HttpPost("uploaded-file-list")]
+        public async Task<IActionResult> GetUploadedFiles([FromQuery] string month, [FromQuery] string status)
+        {
+            HmsResponse hmsResponse = new HmsResponse();
+            try
+            {
+                var query = _context.FileProcessingTasks.AsQueryable();
+
+                if (!string.IsNullOrEmpty(status) && status != "All")
+                    query = query.Where(x => x.Status == status);
+
+                //// 1. Status Filter
+                //if (!string.IsNullOrEmpty(status) && status != "All")
+                //{
+                //    query = query.Where(x => x.Status == status);
+                //}
+
+                //// 2. Month Filter
+                //if (!string.IsNullOrEmpty(month))
+                //{
+                //    if (DateTime.TryParse(month, out DateTime filterDate))
+                //    {
+                //        // Filter by the Month and Year of CreatedAt
+                //        query = query.Where(x => x.CreatedAt.Month == filterDate.Month &&
+                //                                 x.CreatedAt.Year == filterDate.Year);
+                //    }
+                //}
+                var data = await query.OrderByDescending(x => x.CreatedAt)
+                    .Select(x => new BatchListDto
+                    {
+                        BatchId = x.Id,
+                        FileName = x.FileName,
+                        UploadedBy = x.CreatedBy,
+                        UploadedOn = x.CreatedAt,
+                        Total = x.TotalRows ?? 0,
+                        Success = x.RowsProcessed ?? 0,
+                        Failed = x.RowsRejected ?? 0,
+                        Status = x.Status
+                    }).ToListAsync();
+
+                if (data.Any())
+                {
+                    hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hmsResponse.responseBody.batches = data;
+                    return Ok(hmsResponse);
+                }
+
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hmsResponse.responseHeader.ErrorMessage = "No batches found.";
+                return NotFound(hmsResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching uploaded batches");
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hmsResponse.responseHeader.ErrorMessage = "Internal Server Error";
+                return StatusCode(500, hmsResponse);
+            }
+        }
+
+        [HttpPost("failure-report/{id}")]
+        public async Task<IActionResult> DownloadLog([FromRoute]int id)
+        {
+            HmsResponse hmsResponse = new HmsResponse();
+            try
+            {
+                var task = await _context.FileProcessingTasks.FindAsync(id);
+                if (task == null)
+                {
+                    hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hmsResponse.responseHeader.ErrorMessage = "Batch not found.";
+                    return NotFound(hmsResponse);
+                }
+
+                if (string.IsNullOrEmpty(task.ErrorMessage))
+                {
+                    hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hmsResponse.responseHeader.ErrorMessage = "No error log available.";
+                    return BadRequest(hmsResponse);
+                }
+
+                var fileBytes = Convert.FromBase64String(task.ErrorMessage);
+                var fileBaseName = string.IsNullOrWhiteSpace(task.FileName) ? "failedRows" : task.FileName.Trim();
+                var fileName = $"{fileBaseName}_failedRows.xlsx";
+
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hmsResponse.responseBody.fileDownload = new FileDownloadDto
+                {
+                    FileName = fileName,
+                    ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    FileBase64 = Convert.ToBase64String(fileBytes),
+                    FileSize = fileBytes.LongLength
+                };
+
+                return Ok(hmsResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error downloading batch log for {BatchId}", id);
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hmsResponse.responseHeader.ErrorMessage = "Internal Server Error";
+                return StatusCode(500, hmsResponse);
             }
         }
     }

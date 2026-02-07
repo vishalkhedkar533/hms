@@ -103,7 +103,7 @@
       },
       "GetLatestLedgerEntry": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT agent_period_comms_id, orgid, agent_id, entrydate, finperiodfrom, finperiodto, comm_amt, proftax, tds, igst, cgst, sgst, ugst, bal_comm_amt, job_exe_hist_id FROM ( SELECT *, ROW_NUMBER() OVER ( PARTITION BY agent_id ORDER BY entrydate DESC, agent_period_comms_id DESC ) AS row_num FROM comss.comms_ledger WHERE orgid = @orgId ) AS RankedComms WHERE row_num = 1 AND orgId= @orgId"
+        "Script": "select agent_period_comms_id ,orgid ,agent_id ,job_exe_hist_id ,entrydate ,finperiodfrom ,finperiodto ,trans_type ,trans_amt ,bal_comm_amt from ( select *, row_number() over ( partition by agent_id order by entrydate desc, agent_period_comms_id desc ) as row_num from comss.comms_ledger where orgid = orgId) as RankedComms where row_num = 1 and orgid = @orgId"
       },
       "InsertCommsLedger": {
         "ConnectionStringKey": "CommissionDB",

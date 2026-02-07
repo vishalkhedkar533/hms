@@ -9,11 +9,11 @@ namespace Tasks.Repository
     decimal tax = ptService.CalculateTax("Maharashtra", 15000, "Male", 2); 
     // Returns: 300
      */
-    public class PTService
+    public class ProfTaxCalculator
     {
         private readonly Dictionary<string, StateLaw> _stateLaws;
 
-        public PTService(string jsonPath)
+        public ProfTaxCalculator(string jsonPath)
         {
             string jsonString = File.ReadAllText(jsonPath);
             _stateLaws = JsonSerializer.Deserialize<Dictionary<string, StateLaw>>(jsonString, new JsonSerializerOptions

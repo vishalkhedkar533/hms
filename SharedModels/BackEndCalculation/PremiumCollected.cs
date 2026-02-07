@@ -35,5 +35,8 @@ namespace SharedModels.BackEndCalculation
         public string? PremCollectedFinYr { get; set; }
         public string? Comments { get; set; }
         public string? Reason { get; set; }
+        [Column("trans_id")]
+        [Description("trans_id")]
+        public int? trans_id { get; set; }
     }
 }

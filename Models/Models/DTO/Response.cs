@@ -39,6 +39,7 @@ namespace Models.DTO
         public FileDownloadDto? fileDownload { get; set; } = null;
         public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
         public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
+        public List<BatchListDto>? batches { get; set; } = null;
     }
 
     public class UpdatedAgentField
@@ -79,4 +80,17 @@ namespace Models.DTO
         public long FileSize { get; set; }
     }
 
+    public class ChannelStatsResponse
+    {
+        public HmsSResponseHeader responseHeader { get; set; } = new HmsSResponseHeader();
+        public ChannelStatsResponseBody responseBody { get; set; } = new ChannelStatsResponseBody();
+    }
+
+    public class ChannelStatsResponseBody
+    {
+        public List<ChannelMaster>? channels { get; set; } = null;
+        public long totalEntities { get; set; }
+        public long activeEntities { get; set; }
+        public long terminatedEntities { get; set; }
+    }
 }

@@ -2227,7 +2227,7 @@ CREATE SEQUENCE hmsmaster.channel_location_heirarchy_id_seq
 	NO CYCLE;
 
 CREATE TABLE hmsmaster.channel_location_heirarchy (
-	channel_location_heirarchy_id int8 DEFAULT nextval('channel_location_heirarchy_id_seq'::regclass) NOT NULL,
+	channel_location_heirarchy_id int8 DEFAULT nextval('hmsmaster.channel_location_heirarchy_id_seq'::regclass) NOT NULL,
 	orgid int4 NULL,
 	channel_id int8 not null,
 	sub_channel_id int8 null,
@@ -2274,3 +2274,54 @@ create table hmsmaster.branch_master (
 	constraint branch_uq unique (orgid,branch_code),
 	CONSTRAINT fk_brmst_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid)
 );
+
+CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_id int8,p_subchannel_id int8, p_orgid bigint)
+ RETURNS jsonb
+ LANGUAGE sql
+AS $function$
+WITH RECURSIVE hierarchy_cte AS (
+    -- Step 1: Get the path from hms schema
+    SELECT 
+        gh.hierarchy_path,
+        string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
+    FROM hmsmaster.channel_location_heirarchy gh
+    WHERE gh.channel_id = p_channel_id 
+          AND coalesce(gh.sub_channel_id, -1000) = coalesce(p_subchannel_id, -1000) 
+          AND gh.orgid = p_orgid::int
+),
+json_tree AS (
+    -- Step 2: Leaf node (Agent)
+    SELECT 
+        array_length(labels, 1) AS lvl,
+        jsonb_build_object(
+            'designationId', dm.designation_id,
+            'designationName', dm.designation_name,
+            'designationCode', dm.designation_code,
+            'parentLocation', NULL -- Matches DTO Property Name
+        ) AS node,
+        labels
+    FROM hierarchy_cte h
+    -- Note: Join with hmsmaster schema
+    JOIN hmsmaster.designation_master dm ON dm.designation_id = h.labels[array_length(h.labels, 1)]::int8
+
+    UNION ALL
+
+    -- Step 3: Recursive parents
+    SELECT 
+        j.lvl - 1,
+        jsonb_build_object(
+            'designationId', dm.designation_id,
+            'designationName', dm.designation_name,
+            'designationCode', dm.designation_code,
+            'parentLocation', j.node -- Matches DTO Property Name
+        ) AS node,
+        j.labels
+    FROM json_tree j
+    JOIN hmsmaster.designation_master dm ON dm.designation_id = j.labels[j.lvl - 1]::int8
+    WHERE j.lvl > 1
+)
+SELECT jsonb_agg(node)
+FROM json_tree
+WHERE lvl = 1;
+$function$
+;

@@ -2195,3 +2195,48 @@ CREATE TABLE hmsmaster.location_master (
 	CONSTRAINT fk_location_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id),
 	CONSTRAINT fk_location_org FOREIGN KEY (orgid) references  app_subscription.organisation(orgid)
 );
+
+CREATE SEQUENCE comss.fy_period_comms_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+CREATE TABLE comss.comms_fy_ledger (
+	fy_period_comms_id  int8 DEFAULT nextval('comss.fy_period_comms_id_seq'::regclass) NOT NULL,
+	orgid int4 NULL,
+	agent_id int4 not null,
+	EntryDate timestamp NULL,
+	FinPeriodFrom date NULL,
+	FinPeriodTo date NULL,
+	bal_comm_amt decimal not null default 0
+);
+
+
+CREATE SEQUENCE hmsmaster.channel_location_heirarchy_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+CREATE TABLE hmsmaster.channel_location_heirarchy (
+	channel_location_heirarchy_id int8 DEFAULT nextval('channel_location_heirarchy_id_seq'::regclass) NOT NULL,
+	orgid int4 NULL,
+	channel_id int8 not null,
+	location_master_id int8 not null,
+	sub_channel_id int8 null,
+	hierarchy_path public.ltree NULL,
+	created_by varchar(100) NOT NULL,
+	created_date timestamp NOT NULL,
+	modified_by varchar(100) NULL,
+	modified_date timestamp NULL,
+	effective_from_date date NOT NULL,
+	effective_to_date date NULL,
+	CONSTRAINT fk_loc_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
+	CONSTRAINT fk_loc_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id) ON DELETE cascade,
+	CONSTRAINT fk_loc_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id) ON DELETE cascade
+);

@@ -2243,3 +2243,57 @@ CREATE TABLE hmsmaster.channel_location_heirarchy (
 	CONSTRAINT fk_loc_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id) ON DELETE cascade,
 	CONSTRAINT fk_loc_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id) ON DELETE cascade
 );
+
+DROP TABLE hms.branch_master;
+
+CREATE SEQUENCE hmsmaster.branch_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+create table hmsmaster.branch_master ( 
+	branch_id int8 default nextval('branch_id_seq'::regclass) not null,
+	orgid int4 null,
+	branch_code varchar(20) not null, 
+	branch_name varchar(100) not null, 
+	address text null, 
+	state int4 null,
+	phone_number varchar(20) null, 
+	email_id varchar(100) null, 
+	is_active bool not null, 
+	created_by varchar(100) not null, 
+	created_date timestamp not null, 
+	modified_by varchar(100) null, 
+	modified_date timestamp null, 
+	rowversion int4 null, 
+	constraint branch_master_pkey primary key (branch_id),
+	constraint branch_uq unique (orgid,branch_code)
+);
+
+-- hms.branch_master foreign keys
+
+ALTER TABLE hmsmaster.branch_master ADD CONSTRAINT fk_brmst_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid);
+
+CREATE SEQUENCE hmsmaster.branch_heirarchy_map_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+
+CREATE TABLE hmsmaster.branch_heirarchy_map (
+	branch_heirarchy_map_id int8 DEFAULT nextval('branch_heirarchy_map_seq'::regclass) NOT NULL,
+	orgid int4 NULL,
+	channel_id int8 not null,
+	sub_channel_id int8 null,
+    branch_id int8 null,
+	CONSTRAINT fk_loc_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
+	CONSTRAINT fk_loc_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id) ON DELETE cascade,
+	CONSTRAINT fk_loc_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id) ON DELETE cascade,
+	CONSTRAINT fk_branch_id FOREIGN KEY (branch_id) REFERENCES hmsmaster.branch_master(branch_id) ON DELETE cascade
+);

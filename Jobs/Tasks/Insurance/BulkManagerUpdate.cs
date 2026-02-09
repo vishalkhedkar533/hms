@@ -110,6 +110,7 @@ namespace Tasks.Insurance
 
                 var updatedAgents = new List<object>();
                 var auditEntries = new List<object>();
+                var successRowsForExport = new List<object>(); // NEW: To track success data
                 var username = string.IsNullOrWhiteSpace(task.CreatedBy) ? "System" : task.CreatedBy;
 
                 foreach (var item in rows.Select((row, index) => new { Row = row, RowNumber = index + 2 }))
@@ -159,12 +160,23 @@ namespace Tasks.Insurance
                             ModifiedDate = DateTime.UtcNow
                         });
 
+                        // NEW: Capture row for SuccessData Excel
+                        successRowsForExport.Add(new
+                        {
+                            Row_Number = item.RowNumber,
+                            Agent_Code = agentCode,
+                            New_Supervisor_Code = supervisorCode,
+                            Previous_Supervisor_Id = agent.SupervisorId,
+                            Status = "Updated"
+                        });
+
                         response.UpdatedRows++;
                     }
                 }
 
                 response.FailedRows = response.Errors.Count;
 
+                // Execute Database Updates
                 if (updatedAgents.Count > 0)
                 {
                     var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
@@ -178,6 +190,16 @@ namespace Tasks.Insurance
                     await tx.CommitAsync(token);
                 }
 
+                // --- HANDLE SUCCESS DATA EXPORT ---
+                string? successDataEncoded = null;
+                if (successRowsForExport.Any())
+                {
+                    using var successStream = new MemoryStream();
+                    await MiniExcel.SaveAsAsync(successStream, successRowsForExport);
+                    successDataEncoded = Convert.ToBase64String(successStream.ToArray());
+                }
+
+                // --- HANDLE ERROR DATA EXPORT ---
                 if (response.Errors.Any())
                 {
                     var errorExport = response.Errors.Select(e => new
@@ -198,14 +220,14 @@ namespace Tasks.Insurance
                     response.ErrorFile = memoryStream.ToArray();
 
                     await File.WriteAllBytesAsync(filePath, response.ErrorFile, token);
-
                     _logger.LogInformation("Rejected rows exported to Excel: {FilePath}", filePath);
                 }
 
+                // Final Task Table Update
                 var updateTaskSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTask")?.Script
                     ?? throw new Exception("SQL for ManagerUpdate/UpdateTask missing");
 
-                var errorMessage = response.ErrorFile != null
+                var errorMessageEncoded = response.ErrorFile != null
                     ? Convert.ToBase64String(response.ErrorFile)
                     : null;
 
@@ -213,10 +235,10 @@ namespace Tasks.Insurance
                 {
                     Id = task.Id,
                     RowsProcessed = response.UpdatedRows,
-                    TotalRows   = response.TotalRows,
+                    TotalRows = response.TotalRows,
                     RowsRejected = response.FailedRows,
-                    ErrorMessage = errorMessage,
-                    
+                    ErrorMessage = errorMessageEncoded,
+                    SuccessData = successDataEncoded, // NEW: Parameter for SQL
                     Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
                 });
 

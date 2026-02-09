@@ -232,26 +232,27 @@ namespace Models.DTO
     }
     public class GeoHierarchyDto
     {
-        public long DesignationId { get; set; }
-        public string? DesignationName { get; set; }
-        public string? DesignationCode { get; set; }
-        public GeoHierarchyDto? ParentLocation { get; set; } 
+        public long LocationMasterId { get; set; }
+        public string? LocationCode { get; set; }
+        public string? LocationName { get; set; }
+        public GeoHierarchyDto? ParentLocation { get; set; }
+
+        // You can keep these if you plan to extend the function later
         public string? HierarchyPath { get; set; } = string.Empty;
     }
-
     public class GeoSearchRequest
     {
         public string? ChannelCode { get; set; }
     }
 
-    public class GeoHierarchyByChannelDesignationRequest
+    public class ReporteesByLocationRequest
     {
-        public string? ChannelCode { get; set; }
-        public string? DesignationCode { get; set; }
+        public string ChannelCode { get; set; } = null!;
+        public string LocationCode { get; set; } = null!;
     }
     public class GeoHierarchyAgentDto
     {
-        public long AgentId { get; set; }
+        public long AgentId { get; set; }   
         public string? AgentName { get; set; }
         public string? AgentDesignation { get; set; }
         public string? AgentCode { get; set; }

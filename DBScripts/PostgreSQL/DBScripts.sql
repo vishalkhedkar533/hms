@@ -2239,7 +2239,7 @@ CREATE TABLE hmsmaster.channel_location_heirarchy (
 	modified_date timestamp NULL,
 	effective_from_date date NOT NULL,
 	effective_to_date date NULL,
-	level_criteria varchar(1000) null,
+	level_criteria varchar(1000) null, -- Zone	Region	Area	Branch	Unit
 	CONSTRAINT fk_loc_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
 	CONSTRAINT fk_loc_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id) ON DELETE cascade,
 	CONSTRAINT fk_loc_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id) ON DELETE cascade
@@ -2264,7 +2264,7 @@ create table hmsmaster.branch_master (
 	phone_number varchar(20) null, 
 	email_id varchar(100) null, 
 	is_active bool not null, 
-	level varchar(1000) null,
+	level varchar(1000) null, --reference to hmsmaster.channel_location_heirarchy.level_criteria
 	created_by varchar(100) not null, 
 	created_date timestamp not null, 
 	modified_by varchar(100) null, 
@@ -2294,15 +2294,15 @@ json_tree AS (
     SELECT 
         array_length(labels, 1) AS lvl,
         jsonb_build_object(
-            'designationId', dm.designation_id,
-            'designationName', dm.designation_name,
-            'designationCode', dm.designation_code,
+            'locationMasterId', lm.location_master_id,
+            'locationName', lm.location_name,
+            'locationCode', lm.location_code,
             'parentLocation', NULL -- Matches DTO Property Name
         ) AS node,
         labels
     FROM hierarchy_cte h
     -- Note: Join with hmsmaster schema
-    JOIN hmsmaster.designation_master dm ON dm.designation_id = h.labels[array_length(h.labels, 1)]::int8
+    JOIN hmsmaster.location_master lm ON lm.location_master_id = h.labels[array_length(h.labels, 1)]::int8
 
     UNION ALL
 
@@ -2310,14 +2310,14 @@ json_tree AS (
     SELECT 
         j.lvl - 1,
         jsonb_build_object(
-            'designationId', dm.designation_id,
-            'designationName', dm.designation_name,
-            'designationCode', dm.designation_code,
+            'locationMasterId', lm.location_master_id,
+            'locationName', lm.location_name,
+            'locationCode', lm.location_code,
             'parentLocation', j.node -- Matches DTO Property Name
         ) AS node,
         j.labels
     FROM json_tree j
-    JOIN hmsmaster.designation_master dm ON dm.designation_id = j.labels[j.lvl - 1]::int8
+    JOIN hmsmaster.location_master lm ON lm.location_master_id = j.labels[j.lvl - 1]::int8
     WHERE j.lvl > 1
 )
 SELECT jsonb_agg(node)

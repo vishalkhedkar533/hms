@@ -19,7 +19,8 @@
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? StartedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
+        public string? SuccessData { get; set; }
         public int? OrgId { get; set; }
     }
 }

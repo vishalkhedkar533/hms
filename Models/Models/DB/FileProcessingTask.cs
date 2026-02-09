@@ -78,5 +78,8 @@ namespace Models.DB
 
         [Column("orgid")]
         public int? OrgId { get; set; }
+
+        [Column("successdata")]
+        public string? SuccessData { get; set; }
     }
 }

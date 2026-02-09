@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=141 "
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -39,7 +39,7 @@
     "Agent": {
       "GetPendingTasks": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT filepath, orgid FROM hms.fileprocessingtasks WHERE status = 'Pending' AND filetype = 'agent_create'"
+        "Script": "SELECT id, filepath, orgid FROM hms.fileprocessingtasks WHERE status = 'Pending' AND filetype = 'agent_create'"
       },
       "GetChunkSize": {
         "ConnectionStringKey": "CommissionDB",
@@ -56,6 +56,10 @@
       "GetAgentData": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT agent_id AgentId, agent_code AgentCode,pan_number PanNumber, orgid OrgId, state State, gender Gender FROM hms.agent where orgid = @orgId"
+      },
+      "UpdateTask": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.fileprocessingtasks SET totalrows = @TotalRows, rowsprocessed = @RowsProcessed, rowsrejected = @RowsRejected, errormessage = @ErrorMessage, successdata = @SuccessData, status = @Status, completedat = NOW() WHERE id = @Id"
       }
     },
     "ManagerUpdate": {

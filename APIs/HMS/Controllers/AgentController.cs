@@ -1736,5 +1736,46 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
+
+        [HttpPost("GeoChildren")]
+        [MenuAuthorize(1001)]
+        public async Task<IActionResult> GetGeoChildren([FromBody] GeoChildrenRequest request)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            try
+            {
+                var stringResponse = await _db.ExecuteQueryAsync<string>(
+                    "Agent",
+                    "get_geo_children",
+                    new
+                    {
+                        p_branch_id = request.ParentBranchId,
+                        p_orgid = (int)orgId
+                    });
+
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+                {
+                    var childrenData = JsonConvert.DeserializeObject<List<GeoHierarchyDto>>(
+                        stringResponse.FirstOrDefault(),
+                        new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() }
+                    );
+
+                    hMSResponse.responseHeader.ErrorCode = 1101;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.geoHierarchy = childrenData;
+                    return Ok(hMSResponse);
+                }
+
+                return NotFound("No sub-offices found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Occurred In GeoChildren");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+
     }
 }

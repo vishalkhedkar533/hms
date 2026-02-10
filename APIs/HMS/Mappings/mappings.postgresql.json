@@ -37,6 +37,10 @@
       "get_geo_hierarchy": {
         "Function": "hms.get_geo_hierarchy_by_channel",
         "Script": "SELECT hms.get_geo_hierarchy_by_channel(@p_channel_id, @p_subchannel_id, @p_orgid)"
+      },
+      "get_geo_children": {
+        "Function": "hmsmaster.get_geo_children",
+        "Script": "SELECT hmsmaster.get_geo_children(@p_branch_id, @p_orgid)"
       }
     },
     "Dashboard": {

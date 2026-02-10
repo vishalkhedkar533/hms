@@ -247,6 +247,10 @@ namespace Models.DTO
         public string? ChannelCode { get; set; }
     }
 
+    public class GeoChildrenRequest
+    {
+        public long ParentBranchId { get; set; }
+    }
     public class ReporteesByLocationRequest
     {
         public string ChannelCode { get; set; } = null!;

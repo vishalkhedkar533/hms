@@ -199,21 +199,7 @@ VALUES
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
 VALUES (2, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''FILE_TYPE''');
 
-INSERT INTO hmsmaster.location_master (
-    channel_id, 
-    orgid, 
-    location_code, 
-    location_name, 
-    location_type, 
-    is_active, 
-    created_by, 
-    created_date
-) VALUES 
-(1, 2, 'MUM-01', 'Mumbai - Corporate Agency', 'Regional Office', true, 'System', '2026-02-06 10:00:00'),
-(2, 2, 'PUN-02', 'Pune - Bancassurance', 'Branch Office', true, 'System', '2026-02-06 10:05:00'),
-(3, 2, 'NGP-03', 'Nagpur - Direct Sales', 'Satellite Office', true, 'System', '2026-02-06 10:10:00'),
-(4, 2, 'NSK-04', 'Nashik - General Agency', 'Branch Office', true, 'System', '2026-02-06 10:15:00'),
-(5, 2, 'AUR-05', 'Sambhajinagar - Broker Channel', 'Retail Outlet', true, 'System', '2026-02-06 10:20:00');
+
 
 INSERT INTO hms.role_master 
 (role_id, role_name, description, is_system_role, is_active, created_by, created_date, rowversion)
@@ -226,3 +212,88 @@ VALUES
 (106, 'Channel Head', 'National head of a specific sales distribution channel', false, true, 'admin', CURRENT_TIMESTAMP, 1),
 (107, 'ECOM Specialist', 'Handles digital sales and online policy management', false, true, 'admin', CURRENT_TIMESTAMP, 1),
 (108, 'BO Admin', 'Branch Office Administrator; handles local office logistics', false, true, 'admin', CURRENT_TIMESTAMP, 1);
+
+
+INSERT INTO hmsmaster.location_master (channel_id, sub_channel_id, orgid, location_code, 
+location_desc, is_active, created_by, created_date)
+ VALUES 
+(1, 1,2, 'HO', 'Head Office', true, 'System', '2026-02-06 10:00:00'),
+(1, 1,2, 'ZO', 'Zonal Office', true, 'System', '2026-02-06 10:00:00'),
+(1, 1,2, 'RO', 'Regional Office', true, 'System', '2026-02-06 10:00:00'),
+(1, 1,2, 'AR', 'Area Office', true, 'System', '2026-02-06 10:00:00'),
+(1, 1,2, 'UN', 'Unit Office', true, 'System', '2026-02-06 10:00:00');
+
+INSERT INTO hmsmaster.branch_master
+(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
+VALUES(2, 'Agency-HO', 'Agency Head Office', 'Agency Head Office Address', 1, '', '', true, 1, 'system', now());
+
+INSERT INTO hmsmaster.branch_master
+(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
+VALUES
+(2, 'WESTZO', 'Agency West Zone Office', 'Agency West Zone Address', 1, '', '', true, 2, 'system', now()),
+(2, 'NORTHZO', 'Agency West Zone Office', 'Agency North Zone Address', 1, '', '', true, 2, 'system', now()),
+(2, 'SOUTHZO', 'Agency South Zone Office', 'Agency South Zone Address', 1, '', '', true, 2, 'system', now()),
+(2, 'EASTZO', 'Agency East Zone Office', 'Agency East Zone Address', 1, '', '', true, 2, 'system', now());
+
+INSERT INTO hmsmaster.branch_master
+(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
+VALUES
+(2, 'MAHAREG', 'Maharastra Region Office', 'Maharastra Region Address', 1, '', '', true, 3, 'system', now()),
+(2, 'GUJREG', 'Gujarat Region Office', 'Gujarat Region Address', 1, '', '', true, 3, 'system', now()),
+(2, 'RAJAREG', 'Rajastan Region Office', 'Rajastan Region Address', 1, '', '', true, 3, 'system', now());
+
+
+INSERT INTO hmsmaster.branch_master
+(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
+VALUES
+(2, 'MUMAREA', 'Mumbai Area Office', 'Mumbai Area Address', 1, '', '', true, 4, 'system', now()),
+(2, 'BEEDAREA', 'Beed Area Office', 'Beed Area Address', 1, '', '', true, 4, 'system', now()),
+(2, 'PUNEAREA', 'Pune Area Office', 'Pune Area Address', 1, '', '', true, 4, 'system', now());
+
+
+INSERT INTO hmsmaster.branch_master
+(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
+VALUES
+(2, 'THANEUNT', 'Thane Unit Office', 'Thane Unit Address', 1, '', '', true, 5, 'system', now()),
+(2, 'ANDHERIUNIT', 'Andheri Unit Office', 'Andheri Unit Address', 1, '', '', true, 5, 'system', now()),
+(2, 'COLABAUNIT', 'Colaba unit Office', 'Colaba Unit Address', 1, '', '', true, 5, 'system', now()),
+(2, 'SHIRURUNIT', 'Shirur unit Office', 'Shirur Unit Address', 1, '', '', true, 5, 'system', now()),
+(2, 'KATRAJUNIT', 'Katraj unit Office', 'Katraj Unit Address', 1, '', '', true, 5, 'system', now());
+
+
+INSERT INTO hmsmaster.channel_branch_heirarchy
+(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
+VALUES(2, 1, 1, '6', 'system', now(), 'system', now(), now(), now());
+
+INSERT INTO hmsmaster.channel_branch_heirarchy
+(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
+VALUES(2, 1, 1, '6.7', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.8', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.9', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.10', 'system', now(), 'system', now(), now(), now());
+
+INSERT INTO hmsmaster.channel_branch_heirarchy
+(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
+values
+(2, 1, 1, '6.7.11', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.12', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.13', 'system', now(), 'system', now(), now(), now());
+
+
+INSERT INTO hmsmaster.channel_branch_heirarchy
+(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
+values
+(2, 1, 1, '6.7.11.17', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.11.18', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.11.19', 'system', now(), 'system', now(), now(), now());
+
+
+INSERT INTO hmsmaster.channel_branch_heirarchy
+(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
+values
+(2, 1, 1, '6.7.11.17.20', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.11.17.21', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.11.17.22', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.11.18.23', 'system', now(), 'system', now(), now(), now()),
+(2, 1, 1, '6.7.11.19.24', 'system', now(), 'system', now(), now(), now());
+

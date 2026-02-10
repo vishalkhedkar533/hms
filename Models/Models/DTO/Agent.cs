@@ -232,13 +232,15 @@ namespace Models.DTO
     }
     public class GeoHierarchyDto
     {
-        public long LocationMasterId { get; set; }
-        public string? LocationCode { get; set; }
-        public string? LocationName { get; set; }
+        public long BranchMasterId { get; set; }
+        public string? BranchCode { get; set; }
+        public string? BranchName { get; set; }
+
+        // This allows the DTO to nest infinitely, matching your JSON structure
         public GeoHierarchyDto? ParentLocation { get; set; }
 
-        // You can keep these if you plan to extend the function later
-        public string? HierarchyPath { get; set; } = string.Empty;
+        // Helpful for tracking the full breadcrumb
+        public string? HierarchyPath { get; set; }
     }
     public class GeoSearchRequest
     {

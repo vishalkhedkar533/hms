@@ -20,7 +20,7 @@ namespace HMS.Controllers
             _logger = logger;
         }
 
-        [HttpGet("List")]
+        [HttpPost("RolesList")]
         public async Task<ActionResult<HmsResponse>> GetRoles()
         {
             var response = new HmsResponse();
@@ -28,7 +28,7 @@ namespace HMS.Controllers
             {
                 var roles = await _context.RoleMasters.AsNoTracking().ToListAsync();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await GetErrorMessageAsync(CommonConstants.SUCCESS, "Common", "SUCCESS");
+                response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.roles = roles;
                 return Ok(response);
             }
@@ -41,102 +41,135 @@ namespace HMS.Controllers
             }
         }
 
-        [HttpPost("Create")]
-        public async Task<ActionResult<HmsResponse>> CreateRole([FromBody] RoleMaster role)
+        [HttpPost("CreateRole")]
+        public async Task<ActionResult<HmsResponse>> CreateRole([FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
             try
             {
-                if (role == null)
+                if (roleDto == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "Invalid role payload.";
                     return BadRequest(response);
                 }
 
-                var exists = await _context.RoleMasters.AnyAsync(r => r.ROLE_ID == role.ROLE_ID);
-                if (exists)
+                var nameExists = await _context.RoleMasters.AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower());
+
+                if (nameExists)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Role already exists.";
-                    return Conflict(response);
+                    response.responseHeader.ErrorMessage = $"Role name '{roleDto.RoleName}' already exists.";
+                    return Conflict(response); 
                 }
 
-                role.CreatedDate = DateTime.UtcNow;
-                role.ModifiedDate = null;
+                var newRole = new RoleMaster
+                {
+                    RoleName = roleDto.RoleName,
+                    Description = roleDto.Description,
+                    IsSystemRole = roleDto.IsSystemRole,
+                    IsActive = roleDto.IsActive,
+                    CreatedBy = "Admin",
+                    CreatedDate = DateTime.UtcNow,
+                    RowVersion = 1
+                };
 
-                _context.RoleMasters.Add(role);
+                _context.RoleMasters.Add(newRole);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await GetErrorMessageAsync(CommonConstants.SUCCESS, "Common", "SUCCESS");
-                response.responseBody.roles = new List<RoleMaster> { role };
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.roles = new List<RoleMaster> { newRole };
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create role");
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Internal server error.";
-                return StatusCode(500, response);
+                return StatusCode(500, "Internal server error.");
             }
         }
-
-        [HttpPut("Update/{id:long}")]
-        public async Task<ActionResult<HmsResponse>> UpdateRole(long id, [FromBody] RoleMaster role)
+        [HttpPost("UpdateRole/{id}")]
+        public async Task<ActionResult<HmsResponse>> UpdateRole([FromRoute]int id, [FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
             try
             {
-                if (role == null || id != role.ROLE_ID)
+                if (roleDto == null || id != roleDto.Role_ID)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Invalid role payload.";
+                    response.responseHeader.ErrorMessage = "Mismatched or invalid role ID.";
                     return BadRequest(response);
                 }
 
-                var existing = await _context.RoleMasters.FirstOrDefaultAsync(r => r.ROLE_ID == id);
-                if (existing == null)
+                var existingRole = await _context.RoleMasters.FirstOrDefaultAsync(r => r.Role_ID == id);
+                if (existingRole == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "Role not found.";
                     return NotFound(response);
                 }
 
-                existing.RoleName = role.RoleName;
-                existing.Description = role.Description;
-                existing.IsSystemRole = role.IsSystemRole;
-                existing.IsActive = role.IsActive;
-                existing.ModifiedBy = role.ModifiedBy;
-                existing.ModifiedDate = DateTime.UtcNow;
-                existing.RowVersion = role.RowVersion;
+                var nameExists = await _context.RoleMasters
+                    .AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower() && r.Role_ID != id);
 
-                _context.RoleMasters.Update(existing);
+                if (nameExists)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = $"The role name '{roleDto.RoleName}' is already assigned to another role.";
+                    return Conflict(response);
+                }
+
+                existingRole.RoleName = roleDto.RoleName;
+                existingRole.Description = roleDto.Description;
+                existingRole.IsSystemRole = roleDto.IsSystemRole;
+                existingRole.IsActive = roleDto.IsActive;
+
+                existingRole.ModifiedBy = "Admin";
+                existingRole.ModifiedDate = DateTime.UtcNow;
+                if (existingRole.CreatedDate.Kind == DateTimeKind.Local)
+                {
+                    existingRole.CreatedDate = existingRole.CreatedDate.ToUniversalTime();
+                }
+                else if (existingRole.CreatedDate.Kind == DateTimeKind.Unspecified)
+                {
+                    existingRole.CreatedDate = DateTime.SpecifyKind(existingRole.CreatedDate, DateTimeKind.Utc);
+                }
+                if (roleDto.RowVersion.HasValue)
+                {
+                    existingRole.RowVersion = roleDto.RowVersion + 1;
+                }
+
+                _context.RoleMasters.Update(existingRole);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await GetErrorMessageAsync(CommonConstants.SUCCESS, "Common", "SUCCESS");
-                response.responseBody.roles = new List<RoleMaster> { existing };
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.roles = new List<RoleMaster> { existingRole };
 
                 return Ok(response);
             }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, "Concurrency conflict during update for ID {Id}", id);
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "The record was modified by another user. Please reload.";
+                return StatusCode(409, response);
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to update role");
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Internal server error.";
-                return StatusCode(500, response);
+                _logger.LogError(ex, "Failed to update role for ID {Id}", id);
+                return StatusCode(500, "Internal server error.");
             }
         }
 
-        [HttpDelete("Delete/{id:long}")]
-        public async Task<ActionResult<HmsResponse>> DeleteRole(long id)
+        [HttpPost("DeleteRole/{id}")]
+        public async Task<ActionResult<HmsResponse>> DeleteRole([FromRoute]int id)
         {
             var response = new HmsResponse();
             try
             {
-                var role = await _context.RoleMasters.FirstOrDefaultAsync(r => r.ROLE_ID == id);
+                var role = await _context.RoleMasters.FirstOrDefaultAsync(r => r.Role_ID == id);
                 if (role == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -148,7 +181,7 @@ namespace HMS.Controllers
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await GetErrorMessageAsync(CommonConstants.SUCCESS, "Common", "SUCCESS");
+                response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.roles = new List<RoleMaster> { role };
 
                 return Ok(response);
@@ -160,14 +193,6 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorMessage = "Internal server error.";
                 return StatusCode(500, response);
             }
-        }
-
-        private async Task<string> GetErrorMessageAsync(int errorId, string area, string fallback)
-        {
-            return await _context.errorMaster
-                .Where(x => x.ErrorId == errorId && x.Area == area)
-                .Select(x => x.ErrorMsg)
-                .FirstOrDefaultAsync() ?? fallback;
         }
     }
 }

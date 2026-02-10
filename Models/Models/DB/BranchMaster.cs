@@ -4,106 +4,89 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
-    /*
-     * modelBuilder.Entity<BranchMaster>(entity =>
-{
-    entity.ToTable("BRANCH_MASTER", "hms");
-
-    entity.HasOne(e => e.ChannelMaster)
-          .WithMany()
-          .HasForeignKey(e => e.ChannelCode)
-          .HasConstraintName("fk_branch_channel")
-          .OnDelete(DeleteBehavior.Restrict);
-
-    entity.HasOne(e => e.HeadAgent)
-          .WithMany()
-          .HasForeignKey(e => e.HeadAgentId)
-          .HasConstraintName("fk_branch_head_agent")
-          .OnDelete(DeleteBehavior.Restrict);
-});
-
-     */
-    [Table("BRANCH_MASTER", Schema = "hms")]
+    [Table("branch_master", Schema = "hmsmaster")]
     public class BranchMaster
     {
         [Key]
-        [Column("BRANCH_CODE")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Column("branch_id")]
+        [SwaggerSchema("Primary key: unique branch identifier.")]
+        public long BranchId { get; set; }
+
+        [Column("orgid")]
+        [SwaggerSchema("Foreign key referencing the organisation.")]
+        public int? OrgId { get; set; }
+
+        [Required]
+        [Column("branch_code")]
         [StringLength(20)]
-        [SwaggerSchema("Primary key: branch code.")]
+        [SwaggerSchema("Unique code for the branch within an organization.")]
         public string BranchCode { get; set; } = null!;
 
         [Required]
-        [Column("BRANCH_NAME")]
+        [Column("branch_name")]
         [StringLength(100)]
         [SwaggerSchema("Name of the branch.")]
         public string BranchName { get; set; } = null!;
 
-        [Column("REGION")]
-        [StringLength(50)]
-        [SwaggerSchema("Region of the branch.")]
-        public string? Region { get; set; }
-
-        [Column("CHANNEL_CODE")]
-        [StringLength(20)]
-        [SwaggerSchema("Foreign key referencing channel code.")]
-        public string? ChannelCode { get; set; }
-
-        [Column("HEAD_AGENT_ID")]
-        [StringLength(50)]
-        [SwaggerSchema("Foreign key referencing the head agent code.")]
-        public string? HeadAgentId { get; set; }
-
-        [Column("ADDRESS")]
-        [SwaggerSchema("Address of the branch.")]
+        [Column("address")]
+        [SwaggerSchema("Physical address of the branch.")]
         public string? Address { get; set; }
 
-        [Column("PHONE_NUMBER")]
+        [Column("state")]
+        [SwaggerSchema("State identifier.")]
+        public int? State { get; set; }
+
+        [Column("phone_number")]
         [StringLength(20)]
-        [SwaggerSchema("Phone number of the branch.")]
+        [SwaggerSchema("Contact phone number.")]
         public string? PhoneNumber { get; set; }
 
-        [Column("EMAIL_ID")]
+        [Column("email_id")]
         [StringLength(100)]
-        [SwaggerSchema("Email address of the branch.")]
+        [SwaggerSchema("Contact email address.")]
         public string? EmailId { get; set; }
 
         [Required]
-        [Column("IS_ACTIVE")]
+        [Column("is_active")]
         [SwaggerSchema("Indicates if the branch is active.")]
         public bool IsActive { get; set; }
 
+        [Column("location_master_id")]
+        [SwaggerSchema("Foreign key referencing the location master.")]
+        public long? LocationMasterId { get; set; }
+
         [Required]
-        [Column("CREATED_BY")]
+        [Column("created_by")]
         [StringLength(100)]
         [SwaggerSchema("User who created the record.")]
         public string CreatedBy { get; set; } = null!;
 
         [Required]
-        [Column("CREATED_DATE")]
-        [SwaggerSchema("Date and time when the record was created.")]
+        [Column("created_date")]
+        [SwaggerSchema("Timestamp when the record was created.")]
         public DateTime CreatedDate { get; set; }
 
-        [Column("MODIFIED_BY")]
+        [Column("modified_by")]
         [StringLength(100)]
         [SwaggerSchema("User who last modified the record.")]
         public string? ModifiedBy { get; set; }
 
-        [Column("MODIFIED_DATE")]
-        [SwaggerSchema("Date and time of last modification.")]
+        [Column("modified_date")]
+        [SwaggerSchema("Timestamp of the last modification.")]
         public DateTime? ModifiedDate { get; set; }
 
-        [Column("ROWVERSION")]
+        [Column("rowversion")]
         [ConcurrencyCheck]
-        [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
+        [SwaggerSchema("Concurrency token.")]
         public int? RowVersion { get; set; }
 
-        // Navigation properties
-        [ForeignKey(nameof(ChannelCode))]
-        [SwaggerSchema("The related channel.")]
-        public ChannelMaster? ChannelMaster { get; set; }
+        // --- Navigation Properties ---
 
-        [ForeignKey(nameof(HeadAgentId))]
-        [SwaggerSchema("The head agent of the branch.")]
-        public Agent? HeadAgent { get; set; }
+        [ForeignKey(nameof(OrgId))]
+        public virtual Organisation? Organisation { get; set; }
+
+        [ForeignKey(nameof(LocationMasterId))]
+        public virtual LocationMaster? LocationMaster { get; set; }
     }
 }

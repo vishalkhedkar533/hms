@@ -18,6 +18,10 @@ namespace Models.DB
         [SwaggerSchema("Foreign key to channel master.")]
         public long ChannelId { get; set; }
 
+        [Column("sub_channel_id")]
+        [SwaggerSchema("Foreign key to channel master.")]
+        public long SubChannelId { get; set; }
+
         [Column("orgid")]
         [SwaggerSchema("Organization identifier.")]
         public int? OrgId { get; set; }
@@ -29,16 +33,10 @@ namespace Models.DB
         public string LocationCode { get; set; } = null!;
 
         [Required]
-        [Column("location_name")]
+        [Column("location_desc")]
         [StringLength(100)]
-        [SwaggerSchema("Name of the location.")]
-        public string LocationName { get; set; } = null!;
-
-        [Required]
-        [Column("location_type")]
-        [StringLength(20)]
-        [SwaggerSchema("Type of the location (e.g., Regional, Branch).")]
-        public string LocationType { get; set; } = null!;
+        [SwaggerSchema("Description of the location.")]
+        public string LocationDesc { get; set; } = null!;
 
         [Required]
         [Column("is_active")]

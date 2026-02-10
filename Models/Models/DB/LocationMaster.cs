@@ -4,78 +4,75 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
-    /*
-     * modelBuilder.Entity<LocationMaster>(entity =>
-{
-    entity.ToTable("LOCATION_MASTER", "hms");
-
-    entity.HasOne(e => e.ParentLocation)
-          .WithMany()
-          .HasForeignKey(e => e.ParentLocationCode)
-          .HasConstraintName("fk_location_parent")
-          .OnDelete(DeleteBehavior.Restrict);
-});
-
-     */
-    [Table("LOCATION_MASTER", Schema = "hms")]
+    // Note: Updated Schema to "hmsmaster" to match your SQL Script
+    [Table("location_master", Schema = "hmsmaster")]
     public class LocationMaster
     {
-        [Key]
-        [Column("LOCATION_CODE")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Column("location_master_id")]
+        [SwaggerSchema("Identity key for location master.")]
+        public long LocationMasterId { get; set; }
+
+        [Required]
+        [Column("channel_id")]
+        [SwaggerSchema("Foreign key to channel master.")]
+        public long ChannelId { get; set; }
+
+        [Column("orgid")]
+        [SwaggerSchema("Organization identifier.")]
+        public int? OrgId { get; set; }
+
+        [Key] // Kept as key since your SQL defines location_code as the Primary Key
+        [Column("location_code")]
         [StringLength(20)]
         [SwaggerSchema("Primary key: location code.")]
         public string LocationCode { get; set; } = null!;
 
         [Required]
-        [Column("LOCATION_NAME")]
+        [Column("location_name")]
         [StringLength(100)]
         [SwaggerSchema("Name of the location.")]
         public string LocationName { get; set; } = null!;
 
         [Required]
-        [Column("LOCATION_TYPE")]
+        [Column("location_type")]
         [StringLength(20)]
-        [SwaggerSchema("Type of the location.")]
+        [SwaggerSchema("Type of the location (e.g., Regional, Branch).")]
         public string LocationType { get; set; } = null!;
 
-        [Column("PARENT_LOCATION_CODE")]
-        [StringLength(20)]
-        [SwaggerSchema("Parent location code (self-referencing foreign key).")]
-        public string? ParentLocationCode { get; set; }
-
         [Required]
-        [Column("IS_ACTIVE")]
+        [Column("is_active")]
         [SwaggerSchema("Indicates if the location is active.")]
         public bool IsActive { get; set; }
 
         [Required]
-        [Column("CREATED_BY")]
+        [Column("created_by")]
         [StringLength(100)]
         [SwaggerSchema("User who created the record.")]
         public string CreatedBy { get; set; } = null!;
 
         [Required]
-        [Column("CREATED_DATE")]
+        [Column("created_date")]
         [SwaggerSchema("Date and time when the record was created.")]
         public DateTime CreatedDate { get; set; }
 
-        [Column("MODIFIED_BY")]
+        [Column("modified_by")]
         [StringLength(100)]
         [SwaggerSchema("User who last modified the record.")]
         public string? ModifiedBy { get; set; }
 
-        [Column("MODIFIED_DATE")]
+        [Column("modified_date")]
         [SwaggerSchema("Date and time of last modification.")]
         public DateTime? ModifiedDate { get; set; }
 
-        [Column("ROWVERSION")]
+        [Column("rowversion")]
         [ConcurrencyCheck]
-        [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
+        [SwaggerSchema("Concurrency token.")]
         public int? RowVersion { get; set; }
 
-        // Navigation property for parent location (self-reference)
-        [ForeignKey(nameof(ParentLocationCode))]
-        [SwaggerSchema("The parent location.")]
-        public LocationMaster? ParentLocation { get; set; }
+        /* Note: The SQL script you provided does NOT have PARENT_LOCATION_CODE. 
+           In your architecture, hierarchy is managed via the 'channel_location_heirarchy' table.
+           If you want to keep the self-reference, you must add the column to your DB first.
+        */
     }
 }

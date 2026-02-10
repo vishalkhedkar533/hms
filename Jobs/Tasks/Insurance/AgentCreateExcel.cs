@@ -7,6 +7,7 @@ using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Tasks.Models;
@@ -86,7 +87,13 @@ namespace Tasks.Insurance
                 _logger.LogInformation("Processing TaskId={TaskId}, OrgId={OrgId}", task.Id, task.OrgId);
 
                 // 4. Fetch Master Data for current Task (Inlined)
-                var masterSql = _mappingProvider.GetScriptForOperation("Agent", "GetMasterData")?.Script;
+                var MasterEntries = await conn.QueryAsync<MasterTable>(
+                    _mappingProvider.GetScriptForOperation("Master", "MasterEntries")?.Script,
+                    new { orgId = task.OrgId ?? 0, EntryCategory = "AgentProfileMst" });
+
+                var masterSql = _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script.Replace("{{FilterCriteria}}", 
+                    MasterEntries.FirstOrDefault().FilterCriteria);
+
                 var masterRows = await conn.QueryAsync<KeyValueEntry>(masterSql, new { orgId = task.OrgId ?? 0, masterName = "AgentProfileMst" });
                 var agentClassDict = BuildLookup(masterRows.ToList(), "AGENT_CLASS");
 
@@ -99,6 +106,10 @@ namespace Tasks.Insurance
                 // 5. Query Excel and process in chunks
                 var rows = MiniExcel.Query<Agent>(task.FilePath);
                 int rowCount = 0;
+                int processedRows = 0;
+                int rejectedRows = 0;
+                List<string> successData = new();
+                List<string> errorData = new();
 
                 foreach (var batch in rows.Chunk(chunkSize))
                 {
@@ -121,6 +132,17 @@ namespace Tasks.Insurance
 
                         row.Comments = errors.Any() ? "Rejected" : "Processed";
                         row.Reason = string.Join(" | ", errors);
+
+                        if (errors.Any())
+                        {
+                            rejectedRows++;
+                            errorData.Add(EncodeRowBase64(row));
+                        }
+                        else
+                        {
+                            processedRows++;
+                            successData.Add(EncodeRowBase64(row));
+                        }
                     }
 
                     // 6. Bulk Copy to Temp Table using GenericBulkOpsFactory (provider-agnostic)
@@ -310,6 +332,20 @@ namespace Tasks.Insurance
                     await tx.CommitAsync(token);
                 }
 
+                var updateSql = _mappingProvider.GetScriptForOperation("Agent", "UpdateTask")?.Script
+                    ?? throw new Exception("SQL for UpdateTask missing");
+                var status = rejectedRows > 0 ? "CompletedWithErrors" : "Completed";
+                await conn.ExecuteAsync(updateSql, new
+                {
+                    task.Id,
+                    TotalRows = rowCount,
+                    RowsProcessed = processedRows,
+                    RowsRejected = rejectedRows,
+                    ErrorMessage = errorData.Count > 0 ? string.Join(Environment.NewLine, errorData) : null,
+                    SuccessData = successData.Count > 0 ? string.Join(Environment.NewLine, successData) : null,
+                    Status = status
+                });
+
                 _logger.LogInformation("Completed TaskId={TaskId}", task.Id);
             }
 
@@ -407,6 +443,12 @@ namespace Tasks.Insurance
                     prop.SetValue(row, sanitized);
                 }
                 }
+        }
+
+        private static string EncodeRowBase64(Agent row)
+        {
+            var json = JsonSerializer.Serialize(row);
+            return Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
         }
         #endregion
     }

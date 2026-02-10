@@ -182,8 +182,8 @@ namespace HMS.Controllers
             }
         }
 
-        [HttpPost("failure-report/{id}")]
-        public async Task<IActionResult> DownloadLog([FromRoute]int id)
+        [HttpPost("download-report/{id}/{reportType}")]
+        public async Task<IActionResult> DownloadReport([FromRoute] int id, [FromRoute] string reportType)
         {
             HmsResponse hmsResponse = new HmsResponse();
             try
@@ -192,20 +192,34 @@ namespace HMS.Controllers
                 if (task == null)
                 {
                     hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    hmsResponse.responseHeader.ErrorMessage = "Batch not found.";
+                    hmsResponse.responseHeader.ErrorMessage = "Task not found.";
                     return NotFound(hmsResponse);
                 }
 
-                if (string.IsNullOrEmpty(task.ErrorMessage))
+                string? base64Content = null;
+                string suffix = "";
+
+                if (reportType.ToLower() == "success")
+                {
+                    base64Content = task.SuccessData;
+                    suffix = "_successRows";
+                }
+                else
+                {
+                    base64Content = task.ErrorMessage;
+                    suffix = "_failedRows";
+                }
+
+                if (string.IsNullOrEmpty(base64Content))
                 {
                     hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    hmsResponse.responseHeader.ErrorMessage = "No error log available.";
+                    hmsResponse.responseHeader.ErrorMessage = $"No {reportType} report available.";
                     return BadRequest(hmsResponse);
                 }
 
-                var fileBytes = Convert.FromBase64String(task.ErrorMessage);
-                var fileBaseName = string.IsNullOrWhiteSpace(task.FileName) ? "failedRows" : task.FileName.Trim();
-                var fileName = $"{fileBaseName}_failedRows.xlsx";
+                byte[] fileBytes = Convert.FromBase64String(base64Content);
+                var fileBaseName = string.IsNullOrWhiteSpace(task.FileName) ? "report" : Path.GetFileNameWithoutExtension(task.FileName);
+                var fileName = $"{fileBaseName}{suffix}.xlsx";
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
@@ -213,7 +227,7 @@ namespace HMS.Controllers
                 {
                     FileName = fileName,
                     ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    FileBase64 = Convert.ToBase64String(fileBytes),
+                    FileBase64 = base64Content,
                     FileSize = fileBytes.LongLength
                 };
 
@@ -221,7 +235,7 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error downloading batch log for {BatchId}", id);
+                _logger.LogError(ex, "Error downloading {ReportType} report for ID {Id}", reportType, id);
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
                 hmsResponse.responseHeader.ErrorMessage = "Internal Server Error";
                 return StatusCode(500, hmsResponse);

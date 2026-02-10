@@ -438,8 +438,19 @@ alter table comss.comm_job_exe_dtls add sgst decimal DEFAULT 0 null;
 alter table comss.comm_job_exe_dtls add ugst decimal DEFAULT 0 null;
 
 ALTER TABLE hms.fileprocessingtasks ADD COLUMN filetype varchar(100) NOT NULL DEFAULT 'unknown';
+alter table comss.comm_job_exe_dtls add ugst decimal DEFAULT 0 null;
+
+alter table app_subscription.organisation add column state int4;
+
+ALTER TABLE hmsmaster.financialperiod add column igst decimal default 0;
+ALTER TABLE hmsmaster.financialperiod add column sgst decimal default 0;
+ALTER TABLE hmsmaster.financialperiod add column cgst decimal default 0;
+ALTER TABLE hmsmaster.financialperiod add column ugst decimal default 0;
 
 ALTER TABLE hmsmaster.channel_master 
 ADD COLUMN total_entries int8 DEFAULT 0,
 ADD COLUMN total_entries_mon int8 DEFAULT 0;
 alter table insu_core.premium_collected add column trans_id int4 default 0;
+
+ALTER TABLE hms.fileprocessingtasks 
+ADD COLUMN IF NOT EXISTS successdata text;

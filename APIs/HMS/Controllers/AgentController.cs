@@ -1617,20 +1617,37 @@ namespace HMS.Controllers
         {
             HmsResponse hMSResponse = new HmsResponse();
             long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
             try
             {
+                var channel = await _context.ChannelMaster
+                    .AsNoTracking()
+                    .Where(c => c.ChannelCode == request.ChannelCode && c.OrgId == (int)orgId)
+                    .Select(c => new { c.ChannelId })
+                    .FirstOrDefaultAsync();
+
+                var subChannel = await _context.SubchannelMaster
+                    .AsNoTracking()
+                    .Where(c => c.ChannelCode == request.ChannelCode && c.OrgId == (int)orgId)
+                    .Select(c => new { c.ChannelId ,c.SubChannelId })
+                    .FirstOrDefaultAsync();
+
+                if (channel == null)
+                    return NotFound("Channel code not found.");
+
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
-                "Agent",
-                "get_geo_hierarchy",
-                new
-                {
-                    p_channel_code = request.ChannelCode,
-                    p_orgid = orgId
-                });
+                    "Agent",
+                    "get_geo_hierarchy",
+                    new
+                    {
+                        p_channel_id = channel.ChannelId,
+                        p_subchannel_id = subChannel.SubChannelId, // Pass null if sub-channel isn't provided
+                        p_orgid = orgId
+                    });
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
                 {
-                    List<GeoHierarchyDto> geoData = JsonConvert.DeserializeObject<List<GeoHierarchyDto>>(
+                    var geoData = JsonConvert.DeserializeObject<List<GeoHierarchyDto>>(
                         stringResponse.FirstOrDefault(),
                         new JsonSerializerSettings
                         {
@@ -1646,62 +1663,60 @@ namespace HMS.Controllers
                 else
                 {
                     hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
-                        .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
-                        .Select(x => x.ErrorMsg)
-                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    hMSResponse.responseHeader.ErrorMessage = "Hierarchy not found for this selection.";
                     return NotFound(hMSResponse);
                 }
-
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Occure In GeoHeirarchy");
-
+                _logger.LogError(ex, "Error Occurred In GeoHierarchy");
                 return StatusCode(500, "Internal Server Error");
             }
         }
 
-        [HttpPost("GeoHierarchyByChannelDesignation")]
+        [HttpPost("ReporteesByChannelLocation")]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetGeoHierarchyByChannelDesignation([FromBody] GeoHierarchyByChannelDesignationRequest request)
+        public async Task<IActionResult> GetReporteesByChannelLocation([FromBody] ReporteesByLocationRequest request)
         {
             var channelCode = request.ChannelCode.Trim();
-            var designationCode = request.DesignationCode.Trim();
+            var locationCode = request.LocationCode.Trim();
             var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
             try
             {
                 var channelId = await _context.ChannelMaster
-                .AsNoTracking()
-                .Where(c => c.ChannelCode == channelCode && c.OrgId == orgId)
-                .Select(c => (long?)c.ChannelId)
-                .FirstOrDefaultAsync();
+                    .AsNoTracking()
+                    .Where(c => c.ChannelCode == channelCode && c.OrgId == orgId)
+                    .Select(c => (long?)c.ChannelId)
+                    .FirstOrDefaultAsync();
 
                 if (!channelId.HasValue)
                     return NotFound("Channel code not found.");
 
-                var designationId = await _context.DesignationMaster
+
+                var locationId = await _context.LocationMasters
                     .AsNoTracking()
-                    .Where(d => d.DesignationCode == designationCode && d.OrgId == orgId)
-                    .Select(d => (long?)d.DesignationId)
+                    .Where(l => l.LocationCode == locationCode && l.OrgId == (int)orgId)
+                    .Select(l => (long?)l.LocationMasterId)
                     .FirstOrDefaultAsync();
 
-                if (!designationId.HasValue)
-                    return NotFound("Designation code not found.");
+                if (!locationId.HasValue)
+                    return NotFound("Location code not found.");
 
                 HmsResponse hMSResponse = new HmsResponse();
 
+
                 var reportees = await _db.ExecuteQueryAsync<GeoHierarchyAgentDto>(
                     "Agent",
-                    "get_reportees_by_channel_designation",
+                    "get_reportees_by_channel_location",
                     new
                     {
                         channel = channelId.Value,
-                        designation_code = designationId.Value,
+                        location_id = locationId.Value,
                         p_orgid = orgId
                     });
 
-                if (reportees != null)
+                if (reportees != null && reportees.Any())
                 {
                     hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
@@ -1711,16 +1726,13 @@ namespace HMS.Controllers
                 else
                 {
                     hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
-                        .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
-                        .Select(x => x.ErrorMsg)
-                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    hMSResponse.responseHeader.ErrorMessage = "No reportees found for this location.";
                     return NotFound(hMSResponse);
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                _logger.LogError(ex, "Error Occure In GeoHeirarchyByChannelDesignation");
+                _logger.LogError(ex, "Error Occurred In GetReporteesByChannelLocation");
                 return StatusCode(500, "Internal Server Error");
             }
         }

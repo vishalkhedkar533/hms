@@ -48,6 +48,7 @@ namespace HMS.Data
         public DbSet<JobConfig> JobConfigs => Set<JobConfig>();
         public DbSet<JobExeHist> JobExeHists => Set<JobExeHist>();
         public DbSet<JobExtns> JobExtns => Set<JobExtns>();
+        public DbSet<LocationMaster> LocationMasters => Set<LocationMaster>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

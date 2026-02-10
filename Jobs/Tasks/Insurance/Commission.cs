@@ -56,6 +56,12 @@ namespace Tasks.Insurance
 
         public async Task Calculate(JobExeHist jobExeHist)
         {
+            decimal TDS = 0;
+            decimal ProffTax = 0;
+            decimal IGST = 0;
+            decimal CGST = 0;
+            decimal SGST = 0;
+            decimal UGST = 0;
             operationMapping = _mappingProvider.GetScriptForOperation("Job", "GetJobExtn")
                 ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
 
@@ -69,27 +75,79 @@ namespace Tasks.Insurance
 
             JobExeHist LastExecutedJob = await conn.QuerySingleOrDefaultAsync<JobExeHist>(operationMapping.Script, new
             {
-                job_config_id = int.Parse(jobKey.Name),
-                orgid = orgId,
-                fireinstanceid = null as long?
+                JobConfigId = int.Parse(jobKey.Name),
+                orgId = orgId,
+                FireInstanceId = null as long?
             });
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Job", "GetJobExtn")
+                ?? throw new InvalidOperationException("Operation mapping for Job/CreateExecutionCycle not found.");
 
             var jobExtn = await conn.QueryFirstOrDefaultAsync<JobExtn>(
                 operationMapping.Script,
-                new { orgid = orgId, job_config_id = int.Parse(jobKey.Name) });
+                new { orgId = orgId, JobConfigId = int.Parse(jobKey.Name) });
 
             JobExeHist jobTriggerDetails = await _jobTriggerRepository.CreateJobTriggerDetails(_jobExecutionContext);
             operationMapping = _mappingProvider.GetScriptForOperation("Commission", "ConfigByID")
                 ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
 
-            connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
-
             var commission_config = await conn.QueryFirstOrDefaultAsync<CommissionConfig>(
                 operationMapping.Script,
-                new { job_config_id = int.Parse(jobKey.Name), 
-                    orgid = orgId});
+                new {
+                    JobConfigId = int.Parse(jobKey.Name),
+                    orgId = orgId});
 
+            var MasterEntries = await conn.QueryAsync<MasterTable>(
+                _mappingProvider.GetScriptForOperation("Master", "MasterEntries")?.Script,
+                new { orgId = orgId , EntryCategory = "CommissionMsts" });
+
+            var CommissionMasters = await conn.QueryAsync<KeyValueEntry>(
+                _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script.Replace("{{FilterCriteria}}",
+                MasterEntries?.FirstOrDefault()?.FilterCriteria ??  " 1=1"),new{orgid = orgId});
+
+            
+            var StateList = CommissionMasters.Where(x=> x.EntryCategory.Equals("STATE_NAME")).ToList();
+            var GenderList = CommissionMasters.Where(x => x.EntryCategory.Equals("GENDER")).ToList();
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Organisation", "GetOrgDetails")
+                ?? throw new InvalidOperationException("Operation mapping for Organisation/GetOrgDetails not found.");
+            var orgDetails = await conn.QueryAsync<Organisation>(operationMapping.Script,
+                new
+                {
+                    orgId = orgId
+                });
+
+            var orgState = StateList.FirstOrDefault(s => s.EntryIdentity == orgDetails.FirstOrDefault()?.State).EntryDesc;
+
+            operationMapping = _mappingProvider.GetScriptForOperation("Master", "GetFinancialPeriod")
+                ?? throw new InvalidOperationException("Operation mapping for Master/GetFinancialPeriod not found.");
+
+            var financialPeriod = conn.QueryFirstOrDefault<FinancialPeriod>(operationMapping.Script,
+                new
+                {
+                    orgId = orgId,
+                });
+
+            var orgAgent = await conn.QueryAsync<Agent>(
+                _mappingProvider.GetScriptForOperation("Agent", "GetAgentData").Script,
+                new
+                {
+                    orgId = orgId
+                });
+
+            var LastAgentCommissionEntries = await conn.QueryAsync<CommsLedger>(
+                _mappingProvider.GetScriptForOperation("Commission", "GetLatestLedgerEntry").Script,
+                    new
+                    {
+                        orgId = orgId
+                    });
+
+            var FYCommPayments = await conn.QueryAsync<CommsFinYearLedger>(
+                _mappingProvider.GetScriptForOperation("Commission", "FYCommPayments").Script,
+                new
+                {
+                    orgId = orgId
+                });
             #region frameFormulafromDatabase
             var parameters = new[] {
                  Expression.Parameter(typeof(PremiumCollected), "premium"),
@@ -108,11 +166,7 @@ namespace Tasks.Insurance
             {
                 #region getListOfPremiumCollectedAgentPolicy
                 Console.WriteLine($"Calculating commissions as per job config: {_jobExecutionContext.JobDetail.Key}");
-                operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetCommissionData")
-                    ?? throw new InvalidOperationException("Operation mapping for Commission/GetCommissionData not found.");
-
-                connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                    ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
+                operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetCommissionData");
 
                 string FilterCriteria = string.IsNullOrEmpty(jobExtn?.Filter) ? " 1=1 " : jobExtn.Filter;
                 FilterCriteria = FilterCriteria.Replace("&&", " AND ");
@@ -133,7 +187,7 @@ namespace Tasks.Insurance
                         CommRate = rate
                     },
                     // The markers where each NEW object starts in the SELECT list:
-                    new { orgid = orgId, job_exe_hist_id = LastExecutedJob?.JobExeHistId, job_config_id = int.Parse(jobKey.Name) }, 
+                    new { orgId = orgId, JobExeHistId = LastExecutedJob?.JobExeHistId, JobConfigID = int.Parse(jobKey.Name) }, 
                     null, 
                     splitOn: "PolicyRef,AgentId,InsuredID,OwnerID,CommRateId"
                 );
@@ -156,8 +210,7 @@ namespace Tasks.Insurance
                         });
                         continue;
                     }
-                    operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetProcessedRecords")
-                    ?? throw new InvalidOperationException("Operation mapping for Commission/GetProcessedRecords not found.");
+                    operationMapping = _mappingProvider.GetScriptForOperation("Commission", "GetProcessedRecords");
 
                     var processedRecords = await conn.QueryAsync<CommJobExeDtls>(operationMapping.Script,
                         new
@@ -172,18 +225,13 @@ namespace Tasks.Insurance
                         //skip already processed records
                         continue;
                     }
-                    operationMapping = _mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable")
-                        ?? throw new InvalidOperationException("Operation mapping for Commission/SaveCommissionPayable not found.");
-
-                    connectionString = _configuration.GetConnectionString(operationMapping.ConnectionStringKey)
-                        ?? throw new InvalidOperationException($"Connection string '{operationMapping.ConnectionStringKey}' not found.");
 
                     try
                     {
                         var comm_amt = compiledFormula.DynamicInvoke(record.PremiumCollected
                             , record.Policy, record.Agent, record.Insured
                             , record.Owner, record.CommRate);
-                        conn.Execute(operationMapping.Script, new
+                        conn.Execute(_mappingProvider.GetScriptForOperation("Commission", "SaveCommissionPayable").Script, new
                         {
                             job_exe_hist_id = jobExeHist.JobExeHistId,
                             agent_id = record.Agent.AgentId,
@@ -209,7 +257,86 @@ namespace Tasks.Insurance
                             logs = exCalc.Message
                         });
                     }
+                }
 
+                ProfTaxCalculator profTaxCalculator = new ProfTaxCalculator(Path.Combine( _baseDir ,
+                    "ProfTaxStructure",
+                    "PTStructure.json"));
+
+                TDSCalculator tDSCalculator = new TDSCalculator();
+                GstCalculator gstCalculator = new GstCalculator();
+                var AgentCommissionSummary = conn.Query<AgentCommissionSummary>(
+                    _mappingProvider.GetScriptForOperation("Commission", "CalculatedCommission").Script,
+                    new
+                    {
+                        orgId = orgId,
+                        JobExeHistId = jobExeHist.JobExeHistId,
+                    });
+                foreach (var agentComm in AgentCommissionSummary)
+                {
+                    var LastAgentCommission = LastAgentCommissionEntries.FirstOrDefault(ac => ac.AgentID == agentComm.AgentID);
+                    var AgentFYPayments = FYCommPayments.FirstOrDefault(fp => fp.AgentId == agentComm.AgentID &&
+                    fp.FinPeriodFrom == financialPeriod.EffectiveFrom && 
+                    fp.FinPeriodTo == financialPeriod.EffectiveTo);
+                    var currAgent = orgAgent.FirstOrDefault(a => a.AgentId == agentComm.AgentID);
+                    #region CalculateCommissionTax
+                    TDS = tDSCalculator.Calculate194H(AgentFYPayments?.BalCommAmt ?? 0, 
+                        agentComm.TotalCommission,
+                        string.IsNullOrEmpty(currAgent.PanNumber),
+                        orgId, financialPeriod);
+                    var lastAgentBal = LastAgentCommission?.BalCommAmt ?? 0;
+
+                    ProffTax = profTaxCalculator.CalculateTax(
+                        StateList.FirstOrDefault(x=> x.EntryIdentity == currAgent.State).EntryDesc, 
+                        agentComm.TotalCommission, 
+                        GenderList.FirstOrDefault(x => x.EntryIdentity == currAgent.Gender).EntryDesc, 
+                        2);
+
+                    var gstResult = gstCalculator.CalculateGst(agentComm.TotalCommission, 
+                        financialPeriod,
+                        StateList.FirstOrDefault(x => x.EntryIdentity == currAgent.State).EntryDesc.Equals(orgState));
+
+                    Dictionary<string,decimal> deductibleAmount = new Dictionary<string, decimal>();
+                    deductibleAmount.Add("CommAmt", agentComm.TotalCommission);
+                    deductibleAmount.Add("TDS", Math.Abs(TDS) * -1);
+                    deductibleAmount.Add("ProffTax", Math.Abs(ProffTax) * -1);
+                    deductibleAmount.Add("IGST", Math.Abs(gstResult.IGST) * -1);
+                    deductibleAmount.Add("CGST", Math.Abs(gstResult.CGST) * -1);
+                    deductibleAmount.Add("SGST", Math.Abs(gstResult.SGST) * -1);
+                    deductibleAmount.Add("UGST", Math.Abs(UGST) * -1);
+
+                    foreach (var item in deductibleAmount)
+                    {
+                        lastAgentBal += item.Value;
+                        if (!item.Value.Equals(0))
+                        {
+                            //dont record zero value transactions
+                            conn.Execute(_mappingProvider.GetScriptForOperation("Commission", "InsertCommsLedger").Script, new
+                            {
+                                orgId = orgId,
+                                AgentID = agentComm.AgentID,
+                                JobExeHistId = jobExeHist.JobExeHistId,
+                                EntryDate = DateTime.UtcNow,
+                                EffectiveFrom = financialPeriod?.EffectiveFrom,
+                                EffectiveTo = financialPeriod?.EffectiveTo,
+                                TransType = item.Key,
+                                TransAmount = item.Value,
+                                LatestAgentBal = lastAgentBal
+                            });
+                        }
+                    }
+                    //@orgId, @AgentID, now(), @FinPeriodFrom, @FinPeriodTo, @GrossCommission
+                    conn.Execute(_mappingProvider.GetScriptForOperation("Commission", "SaveAgentCommissionSummary").Script, new
+                    {
+                        orgId = orgId,
+                        AgentID = agentComm.AgentID,
+                        JobExeHistId = jobExeHist.JobExeHistId,
+                        FinPeriodFrom = financialPeriod?.EffectiveFrom,
+                        FinPeriodTo = financialPeriod?.EffectiveTo,
+                        GrossCommission = agentComm.TotalCommission
+                    });
+
+                    #endregion CalculateCommissionTax
                 }
             }
             catch (Exception ex)

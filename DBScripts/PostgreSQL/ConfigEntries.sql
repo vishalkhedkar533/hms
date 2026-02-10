@@ -214,3 +214,15 @@ INSERT INTO hmsmaster.location_master (
 (3, 2, 'NGP-03', 'Nagpur - Direct Sales', 'Satellite Office', true, 'System', '2026-02-06 10:10:00'),
 (4, 2, 'NSK-04', 'Nashik - General Agency', 'Branch Office', true, 'System', '2026-02-06 10:15:00'),
 (5, 2, 'AUR-05', 'Sambhajinagar - Broker Channel', 'Retail Outlet', true, 'System', '2026-02-06 10:20:00');
+
+INSERT INTO hms.role_master 
+(role_id, role_name, description, is_system_role, is_active, created_by, created_date, rowversion)
+VALUES
+(101, 'DOPS Processor', 'Entry-level operations; data entry and document upload', false, true, 'admin', CURRENT_TIMESTAMP, 1),
+(102, 'DOPS Approver', 'Operations supervisor; final verification of policy data', false, true, 'admin', CURRENT_TIMESTAMP, 1),
+(103, 'ROM', 'Regional Operations Manager; oversees ops across multiple branches', false, true, 'admin', CURRENT_TIMESTAMP, 1),
+(104, 'BM', 'Branch Manager; responsible for branch targets and administration', false, true, 'admin', CURRENT_TIMESTAMP, 1),
+(105, 'RH', 'Regional Head; strategic lead for a specific geographic region', false, true, 'admin', CURRENT_TIMESTAMP, 1),
+(106, 'Channel Head', 'National head of a specific sales distribution channel', false, true, 'admin', CURRENT_TIMESTAMP, 1),
+(107, 'ECOM Specialist', 'Handles digital sales and online policy management', false, true, 'admin', CURRENT_TIMESTAMP, 1),
+(108, 'BO Admin', 'Branch Office Administrator; handles local office logistics', false, true, 'admin', CURRENT_TIMESTAMP, 1);

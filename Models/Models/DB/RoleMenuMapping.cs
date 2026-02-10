@@ -71,4 +71,20 @@ namespace Models.DB
         public Role? Role { get; set; }
         public MenuMaster? Menu { get; set; }
     }
+
+    public class MenuRoleMappingDto
+    {
+        public int MenuId { get; set; }
+        public string MenuName { get; set; } = string.Empty;
+        public int? ParentMenuId { get; set; }
+        public string? RoutePath { get; set; }
+        public int? DisplayOrder { get; set; }
+        public bool IsActive { get; set; }
+        public bool? IsInternal { get; set; }
+        public int? MappingId { get; set; }
+        public bool IsMapped { get; set; }
+        public bool? IsVisible { get; set; }
+        public bool? IsEnabled { get; set; }
+        public int? RoleId { get; set; }
+    }
 }

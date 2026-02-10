@@ -2171,9 +2171,7 @@ FOREIGN KEY (job_exe_hist_id) REFERENCES scheduler.job_exe_hist(job_exe_hist_id)
 
 CREATE INDEX uqOrgID ON comss.comms_ledger (orgid,agent_id, EntryDate,FinPeriodFrom,FinPeriodTo);
 
-DROP TABLE hmsmaster.location_master;
-
-CREATE SEQUENCE hms.location_master_id_seq
+CREATE SEQUENCE hmsmaster.location_master_id_seq
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -2182,21 +2180,22 @@ CREATE SEQUENCE hms.location_master_id_seq
 	NO CYCLE;
 
 CREATE TABLE hmsmaster.location_master (
-    location_master_id  int8 DEFAULT nextval('hms.location_master_id_seq'::regclass) NOT NULL,
+    location_master_id  int8 DEFAULT nextval('hmsmaster.location_master_id_seq'::regclass) NOT NULL,
     channel_id int8 not null,
+    sub_channel_id int8 not null,
     orgid int4 NULL,
 	location_code varchar(20) NOT NULL,
-	location_name varchar(100) NOT NULL,
-	location_type varchar(20) NOT NULL,
+	location_desc varchar(20) NOT NULL,
 	is_active bool NOT NULL,
 	created_by varchar(100) NOT NULL,
 	created_date timestamp NOT NULL,
 	modified_by varchar(100) NULL,
 	modified_date timestamp NULL,
 	rowversion int4 NULL,
-	CONSTRAINT location_master_pkey PRIMARY KEY (location_code),
-	--CONSTRAINT fk_location_parent FOREIGN KEY (parent_location_code) REFERENCES hmsmaster.location_master(location_code),
+	CONSTRAINT location_master_pkey PRIMARY KEY (location_master_id),
+	CONSTRAINT uq_loc unique (orgid,channel_id,sub_channel_id,location_code),
 	CONSTRAINT fk_location_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id),
+	CONSTRAINT fk_location_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id),
 	CONSTRAINT fk_location_org FOREIGN KEY (orgid) references  app_subscription.organisation(orgid)
 );
 
@@ -2218,7 +2217,7 @@ CREATE TABLE comss.comms_fy_ledger (
 	bal_comm_amt decimal not null default 0
 );
 
-CREATE SEQUENCE hmsmaster.channel_location_heirarchy_id_seq
+CREATE SEQUENCE hmsmaster.channel_branch_heirarchy_id_seq
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -2226,20 +2225,20 @@ CREATE SEQUENCE hmsmaster.channel_location_heirarchy_id_seq
 	CACHE 1
 	NO CYCLE;
 
-CREATE TABLE hmsmaster.channel_location_heirarchy (
-	channel_location_heirarchy_id int8 DEFAULT nextval('hmsmaster.channel_location_heirarchy_id_seq'::regclass) NOT NULL,
+
+CREATE TABLE hmsmaster.channel_branch_heirarchy (
+	channel_location_heirarchy_id int8 DEFAULT nextval('hmsmaster.channel_branch_heirarchy_id_seq'::regclass) NOT NULL,
 	orgid int4 NULL,
 	channel_id int8 not null,
 	sub_channel_id int8 null,
-	location_master_id int8 not null,
-	hierarchy_path public.ltree NULL,
+	hierarchy_path public.ltree NULL, -- reference to hmsmaster.branch_master.branch_id
 	created_by varchar(100) NOT NULL,
 	created_date timestamp NOT NULL,
 	modified_by varchar(100) NULL,
 	modified_date timestamp NULL,
 	effective_from_date date NOT NULL,
 	effective_to_date date NULL,
-	level_criteria varchar(1000) null, -- Zone	Region	Area	Branch	Unit
+	--level_criteria varchar(1000) null, -- Zone	Region	Area	Branch	Unit
 	CONSTRAINT fk_loc_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
 	CONSTRAINT fk_loc_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id) ON DELETE cascade,
 	CONSTRAINT fk_loc_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id) ON DELETE cascade
@@ -2264,7 +2263,7 @@ create table hmsmaster.branch_master (
 	phone_number varchar(20) null, 
 	email_id varchar(100) null, 
 	is_active bool not null, 
-	level varchar(1000) null, --reference to hmsmaster.channel_location_heirarchy.level_criteria
+	location_master_id int8 null, --reference to hmsmaster.channel_location_heirarchy.level_criteria
 	created_by varchar(100) not null, 
 	created_date timestamp not null, 
 	modified_by varchar(100) null, 
@@ -2272,7 +2271,8 @@ create table hmsmaster.branch_master (
 	rowversion int4 null, 
 	constraint branch_master_pkey primary key (branch_id),
 	constraint branch_uq unique (orgid,branch_code),
-	CONSTRAINT fk_brmst_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid)
+	CONSTRAINT fk_brmst_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+	CONSTRAINT fk_brmst_loc FOREIGN KEY (location_master_id) REFERENCES hmsmaster.location_master(location_master_id)
 );
 
 CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_id int8,p_subchannel_id int8, p_orgid bigint)
@@ -2284,7 +2284,7 @@ WITH RECURSIVE hierarchy_cte AS (
     SELECT 
         gh.hierarchy_path,
         string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
-    FROM hmsmaster.channel_location_heirarchy gh
+    FROM hmsmaster.channel_branch_heirarchy gh
     WHERE gh.channel_id = p_channel_id 
           AND coalesce(gh.sub_channel_id, -1000) = coalesce(p_subchannel_id, -1000) 
           AND gh.orgid = p_orgid::int
@@ -2294,15 +2294,18 @@ json_tree AS (
     SELECT 
         array_length(labels, 1) AS lvl,
         jsonb_build_object(
-            'locationMasterId', lm.location_master_id,
-            'locationName', lm.location_name,
-            'locationCode', lm.location_code,
+            'branchMasterID', bm.branch_id ,
+            'branchCode', bm.branch_code,
+            'branchName', bm.branch_name,
+            --'locationCode', lm.location_code,
+            --''lm.location_desc,
             'parentLocation', NULL -- Matches DTO Property Name
         ) AS node,
         labels
     FROM hierarchy_cte h
     -- Note: Join with hmsmaster schema
-    JOIN hmsmaster.location_master lm ON lm.location_master_id = h.labels[array_length(h.labels, 1)]::int8
+    JOIN hmsmaster.branch_master bm ON bm.branch_id = h.labels[array_length(h.labels, 1)]::int8
+    --JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
 
     UNION ALL
 
@@ -2310,14 +2313,15 @@ json_tree AS (
     SELECT 
         j.lvl - 1,
         jsonb_build_object(
-            'locationMasterId', lm.location_master_id,
-            'locationName', lm.location_name,
-            'locationCode', lm.location_code,
+            'branchMasterID', bm.branch_id ,
+            'branchCode', bm.branch_code,
+            'branchName', bm.branch_name,
             'parentLocation', j.node -- Matches DTO Property Name
         ) AS node,
         j.labels
     FROM json_tree j
-    JOIN hmsmaster.location_master lm ON lm.location_master_id = j.labels[j.lvl - 1]::int8
+    JOIN hmsmaster.branch_master bm ON bm.branch_id = j.labels[j.lvl - 1]::int8
+    JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
     WHERE j.lvl > 1
 )
 SELECT jsonb_agg(node)

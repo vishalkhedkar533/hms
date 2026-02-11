@@ -94,6 +94,14 @@ namespace Tasks.Insurance
                 var masterSql = _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script.Replace("{{FilterCriteria}}", 
                     MasterEntries.FirstOrDefault().FilterCriteria);
 
+                //Fetch designation heirarchy
+                var DesignationHeirarchy = await conn.QueryAsync<DesignationMaster>(
+                    _mappingProvider.GetScriptForOperation("Master", "DesignationHeirarchy")?.Script,
+                    new
+                    {
+                        orgId = orgId
+                    });
+
                 var masterRows = await conn.QueryAsync<KeyValueEntry>(masterSql, new { orgId = task.OrgId ?? 0, masterName = "AgentProfileMst" });
                 var agentClassDict = BuildLookup(masterRows.ToList(), "AGENT_CLASS");
 
@@ -152,13 +160,18 @@ namespace Tasks.Insurance
                     var filteredBatch = batchList.Where(r => !string.IsNullOrWhiteSpace(r.AgentCode) || !string.IsNullOrWhiteSpace(r.AgentName)).ToList();
                     if (filteredBatch.Count == 0) continue;
                     await using var writer = await _bulkOpsFactory.BeginBinaryImportAsync(conn, bulkSql, token);
+                    int index = 0;
                     foreach (var r in batchList)
                     {
+                        index++;
                         writer.StartRow();
-
+                        var currDesignationHeirarchy = DesignationHeirarchy
+                            .FirstOrDefault(x => x.ChannelId.Equals(r.Channel) && x.DesignationCode.Equals(r.DesignationCode));
                         // 1-10 (pass same string/int values; provider wrapper will map types)
+
+                        var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001
                         writer.Write(r.AgentId.ToString());
-                        writer.Write(r.AgentCode ?? "");
+                        writer.Write(agentCode);
                         writer.Write(r.AgentName ?? "");
                         writer.Write(r.BusinessName ?? "");
                         writer.Write(r.FirstName ?? "");

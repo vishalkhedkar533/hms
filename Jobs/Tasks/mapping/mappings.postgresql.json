@@ -175,6 +175,10 @@
       "MasterEntries": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "select m.filtercriteria  from hmsmaster.mastertables m where m.orgid  = @orgId AND m.entrycategory = @EntryCategory"
+      },
+      "DesignationHeirarchy": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT designation_id, designation_code, designation_name, channel_code, designation_level, is_active, created_by, created_date, modified_by, modified_date, rowversion, channel_id, orgid FROM hmsmaster.designation_master WHERE orgid = @orgId ORDER BY designation_code, channel_id"
       }
     },
     "Organisation": {

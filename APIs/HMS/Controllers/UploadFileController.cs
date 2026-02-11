@@ -54,6 +54,7 @@ namespace HMS.Controllers
             }
 
             var fileType = model.FileType.Trim().ToLowerInvariant();
+            HmsResponse hmsResponse = new HmsResponse();
 
             try
             {
@@ -100,19 +101,22 @@ namespace HMS.Controllers
                 _context.FileProcessingTasks.Add(fileTask);
                 await _context.SaveChangesAsync();
 
-                return Ok(new
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hmsResponse.responseBody.fileUpload = new FileUploadResponse
                 {
-                    Message = "File uploaded and record created.",
                     FileTaskId = fileTask.Id,
                     FileName = uniqueFileName,
                     FilePath = filePath,
-                    FileType = fileType,
-                });
+                    FileType = fileType
+                };
+
+                return Ok(hmsResponse);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during file upload.");
-                return StatusCode(500, "Internal server error during file upload.");
+                return StatusCode(500, "Internal server error");
             }
         }
 

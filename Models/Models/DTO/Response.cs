@@ -44,6 +44,7 @@ namespace Models.DTO
         public List<MenuMaster>? menus { get; set; } = null;
         public List<RoleMenuMapping>? roleMenuMappings { get; set; } = null;
         public List<MenuRoleMappingDto>? menuRoleMappings { get; set; } = null;
+        public FileUploadResponse? fileUpload { get; set; } = null;
     }
 
     public class UpdatedAgentField
@@ -96,6 +97,14 @@ namespace Models.DTO
         public long totalEntities { get; set; }
         public long activeEntities { get; set; }
         public long terminatedEntities { get; set; }
+    }
+
+    public class FileUploadResponse
+    {
+        public int FileTaskId { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
+        public string FileType { get; set; } = string.Empty;
     }
 
 

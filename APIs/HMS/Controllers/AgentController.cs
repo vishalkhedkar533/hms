@@ -539,6 +539,7 @@ namespace HMS.Controllers
                 var SubChannel = GetMasterData("SubChannel").ToList();
                 var Designation = GetMasterData("Designation").ToList();
                 var Location = GetMasterData("Location").ToList();
+                var Branch = GetMasterData("Branch").ToList();
 
                 foreach (var bankAcc in agentDTO.bankAccounts)
                 {
@@ -568,6 +569,7 @@ namespace HMS.Controllers
                 agentDTO.SubChannelDesc = SubChannel.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.SubChannel ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.DesignationCodeDesc = Designation.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.DesignationCode ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.LocationCodeDesc = Location.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.LocationCode ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.BranchDesc = Branch.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.Branch ?? -1000))?.EntryDesc ?? string.Empty;
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;

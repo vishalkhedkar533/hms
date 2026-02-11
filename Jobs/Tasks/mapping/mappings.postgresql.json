@@ -179,6 +179,10 @@
       "DesignationHeirarchy": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT designation_id, designation_code, designation_name, channel_code, designation_level, is_active, created_by, created_date, modified_by, modified_date, rowversion, channel_id, orgid FROM hmsmaster.designation_master WHERE orgid = @orgId ORDER BY designation_code, channel_id"
+      },
+      "ChannelMaster": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "select channel_id, channel_code, channel_name from hmsmaster.channel_master where orgid = 2 order by channel_name"
       }
     },
     "Organisation": {

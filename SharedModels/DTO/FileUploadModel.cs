@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 
-namespace Models.DTO
+namespace SharedModels.DTO
 {
     public class FileUploadModel
     {

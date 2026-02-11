@@ -6,8 +6,8 @@ using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
-using Models.DTO;
 using Models.HMSConsts;
+using SharedModels.DTO;
 using System.Security.Claims;
 
 namespace HMS.Controllers

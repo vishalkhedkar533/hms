@@ -1,18 +1,18 @@
-﻿using Models.DB;
+﻿using SharedModels.BackEndCalculation;
 
-namespace Models.DTO
+namespace SharedModels.DTO
 {
-    public class PeopleHeirarchyDto
-    {
-        public int? AgentId { get; set; }
-        public long? HierarchyId { get; set; }
-        public string? AgentCode { get; set; } = null!;
-        public string? FirstName { get; set; }
-        public string? MiddleName { get; set; }
-        public string? LastName { get; set; }
-        public PeopleHeirarchyDto? Supervisors { get; set; }
-        public string? HierarchyPath { get; set; } = string.Empty;
-    }
+    //public class PeopleHeirarchyDto
+    //{
+    //    public int? AgentId { get; set; }
+    //    public long? HierarchyId { get; set; }
+    //    public string? AgentCode { get; set; } = null!;
+    //    public string? FirstName { get; set; }
+    //    public string? MiddleName { get; set; }
+    //    public string? LastName { get; set; }
+    //    public PeopleHeirarchyDto? Supervisors { get; set; }
+    //    public string? HierarchyPath { get; set; } = string.Empty;
+    //}
     public class AgentDto
     {
         public int AgentId { get; set; }
@@ -187,8 +187,8 @@ namespace Models.DTO
         //public string? AadhaarNumber { get; set; }
         //public string? IrdaLicenseNumber { get; set; }
         //public string? GstNumber { get; set; }
-        public Int64? PageNo { get; set; }
-        public Int64? PageSize { get; set; }
+        public long? PageNo { get; set; }
+        public long? PageSize { get; set; }
         public string? SortColumn { get; set; }
         public string? SortDirection { get; set; }
         public bool FetchHierarchy { get; set; } = false;

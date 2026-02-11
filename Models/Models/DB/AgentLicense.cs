@@ -1,4 +1,5 @@
-﻿using Models.DTO;
+﻿using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
 using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

@@ -1,5 +1,4 @@
 using AutoMapper;
-using Azure;
 using CommonLibrary;
 using CommonLibrary.Background;
 using HMS.Caching;
@@ -10,12 +9,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
-using Models.DTO;
-using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using NuGet.Packaging;
+using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
+using SharedModels.Enums;
 
 namespace HMS.Controllers
 {
@@ -487,31 +486,31 @@ namespace HMS.Controllers
                     .ToListAsync();
 
                 agentDTO.bankAccounts = await _context.BankAccount
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 
                 //Permanent Address
                 agentDTO.PermanentAddres = await _context.Address
-                .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Permanent == b.AddressType)
+                .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType && SharedModels.Enums.AddressType.Permanent == b.AddressType)
                 .AsNoTracking()
                 .ToListAsync();
 
                 //Mailing Address
                 agentDTO.MailingAddres = await _context.Address
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Correspondence == b.AddressType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType && SharedModels.Enums.AddressType.Correspondence == b.AddressType)
                     .AsNoTracking()
                     .ToListAsync();
 
                 //Nominees
                 agentDTO.nominees = await _context.Nominee
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 
                 //Personal Infomation
                 agentDTO.personalInfo = await _context.PersonalInfo
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 

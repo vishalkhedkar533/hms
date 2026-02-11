@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace Models.DTO.CommissionMgmt
+namespace SharedModels.DTO.CommissionMgmt
 {
     public class CreateCommissionDto
     {

@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Models.Enums;
+using SharedModels.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models.DB
+namespace SharedModels.BackEndCalculation
 {
     [Index(nameof(RefKey), nameof(RefType), nameof(AddressType), IsUnique = true)]
     [Table("Address", Schema = "hms")]

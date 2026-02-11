@@ -1,4 +1,4 @@
-﻿namespace Models.DTO.CommissionMgmt.Dashboard
+﻿namespace SharedModels.DTO.CommissionMgmt.Dashboard
 {
     public class ProcessCommissionDTO
     {

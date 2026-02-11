@@ -160,6 +160,10 @@ namespace Models.DTO
         public string? LicenseStatusDesc { get; set; }
         public string? VerticalDesc { get; set; }
         public string? TrainingGroupTypeDesc { get; set; }
+        public int? Branch { get; set; }
+        public string? BranchDesc { get; set; }
+
+
     }
     public class AgentListRequest
     {

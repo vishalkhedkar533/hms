@@ -2047,6 +2047,7 @@ REFERENCES hms.channel_master (channel_code) ON DELETE CASCADE;
 DROP FUNCTION IF EXISTS hms.get_geo_hierarchy_by_channel(text, bigint);
 
 CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_code text, p_orgid bigint)
+CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_id bigint, p_subchannel_id bigint, p_orgid bigint, p_branch_id bigint)
  RETURNS jsonb
  LANGUAGE sql
 AS $function$

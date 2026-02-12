@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO.CommissionMgmt;
-using SharedModels.BackEndCalculation;
 
 namespace HMS.Data
 {

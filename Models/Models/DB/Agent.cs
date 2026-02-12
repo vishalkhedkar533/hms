@@ -227,7 +227,7 @@ namespace Models.DB
 
         [Column("traininggrouptype")]
         public int? TrainingGroupType { get; set; }
-        public string? TrainingGroupTypeDesc { get; set; }
+        //public string? TrainingGroupTypeDesc { get; set; }
 
         [StringLength(100)]
         [Column("ifs")]
@@ -252,7 +252,7 @@ namespace Models.DB
 
         [Column("vertical")]
         public int? Vertical { get; set; }
-        public string? VerticalDesc { get; set; }
+        //public string? VerticalDesc { get; set; }
 
         [StringLength(50)]
         [Column("branchcode")]

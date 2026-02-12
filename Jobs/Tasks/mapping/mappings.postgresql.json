@@ -182,7 +182,7 @@
       },
       "ChannelMaster": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "select channel_id, channel_code, channel_name from hmsmaster.channel_master where orgid = 2 order by channel_name"
+        "Script": "select channel_id ChannelId, channel_code ChannelCode, channel_name ChannelName from hmsmaster.channel_master where orgid = @orgId order by channel_name"
       }
     },
     "Organisation": {

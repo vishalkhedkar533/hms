@@ -1614,7 +1614,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("GeoHierarchy")]
-        //[MenuAuthorize(1001)]
+        [MenuAuthorize(1001)]
         public async Task<IActionResult> GetGeoHierarchy([FromBody] GeoSearchRequest request)
         {
             HmsResponse hMSResponse = new HmsResponse();

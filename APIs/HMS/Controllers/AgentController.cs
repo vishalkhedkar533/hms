@@ -1627,14 +1627,15 @@ namespace HMS.Controllers
                     .FirstOrDefault(c => c.ChannelCode == request.ChannelCode 
                     && c.OrgId == (int)orgId);
 
+                if (channel == null)
+                    return NotFound("Channel code not found.");
+
                 var subChannel = _context.SubchannelMaster
                     .AsNoTracking()
                     .FirstOrDefault(c => c.ChannelId == channel.ChannelId
                     && c.SubchannelCode == request.SubChannelCode
                     && c.OrgId == (int)orgId);
 
-                if (channel == null)
-                    return NotFound("Channel code not found.");
 
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Agent",

@@ -297,7 +297,6 @@ values
 (2, 1, 1, '6.7.11.18.23', 'system', now(), 'system', now(), now(), now()),
 (2, 1, 1, '6.7.11.19.24', 'system', now(), 'system', now(), now(), now());
 
---delete from hmsmaster.mastertables where orgid = 2 and entrycategory = 'Branch'
 
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
 VALUES (2, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');

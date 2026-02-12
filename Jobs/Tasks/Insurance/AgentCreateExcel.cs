@@ -94,7 +94,6 @@ namespace Tasks.Insurance
 
                 var masterSql = _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script.Replace("{{FilterCriteria}}", 
                     MasterEntries.FirstOrDefault().FilterCriteria);
-
                 //Fetch designation heirarchy
                 var DesignationHeirarchy = await conn.QueryAsync<DesignationMaster>(
                     _mappingProvider.GetScriptForOperation("Master", "DesignationHeirarchy")?.Script,
@@ -102,14 +101,12 @@ namespace Tasks.Insurance
                     {
                         orgId = orgId
                     });
-
                 var ChannelMaster = await conn.QueryAsync<ChannelMaster>(
                     _mappingProvider.GetScriptForOperation("Master", "ChannelMaster")?.Script,
                     new
                     {
                         orgId = orgId
                     });
-
                 var masterRows = await conn.QueryAsync<KeyValueEntry>(masterSql, new { orgId = task.OrgId ?? 0, masterName = "AgentProfileMst" });
                 var agentClassDict = BuildLookup(masterRows.ToList(), "AGENT_CLASS");
 
@@ -126,9 +123,10 @@ namespace Tasks.Insurance
                 int rejectedRows = 0;
                 List<string> successData = new();
                 List<string> errorData = new();
-
+                int index = 0;
                 foreach (var batch in rows.Chunk(chunkSize))
                 {
+                    index++;
                     var batchList = batch.ToList();
                     foreach (var row in batchList)
                     {
@@ -173,11 +171,14 @@ namespace Tasks.Insurance
                     {
                         index++;
                         writer.StartRow();
-                        var currChannel = ChannelMaster.FirstOrDefault(x=> x.ChannelName.Equals(r.ChannelDesc));
-
-                        var currDesignationHeirarchy = DesignationHeirarchy
-                            .FirstOrDefault(x => x.ChannelId.Equals(currChannel?.ChannelId ?? -1000) && x.DesignationName.Equals(r.DesignationCodeDesc));
+                        var currChannel = ChannelMaster.FirstOrDefault(x => x.ChannelName.Equals(r.ChannelDesc));
                         // 1-10 (pass same string/int values; provider wrapper will map types)
+                        var currDesignationHeirarchy = DesignationHeirarchy
+                            .FirstOrDefault(x => x.ChannelId.Equals(currChannel?.ChannelId ?? -1000) 
+                            && x.DesignationName.Equals(r.DesignationCodeDesc));
+
+                        var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001
+
 
                         var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001
                         writer.Write(r.AgentId.ToString());

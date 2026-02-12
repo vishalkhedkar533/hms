@@ -65,18 +65,8 @@ namespace SharedModels.BackEndCalculation
         [ConcurrencyCheck]
         [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
         public int? RowVersion { get; set; }
-
-        #region NotMapped Properties for UI/Dashboard
-
-        [NotMapped]
-        public long? TotalEntities { get; set; } = 100;
-
-        [NotMapped]
-        public long? CreatedEntities { get; set; } = 200;
-
-        [NotMapped]
-        public long? TerminatedEntities { get; set; } = 300;
-
-        #endregion
+        public int? OrgId { get; set; }
+        public long? TotalEntries { get; set; }
+        public long? TotalEntriesMon { get; set; }
     }
 }

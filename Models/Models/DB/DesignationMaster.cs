@@ -30,48 +30,46 @@ namespace Models.DB
     //    [SwaggerSchema("Hierarchy level of the designation.")]
     //    public int? DesignationLevel { get; set; } // Updated name to match SQL
 
-    //    [Required]
-    //    [Column("is_active")]
-    //    [SwaggerSchema("Indicates if the designation is active.")]
-    //    public bool IsActive { get; set; }
+        [Column("designation_level")]
+        [SwaggerSchema("Hierarchy level of the designation.")]
+        public int? DesignationLevel { get; set; } // Updated name to match SQL
 
-    //    [Required]
-    //    [Column("created_by")]
-    //    [StringLength(100)]
-    //    [SwaggerSchema("User who created the record.")]
-    //    public string CreatedBy { get; set; } = "System";
+        [Required]
+        [Column("is_active")]
+        [SwaggerSchema("Indicates if the designation is active.")]
+        public bool IsActive { get; set; }
 
-    //    [Required]
-    //    [Column("created_date")]
-    //    [SwaggerSchema("Date and time the record was created.")]
-    //    public DateTime CreatedDate { get; set; } = DateTime.Now;
+        [Required]
+        [Column("created_by")]
+        [StringLength(100)]
+        [SwaggerSchema("User who created the record.")]
+        public string CreatedBy { get; set; } = "System";
 
-    //    [Column("modified_by")]
-    //    [StringLength(100)]
-    //    [SwaggerSchema("User who last modified the record.")]
-    //    public string? ModifiedBy { get; set; }
+        [Required]
+        [Column("created_date")]
+        [SwaggerSchema("Date and time the record was created.")]
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
 
-    //    [Column("modified_date")]
-    //    [SwaggerSchema("Date and time of the last modification.")]
-    //    public DateTime? ModifiedDate { get; set; }
+        [Column("modified_by")]
+        [StringLength(100)]
+        [SwaggerSchema("User who last modified the record.")]
+        public string? ModifiedBy { get; set; }
 
-    //    [Column("rowversion")]
-    //    [ConcurrencyCheck]
-    //    [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
-    //    public int? RowVersion { get; set; }
+        [Column("modified_date")]
+        [SwaggerSchema("Date and time of the last modification.")]
+        public DateTime? ModifiedDate { get; set; }
 
-    //    [Column("channel_id")]
-    //    [SwaggerSchema("Foreign key referencing the channel master ID.")]
-    //    public long? ChannelId { get; set; }
+        [Column("rowversion")]
+        [ConcurrencyCheck]
+        [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
+        public int? RowVersion { get; set; }
 
-    //    [Column("orgid")]
-    //    [SwaggerSchema("Organization ID reference.")]
-    //    public int? OrgId { get; set; } 
+        [Column("channel_id")]
+        [SwaggerSchema("Foreign key referencing the channel master ID.")]
+        public long? ChannelId { get; set; }
 
-    //    // Navigation properties
-    //    [ForeignKey(nameof(ChannelId))]
-    //    [SwaggerSchema("The related channel master entity.")]
-    //    public virtual ChannelMaster? ChannelMaster { get; set; }
-    //}
+        [Column("orgid")]
+        [SwaggerSchema("Organization ID reference.")]
+        public int? OrgId { get; set; } 
 
 }

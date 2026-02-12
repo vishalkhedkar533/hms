@@ -2287,7 +2287,9 @@ create table hmsmaster.branch_master (
 	CONSTRAINT fk_brmst_loc FOREIGN KEY (location_master_id) REFERENCES hmsmaster.location_master(location_master_id)
 );
 
-CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_id int8,p_subchannel_id int8, p_orgid bigint)
+-- DROP FUNCTION hms.get_geo_hierarchy_by_channel(int8, int8, int8, int8);
+
+CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_id bigint, p_subchannel_id bigint, p_orgid bigint, p_branch_id bigint)
  RETURNS jsonb
  LANGUAGE sql
 AS $function$
@@ -2298,8 +2300,9 @@ WITH RECURSIVE hierarchy_cte AS (
         string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
     FROM hmsmaster.channel_branch_heirarchy gh
     WHERE gh.channel_id = p_channel_id 
-          AND coalesce(gh.sub_channel_id, -1000) = coalesce(p_subchannel_id, -1000) 
+          AND (p_subchannel_id IS NULL OR gh.sub_channel_id = p_subchannel_id)
           AND gh.orgid = p_orgid::int
+          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text)::lquery
 ),
 json_tree AS (
     -- Step 2: Leaf node (Agent)
@@ -2309,15 +2312,15 @@ json_tree AS (
             'branchMasterID', bm.branch_id ,
             'branchCode', bm.branch_code,
             'branchName', bm.branch_name,
-            --'locationCode', lm.location_code,
-            --''lm.location_desc,
+            'locationCode', lm.location_code,
+            'locationDesc',lm.location_desc,
             'parentLocation', NULL -- Matches DTO Property Name
         ) AS node,
         labels
     FROM hierarchy_cte h
     -- Note: Join with hmsmaster schema
     JOIN hmsmaster.branch_master bm ON bm.branch_id = h.labels[array_length(h.labels, 1)]::int8
-    --JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
+    JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
 
     UNION ALL
 
@@ -2328,6 +2331,8 @@ json_tree AS (
             'branchMasterID', bm.branch_id ,
             'branchCode', bm.branch_code,
             'branchName', bm.branch_name,
+            'locationCode', lm.location_code,
+            'locationDesc',lm.location_desc,
             'parentLocation', j.node -- Matches DTO Property Name
         ) AS node,
         j.labels

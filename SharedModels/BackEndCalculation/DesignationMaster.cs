@@ -67,15 +67,7 @@ namespace SharedModels.BackEndCalculation
         [Column("orgid")]
         [SwaggerSchema("Organization ID reference.")]
         public int? OrgId { get; set; }
-        [Required]
-        [Column("code_format")]
-        [StringLength(5)]
-        [SwaggerSchema("Unique code for the designation.")]
-        public string CodeFormat { get; set; } = null!;
-
-        // Navigation properties
-        [ForeignKey(nameof(ChannelId))]
-        [SwaggerSchema("The related channel master entity.")]
-        public virtual ChannelMaster? ChannelMaster { get; set; }
+        public string? HierarchyPath { get; set; } // ltree handled as string
+        public string? CodeFormat { get; set; }
     }
 }

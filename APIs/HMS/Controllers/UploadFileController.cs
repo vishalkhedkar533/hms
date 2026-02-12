@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.HMSConsts;
-using SharedModels.DTO;
 using System.Security.Claims;
 
 namespace HMS.Controllers
@@ -56,17 +55,20 @@ namespace HMS.Controllers
             var fileType = model.FileType.Trim().ToLowerInvariant();
             HmsResponse hmsResponse = new HmsResponse();
 
+            var fileType = model.FileType.Trim().ToLowerInvariant();
+            HmsResponse hmsResponse = new HmsResponse();
             try
             {
                 int organisationId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
                 var root = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
                 var userFolderPath = Path.Combine(root, userId.ToString());
-
+                // Ensure the directory exists
                 if (!Directory.Exists(userFolderPath))
                 {
                     Directory.CreateDirectory(userFolderPath);
                 }
 
+                // 2. Prepare file info
                 var fileExtension = Path.GetExtension(model.File.FileName);
                 var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
                 var filePath = Path.Combine(userFolderPath, uniqueFileName);
@@ -101,6 +103,8 @@ namespace HMS.Controllers
                 _context.FileProcessingTasks.Add(fileTask);
                 await _context.SaveChangesAsync();
 
+                // 6. Success response
+              
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
                 hmsResponse.responseBody.fileUpload = new FileUploadResponse

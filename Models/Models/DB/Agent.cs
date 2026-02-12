@@ -390,11 +390,7 @@ namespace Models.DB
         // Navigation Property
         [ForeignKey(nameof(SupervisorId))]
         public virtual Agent? Supervisor { get; set; }
-
         [Column("branch")]
         public int? Branch { get; set; }
-        [Column("cmsagenttype")]
-        [Description("cmsagenttype")]
-        public string? CMSAgentType { get; set; } = null;
     }
 }

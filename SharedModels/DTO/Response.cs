@@ -97,7 +97,6 @@ namespace SharedModels.DTO
         public long activeEntities { get; set; }
         public long terminatedEntities { get; set; }
     }
-
     public class FileUploadResponse
     {
         public int FileTaskId { get; set; }
@@ -105,6 +104,5 @@ namespace SharedModels.DTO
         public string FilePath { get; set; } = string.Empty;
         public string FileType { get; set; } = string.Empty;
     }
-
 
 }

@@ -4,8 +4,8 @@ namespace SharedModels.DTO
 {
     public class FileUploadModel
     {
+        // IFormFile represents the file itself.
         public required IFormFile File { get; set; }
-
         public string? FileType { get; set; }
     }
 

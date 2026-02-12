@@ -12,10 +12,6 @@ using Models.DB;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using SharedModels.BackEndCalculation;
-using SharedModels.DTO;
-using SharedModels.Enums;
-using Agent = Models.DB.Agent;
 
 namespace HMS.Controllers
 {

@@ -2056,7 +2056,7 @@ WITH RECURSIVE hierarchy_cte AS (
         gh.hierarchy_path,
         string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
     FROM hms.geo_hierarchy gh
-    WHERE gh.channel_code = p_channel_code AND gh.orgid = p_orgid::int
+    WHERE gh.channel_code = p_channel_code AND gh.orgid = p_orgid::int and hierarchy_path ~ '*.24'
 ),
 json_tree AS (
     -- Step 2: Leaf node (Agent)
@@ -2093,6 +2093,7 @@ SELECT jsonb_agg(node)
 FROM json_tree
 WHERE lvl = 1;
 $function$;
+
 ALTER TABLE hms.geo_hierarchy 
 ADD CONSTRAINT fk_designation_code 
 FOREIGN KEY (designation_code) 

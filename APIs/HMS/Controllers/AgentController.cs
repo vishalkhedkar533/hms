@@ -795,7 +795,7 @@ namespace HMS.Controllers
                     { "StartDate", agent.StartDate },
                     { "AppointmentDate", agent.AppointmentDate },
                     { "IncorporationDate", agent.IncorporationDate },
-                    { "CmsAgentType", agent.CmsAgentType },
+                    { "CmsAgentType", agent.CMSAgentType },
                     { "CommissionClass", agent.CommissionClass },
                     { "BankAccType", agent.BankAccType },
                     { "UlipFlag", agent.UlipFlag },
@@ -978,7 +978,7 @@ namespace HMS.Controllers
                             agent.AgentClass = agentDto.AgentClass;
 
                     if (!string.IsNullOrWhiteSpace(agentDto.CMSAgentType))
-                        agent.CmsAgentType = agentDto.CMSAgentType;
+                        agent.CMSAgentType = agentDto.CMSAgentType;
 
                     break;
 
@@ -1614,7 +1614,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("GeoHierarchy")]
-        [MenuAuthorize(1001)]
+        //[MenuAuthorize(1001)]
         public async Task<IActionResult> GetGeoHierarchy([FromBody] GeoSearchRequest request)
         {
             HmsResponse hMSResponse = new HmsResponse();
@@ -1622,17 +1622,16 @@ namespace HMS.Controllers
 
             try
             {
-                var channel = await _context.ChannelMaster
+                var channel = _context.ChannelMaster
                     .AsNoTracking()
-                    .Where(c => c.ChannelCode == request.ChannelCode && c.OrgId == (int)orgId)
-                    .Select(c => new { c.ChannelId })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefault(c => c.ChannelCode == request.ChannelCode 
+                    && c.OrgId == (int)orgId);
 
-                var subChannel = await _context.SubchannelMaster
+                var subChannel = _context.SubchannelMaster
                     .AsNoTracking()
-                    .Where(c => c.ChannelCode == request.ChannelCode && c.OrgId == (int)orgId)
-                    .Select(c => new { c.ChannelId ,c.SubChannelId })
-                    .FirstOrDefaultAsync();
+                    .FirstOrDefault(c => c.ChannelId == channel.ChannelId
+                    && c.SubchannelCode == request.SubChannelCode
+                    && c.OrgId == (int)orgId);
 
                 if (channel == null)
                     return NotFound("Channel code not found.");
@@ -1643,8 +1642,9 @@ namespace HMS.Controllers
                     new
                     {
                         p_channel_id = channel.ChannelId,
-                        p_subchannel_id = subChannel.SubChannelId, // Pass null if sub-channel isn't provided
-                        p_orgid = orgId
+                        p_subchannel_id = subChannel?.SubChannelId, // Pass null if sub-channel isn't provided
+                        p_branch_id =  request.BranchCode,
+                        p_orgid = orgId,
                     });
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))

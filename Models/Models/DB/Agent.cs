@@ -214,10 +214,6 @@ namespace Models.DB
         [Column("agentclassification")]
         public string? AgentClassification { get; set; }
 
-        [StringLength(100)]
-        [Column("cmsagenttype")]
-        public string? CmsAgentType { get; set; }
-
         [StringLength(50)]
         [Column("packageid")]
         public string? PackageId { get; set; }
@@ -268,7 +264,6 @@ namespace Models.DB
 
         [Column("ic36trngcompletiondate")]
         public DateTime? IC36TrngCompletionDate { get; set; }
-        public string? Ic36TrngCompletionDateTxt { get; set; }
 
         [Column("strngcompletiondate")]
         public DateTime? STrngCompletionDate { get; set; }
@@ -401,9 +396,5 @@ namespace Models.DB
         [Column("cmsagenttype")]
         [Description("cmsagenttype")]
         public string? CMSAgentType { get; set; } = null;
-        [Column("agentmaincodevweid")]
-        [Description("agentmaincodevweid")]
-        public string? AgentMainCodeVWEid { get; set; }
     }
-
 }

@@ -1,4 +1,4 @@
-﻿namespace Models.DTO
+﻿namespace SharedModels.DTO
 {
     public class MasterTable
     {

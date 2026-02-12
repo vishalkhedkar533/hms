@@ -9,6 +9,8 @@ using Microsoft.IdentityModel.Tokens;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Mail;
 using System.Security.Claims;

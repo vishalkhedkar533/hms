@@ -464,3 +464,6 @@ alter table hms.tempagentdto  add column branch_desc varchar(100);
 alter table hmsmaster.designation_master add column hierarchy_path public.ltree null;
 alter table hmsmaster.designation_master drop column channel_code;
 alter table hmsmaster.designation_master add column code_format varchar(5);
+
+ALTER TABLE hms.agent ADD CONSTRAINT fk_agnt_loc FOREIGN KEY (location_code) REFERENCES hmsmaster.location_master(location_master_id);
+ALTER TABLE hms.agent ADD CONSTRAINT fk_agnt_br FOREIGN KEY (branch) REFERENCES hmsmaster.branch_master(branch_id);

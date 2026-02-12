@@ -102,6 +102,13 @@ namespace Tasks.Insurance
                         orgId = orgId
                     });
 
+                var ChannelMaster = await conn.QueryAsync<ChannelMaster>(
+                    _mappingProvider.GetScriptForOperation("Master", "ChannelMaster")?.Script,
+                    new
+                    {
+                        orgId = orgId
+                    });
+
                 var masterRows = await conn.QueryAsync<KeyValueEntry>(masterSql, new { orgId = task.OrgId ?? 0, masterName = "AgentProfileMst" });
                 var agentClassDict = BuildLookup(masterRows.ToList(), "AGENT_CLASS");
 
@@ -165,8 +172,10 @@ namespace Tasks.Insurance
                     {
                         index++;
                         writer.StartRow();
+                        var currChannel = ChannelMaster.FirstOrDefault(x=> x.ChannelName.Equals(r.Channel));
+
                         var currDesignationHeirarchy = DesignationHeirarchy
-                            .FirstOrDefault(x => x.ChannelId.Equals(r.Channel) && x.DesignationCode.Equals(r.DesignationCode));
+                            .FirstOrDefault(x => x.ChannelId.Equals(currChannel?.ChannelId ?? -1000) && x.DesignationName.Equals(r.DesignationCode));
                         // 1-10 (pass same string/int values; provider wrapper will map types)
 
                         var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001

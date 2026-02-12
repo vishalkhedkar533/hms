@@ -1,7 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Models;
 using Models.DB;
-using Models.DTO.CommissionMgmt;
 using SharedModels.BackEndCalculation;
+
 
 namespace HMS.Data
 {
@@ -22,7 +23,7 @@ namespace HMS.Data
         public DbSet<AgentAuditTrail> AgentAuditTrail => Set<AgentAuditTrail>();
 
         public DbSet<HMSDashboard> HMSDashboard => Set<HMSDashboard>();
-        public DbSet<ChannelDetails> ChannelDetails => Set<ChannelDetails>();
+        //public DbSet<ChannelDetails> ChannelDetails => Set<ChannelDetails>();
         public DbSet<StatusDetails> StatusDetails => Set<StatusDetails>();
         public DbSet<RoleMenuMapping> RoleMenuMapping => Set<RoleMenuMapping>();
         public DbSet<Agent> Agents { get; set; } = null!;

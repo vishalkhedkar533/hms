@@ -1,9 +1,9 @@
 ﻿using HMS.Security;
 using Microsoft.AspNetCore.Mvc;
 using Models.DB;
-using Models.DTO;
 using Models.HMSConsts;
 using SharedModels;
+using SharedModels.DTO;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;

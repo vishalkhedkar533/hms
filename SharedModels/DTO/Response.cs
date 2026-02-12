@@ -1,9 +1,8 @@
-﻿using Models.DB;
-using Models.DTO.CommissionMgmt;
-using Models.DTO.CommissionMgmt.Dashboard;
-using SharedModels;
+﻿using SharedModels.BackEndCalculation;
+using SharedModels.DTO.CommissionMgmt;
+using SharedModels.DTO.CommissionMgmt.Dashboard;
 
-namespace Models.DTO
+namespace SharedModels.DTO
 {
     public class HmsResponse
     {
@@ -13,7 +12,7 @@ namespace Models.DTO
 
     public class HmsSResponseHeader
     {
-        public Int32 ErrorCode { get; set; } = 0;
+        public int ErrorCode { get; set; } = 0;
         public string ErrorMessage { get; set; } = string.Empty;
         
     }

@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Models.DB;
-using Models.DTO;
+using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
 
 namespace Models.Mapping
 {

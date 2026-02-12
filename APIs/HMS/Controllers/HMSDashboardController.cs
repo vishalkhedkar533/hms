@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
-using Models.DTO;
 using Models.HMSConsts;
 using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
 using System.Security.Claims;
 
 namespace HMS.Controllers

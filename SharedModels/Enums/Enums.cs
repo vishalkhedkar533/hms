@@ -1,4 +1,4 @@
-﻿namespace Models.Enums
+﻿namespace SharedModels.Enums
 {
     public enum AddressType : int
     {

@@ -1,4 +1,4 @@
-﻿namespace Models.DB
+﻿namespace SharedModels.BackEndCalculation
 {
     public class KeyValueEntry
     {

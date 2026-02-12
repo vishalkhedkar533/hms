@@ -1,9 +1,7 @@
-﻿using Models;
-using Swashbuckle.AspNetCore.Annotations;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models.DB
+namespace SharedModels.BackEndCalculation
 {
   
     [Table("hmsdashboard", Schema = "hms")] // Quoted "HMSDashboard" handled via EF Table attribute
@@ -34,7 +32,7 @@ namespace Models.DB
         [Column("MBGCriteriaNotMet")]
         public double? MBGCriteriaNotMet { get; set; } = 0;
 
-        public List<ChannelDetails>? channelDetails { get; set; } = new List<ChannelDetails>();
+        //public List<ChannelDetails>? channelDetails { get; set; } = new List<ChannelDetails>();
         public List<StatusDetails>? statusDetails { get; set; } = new List<StatusDetails>();
     }
 

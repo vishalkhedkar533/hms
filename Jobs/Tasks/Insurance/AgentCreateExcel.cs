@@ -173,10 +173,10 @@ namespace Tasks.Insurance
                     {
                         index++;
                         writer.StartRow();
-                        var currChannel = ChannelMaster.FirstOrDefault(x=> x.ChannelName.Equals(r.Channel));
+                        var currChannel = ChannelMaster.FirstOrDefault(x=> x.ChannelName.Equals(r.ChannelDesc));
 
                         var currDesignationHeirarchy = DesignationHeirarchy
-                            .FirstOrDefault(x => x.ChannelId.Equals(currChannel?.ChannelId ?? -1000) && x.DesignationName.Equals(r.DesignationCode));
+                            .FirstOrDefault(x => x.ChannelId.Equals(currChannel?.ChannelId ?? -1000) && x.DesignationName.Equals(r.DesignationCodeDesc));
                         // 1-10 (pass same string/int values; provider wrapper will map types)
 
                         var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001

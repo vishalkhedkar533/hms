@@ -1,4 +1,4 @@
-﻿using SharedModels.BackEndCalculation;
+﻿using Models.DB;
 
 namespace Models.DTO
 {

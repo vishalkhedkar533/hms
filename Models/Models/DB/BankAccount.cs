@@ -1,4 +1,9 @@
-﻿namespace Models.DB
+﻿using Microsoft.EntityFrameworkCore;
+using Models.Enums;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Models.DB
 {
     [Table("bankaccount", Schema = "hms")]
     [Index(nameof(RefKey), nameof(RefType), IsUnique = true, Name = "ix_bankaccount_refkey_reftype")]

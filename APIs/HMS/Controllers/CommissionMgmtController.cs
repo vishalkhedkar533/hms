@@ -8,11 +8,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.DTO.CommissionMgmt.Dashboard;
 using Models.HMSConsts;
 using System.ComponentModel;
 using MiniExcelLibs;
-using SharedModels.DTO;
-using SharedModels.DTO.CommissionMgmt.Dashboard;
 
 namespace HMS.Controllers
 {

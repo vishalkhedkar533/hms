@@ -6,9 +6,8 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
+using Models.DTO;
 using Models.HMSConsts;
-using SharedModels.BackEndCalculation;
-using SharedModels.DTO;
 
 namespace HMS.Controllers
 {

@@ -6,7 +6,6 @@ using MiniExcelLibs;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
-using SharedModels.DTO;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -126,6 +125,7 @@ namespace Tasks.Insurance
                 int index = 0;
                 foreach (var batch in rows.Chunk(chunkSize))
                 {
+                    index++;
                     var batchList = batch.ToList();
                     foreach (var row in batchList)
                     {
@@ -167,7 +167,6 @@ namespace Tasks.Insurance
                     await using var writer = await _bulkOpsFactory.BeginBinaryImportAsync(conn, bulkSql, token);
                     foreach (var r in batchList)
                     {
-                        index++;
                         writer.StartRow();
                         var currChannel = ChannelMaster.FirstOrDefault(x => x.ChannelName.Equals(r.ChannelDesc));
                         // 1-10 (pass same string/int values; provider wrapper will map types)
@@ -339,9 +338,6 @@ namespace Tasks.Insurance
                         writer.Write(r.WorkProfile ?? "");
                         writer.Write(r.AnnualIncome?.ToString() ?? "");
                         writer.Write(r.WorkExpMonths?.ToString() ?? "");
-
-                        writer.Write(r.BranchDesc ?? "");
-
                     }
 
                     await writer.CompleteAsync(token);

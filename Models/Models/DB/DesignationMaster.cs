@@ -7,28 +7,25 @@ namespace Models.DB
     /// <summary>
     /// Represents a designation 
     /// </summary>
-    //[Table("designation_master", Schema = "hmsmaster")]
-    //public class DesignationMaster
-    //{
-    //    [Key]
-    //    [Column("designation_id")]
-    //    [SwaggerSchema("Primary key: unique identifier for the designation.")]
-    //    public long DesignationId { get; set; } 
+    [Table("designation_master", Schema = "hmsmaster")]
+    public class DesignationMaster
+    {
+        [Key]
+        [Column("designation_id")]
+        [SwaggerSchema("Primary key: unique identifier for the designation.")]
+        public long DesignationId { get; set; } 
 
-    //    [Required]
-    //    [Column("designation_code")]
-    //    [StringLength(20)]
-    //    [SwaggerSchema("Unique code for the designation.")]
-    //    public string DesignationCode { get; set; } = null!;
+        [Required]
+        [Column("designation_code")]
+        [StringLength(20)]
+        [SwaggerSchema("Unique code for the designation.")]
+        public string DesignationCode { get; set; } = null!;
 
-    //    [Required]
-    //    [Column("designation_name")]
-    //    [StringLength(100)]
-    //    [SwaggerSchema("Name of the designation.")]
-    //    public string DesignationName { get; set; } = null!;
-    //    [Column("designation_level")]
-    //    [SwaggerSchema("Hierarchy level of the designation.")]
-    //    public int? DesignationLevel { get; set; } // Updated name to match SQL
+        [Required]
+        [Column("designation_name")]
+        [StringLength(100)]
+        [SwaggerSchema("Name of the designation.")]
+        public string DesignationName { get; set; } = null!;
 
         [Column("designation_level")]
         [SwaggerSchema("Hierarchy level of the designation.")]
@@ -72,4 +69,9 @@ namespace Models.DB
         [SwaggerSchema("Organization ID reference.")]
         public int? OrgId { get; set; } 
 
+        // Navigation properties
+        [ForeignKey(nameof(ChannelId))]
+        [SwaggerSchema("The related channel master entity.")]
+        public virtual ChannelMaster? ChannelMaster { get; set; }
+    }
 }

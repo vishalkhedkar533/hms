@@ -4,7 +4,6 @@ using Database;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
-using SharedModels.DTO;
 using System.Data.Common;
 using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;

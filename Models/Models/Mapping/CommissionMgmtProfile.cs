@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Models.DB;
-using SharedModels.DTO.CommissionMgmt.Dashboard;
+using Models.DTO;
 
 namespace HMS.MapperProfiles
 {
@@ -9,7 +9,7 @@ namespace HMS.MapperProfiles
     {
         public CommissionMgmtProfile()
         {
-            CreateMap<Models.DB.CommissionDashboard, CommissionMgmtDashboardDto>()
+            CreateMap<Models.DB.CommissionDashboard, Models.DTO.CommissionMgmtDashboardDto>()
                 .ForMember(dest => dest.OrgId, opt => opt.MapFrom(src => src.orgId))
                 .ForMember(d => d.IndividualCommissions, o => o.Ignore())
                 .ForMember(d => d.CycleCommissions, o => o.Ignore())

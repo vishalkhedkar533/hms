@@ -1,5 +1,4 @@
 ﻿using Swashbuckle.AspNetCore.Annotations;
-using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -214,6 +213,10 @@ namespace Models.DB
         [Column("agentclassification")]
         public string? AgentClassification { get; set; }
 
+        [StringLength(100)]
+        [Column("cmsagenttype")]
+        public string? CmsAgentType { get; set; }
+
         [StringLength(50)]
         [Column("packageid")]
         public string? PackageId { get; set; }
@@ -227,7 +230,6 @@ namespace Models.DB
 
         [Column("traininggrouptype")]
         public int? TrainingGroupType { get; set; }
-        //public string? TrainingGroupTypeDesc { get; set; }
 
         [StringLength(100)]
         [Column("ifs")]
@@ -252,7 +254,6 @@ namespace Models.DB
 
         [Column("vertical")]
         public int? Vertical { get; set; }
-        //public string? VerticalDesc { get; set; }
 
         [StringLength(50)]
         [Column("branchcode")]
@@ -263,7 +264,7 @@ namespace Models.DB
         public string? BranchName { get; set; }
 
         [Column("ic36trngcompletiondate")]
-        public DateTime? IC36TrngCompletionDate { get; set; }
+        public DateTime? Ic36TrngCompletionDate { get; set; }
 
         [Column("strngcompletiondate")]
         public DateTime? STrngCompletionDate { get; set; }
@@ -313,8 +314,6 @@ namespace Models.DB
 
         [Column("licensetype")]
         public int? LicenseType { get; set; }
-        [NotMapped]
-        public string LicenseTypeDesc { get; set; }
 
         [Column("licenseissuedate")]
         public DateTime? LicenseIssueDate { get; set; }
@@ -324,8 +323,6 @@ namespace Models.DB
 
         [Column("licensestatus")]
         public int? LicenseStatus { get; set; }
-        [NotMapped]
-        public string? LicenseStatusDesc { get; set; }
 
         [Column("orgid")]
         public int? OrgId { get; set; }

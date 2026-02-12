@@ -2046,9 +2046,7 @@ REFERENCES hms.channel_master (channel_code) ON DELETE CASCADE;
 -- Drop the old one first to avoid confusion
 DROP FUNCTION IF EXISTS hms.get_geo_hierarchy_by_channel(text, bigint);
 
--- DROP FUNCTION hms.get_geo_hierarchy_by_channel(int8, int8, int8, int8);
-
-CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_id bigint, p_subchannel_id bigint, p_orgid bigint, p_branch_id bigint)
+CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_code text, p_orgid bigint)
  RETURNS jsonb
  LANGUAGE sql
 AS $function$
@@ -2057,29 +2055,23 @@ WITH RECURSIVE hierarchy_cte AS (
     SELECT 
         gh.hierarchy_path,
         string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
-    FROM hmsmaster.channel_branch_heirarchy gh
-    WHERE gh.channel_id = p_channel_id 
-          AND (p_subchannel_id IS NULL OR gh.sub_channel_id = p_subchannel_id)
-          AND gh.orgid = p_orgid::int
-          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text)::lquery
+    FROM hms.geo_hierarchy gh
+    WHERE gh.channel_code = p_channel_code AND gh.orgid = p_orgid::int
 ),
 json_tree AS (
     -- Step 2: Leaf node (Agent)
     SELECT 
         array_length(labels, 1) AS lvl,
         jsonb_build_object(
-            'branchMasterID', bm.branch_id ,
-            'branchCode', bm.branch_code,
-            'branchName', bm.branch_name,
-            'locationCode', lm.location_code,
-            'locationDesc',lm.location_desc,
+            'designationId', dm.designation_id,
+            'designationName', dm.designation_name,
+            'designationCode', dm.designation_code,
             'parentLocation', NULL -- Matches DTO Property Name
         ) AS node,
         labels
     FROM hierarchy_cte h
     -- Note: Join with hmsmaster schema
-    JOIN hmsmaster.branch_master bm ON bm.branch_id = h.labels[array_length(h.labels, 1)]::int8
-    JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
+    JOIN hmsmaster.designation_master dm ON dm.designation_id = h.labels[array_length(h.labels, 1)]::int8
 
     UNION ALL
 
@@ -2087,24 +2079,20 @@ json_tree AS (
     SELECT 
         j.lvl - 1,
         jsonb_build_object(
-            'branchMasterID', bm.branch_id ,
-            'branchCode', bm.branch_code,
-            'branchName', bm.branch_name,
-            'locationCode', lm.location_code,
-            'locationDesc',lm.location_desc,
+            'designationId', dm.designation_id,
+            'designationName', dm.designation_name,
+            'designationCode', dm.designation_code,
             'parentLocation', j.node -- Matches DTO Property Name
         ) AS node,
         j.labels
     FROM json_tree j
-    JOIN hmsmaster.branch_master bm ON bm.branch_id = j.labels[j.lvl - 1]::int8
-    JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
+    JOIN hmsmaster.designation_master dm ON dm.designation_id = j.labels[j.lvl - 1]::int8
     WHERE j.lvl > 1
 )
 SELECT jsonb_agg(node)
 FROM json_tree
 WHERE lvl = 1;
 $function$;
-
 ALTER TABLE hms.geo_hierarchy 
 ADD CONSTRAINT fk_designation_code 
 FOREIGN KEY (designation_code) 

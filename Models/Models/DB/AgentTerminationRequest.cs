@@ -1,5 +1,4 @@
-﻿using SharedModels.BackEndCalculation;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB

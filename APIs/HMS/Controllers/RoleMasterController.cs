@@ -26,7 +26,7 @@ namespace HMS.Controllers
             var response = new HmsResponse();
             try
             {
-                var roles = await _context.RoleMasters.AsNoTracking().ToListAsync();
+                var roles = await _context.Roles.AsNoTracking().ToListAsync();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.roles = roles;
@@ -54,7 +54,14 @@ namespace HMS.Controllers
                     return BadRequest(response);
                 }
 
-                var nameExists = await _context.RoleMasters.AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower());
+                if (!roleDto.Role_ID.HasValue)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Role ID is required.";
+                    return BadRequest(response);
+                }
+
+                var nameExists = await _context.Roles.AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower());
 
                 if (nameExists)
                 {
@@ -63,8 +70,9 @@ namespace HMS.Controllers
                     return Conflict(response); 
                 }
 
-                var newRole = new RoleMaster
+                var newRole = new Role
                 {
+                    RoleId = (int)roleDto.Role_ID.Value,
                     RoleName = roleDto.RoleName,
                     Description = roleDto.Description,
                     IsSystemRole = roleDto.IsSystemRole,
@@ -74,12 +82,12 @@ namespace HMS.Controllers
                     RowVersion = 1
                 };
 
-                _context.RoleMasters.Add(newRole);
+                _context.Roles.Add(newRole);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.roles = new List<RoleMaster> { newRole };
+                response.responseBody.roles = new List<Role> { newRole };
 
                 return Ok(response);
             }
@@ -102,7 +110,7 @@ namespace HMS.Controllers
                     return BadRequest(response);
                 }
 
-                var existingRole = await _context.RoleMasters.FirstOrDefaultAsync(r => r.Role_ID == id);
+                var existingRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id);
                 if (existingRole == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -110,8 +118,8 @@ namespace HMS.Controllers
                     return NotFound(response);
                 }
 
-                var nameExists = await _context.RoleMasters
-                    .AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower() && r.Role_ID != id);
+                var nameExists = await _context.Roles
+                    .AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower() && r.RoleId != id);
 
                 if (nameExists)
                 {
@@ -140,12 +148,12 @@ namespace HMS.Controllers
                     existingRole.RowVersion = roleDto.RowVersion + 1;
                 }
 
-                _context.RoleMasters.Update(existingRole);
+                _context.Roles.Update(existingRole);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.roles = new List<RoleMaster> { existingRole };
+                response.responseBody.roles = new List<Role> { existingRole };
 
                 return Ok(response);
             }
@@ -169,7 +177,7 @@ namespace HMS.Controllers
             var response = new HmsResponse();
             try
             {
-                var role = await _context.RoleMasters.FirstOrDefaultAsync(r => r.Role_ID == id);
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id);
                 if (role == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -177,12 +185,12 @@ namespace HMS.Controllers
                     return NotFound(response);
                 }
 
-                _context.RoleMasters.Remove(role);
+                _context.Roles.Remove(role);
                 await _context.SaveChangesAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.roles = new List<RoleMaster> { role };
+                response.responseBody.roles = new List<Role> { role };
 
                 return Ok(response);
             }

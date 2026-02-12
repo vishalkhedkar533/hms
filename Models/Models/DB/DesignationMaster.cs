@@ -27,11 +27,6 @@ namespace Models.DB
         [SwaggerSchema("Name of the designation.")]
         public string DesignationName { get; set; } = null!;
 
-        [Column("channel_code")]
-        [StringLength(20)]
-        [SwaggerSchema("Channel code associated with this designation.")]
-        public string? ChannelCode { get; set; }
-
         [Column("designation_level")]
         [SwaggerSchema("Hierarchy level of the designation.")]
         public int? DesignationLevel { get; set; } // Updated name to match SQL

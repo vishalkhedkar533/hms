@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using System.Security.Claims;
 
 namespace HMS.Controllers
 {
@@ -43,22 +44,24 @@ namespace HMS.Controllers
             if (model.File == null || model.File.Length == 0)
                 return BadRequest("File not selected or empty.");
 
-            if (model.UserId <= 0)
-                return BadRequest("Invalid User ID.");
-
             if (string.IsNullOrWhiteSpace(model.FileType))
                 return BadRequest("File type is required.");
 
-            var fileType = model.FileType.Trim().ToLowerInvariant();
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return NotFound("UserId claim not found or invalid.");
+            }
 
+            var fileType = model.FileType.Trim().ToLowerInvariant();
+            HmsResponse hmsResponse = new HmsResponse();
             try
             {
                 int organisationId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
                 // 1. Create uploads/userid folder
                 //var userFolderPath = Path.Combine(_environment.WebRootPath, "uploads", model.UserId.ToString());
                 var root = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-                var userFolderPath = Path.Combine(root, model.UserId.ToString());
-
+                var userFolderPath = Path.Combine(root, userId.ToString());
                 // Ensure the directory exists
                 if (!Directory.Exists(userFolderPath))
                 {
@@ -66,7 +69,6 @@ namespace HMS.Controllers
                 }
 
                 // 2. Prepare file info
-                var originalFileName = model.File.FileName;
                 var fileExtension = Path.GetExtension(model.File.FileName);
                 var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
                 var filePath = Path.Combine(userFolderPath, uniqueFileName);
@@ -82,7 +84,7 @@ namespace HMS.Controllers
                 {
                     FilePath = filePath,
                     Status = "Pending",
-                    CreatedBy = model.UserId.ToString(),
+                    CreatedBy = userId.ToString(),
                     FileName = uniqueFileName,
                     FileExtension = fileExtension,
                     FileType = fileType,
@@ -105,19 +107,21 @@ namespace HMS.Controllers
                 await _context.SaveChangesAsync();
 
                 // 6. Success response
-                return Ok(new
+              
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hmsResponse.responseBody.fileUpload = new FileUploadResponse
                 {
-                    Message = "File uploaded and record created.",
                     FileTaskId = fileTask.Id,
                     FileName = uniqueFileName,
                     FilePath = filePath,
-                    FileType = fileType,
-                });
+                };
+                return Ok(hmsResponse);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during file upload.");
-                return StatusCode(500, "Internal server error during file upload.");
+                return StatusCode(500, "Internal server error");
             }
         }
 

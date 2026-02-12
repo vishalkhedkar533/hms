@@ -132,6 +132,7 @@ namespace Models.Mapping
                 .ForMember(d => d.LicenseStatusDesc, o => o.Ignore())
                 .ForMember(d => d.VerticalDesc, o => o.Ignore())
                 .ForMember(d => d.TrainingGroupTypeDesc, o => o.Ignore())
+                .ForMember(d => d.BranchDesc, o => o.Ignore())
 
                 ;
             // ================================
@@ -192,6 +193,7 @@ namespace Models.Mapping
                 .ForMember(d => d.LicenseStatus, o => o.MapFrom(s => s.LicenseStatus))
                 .ForMember(d => d.Vertical, o => o.MapFrom(s => s.Vertical))
                 .ForMember(d => d.TrainingGroupType, o => o.MapFrom(s => s.TrainingGroupType))
+                .ForMember(d => d.Branch, o => o.MapFrom(s => s.TrainingGroupType))
                 ;
         }
     }

@@ -40,10 +40,11 @@ namespace Models.DTO
         public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
         public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
         public List<BatchListDto>? batches { get; set; } = null;
-        public List<RoleMaster>? roles { get; set; } = null;
+        public List<Role>? roles { get; set; } = null;
         public List<MenuMaster>? menus { get; set; } = null;
         public List<RoleMenuMapping>? roleMenuMappings { get; set; } = null;
         public List<MenuRoleMappingDto>? menuRoleMappings { get; set; } = null;
+        public FileUploadResponse? fileUpload { get; set; } = null;
     }
 
     public class UpdatedAgentField
@@ -97,6 +98,12 @@ namespace Models.DTO
         public long activeEntities { get; set; }
         public long terminatedEntities { get; set; }
     }
-
+    public class FileUploadResponse
+    {
+        public int FileTaskId { get; set; }
+        public string FileName { get; set; } = string.Empty;
+        public string FilePath { get; set; } = string.Empty;
+        public string FileType { get; set; } = string.Empty;
+    }
 
 }

@@ -1,5 +1,4 @@
 using AutoMapper;
-using Azure;
 using CommonLibrary;
 using CommonLibrary.Background;
 using HMS.Caching;
@@ -15,7 +14,6 @@ using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using NuGet.Packaging;
 
 namespace HMS.Controllers
 {
@@ -539,6 +537,7 @@ namespace HMS.Controllers
                 var SubChannel = GetMasterData("SubChannel").ToList();
                 var Designation = GetMasterData("Designation").ToList();
                 var Location = GetMasterData("Location").ToList();
+                var Branch = GetMasterData("Branch").ToList();
 
                 foreach (var bankAcc in agentDTO.bankAccounts)
                 {
@@ -568,6 +567,7 @@ namespace HMS.Controllers
                 agentDTO.SubChannelDesc = SubChannel.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.SubChannel ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.DesignationCodeDesc = Designation.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.DesignationCode ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.LocationCodeDesc = Location.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.LocationCode ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.BranchDesc = Branch.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.Branch ?? -1000))?.EntryDesc ?? string.Empty;
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;
@@ -1620,28 +1620,21 @@ namespace HMS.Controllers
 
             try
             {
-                var channel = await _context.ChannelMaster
-                    .AsNoTracking()
-                    .Where(c => c.ChannelCode == request.ChannelCode && c.OrgId == (int)orgId)
-                    .Select(c => new { c.ChannelId })
-                    .FirstOrDefaultAsync();
+                if (request?.ChannelCode == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
+                    return BadRequest(hMSResponse);
+                }
 
-                var subChannel = await _context.SubchannelMaster
-                    .AsNoTracking()
-                    .Where(c => c.ChannelCode == request.ChannelCode && c.OrgId == (int)orgId)
-                    .Select(c => new { c.ChannelId ,c.SubChannelId })
-                    .FirstOrDefaultAsync();
-
-                if (channel == null)
-                    return NotFound("Channel code not found.");
 
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Agent",
                     "get_geo_hierarchy",
                     new
                     {
-                        p_channel_id = channel.ChannelId,
-                        p_subchannel_id = subChannel.SubChannelId, // Pass null if sub-channel isn't provided
+                        p_channel_id = request.ChannelCode,
+                        p_subchannel_id = request.SubChannelCode, // Pass null if sub-channel isn't provided
                         p_orgid = orgId
                     });
 
@@ -1662,8 +1655,8 @@ namespace HMS.Controllers
                 }
                 else
                 {
-                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = "Hierarchy not found for this selection.";
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
                     return NotFound(hMSResponse);
                 }
             }

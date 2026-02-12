@@ -36,6 +36,30 @@ const AgentByCode = (data, headers = {}) => {
 const GetMasters = (data, headers = {}) => {
   return apiClient.post(`${APIRoutes.GETMASTERS}/${data}`, {}, { headers });
 };
+const file = (data, headers = {}) => {
+  console.log('====================================');
+  console.log('File upload request:');
+  console.log('Data type:', typeof data, 'Is FormData:', typeof data?.getHeaders === 'function');
+  console.log('Headers:', headers);
+  console.log('====================================');
+  
+  return apiClient.post(APIRoutes.UPLOADFILES, data, { headers }).then(response => {
+    console.log('====================================');
+    console.log('File upload response received:');
+    console.log('Response type:', typeof response);
+    console.log('Response:', JSON.stringify(response, null, 2));
+    console.log('Response status:', response?.status);
+    console.log('Response statusCode:', response?.statusCode);
+    console.log('====================================');
+    return response;
+  }).catch(err => {
+    console.error('====================================');
+    console.error('File upload error:');
+    console.error('Error:', err.message);
+    console.error('====================================');
+    throw err;
+  });
+};
 
 const GetMastersBulk = async (keys, headers = {}) => {
   const promises = keys.map(async (key) => {
@@ -101,20 +125,20 @@ const updateStatus = (data = {}, headers = {}) => {
 const searchFieldsConfig = (data = {}, headers = {}) => {
   // console.log("### search fields:", data);
   // console.log("### search fields headers:", headers);
-  return apiClient.get(APIRoutes.COMMISSIONSEARCHFIELDS, { 
-    params: data, 
-    headers: headers 
+  return apiClient.get(APIRoutes.COMMISSIONSEARCHFIELDS, {
+    params: data,
+    headers: headers
   });
 };
 
-const editAgentDetails = async (data ,sectionName, agentid, headers = {}) => {
-  
+const editAgentDetails = async (data, sectionName, agentid, headers = {}) => {
 
-console.log("📝 Edit agent details input:", data,`${APIRoutes.EDITAGENT}/${agentid}/${sectionName}`);
-if(!agentid){
-  throw new Error("Agent ID is required");
-}
-  if(!sectionName){
+
+  console.log("📝 Edit agent details input:", data, `${APIRoutes.EDITAGENT}/${agentid}/${sectionName}`);
+  if (!agentid) {
+    throw new Error("Agent ID is required");
+  }
+  if (!sectionName) {
     throw new Error("Section name is required");
   }
 
@@ -125,7 +149,7 @@ if(!agentid){
 const executiveHistoryList = (data = {}, headers = {}) => {
   // console.log("config commission executive history list:", data);
   const { jobConfigId } = data;
-  const pathId =  jobConfigId;
+  const pathId = jobConfigId;
   if (!pathId) {
     throw new Error("jobConfigId is required for executive history list");
   }
@@ -154,8 +178,8 @@ const GeoHierarchy = (channelCategory, headers = {}) => {
   return apiClient.post(APIRoutes.GEOHIERARCHY, { channelCode: channelCategory }, { headers });
 };
 
-const GeoHierarchyTable = (channelCategory,locationCode, headers = {}) => {
-  return apiClient.post(APIRoutes.GEOHIERARCHYTABLE, { channelCode: channelCategory, locationCode: locationCode }, { headers });
+const GeoHierarchyTable = (parentBranchId, headers = {}) => {
+  return apiClient.post(APIRoutes.GEOHIERARCHYTABLE, { parentBranchId: parentBranchId}, { headers });
 }
 
 const hmsDashboard = (data = {}, headers = {}) => {
@@ -191,6 +215,7 @@ module.exports = {
   Agentbyid,
   AgentByCode,
   GetMasters,
+  file,
   GetMastersBulk,
   getCommissionData,
   processCommission,
@@ -200,12 +225,12 @@ module.exports = {
   configcommission,
   updateConditionConfig,
   configList,
-  updateCron, 
+  updateCron,
   updateStatus,
   searchFieldsConfig,
   editAgentDetails,
-  executiveHistoryList ,
-  editCommission ,
+  executiveHistoryList,
+  editCommission,
   downloadRecord,
   GeoHierarchy,
   GeoHierarchyTable,

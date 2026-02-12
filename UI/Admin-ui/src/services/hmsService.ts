@@ -69,16 +69,4 @@ export const HMSService = {
     }
   },
 
-  getHmsFile: async (formData: FormData) => {
-    try {
-      const response = await uploadFile<ApiResponse<IFileUploadApiResponse>>(
-        formData,
-        APIRoutes.HMS_FILE,
-      )
-      return response
-    } catch (error) {
-      console.error(error)
-      throw error
-    }
-  },
 }

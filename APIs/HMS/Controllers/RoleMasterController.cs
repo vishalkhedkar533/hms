@@ -1,9 +1,9 @@
 using HMS.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Models.DB;
-using Models.DTO;
 using Models.HMSConsts;
+using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
 
 namespace HMS.Controllers
 {
@@ -110,7 +110,8 @@ namespace HMS.Controllers
                     return BadRequest(response);
                 }
 
-                var existingRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id); if (existingRole == null)
+                var existingRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id);
+                if (existingRole == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "Role not found.";
@@ -118,8 +119,8 @@ namespace HMS.Controllers
                 }
 
                 var nameExists = await _context.Roles
-                    .AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower() 
-                    && r.RoleId != id);
+                    .AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower() && r.RoleId != id);
+
                 if (nameExists)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -183,6 +184,7 @@ namespace HMS.Controllers
                     response.responseHeader.ErrorMessage = "Role not found.";
                     return NotFound(response);
                 }
+
                 _context.Roles.Remove(role);
                 await _context.SaveChangesAsync();
 

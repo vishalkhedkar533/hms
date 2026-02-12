@@ -6,7 +6,6 @@ using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
-using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
 
@@ -55,11 +54,12 @@ namespace HMS.Controllers
 
             var fileType = model.FileType.Trim().ToLowerInvariant();
             HmsResponse hmsResponse = new HmsResponse();
+
+            var fileType = model.FileType.Trim().ToLowerInvariant();
+            HmsResponse hmsResponse = new HmsResponse();
             try
             {
                 int organisationId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
-                // 1. Create uploads/userid folder
-                //var userFolderPath = Path.Combine(_environment.WebRootPath, "uploads", model.UserId.ToString());
                 var root = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
                 var userFolderPath = Path.Combine(root, userId.ToString());
                 // Ensure the directory exists
@@ -73,13 +73,11 @@ namespace HMS.Controllers
                 var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
                 var filePath = Path.Combine(userFolderPath, uniqueFileName);
 
-                // 3. Save file physically
                 using (var stream = new FileStream(filePath, FileMode.Create))
                     await model.File.CopyToAsync(stream);
 
                 var fileInfo = new FileInfo(filePath);
 
-                // 4. Prepare entity for DB insert (FileProcessingTasks table)
                 var fileTask = new FileProcessingTask
                 {
                     FilePath = filePath,
@@ -102,7 +100,6 @@ namespace HMS.Controllers
                     OrgId = organisationId
                 };
 
-                // 5. Save into DB using EF Core
                 _context.FileProcessingTasks.Add(fileTask);
                 await _context.SaveChangesAsync();
 
@@ -115,7 +112,9 @@ namespace HMS.Controllers
                     FileTaskId = fileTask.Id,
                     FileName = uniqueFileName,
                     FilePath = filePath,
+                    FileType = fileType
                 };
+
                 return Ok(hmsResponse);
             }
             catch (Exception ex)

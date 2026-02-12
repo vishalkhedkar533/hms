@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using Models.DB;
-using Models.DTO;
+using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
+using Agent = Models.DB.Agent;
 
 namespace Models.Mapping
 {
@@ -63,6 +65,7 @@ namespace Models.Mapping
                 .ForMember(d => d.Country, o => o.MapFrom(s => s.Country))
                 .ForMember(d => d.State, o => o.MapFrom(s => s.State))
                 .ForMember(d => d.Father_Husband_Nm, o => o.MapFrom(s => s.FatherHusbandNm))
+                .ForMember(d=>d.Ic36TrngCompletionDate, o=> o.MapFrom(s=> s.IC36TrngCompletionDate))
                 // PAN masking
                 .ForMember(d => d.MaskedPanNumber,
                     o => o.MapFrom(s =>

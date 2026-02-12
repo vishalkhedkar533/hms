@@ -6,6 +6,7 @@ using MiniExcelLibs;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
+using SharedModels.DTO;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
@@ -165,8 +166,10 @@ namespace Tasks.Insurance
                     var filteredBatch = batchList.Where(r => !string.IsNullOrWhiteSpace(r.AgentCode) || !string.IsNullOrWhiteSpace(r.AgentName)).ToList();
                     if (filteredBatch.Count == 0) continue;
                     await using var writer = await _bulkOpsFactory.BeginBinaryImportAsync(conn, bulkSql, token);
+                    int index = 0;
                     foreach (var r in batchList)
                     {
+                        index++;
                         writer.StartRow();
                         var currChannel = ChannelMaster.FirstOrDefault(x => x.ChannelName.Equals(r.ChannelDesc));
                         // 1-10 (pass same string/int values; provider wrapper will map types)
@@ -176,6 +179,8 @@ namespace Tasks.Insurance
 
                         var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001
 
+
+                        var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001
                         writer.Write(r.AgentId.ToString());
                         writer.Write(agentCode);
                         writer.Write(r.AgentName ?? "");
@@ -338,6 +343,9 @@ namespace Tasks.Insurance
                         writer.Write(r.WorkProfile ?? "");
                         writer.Write(r.AnnualIncome?.ToString() ?? "");
                         writer.Write(r.WorkExpMonths?.ToString() ?? "");
+
+                        writer.Write(r.BranchDesc ?? "");
+
                     }
 
                     await writer.CompleteAsync(token);

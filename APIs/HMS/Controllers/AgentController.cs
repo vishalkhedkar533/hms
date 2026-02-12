@@ -9,8 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
-using Models.DTO;
-using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -485,31 +483,31 @@ namespace HMS.Controllers
                     .ToListAsync();
 
                 agentDTO.bankAccounts = await _context.BankAccount
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 
                 //Permanent Address
                 agentDTO.PermanentAddres = await _context.Address
-                .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Permanent == b.AddressType)
+                .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType && SharedModels.Enums.AddressType.Permanent == b.AddressType)
                 .AsNoTracking()
                 .ToListAsync();
 
                 //Mailing Address
                 agentDTO.MailingAddres = await _context.Address
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType && Models.Enums.AddressType.Correspondence == b.AddressType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType && SharedModels.Enums.AddressType.Correspondence == b.AddressType)
                     .AsNoTracking()
                     .ToListAsync();
 
                 //Nominees
                 agentDTO.nominees = await _context.Nominee
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 
                 //Personal Infomation
                 agentDTO.personalInfo = await _context.PersonalInfo
-                    .Where(b => agentEntity.AgentId == b.RefKey && Models.Enums.ReferenceType.Agent == b.RefType)
+                    .Where(b => agentEntity.AgentId == b.RefKey && SharedModels.Enums.ReferenceType.Agent == b.RefType)
                     .AsNoTracking()
                     .ToListAsync();
 
@@ -793,7 +791,7 @@ namespace HMS.Controllers
                     { "StartDate", agent.StartDate },
                     { "AppointmentDate", agent.AppointmentDate },
                     { "IncorporationDate", agent.IncorporationDate },
-                    { "CmsAgentType", agent.CmsAgentType },
+                    { "CmsAgentType", agent.CMSAgentType },
                     { "CommissionClass", agent.CommissionClass },
                     { "BankAccType", agent.BankAccType },
                     { "UlipFlag", agent.UlipFlag },
@@ -809,7 +807,7 @@ namespace HMS.Controllers
                     { "AdditionalComment", agent.AdditionalComment },
                     { "Channel", agent.Channel },
                     { "SubChannel", agent.SubChannel },
-                    { "Ic36TrngCompletionDate", agent.Ic36TrngCompletionDate },
+                    { "Ic36TrngCompletionDate", agent.IC36TrngCompletionDate },
                     { "STrngCompletionDate", agent.STrngCompletionDate },
                     { "FgRockstarTrainingDate", agent.FgRockstarTrainingDate },
                     { "FgValueTrngDate", agent.FgValueTrngDate },
@@ -976,7 +974,7 @@ namespace HMS.Controllers
                             agent.AgentClass = agentDto.AgentClass;
 
                     if (!string.IsNullOrWhiteSpace(agentDto.CMSAgentType))
-                        agent.CmsAgentType = agentDto.CMSAgentType;
+                        agent.CMSAgentType = agentDto.CMSAgentType;
 
                     break;
 
@@ -1434,7 +1432,7 @@ namespace HMS.Controllers
 
                       case "other_training":
                     if (agentDto.Ic36TrngCompletionDate.HasValue)
-                        agent.Ic36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
+                        agent.IC36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
 
                     if (agentDto.STrngCompletionDate.HasValue)
                         agent.STrngCompletionDate = agentDto.STrngCompletionDate;
@@ -1627,7 +1625,6 @@ namespace HMS.Controllers
                     return BadRequest(hMSResponse);
                 }
 
-
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Agent",
                     "get_geo_hierarchy",
@@ -1635,8 +1632,8 @@ namespace HMS.Controllers
                     {
                         p_channel_id = request.ChannelCode,
                         p_subchannel_id = request.SubChannelCode, // Pass null if sub-channel isn't provided
+                        p_branch_id =  request.BranchCode,
                         p_orgid = orgId,
-                        p_branch_id = request.BranchCode // Pass null if branch isn't provided
                     });
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))

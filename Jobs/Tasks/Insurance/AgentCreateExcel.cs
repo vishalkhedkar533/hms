@@ -342,6 +342,9 @@ namespace Tasks.Insurance
                         writer.Write(r.WorkProfile ?? "");
                         writer.Write(r.AnnualIncome?.ToString() ?? "");
                         writer.Write(r.WorkExpMonths?.ToString() ?? "");
+
+                        writer.Write(r.BranchDesc ?? "");
+
                     }
 
                     await writer.CompleteAsync(token);

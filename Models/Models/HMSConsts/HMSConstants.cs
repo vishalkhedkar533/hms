@@ -14,6 +14,8 @@
     public static class AgentConstants //12x series
     {
         public const int AGENT_NOTFOUND = 1201;
+        public const int AGENT_GEOHEIRARCHY_NOTFOUND = 1201;
+
     }
     public static class MastersConstants //13x series
     {

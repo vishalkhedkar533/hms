@@ -1622,28 +1622,20 @@ namespace HMS.Controllers
 
             try
             {
-                var channel = _context.ChannelMaster
-                    .AsNoTracking()
-                    .FirstOrDefault(c => c.ChannelCode == request.ChannelCode 
-                    && c.OrgId == (int)orgId);
-
-                if (channel == null)
-                    return NotFound("Channel code not found.");
-
-                var subChannel = _context.SubchannelMaster
-                    .AsNoTracking()
-                    .FirstOrDefault(c => c.ChannelId == channel.ChannelId
-                    && c.SubchannelCode == request.SubChannelCode
-                    && c.OrgId == (int)orgId);
-
+                if (request?.ChannelCode == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
+                    return BadRequest(hMSResponse);
+                }
 
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Agent",
                     "get_geo_hierarchy",
                     new
                     {
-                        p_channel_id = channel.ChannelId,
-                        p_subchannel_id = subChannel?.SubChannelId, // Pass null if sub-channel isn't provided
+                        p_channel_id = request.ChannelCode,
+                        p_subchannel_id = request.SubChannelCode, // Pass null if sub-channel isn't provided
                         p_branch_id =  request.BranchCode,
                         p_orgid = orgId,
                     });
@@ -1665,8 +1657,8 @@ namespace HMS.Controllers
                 }
                 else
                 {
-                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = "Hierarchy not found for this selection.";
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
                     return NotFound(hMSResponse);
                 }
             }

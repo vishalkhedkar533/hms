@@ -2046,7 +2046,8 @@ REFERENCES hms.channel_master (channel_code) ON DELETE CASCADE;
 -- Drop the old one first to avoid confusion
 DROP FUNCTION IF EXISTS hms.get_geo_hierarchy_by_channel(text, bigint);
 
-CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_code text, p_orgid bigint)
+-- DROP FUNCTION hms.get_geo_hierarchy_by_channel(int8, int8, int8, int8);
+
 CREATE OR REPLACE FUNCTION hms.get_geo_hierarchy_by_channel(p_channel_id bigint, p_subchannel_id bigint, p_orgid bigint, p_branch_id bigint)
  RETURNS jsonb
  LANGUAGE sql
@@ -2056,23 +2057,29 @@ WITH RECURSIVE hierarchy_cte AS (
     SELECT 
         gh.hierarchy_path,
         string_to_array(gh.hierarchy_path::TEXT, '.') AS labels
-    FROM hms.geo_hierarchy gh
-    WHERE gh.channel_code = p_channel_code AND gh.orgid = p_orgid::int and hierarchy_path ~ '*.24'
+    FROM hmsmaster.channel_branch_heirarchy gh
+    WHERE gh.channel_id = p_channel_id 
+          AND (p_subchannel_id IS NULL OR gh.sub_channel_id = p_subchannel_id)
+          AND gh.orgid = p_orgid::int
+          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text)::lquery
 ),
 json_tree AS (
     -- Step 2: Leaf node (Agent)
     SELECT 
         array_length(labels, 1) AS lvl,
         jsonb_build_object(
-            'designationId', dm.designation_id,
-            'designationName', dm.designation_name,
-            'designationCode', dm.designation_code,
+            'branchMasterID', bm.branch_id ,
+            'branchCode', bm.branch_code,
+            'branchName', bm.branch_name,
+            'locationCode', lm.location_code,
+            'locationDesc',lm.location_desc,
             'parentLocation', NULL -- Matches DTO Property Name
         ) AS node,
         labels
     FROM hierarchy_cte h
     -- Note: Join with hmsmaster schema
-    JOIN hmsmaster.designation_master dm ON dm.designation_id = h.labels[array_length(h.labels, 1)]::int8
+    JOIN hmsmaster.branch_master bm ON bm.branch_id = h.labels[array_length(h.labels, 1)]::int8
+    JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
 
     UNION ALL
 
@@ -2080,14 +2087,17 @@ json_tree AS (
     SELECT 
         j.lvl - 1,
         jsonb_build_object(
-            'designationId', dm.designation_id,
-            'designationName', dm.designation_name,
-            'designationCode', dm.designation_code,
+            'branchMasterID', bm.branch_id ,
+            'branchCode', bm.branch_code,
+            'branchName', bm.branch_name,
+            'locationCode', lm.location_code,
+            'locationDesc',lm.location_desc,
             'parentLocation', j.node -- Matches DTO Property Name
         ) AS node,
         j.labels
     FROM json_tree j
-    JOIN hmsmaster.designation_master dm ON dm.designation_id = j.labels[j.lvl - 1]::int8
+    JOIN hmsmaster.branch_master bm ON bm.branch_id = j.labels[j.lvl - 1]::int8
+    JOIN hmsmaster.location_master lm on bm.location_master_id = lm.location_master_id
     WHERE j.lvl > 1
 )
 SELECT jsonb_agg(node)

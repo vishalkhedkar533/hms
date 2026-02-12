@@ -239,6 +239,8 @@ namespace SharedModels.DTO
         public long BranchMasterId { get; set; }
         public string? BranchCode { get; set; }
         public string? BranchName { get; set; }
+        public string? LocationCode { get; set; }
+        public string? LocationDesc { get; set; }
 
         // This allows the DTO to nest infinitely, matching your JSON structure
         public GeoHierarchyDto? ParentLocation { get; set; }

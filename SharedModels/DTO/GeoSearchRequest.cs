@@ -2,8 +2,8 @@
 {
     public class GeoSearchRequest
     {
-        public string? ChannelCode { get; set; }
-        public string? SubChannelCode { get; set; }
+        public long? ChannelCode { get; set; }
+        public int? SubChannelCode { get; set; }
         public int? BranchCode{ get; set; }
     }
     public class GeoChildrenRequest

@@ -1,4 +1,5 @@
-﻿using SharedModels.BackEndCalculation;
+﻿using Models.DB;
+using SharedModels.BackEndCalculation;
 
 namespace Tasks.Models
 {

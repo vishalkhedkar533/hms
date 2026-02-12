@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
+using Models.DB;
 using SharedModels.BackEndCalculation;
 using SharedModels.DTO;
+using Agent = Models.DB.Agent;
 
 namespace Models.Mapping
 {

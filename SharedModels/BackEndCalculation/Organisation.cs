@@ -1,8 +1,7 @@
-﻿using SharedModels.BackEndCalculation;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Models.DB
+namespace SharedModels.BackEndCalculation
 {
     [Table("organisation", Schema = "app_subscription")]
     public class Organisation
@@ -40,6 +39,10 @@ namespace Models.DB
         // usually figure this out based on the property name (SubscriberId).
         [ForeignKey("SubscriberId")]
         public virtual Subscriber Subscriber { get; set; }
+
+        [Required]
+        [Column("state")]
+        public int State { get; set; }
     }
 
 }

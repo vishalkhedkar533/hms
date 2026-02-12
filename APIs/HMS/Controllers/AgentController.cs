@@ -15,6 +15,7 @@ using Newtonsoft.Json.Serialization;
 using SharedModels.BackEndCalculation;
 using SharedModels.DTO;
 using SharedModels.Enums;
+using Agent = Models.DB.Agent;
 
 namespace HMS.Controllers
 {
@@ -810,7 +811,7 @@ namespace HMS.Controllers
                     { "AdditionalComment", agent.AdditionalComment },
                     { "Channel", agent.Channel },
                     { "SubChannel", agent.SubChannel },
-                    { "Ic36TrngCompletionDate", agent.Ic36TrngCompletionDate },
+                    { "Ic36TrngCompletionDate", agent.IC36TrngCompletionDate },
                     { "STrngCompletionDate", agent.STrngCompletionDate },
                     { "FgRockstarTrainingDate", agent.FgRockstarTrainingDate },
                     { "FgValueTrngDate", agent.FgValueTrngDate },
@@ -1435,7 +1436,7 @@ namespace HMS.Controllers
 
                       case "other_training":
                     if (agentDto.Ic36TrngCompletionDate.HasValue)
-                        agent.Ic36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
+                        agent.IC36TrngCompletionDate = agentDto.Ic36TrngCompletionDate;
 
                     if (agentDto.STrngCompletionDate.HasValue)
                         agent.STrngCompletionDate = agentDto.STrngCompletionDate;

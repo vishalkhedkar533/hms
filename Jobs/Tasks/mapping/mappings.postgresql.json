@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=7"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -178,7 +178,7 @@
       },
       "DesignationHeirarchy": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT designation_id, designation_code, designation_name, channel_code, designation_level, is_active, created_by, created_date, modified_by, modified_date, rowversion, channel_id, orgid FROM hmsmaster.designation_master WHERE orgid = @orgId ORDER BY designation_code, channel_id"
+        "Script": "SELECT designation_id, designation_code, designation_name, designation_level, is_active, created_by, created_date, modified_by, modified_date, rowversion, channel_id, orgid FROM hmsmaster.designation_master WHERE orgid = @orgId ORDER BY designation_code, channel_id"
       },
       "ChannelMaster": {
         "ConnectionStringKey": "CommissionDB",

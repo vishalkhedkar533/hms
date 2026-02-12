@@ -39,7 +39,7 @@ namespace SharedModels.DTO
         public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
         public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
         public List<BatchListDto>? batches { get; set; } = null;
-        public List<RoleMaster>? roles { get; set; } = null;
+        public List<Role>? roles { get; set; } = null;
         public List<MenuMaster>? menus { get; set; } = null;
         public List<RoleMenuMapping>? roleMenuMappings { get; set; } = null;
         public List<MenuRoleMappingDto>? menuRoleMappings { get; set; } = null;

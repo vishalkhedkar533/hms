@@ -65,7 +65,6 @@ namespace SharedModels.BackEndCalculation
         [ConcurrencyCheck]
         [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
         public int? RowVersion { get; set; }
-        public int? OrgId { get; set; }
         public long? TotalEntries { get; set; }
         public long? TotalEntriesMon { get; set; }
     }

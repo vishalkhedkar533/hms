@@ -1635,7 +1635,8 @@ namespace HMS.Controllers
                     {
                         p_channel_id = request.ChannelCode,
                         p_subchannel_id = request.SubChannelCode, // Pass null if sub-channel isn't provided
-                        p_orgid = orgId
+                        p_orgid = orgId,
+                        p_branch_id = request.BranchCode // Pass null if branch isn't provided
                     });
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))

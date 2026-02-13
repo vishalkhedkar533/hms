@@ -33,6 +33,7 @@ namespace HMS.Controllers
                 //_logger.LogInformation("Information Log is Working");
                 //_logger.LogWarning("Warning Log is Working");
                 //Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
+                //HttpContext?.User?.Identity?.Name;
                 await _context.agent.FindAsync(-1000);
                 return Ok(new
                 {

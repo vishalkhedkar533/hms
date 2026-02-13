@@ -4,6 +4,7 @@ namespace Tasks.Models
     {
         public string? AgentCode { get; set; }
         public string? SupervisorCode { get; set; }
+        public DateTime? EffectiveDateOfChange { get; set; }
     }
 
     public class ManagerUpdateError 

@@ -88,89 +88,149 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                var allCodes = rows.SelectMany(r => new[] { r.AgentCode, r.SupervisorCode })
-                    .Where(c => !string.IsNullOrWhiteSpace(c))
-                    .Select(c => c!.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-
-                if (allCodes.Length == 0)
-                {
-                    _logger.LogInformation("No agent codes found in file: {FilePath}", task.FilePath);
-                    continue;
-                }
-
-                var agentsSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetAgentsByCode")?.Script
-                    ?? throw new Exception("SQL for ManagerUpdate/GetAgentsByCode missing");
-
-                var agents = (await conn.QueryAsync<Agent>(agentsSql, new { orgId = task.OrgId ?? orgId, codes = allCodes })).ToList();
-                var agentByCode = agents
-                    .Where(a => !string.IsNullOrWhiteSpace(a.AgentCode))
-                    .ToDictionary(a => a.AgentCode, StringComparer.OrdinalIgnoreCase);
-
-                var updatedAgents = new List<object>();
-                var auditEntries = new List<object>();
-                var successRowsForExport = new List<object>(); // NEW: To track success data
                 var username = string.IsNullOrWhiteSpace(task.CreatedBy) ? "System" : task.CreatedBy;
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var tempRows = new List<(string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange, int OrgId)>();
+                var todayRows = new List<(int RowNumber, string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange)>();
 
                 foreach (var item in rows.Select((row, index) => new { Row = row, RowNumber = index + 2 }))
                 {
                     var agentCode = item.Row.AgentCode?.Trim();
                     var supervisorCode = item.Row.SupervisorCode?.Trim();
+                    var effectiveDate = item.Row.EffectiveDateOfChange?.Date;
 
-                    if (string.IsNullOrWhiteSpace(agentCode) || !agentByCode.TryGetValue(agentCode, out var agent))
+                    if (string.IsNullOrWhiteSpace(agentCode))
                     {
-                        AddError(response, item.RowNumber, agentCode, supervisorCode, "Invalid Agent Code.");
+                        AddError(response, item.RowNumber, agentCode, supervisorCode, "Agent Code is required.");
                         continue;
                     }
 
-                    if (string.IsNullOrWhiteSpace(supervisorCode) || !agentByCode.TryGetValue(supervisorCode, out var supervisor))
+                    if (string.IsNullOrWhiteSpace(supervisorCode))
                     {
-                        AddError(response, item.RowNumber, agentCode, supervisorCode, "Reporting Agent Code not found.");
+                        AddError(response, item.RowNumber, agentCode, supervisorCode, "Reporting Agent Code is required.");
                         continue;
                     }
 
-                    if (agent.Channel != supervisor.Channel)
+                    if (effectiveDate is null)
                     {
-                        AddError(response, item.RowNumber, agentCode, supervisorCode,
-                            $"Supervisor is in channel '{supervisor.Channel}', but Agent is in '{agent.Channel}'. Channels must match.");
+                        AddError(response, item.RowNumber, agentCode, supervisorCode, "Effective Date Of Change is required.");
                         continue;
                     }
 
-                    if (agent.SupervisorId != supervisor.AgentId)
+                    var effectiveDateOnly = DateOnly.FromDateTime(effectiveDate.Value);
+                    tempRows.Add((agentCode, supervisorCode, effectiveDateOnly, task.OrgId ?? orgId));
+
+                    if (effectiveDateOnly == today)
                     {
-                        updatedAgents.Add(new
-                        {
-                            AgentId = agent.AgentId,
-                            SupervisorId = supervisor.AgentId,
-                            ModifiedBy = username
-                        });
+                        todayRows.Add((item.RowNumber, agentCode, supervisorCode, effectiveDateOnly));
+                    }
+                }
 
-                        auditEntries.Add(new
-                        {
-                            AgentId = agent.AgentId,
-                            FieldName = "SupervisorId",
-                            OldValue = agent.SupervisorId?.ToString() ?? "None",
-                            NewValue = supervisor.AgentId.ToString(),
-                            ChangedBy = username,
-                            ChangedDate = DateTime.UtcNow,
-                            CreatedBy = username,
-                            CreatedDate = DateTime.UtcNow,
-                            ModifiedBy = username,
-                            ModifiedDate = DateTime.UtcNow
-                        });
+                if (tempRows.Any())
+                {
+                    var bulkSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "BulkCopyTempManagerUpdate")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/BulkCopyTempManagerUpdate missing");
 
-                        // NEW: Capture row for SuccessData Excel
-                        successRowsForExport.Add(new
-                        {
-                            Row_Number = item.RowNumber,
-                            Agent_Code = agentCode,
-                            New_Supervisor_Code = supervisorCode,
-                            Previous_Supervisor_Id = agent.SupervisorId,
-                            Status = "Updated"
-                        });
+                    await using var writer = await _bulkOpsFactory.BeginBinaryImportAsync(conn, bulkSql, token);
+                    foreach (var row in tempRows)
+                    {
+                        writer.StartRow();
+                        writer.Write(row.AgentCode);
+                        writer.Write(row.SupervisorCode);
+                        writer.Write(row.EffectiveDateOfChange);
+                        writer.Write("Pending");
+                        writer.Write(row.OrgId);
+                    }
 
-                        response.UpdatedRows++;
+                    await writer.CompleteAsync(token);
+                }
+
+                var updatedAgents = new List<object>();
+                var auditEntries = new List<object>();
+                var successRowsForExport = new List<object>();
+                var updatedTempRows = new List<object>();
+
+                if (todayRows.Count > 0)
+                {
+                    var allCodes = todayRows.SelectMany(r => new[] { r.AgentCode, r.SupervisorCode })
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToArray();
+
+                    var agentsSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetAgentsByCode")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/GetAgentsByCode missing");
+
+                    var agents = (await conn.QueryAsync<Agent>(agentsSql, new { orgId = task.OrgId ?? orgId, codes = allCodes })).ToList();
+                    var agentByCode = agents
+                        .Where(a => !string.IsNullOrWhiteSpace(a.AgentCode))
+                        .ToDictionary(a => a.AgentCode, StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var item in todayRows)
+                    {
+                        var agentCode = item.AgentCode;
+                        var supervisorCode = item.SupervisorCode;
+
+                        if (!agentByCode.TryGetValue(agentCode, out var agent))
+                        {
+                            AddError(response, item.RowNumber, agentCode, supervisorCode, "Invalid Agent Code.");
+                            continue;
+                        }
+
+                        if (!agentByCode.TryGetValue(supervisorCode, out var supervisor))
+                        {
+                            AddError(response, item.RowNumber, agentCode, supervisorCode, "Reporting Agent Code not found.");
+                            continue;
+                        }
+
+                        if (agent.Channel != supervisor.Channel)
+                        {
+                            AddError(response, item.RowNumber, agentCode, supervisorCode,
+                                $"Supervisor is in channel '{supervisor.Channel}', but Agent is in '{agent.Channel}'. Channels must match.");
+                            continue;
+                        }
+
+                        if (agent.SupervisorId != supervisor.AgentId)
+                        {
+                            updatedAgents.Add(new
+                            {
+                                AgentId = agent.AgentId,
+                                SupervisorId = supervisor.AgentId,
+                                ModifiedBy = username
+                            });
+
+                            auditEntries.Add(new
+                            {
+                                AgentId = agent.AgentId,
+                                FieldName = "SupervisorId",
+                                OldValue = agent.SupervisorId?.ToString() ?? "None",
+                                NewValue = supervisor.AgentId.ToString(),
+                                ChangedBy = username,
+                                ChangedDate = DateTime.UtcNow,
+                                CreatedBy = username,
+                                CreatedDate = DateTime.UtcNow,
+                                ModifiedBy = username,
+                                ModifiedDate = DateTime.UtcNow
+                            });
+
+                            updatedTempRows.Add(new
+                            {
+                                AgentCode = agentCode,
+                                SupervisorCode = supervisorCode,
+                                EffectiveDateOfChange = item.EffectiveDateOfChange,
+                                Status = "Updated",
+                                OrgId = task.OrgId ?? orgId
+                            });
+
+                            successRowsForExport.Add(new
+                            {
+                                Row_Number = item.RowNumber,
+                                Agent_Code = agentCode,
+                                New_Supervisor_Code = supervisorCode,
+                                Previous_Supervisor_Id = agent.SupervisorId,
+                                Status = "Updated"
+                            });
+
+                            response.UpdatedRows++;
+                        }
                     }
                 }
 
@@ -183,10 +243,13 @@ namespace Tasks.Insurance
                         ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
                     var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
                         ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
+                    var updateTempSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
 
                     await using var tx = await conn.BeginTransactionAsync(token);
                     await conn.ExecuteAsync(updateSql, updatedAgents, tx);
                     await conn.ExecuteAsync(auditSql, auditEntries, tx);
+                    await conn.ExecuteAsync(updateTempSql, updatedTempRows, tx);
                     await tx.CommitAsync(token);
                 }
 
@@ -238,7 +301,7 @@ namespace Tasks.Insurance
                     TotalRows = response.TotalRows,
                     RowsRejected = response.FailedRows,
                     ErrorMessage = errorMessageEncoded,
-                    SuccessData = successDataEncoded, // NEW: Parameter for SQL
+                    SuccessData = successDataEncoded,
                     Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
                 });
 

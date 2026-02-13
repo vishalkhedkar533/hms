@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=141"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -78,6 +78,18 @@
       "InsertAuditTrail": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "INSERT INTO hms.agent_audit_trail (agent_id, field_name, old_value, new_value, changed_by, changed_date, created_by, created_date, modified_by, modified_date) VALUES (@AgentId, @FieldName, @OldValue, @NewValue, @ChangedBy, @ChangedDate, @CreatedBy, @CreatedDate, @ModifiedBy, @ModifiedDate)"
+      },
+      "BulkCopyTempManagerUpdate": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "COPY hms.temp_manager_update (agent_code, supervisor_code, effective_date_of_change, status, orgid) FROM STDIN (FORMAT BINARY)"
+      },
+      "InsertTempManagerUpdate": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "INSERT INTO hms.temp_manager_update (agent_code, supervisor_code, effective_date_of_change, status, orgid) VALUES (@AgentCode, @SupervisorCode, @EffectiveDateOfChange, @Status, @OrgId)"
+      },
+      "UpdateTempManagerUpdateStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_manager_update SET status = @Status WHERE orgid = @OrgId AND agent_code = @AgentCode AND supervisor_code = @SupervisorCode AND effective_date_of_change = @EffectiveDateOfChange"
       },
       "UpdateTask": {
         "ConnectionStringKey": "CommissionDB",

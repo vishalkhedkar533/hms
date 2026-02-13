@@ -2335,3 +2335,11 @@ WHERE lvl = 1;
 $function$
 ;
 
+CREATE TABLE IF NOT EXISTS hms.temp_manager_update (
+    temp_manager_update_id bigserial PRIMARY KEY,
+    agent_code varchar(50) NOT NULL,
+    supervisor_code varchar(50) NOT NULL,
+    effective_date_of_change date NOT NULL,
+    status varchar(20) NOT NULL DEFAULT 'Pending',
+    orgid int NOT NULL
+);

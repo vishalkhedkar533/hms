@@ -395,5 +395,72 @@ namespace HMS.Controllers
                 return StatusCode(503, hMSResponse);
             }
         }
+
+        [HttpPost("Role/RemoveUser")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<HmsResponse>> RemoveUserFromRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
+        {
+            var hMSResponse = new HmsResponse();
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                if (string.IsNullOrEmpty(userRoleMappingDTO.UserName) ||
+                    userRoleMappingDTO.RoleId == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var Role = _context.Roles.FirstOrDefault(x => x.RoleId == userRoleMappingDTO.RoleId
+                && x.OrgId == orgId);
+                if (Role == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var User = _context.Users.FirstOrDefault(x => x.Username == userRoleMappingDTO.UserName
+                && x.OrgId == orgId);
+                if (User == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var newUserRoleMapping = _context.UserRoleMappings.Where(
+                    urm => urm.RoleId == userRoleMappingDTO.RoleId
+                    && urm.OrgId == orgId
+                    && urm.UserId == User.UserId);
+
+                if (newUserRoleMapping == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+                newUserRoleMapping.ExecuteDeleteAsync();
+
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = "FAILED";
+                _logger.LogError(ex, $"Failed to fetch menu access for User {userRoleMappingDTO.UserName} : Role {userRoleMappingDTO.RoleId}");
+                return StatusCode(503, hMSResponse);
+            }
+        }
+
     }
 }

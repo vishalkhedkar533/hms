@@ -473,5 +473,7 @@ alter table hms.roles add column orgid int8 default 0;
 ALTER TABLE hms.roles add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgId);
 
 alter table hms.role_menu_mapping add column orgid int4 default 0;
-
 ALTER TABLE hms.role_menu_mapping add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgId);
+
+alter table hms.user_role_mapping add column orgid int4 default 0;
+ALTER TABLE hms.user_role_mapping add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgId);

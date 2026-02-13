@@ -28,6 +28,7 @@ namespace Models.DB
     {
         [Key]
         [Column("mapping_id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [SwaggerSchema("Mapping ID is required.")]
         public long MappingId { get; set; }
 
@@ -74,8 +75,14 @@ namespace Models.DB
         [ConcurrencyCheck]
         public int? RowVersion { get; set; }
 
+        // New column from DB: orgid int4 DEFAULT 0 NULL
+        [Column("orgid")]
+        [SwaggerSchema("Organisation ID. Nullable in DB; defaults to 0.")]
+        public int OrgId { get; set; } = 0;
+
         // Navigation Properties (optional, useful for eager/lazy loading)
         public User? User { get; set; }
         public Role? Role { get; set; }
     }
+
 }

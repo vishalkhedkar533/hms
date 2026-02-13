@@ -298,5 +298,102 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal server error.");
             }
         }
+
+        [HttpPost("Role/AddUser")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<HmsResponse>> AddUserToRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
+        {
+            var hMSResponse = new HmsResponse();
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                if  (string.IsNullOrEmpty( userRoleMappingDTO.UserName) || 
+                    userRoleMappingDTO.RoleId == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var Role = _context.Roles.FirstOrDefault(x => x.RoleId == userRoleMappingDTO.RoleId 
+                && x.OrgId == orgId);
+                if (Role == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var User = _context.Users.FirstOrDefault(x => x.Username == userRoleMappingDTO.UserName 
+                && x.OrgId == orgId);
+                if (User == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                // 1. Check for existing mapping
+                var newUserRoleMapping = await _context.UserRoleMappings.FirstOrDefaultAsync(
+                    urm => urm.RoleId == userRoleMappingDTO.RoleId
+                    && urm.OrgId == orgId
+                    && urm.UserId == User.UserId);
+
+                if (newUserRoleMapping == null)
+                {
+                    var newRecord = new UserRoleMapping
+                    {
+                        RoleId = (int)userRoleMappingDTO.RoleId,
+                        UserId = User.UserId,
+                        IsPrimary = true,
+                        // Use .Date or DateTime.Today because your DB column is 'date' (no time)
+                        EffectiveFrom = DateTime.UtcNow.Date,
+                        IsActive = true,
+                        CreatedBy = "Admin",
+                        CreatedDate = DateTime.UtcNow.Date,
+                        RowVersion = 1,
+                        OrgId = orgId
+                    };
+
+                    try
+                    {
+                        _context.UserRoleMappings.Add(newRecord);
+                        await _context.SaveChangesAsync();
+
+                        // IMPORTANT: EF Core automatically populates newRecord.MappingId 
+                        // after SaveChangesAsync(). You do NOT need to query again.
+                        newUserRoleMapping = newRecord;
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        // This catches the PK or Unique constraint violation if another thread
+                        // inserted the record between your 'if' check and your 'Save'.
+                        newUserRoleMapping = await _context.UserRoleMappings.AsNoTracking().FirstOrDefaultAsync(
+                            urm => urm.RoleId == userRoleMappingDTO.RoleId
+                            && urm.OrgId == orgId
+                            && urm.UserId == User.UserId);
+
+                        if (newUserRoleMapping == null) throw; // If it's still null, it's a different DB error
+                    }
+                }
+
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.UserRoleMapping = new List<UserRoleMapping> { newUserRoleMapping };
+
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = "FAILED";
+                _logger.LogError(ex, $"Failed to fetch menu access for User {userRoleMappingDTO.UserName} : Role {userRoleMappingDTO.RoleId}" );
+                return StatusCode(503, hMSResponse);
+            }
+        }
     }
 }

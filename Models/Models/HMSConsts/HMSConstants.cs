@@ -34,4 +34,9 @@
     {
         public const int JOB_NOTFOUND = 1501;
     }
+    public static class AccessConstants //16x series
+    {
+        public const int MENU_NOT_AVAILABLE = 1601;
+        public const int ROLE_NOT_AVAILABLE = 1602;
+    }
 }

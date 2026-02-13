@@ -1,4 +1,7 @@
+﻿using CommonLibrary;
 using HMS.Data;
+using HMS.Security;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
@@ -9,18 +12,20 @@ namespace HMS.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class RoleMasterController : ControllerBase
+    public class AccessController : Controller
     {
         private readonly HMSContext _context;
-        private readonly ILogger<RoleMasterController> _logger;
-
-        public RoleMasterController(HMSContext context, ILogger<RoleMasterController> logger)
+        private readonly ILogger<AccessController> _logger;
+        private readonly IAuthClaimService _authClaimService;
+        private int orgId;
+        public AccessController(HMSContext context, ILogger<AccessController> logger, IAuthClaimService authClaimService)
         {
             _context = context;
             _logger = logger;
+            _authClaimService = authClaimService;
         }
-
-        [HttpPost("RolesList")]
+        [HttpPost("Role/List")]
+        [MenuAuthorize(1001)]
         public async Task<ActionResult<HmsResponse>> GetRoles()
         {
             var response = new HmsResponse();
@@ -40,8 +45,8 @@ namespace HMS.Controllers
                 return StatusCode(500, response);
             }
         }
-
-        [HttpPost("CreateRole")]
+        [HttpPost("Role/Create")]
+        [MenuAuthorize(1001)]
         public async Task<ActionResult<HmsResponse>> CreateRole([FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
@@ -60,14 +65,16 @@ namespace HMS.Controllers
                     response.responseHeader.ErrorMessage = "Role ID is required.";
                     return BadRequest(response);
                 }
-
-                var nameExists = await _context.Roles.AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower());
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                var nameExists = await _context.Roles.
+                    AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower()
+                    && r.OrgId == orgId);
 
                 if (nameExists)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = $"Role name '{roleDto.RoleName}' already exists.";
-                    return Conflict(response); 
+                    return Conflict(response);
                 }
 
                 var newRole = new Role
@@ -79,7 +86,8 @@ namespace HMS.Controllers
                     IsActive = roleDto.IsActive,
                     CreatedBy = "Admin",
                     CreatedDate = DateTime.UtcNow,
-                    RowVersion = 1
+                    RowVersion = 1,
+                    OrgId = orgId
                 };
 
                 _context.Roles.Add(newRole);
@@ -97,20 +105,23 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal server error.");
             }
         }
-        [HttpPost("UpdateRole/{id}")]
-        public async Task<ActionResult<HmsResponse>> UpdateRole([FromRoute]int id, [FromBody] RoleSaveDto roleDto)
+        [HttpPost("Role/Update/{roleId}")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<HmsResponse>> UpdateRole([FromRoute] int roleId, [FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
             try
             {
-                if (roleDto == null || id != roleDto.Role_ID)
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                if (roleDto == null || roleId != roleDto.Role_ID)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "Mismatched or invalid role ID.";
                     return BadRequest(response);
                 }
 
-                var existingRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id); if (existingRole == null)
+                var existingRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId && r.OrgId == orgId);
+                if (existingRole == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "Role not found.";
@@ -118,8 +129,8 @@ namespace HMS.Controllers
                 }
 
                 var nameExists = await _context.Roles
-                    .AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower() 
-                    && r.RoleId != id);
+                    .AnyAsync(r => r.RoleName.ToLower() == roleDto.RoleName.ToLower()
+                    && r.RoleId != roleId && r.OrgId == orgId);
                 if (nameExists)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -131,7 +142,6 @@ namespace HMS.Controllers
                 existingRole.Description = roleDto.Description;
                 existingRole.IsSystemRole = roleDto.IsSystemRole;
                 existingRole.IsActive = roleDto.IsActive;
-
                 existingRole.ModifiedBy = "Admin";
                 existingRole.ModifiedDate = DateTime.UtcNow;
                 if (existingRole.CreatedDate.Kind == DateTimeKind.Local)
@@ -158,25 +168,26 @@ namespace HMS.Controllers
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                _logger.LogError(ex, "Concurrency conflict during update for ID {Id}", id);
+                _logger.LogError(ex, "Concurrency conflict during update for ID {Id}", roleId);
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "The record was modified by another user. Please reload.";
                 return StatusCode(409, response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to update role for ID {Id}", id);
+                _logger.LogError(ex, "Failed to update role for ID {Id}", roleId);
                 return StatusCode(500, "Internal server error.");
             }
         }
-
-        [HttpPost("DeleteRole/{id}")]
-        public async Task<ActionResult<HmsResponse>> DeleteRole([FromRoute]int id)
+        [HttpPost("Role/Delete/{roleId}")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<HmsResponse>> DeleteRole([FromRoute] int roleId)
         {
             var response = new HmsResponse();
             try
             {
-                var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == id);
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId && r.OrgId == orgId);
                 if (role == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -198,6 +209,74 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Internal server error.";
                 return StatusCode(500, response);
+            }
+        }
+        [HttpPost("Role/GetMenuAccess/{roleId}")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<HmsResponse>> RoleDetails([FromRoute] int roleId)
+        {
+            var response = new HmsResponse();
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == roleId && r.OrgId == orgId);
+                if (role == null)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Role not found.";
+                    return NotFound(response);
+                }
+
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.roles = new List<Role> { role };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete role");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Internal server error.";
+                return StatusCode(500, response);
+            }
+        }
+        [HttpPost("Role/UserList/{roleId}")]
+        [MenuAuthorize(1001)]
+        public async Task<ActionResult<HmsResponse>> GetMenuAccessForRole([FromRoute] int roleId)
+        {
+            var hMSResponse = new HmsResponse();
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                List<UserListDto> userList =  await _context.Users
+                .AsNoTracking()
+                .Where(u => u.OrgId == orgId
+                            && _context.UserRoleMappings.Any(urm => urm.UserId == u.UserId))
+                .Select(u => new UserListDto
+                {
+                    UserId = u.UserId,
+                    Username = u.Username,
+                    EmailId = u.EmailId,
+                    IsActive = u.IsActive,
+                    IsLocked = u.IsLocked,
+                    FailedLoginAttempts = u.failedloginattempts
+                })
+                .ToListAsync();
+
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.UserList =userList;
+
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to fetch menu access for role {RoleId}", roleId);
+                return StatusCode(500, "Internal server error.");
             }
         }
     }

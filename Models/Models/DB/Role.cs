@@ -8,46 +8,51 @@ namespace Models.DB
     public class Role
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("role_id")]
-        [SwaggerSchema("Role ID is required.")]
-        // No [DatabaseGenerated] means this is manually assigned (not auto-increment)
         public int RoleId { get; set; }
 
+        [Required]
+        [MaxLength(100)]
         [Column("role_name")]
-        [StringLength(100)]
-        [SwaggerSchema("Role name is required.")]
-        public string RoleName { get; set; } = null!;
+        public string RoleName { get; set; } = string.Empty;
 
+        [MaxLength(255)]
         [Column("description")]
-        [StringLength(255)]
         public string? Description { get; set; }
 
         [Column("is_system_role")]
-        [SwaggerSchema("IsSystemRole is required.")]
         public bool IsSystemRole { get; set; }
 
         [Column("is_active")]
-        [SwaggerSchema("IsActive is required.")]
         public bool IsActive { get; set; }
 
+        [Required]
+        [MaxLength(100)]
         [Column("created_by")]
-        [StringLength(100)]
-        [SwaggerSchema("CreatedBy is required.")]
-        public string CreatedBy { get; set; } = null!;
+        public string CreatedBy { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Using DateTimeOffset to match PostgreSQL 'timestamptz'
+        /// </summary>
         [Column("created_date")]
-        [SwaggerSchema("CreatedDate is required.")]
         public DateTime CreatedDate { get; set; }
 
+        [MaxLength(100)]
         [Column("modified_by")]
-        [StringLength(100)]
         public string? ModifiedBy { get; set; }
 
         [Column("modified_date")]
         public DateTime? ModifiedDate { get; set; }
 
         [Column("rowversion")]
-        [ConcurrencyCheck]
         public int? RowVersion { get; set; }
+
+        [Column("orgid")]
+        public int OrgId { get; set; } = 0;
+
+        // Navigation Property for Foreign Key: fk_role_org
+        [ForeignKey("OrgId")]
+        public virtual Organisation? Organisation { get; set; }
     }
 }

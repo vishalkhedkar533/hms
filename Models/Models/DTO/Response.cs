@@ -41,9 +41,8 @@ namespace Models.DTO
         public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
         public List<BatchListDto>? batches { get; set; } = null;
         public List<Role>? roles { get; set; } = null;
-        public List<MenuMaster>? menus { get; set; } = null;
-        public List<RoleMenuMapping>? roleMenuMappings { get; set; } = null;
-        public List<MenuRoleMappingDto>? menuRoleMappings { get; set; } = null;
+        public List<MenuAccessDto>? MenuAccessList { get; set; } = null;
+        public List<UserListDto>? UserList { get; set; } = null;
         public FileUploadResponse? fileUpload { get; set; } = null;
     }
 

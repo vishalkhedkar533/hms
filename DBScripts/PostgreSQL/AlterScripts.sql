@@ -470,3 +470,8 @@ ALTER TABLE hms.agent ADD CONSTRAINT fk_agnt_loc FOREIGN KEY (location_code) REF
 ALTER TABLE hms.agent ADD CONSTRAINT fk_agnt_br FOREIGN KEY (branch) REFERENCES hmsmaster.branch_master(branch_id);
 
 alter table hms.roles add column orgid int8 default 0;
+ALTER TABLE hms.roles add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgId);
+
+alter table hms.role_menu_mapping add column orgid int4 default 0;
+
+ALTER TABLE hms.role_menu_mapping add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgId);

@@ -27,51 +27,58 @@ namespace Models.DB
     public class RoleMenuMapping
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)] // Based on your SQL 'NOT NULL' without Identity
         [Column("mapping_id")]
-        [SwaggerSchema("Mapping ID is required.")]
         public int MappingId { get; set; }
 
+        [Required]
         [Column("role_id")]
-        [SwaggerSchema("Role ID is required.")]
         public int RoleId { get; set; }
 
+        [Required]
         [Column("menu_id")]
-        [SwaggerSchema("Menu ID is required.")]
         public int MenuId { get; set; }
 
         [Column("is_visible")]
-        [SwaggerSchema("IsVisible is required.")]
         public bool IsVisible { get; set; }
 
         [Column("is_enabled")]
-        [SwaggerSchema("IsEnabled is required.")]
         public bool IsEnabled { get; set; }
 
+        [Required]
+        [MaxLength(100)]
         [Column("created_by")]
-        [StringLength(100)]
-        [SwaggerSchema("CreatedBy is required.")]
-        public string CreatedBy { get; set; } = null!;
+        public string CreatedBy { get; set; } = string.Empty;
 
         [Column("created_date")]
-        [SwaggerSchema("CreatedDate is required.")]
         public DateTime CreatedDate { get; set; }
 
+        [MaxLength(100)]
         [Column("modified_by")]
-        [StringLength(100)]
         public string? ModifiedBy { get; set; }
 
         [Column("modified_date")]
         public DateTime? ModifiedDate { get; set; }
 
         [Column("rowversion")]
-        [ConcurrencyCheck]
         public int? RowVersion { get; set; }
 
-        // Optional: Navigation properties for JOIN support
-        public Role? Role { get; set; }
-        public MenuMaster? Menu { get; set; }
-    }
+        // New column per schema: orgid int4 DEFAULT 0 NULL
+        [Column("orgid")]
+        public int? OrgId { get; set; } = 0;
+        // --- Navigation Properties ---
 
+        [ForeignKey("RoleId")]
+        public virtual Role? Role { get; set; }
+
+        [ForeignKey("MenuId")]
+        public virtual MenuMaster? Menu { get; set; }
+        // --- Navigation Properties ---
+
+        [ForeignKey("OrgId")]
+        public virtual Organisation? Organisation { get; set; }
+
+    }
     public class MenuRoleMappingDto
     {
         public int MenuId { get; set; }

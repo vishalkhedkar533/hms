@@ -449,6 +449,8 @@ namespace SharedModels.BackEndCalculation
         public string? CandidateTypeDesc { get; set; }
         public string? CommissionClassDesc { get; set; }
         public string? AgentTypeDesc { get; set; }
+        public string? BranchDesc { get; set; }
+
     }
     public class Address
     {

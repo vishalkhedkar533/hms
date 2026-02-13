@@ -43,6 +43,7 @@ namespace Models.DTO
         public List<Role>? roles { get; set; } = null;
         public List<MenuAccessDto>? MenuAccessList { get; set; } = null;
         public List<UserListDto>? UserList { get; set; } = null;
+        public List<UserRoleMapping>? UserRoleMapping { get; set; } = null;
         public FileUploadResponse? fileUpload { get; set; } = null;
     }
 

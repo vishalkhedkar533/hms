@@ -211,7 +211,7 @@ namespace HMS.Controllers
                 return StatusCode(500, response);
             }
         }
-        [HttpPost("Role/GetMenuAccess/{roleId}")]
+        [HttpPost("Role/MenuAccess/{roleId}")]
         [MenuAuthorize(1001)]
         public async Task<ActionResult<HmsResponse>> RoleDetails([FromRoute] int roleId)
         {
@@ -228,16 +228,35 @@ namespace HMS.Controllers
                     return NotFound(response);
                 }
 
+                var menuAccessList = await (from mm in _context.MenuMasters.AsNoTracking()
+                                            join parent in _context.MenuMasters.AsNoTracking()
+                                                on mm.ParentMenuId equals parent.MenuId into parentJoin
+                                            from parentMenu in parentJoin.DefaultIfEmpty()
+                                            join rmm in _context.RoleMenuMapping
+                                                .AsNoTracking()
+                                                .Where(r => r.RoleId == roleId 
+                                                && r.OrgId == orgId)
+                                                on mm.MenuId equals rmm.MenuId into rmmJoin
+                                            from mapping in rmmJoin.DefaultIfEmpty()
+                                            select new MenuAccessDto
+                                            {
+                                                MenuId = mm.MenuId,
+                                                MenuName = mm.MenuName,
+                                                ParentMenuId = parentMenu != null ? (int?)parentMenu.MenuId : null,
+                                                ParentMenuName = parentMenu != null ? parentMenu.MenuName : null,
+                                                HasAccess = mapping != null
+                                            })
+                                           .ToListAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
-                response.responseBody.roles = new List<Role> { role };
+                response.responseBody.MenuAccessList = menuAccessList;
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to delete role");
+                _logger.LogError(ex, "Failed to fetch menu access for role {RoleId}", roleId);
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Internal server error.";
                 return StatusCode(500, response);
@@ -245,7 +264,7 @@ namespace HMS.Controllers
         }
         [HttpPost("Role/UserList/{roleId}")]
         [MenuAuthorize(1001)]
-        public async Task<ActionResult<HmsResponse>> GetMenuAccessForRole([FromRoute] int roleId)
+        public async Task<ActionResult<HmsResponse>> GetUserAccessForRole([FromRoute] int roleId)
         {
             var hMSResponse = new HmsResponse();
             try

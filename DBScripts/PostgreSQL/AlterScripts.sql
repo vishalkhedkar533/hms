@@ -475,5 +475,17 @@ ALTER TABLE hms.roles add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES 
 alter table hms.role_menu_mapping add column orgid int4 default 0;
 ALTER TABLE hms.role_menu_mapping add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgId);
 
-alter table hms.user_role_mapping add column orgid int4 default 0;
+alter table hms.user_role_mapping add column orgid int4 default 0;	
 ALTER TABLE hms.user_role_mapping add CONSTRAINT fk_role_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgId);
+
+ALTER TABLE hmsmaster.branch_master DROP CONSTRAINT branch_uq;
+DROP INDEX hmsmaster.branch_uq;
+
+CREATE UNIQUE INDEX branch_uq ON hmsmaster.branch_master USING btree (orgid, branch_code,location_master_id);
+
+alter table hmsmaster.designation_master add column sub_channel_id int8;
+ALTER TABLE hmsmaster.subchannel_master add CONSTRAINT fk_des_subchan 
+FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id);
+
+ALTER TABLE hmsmaster.designation_master DROP CONSTRAINT designation_master_uq;
+ALTER TABLE hmsmaster.designation_master ADD CONSTRAINT designation_master_uq UNIQUE (designation_code,channel_id,sub_channel_id);

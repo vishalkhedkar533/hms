@@ -2334,4 +2334,3 @@ FROM json_tree
 WHERE lvl = 1;
 $function$
 ;
-

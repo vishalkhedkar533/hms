@@ -489,3 +489,15 @@ FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_
 
 ALTER TABLE hmsmaster.designation_master DROP CONSTRAINT designation_master_uq;
 ALTER TABLE hmsmaster.designation_master ADD CONSTRAINT designation_master_uq UNIQUE (designation_code,channel_id,sub_channel_id);
+
+CREATE SEQUENCE hms.rolemapping_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE; 
+
+ALTER TABLE hms.role_menu_mapping 
+    ALTER COLUMN mapping_id SET DEFAULT nextval('hms.rolemapping_seq'::regclass),
+    ALTER COLUMN mapping_id SET NOT NULL;

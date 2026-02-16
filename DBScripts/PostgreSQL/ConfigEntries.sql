@@ -201,19 +201,6 @@ VALUES (2, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''FI
 
 
 
-INSERT INTO hms.role_master 
-(role_id, role_name, description, is_system_role, is_active, created_by, created_date, rowversion)
-VALUES
-(101, 'DOPS Processor', 'Entry-level operations; data entry and document upload', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(102, 'DOPS Approver', 'Operations supervisor; final verification of policy data', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(103, 'ROM', 'Regional Operations Manager; oversees ops across multiple branches', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(104, 'BM', 'Branch Manager; responsible for branch targets and administration', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(105, 'RH', 'Regional Head; strategic lead for a specific geographic region', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(106, 'Channel Head', 'National head of a specific sales distribution channel', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(107, 'ECOM Specialist', 'Handles digital sales and online policy management', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(108, 'BO Admin', 'Branch Office Administrator; handles local office logistics', false, true, 'admin', CURRENT_TIMESTAMP, 1);
-
-
 INSERT INTO hmsmaster.location_master (channel_id, sub_channel_id, orgid, location_code, 
 location_desc, is_active, created_by, created_date)
  VALUES 
@@ -300,19 +287,3 @@ values
 
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
 VALUES (2, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');
-
-
-INSERT INTO hms.menu_master
-(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
-VALUES(1005, 'Access Management', null, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
-
-INSERT INTO hms.menu_master
-(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
-VALUES(1006, 'Fetct List', 1005, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
-
-update hms.menu_master set menu_name = 'Fetch Roles' where menu_id= 1006;
-
-INSERT INTO hms.menu_master
-(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
-VALUES(1007, 'Create Role', 1005, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
-

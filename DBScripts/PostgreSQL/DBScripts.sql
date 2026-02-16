@@ -861,18 +861,7 @@ CREATE TABLE hms.designation_master (
         REFERENCES hms.channel_master (channel_code)
 );
 
-CREATE TABLE hms.ROLE_MASTER (
-    ROLE_ID          INTEGER PRIMARY KEY,
-    ROLE_NAME        VARCHAR(100) NOT NULL,
-    DESCRIPTION      TEXT,
-    IS_SYSTEM_ROLE   BOOLEAN NOT NULL,
-    IS_ACTIVE        BOOLEAN NOT NULL,
-    CREATED_BY       VARCHAR(100) NOT NULL,
-    CREATED_DATE     TIMESTAMP NOT NULL,
-    MODIFIED_BY      VARCHAR(100),
-    MODIFIED_DATE    TIMESTAMP,
-    ROWVERSION       INTEGER
-);
+DROP TABLE hms.ROLE_MASTER;
 
 CREATE TABLE hms.AGENT_TYPE_MASTER (
     AGENT_TYPE_CODE         VARCHAR(20) PRIMARY KEY,
@@ -2290,7 +2279,7 @@ WITH RECURSIVE hierarchy_cte AS (
     WHERE gh.channel_id = p_channel_id 
           AND (p_subchannel_id IS NULL OR gh.sub_channel_id = p_subchannel_id)
           AND gh.orgid = p_orgid::int
-          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text)::lquery
+          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text || '.*')::lquery
 ),
 json_tree AS (
     -- Step 2: Leaf node (Agent)
@@ -2334,3 +2323,81 @@ FROM json_tree
 WHERE lvl = 1;
 $function$
 ;
+
+CREATE SEQUENCE hmsmaster.uicontrolmenu_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+--drop table hmsmaster.uicontrol_master;
+create table hmsmaster.uicontrol_master ( 
+	uicontrolmenu_id int8,
+	ui_object_name varchar(50) not null,
+	hierarchy_path public.ltree NULL,
+	constraint pk_uicontrol_master primary key (uicontrolmenu_id)
+);
+
+CREATE SEQUENCE hmsmaster.org_uicontrol_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+--drop table hmsmaster.org_uicontrol;
+create table hmsmaster.org_uicontrol(
+	org_uicontrol_id int8 default nextval('hmsmaster.org_uicontrol_id_seq'::regclass) not null,
+	orgid int4 not null,
+	uicontrolmenu_id int8 not null ,
+	role_id int8 not null,
+	allow_read bool not null default false,
+	allow_edit bool not null default false,
+	render_control bool null default false,
+	access_granted_on timestamp ,
+	access_granted_by int4 ,
+	CONSTRAINT fk_uictrl_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+	CONSTRAINT fk_uictrl_master FOREIGN KEY (uicontrolmenu_id) REFERENCES hmsmaster.uicontrol_master(uicontrolmenu_id),
+	CONSTRAINT fk_uictrl_role FOREIGN KEY (role_id) REFERENCES hms.roles(role_id),
+	CONSTRAINT fk_uictrl_user FOREIGN KEY (access_granted_by) REFERENCES hms."user"(user_id)
+);
+
+--DROP FUNCTION hms.get_ui_control_hierarchy(int8, public.ltree,bool);
+
+CREATE OR REPLACE FUNCTION hms.get_ui_control_hierarchy(
+    p_orgid bigint, 
+    p_parent_path public.ltree DEFAULT null
+)
+ RETURNS jsonb
+ LANGUAGE sql
+AS $function$
+SELECT 
+    COALESCE(
+        jsonb_agg(
+            jsonb_build_object(
+                'name', m.ui_object_name,
+                'menu_id', m.uicontrolmenu_id,
+                'allow_Edit', COALESCE(ouc.allow_edit, false),
+                'allow_Read', COALESCE(ouc.allow_read, false),
+                'render_control', COALESCE(ouc.render_control, false),
+                'access_granted_by', ouc.access_granted_by,
+                'access_granted_on', ouc.access_granted_on,
+                -- Fixed: Recursive call must pass p_IncludeAll
+                'children', COALESCE(hms.get_ui_control_hierarchy(p_orgid, m.hierarchy_path), '[]'::jsonb)
+            )
+        ), 
+        '[]'::jsonb
+    )
+FROM hmsmaster.uicontrol_master m
+LEFT JOIN hmsmaster.org_uicontrol ouc 
+    ON m.uicontrolmenu_id = ouc.uicontrolmenu_id 
+    AND ouc.orgid = p_orgid
+WHERE CASE 
+            WHEN p_parent_path IS NULL THEN public.nlevel(m.hierarchy_path) = 1
+            ELSE m.hierarchy_path OPERATOR(public.<@) p_parent_path 
+                 AND public.nlevel(m.hierarchy_path) = public.nlevel(p_parent_path) + 1
+        END;
+$function$;

@@ -861,18 +861,7 @@ CREATE TABLE hms.designation_master (
         REFERENCES hms.channel_master (channel_code)
 );
 
-CREATE TABLE hms.ROLE_MASTER (
-    ROLE_ID          INTEGER PRIMARY KEY,
-    ROLE_NAME        VARCHAR(100) NOT NULL,
-    DESCRIPTION      TEXT,
-    IS_SYSTEM_ROLE   BOOLEAN NOT NULL,
-    IS_ACTIVE        BOOLEAN NOT NULL,
-    CREATED_BY       VARCHAR(100) NOT NULL,
-    CREATED_DATE     TIMESTAMP NOT NULL,
-    MODIFIED_BY      VARCHAR(100),
-    MODIFIED_DATE    TIMESTAMP,
-    ROWVERSION       INTEGER
-);
+DROP TABLE hms.ROLE_MASTER;
 
 CREATE TABLE hms.AGENT_TYPE_MASTER (
     AGENT_TYPE_CODE         VARCHAR(20) PRIMARY KEY,
@@ -2376,54 +2365,39 @@ create table hmsmaster.org_uicontrol(
 	CONSTRAINT fk_uictrl_user FOREIGN KEY (access_granted_by) REFERENCES hms."user"(user_id)
 );
 
---DROP FUNCTION hms.get_ui_control_hierarchy
+--DROP FUNCTION hms.get_ui_control_hierarchy(int8, public.ltree,bool);
 
-CREATE OR REPLACE FUNCTION hms.get_ui_control_hierarchy(p_orgid bigint)
+CREATE OR REPLACE FUNCTION hms.get_ui_control_hierarchy(
+    p_orgid bigint, 
+    p_parent_path public.ltree DEFAULT null
+)
  RETURNS jsonb
  LANGUAGE sql
 AS $function$
-WITH RECURSIVE hierarchy_cte AS (
-    -- Step 1: Get the path from hms schema
-    SELECT 
-        uh.hierarchy_path,
-        string_to_array(uh.hierarchy_path::TEXT, '.') AS labels
-    FROM hmsmaster.uicontrol_master uh
-),
-json_tree AS (
-    SELECT 
-        array_length(labels, 1) AS lvl,
-        jsonb_build_object(
-        	'allow_Read', ouc.allow_read,
-        	'allow_Edit', ouc.allow_edit,
-        	'render_control', ouc.render_control,
-        	'access_granted_on', ouc.access_granted_on,
-        	'access_granted_by', ouc.access_granted_by, 
-            'parentLocation', NULL -- Matches DTO Property Name
-        ) AS node,
-        labels
-    FROM hierarchy_cte h
-    LEFT JOIN hmsmaster.org_uicontrol ouc ON ouc.uicontrolmenu_id = h.labels[array_length(h.labels, 1)]::int8
+SELECT 
+    COALESCE(
+        jsonb_agg(
+            jsonb_build_object(
+                'name', m.ui_object_name,
+                'menu_id', m.uicontrolmenu_id,
+                'allow_Edit', COALESCE(ouc.allow_edit, false),
+                'allow_Read', COALESCE(ouc.allow_read, false),
+                'render_control', COALESCE(ouc.render_control, false),
+                'access_granted_by', ouc.access_granted_by,
+                'access_granted_on', ouc.access_granted_on,
+                -- Fixed: Recursive call must pass p_IncludeAll
+                'children', COALESCE(hms.get_ui_control_hierarchy(p_orgid, m.hierarchy_path), '[]'::jsonb)
+            )
+        ), 
+        '[]'::jsonb
+    )
+FROM hmsmaster.uicontrol_master m
+LEFT JOIN hmsmaster.org_uicontrol ouc 
+    ON m.uicontrolmenu_id = ouc.uicontrolmenu_id 
     AND ouc.orgid = p_orgid
-    UNION ALL
-    -- Step 3: Recursive parents
-    SELECT 
-        j.lvl - 1,
-        jsonb_build_object(
-        	'allow_Read', ouc.allow_read,
-        	'allow_Edit', ouc.allow_edit,
-        	'render_control', ouc.render_control,
-        	'access_granted_on', ouc.access_granted_on,
-        	'access_granted_by', ouc.access_granted_by, 
-            'parentLocation', j.node -- Matches DTO Property Name
-        ) AS node,
-        j.labels
-    FROM json_tree j
-    LEFT JOIN hmsmaster.org_uicontrol ouc ON ouc.uicontrolmenu_id = j.labels[j.lvl - 1]::int8 AND ouc.orgid = p_orgid 
-    WHERE j.lvl > 1
-)
-SELECT jsonb_agg(node)
-FROM json_tree
-WHERE lvl = 1;
-$function$
-;
-select * from hms.get_ui_control_hierarchy(2);
+WHERE CASE 
+            WHEN p_parent_path IS NULL THEN public.nlevel(m.hierarchy_path) = 1
+            ELSE m.hierarchy_path OPERATOR(public.<@) p_parent_path 
+                 AND public.nlevel(m.hierarchy_path) = public.nlevel(p_parent_path) + 1
+        END;
+$function$;

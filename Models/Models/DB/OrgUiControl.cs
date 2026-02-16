@@ -19,13 +19,6 @@ namespace Models.DB
         [Column("uicontrolmenu_id")]
         public long UiControlMenuId { get; set; }
 
-        /// <summary>
-        /// Maps to PostgreSQL 'ltree'. 
-        /// Requires Npgsql.EntityFrameworkCore.PostgreSQL for proper mapping.
-        /// </summary>
-        [Column("hierarchy_path", TypeName = "ltree")]
-        public string? HierarchyPath { get; set; }
-
         [Required]
         [Column("role_id")]
         public long RoleId { get; set; }
@@ -50,10 +43,18 @@ namespace Models.DB
         // --- Navigation Properties ---
 
         [ForeignKey("UiControlMenuId")]
-        public virtual UiControlMaster? UiControlMaster { get; set; }
+        public virtual UiControlMaster UiControlMaster { get; set; } = null!;
 
-        // Note: You would typically have models for Organisation, Role, and User 
-        // to link these foreign keys as virtual properties.
+        // Assuming you have models for these tables in their respective namespaces
+        /*
+        [ForeignKey("OrgId")]
+        public virtual Organisation Organisation { get; set; } = null!;
+
+        [ForeignKey("RoleId")]
+        public virtual Role Role { get; set; } = null!;
+
+        [ForeignKey("AccessGrantedBy")]
+        public virtual User? GrantedByUser { get; set; }
+        */
     }
-
 }

@@ -27,5 +27,18 @@ namespace Models.DTO
 
         [JsonPropertyName("children")]
         public List<UIMenuHeirarchyDTO> Children { get; set; } = new();
+        public void FilterActive()
+        {
+            if (Children == null || Children.Count == 0) return;
+
+            // Remove direct children that are inactive
+            Children = Children.Where(c => c.RenderControl).ToList();
+
+            // Recurse into the remaining children
+            foreach (var child in Children)
+            {
+                child.FilterActive();
+            }
+        }
     }
 }

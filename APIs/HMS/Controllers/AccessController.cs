@@ -11,6 +11,7 @@ using Models.DTO;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Security.Claims;
 
 namespace HMS.Controllers
 {
@@ -635,9 +636,6 @@ namespace HMS.Controllers
                 if (orgUiControlDTO == null) return BadRequest("Payload is null.");
 
                 orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-                var AccessGrantedBy = _context.Users.FirstOrDefault(x => 
-                x.Username == (HttpContext.User.Identity.Name ?? string.Empty) 
-                && x.OrgId == orgId)?.UserId;
 
                 // 1. Try to find an existing record based on the ID (if provided) 
                 // or by the unique combination of Org + Menu + Role
@@ -654,7 +652,7 @@ namespace HMS.Controllers
                     existingRecord.RenderControl = orgUiControlDTO.RenderControl;
 
                     // Only update 'GrantedBy' if the DTO provides a new value
-                    existingRecord.AccessGrantedBy = AccessGrantedBy;
+                    existingRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
                     existingRecord.AccessGrantedOn = DateTime.UtcNow;
 
                     _context.OrgUiControls.Update(existingRecord);
@@ -671,12 +669,12 @@ namespace HMS.Controllers
                         AllowEdit = orgUiControlDTO.AllowEdit,
                         RenderControl = orgUiControlDTO.RenderControl,
                         AccessGrantedOn = DateTime.UtcNow,
-                        AccessGrantedBy = AccessGrantedBy
+                        AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier))
                     };
                     _context.OrgUiControls.Add(newRecord);
                 }
 
-                _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
 
@@ -691,8 +689,8 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("UIControlAccess")]
-        [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetUIControlAccess([FromBody] int orgID)
+        //[MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        public async Task<IActionResult> GetUIControlAccess()
         {
             HmsResponse hMSResponse = new HmsResponse();
             long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
@@ -717,6 +715,9 @@ namespace HMS.Controllers
                             NullValueHandling = NullValueHandling.Ignore,
                             ContractResolver = new CamelCasePropertyNamesContractResolver()
                         });
+
+                    // If a root itself should be hidden if RenderControl is false:
+                    //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
 
                     hMSResponse.responseHeader.ErrorCode = 1101;
                     hMSResponse.responseHeader.ErrorMessage = "SUCCESS";

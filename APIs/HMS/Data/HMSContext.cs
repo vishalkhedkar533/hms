@@ -19,7 +19,6 @@ namespace HMS.Data
         public DbSet<AgentTerminationRequest> AgentTerminationRequest => Set<AgentTerminationRequest>();
         public DbSet<Agent> agent => Set<Agent>();
         public DbSet<AgentAuditTrail> AgentAuditTrail => Set<AgentAuditTrail>();
-
         public DbSet<HMSDashboard> HMSDashboard => Set<HMSDashboard>();
         public DbSet<ChannelDetails> ChannelDetails => Set<ChannelDetails>();
         public DbSet<StatusDetails> StatusDetails => Set<StatusDetails>();
@@ -49,6 +48,7 @@ namespace HMS.Data
         public DbSet<JobExeHist> JobExeHists => Set<JobExeHist>();
         public DbSet<JobExtns> JobExtns => Set<JobExtns>();
         public DbSet<LocationMaster> LocationMasters => Set<LocationMaster>();
+        public DbSet<OrgUiControl> OrgUiControls => Set<OrgUiControl>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -287,3 +287,28 @@ values
 
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
 VALUES (2, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');
+
+
+select * from hmsmaster.uicontrol_master
+
+insert into hmsmaster.uicontrol_master(ui_object_name,hierarchy_path)
+values
+('Agent','1');
+insert into hmsmaster.uicontrol_master(ui_object_name,hierarchy_path)
+values
+('Channel','1.2'),
+('SubChannel','1.3'),
+('Location','1.4'),
+('Designation','1.5');
+
+insert into hmsmaster.uicontrol_master(ui_object_name,hierarchy_path)
+values
+('Contact Information','1.6'),
+('Mobile No','1.6.7'),
+('Home No','1.6.8'),
+('Work No','1.6.9'),
+('Email ID','1.6.10'),
+('Contact Person Name','1.6.11'),
+('Contact Person Mobile No','1.6.12'),
+('Contact Person Email ID','1.6.13'),
+('Contact Person Designation','1.6.10');

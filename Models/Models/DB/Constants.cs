@@ -20,5 +20,6 @@
         public const Int32 RemoveUserFromRole = 1012;
         public const Int32 GrantMenuAccess = 1013;
         public const Int32 RevokeMenuAccess = 1014;
+        public const Int32 UpdateUIAccess = 1014;
     }
 }

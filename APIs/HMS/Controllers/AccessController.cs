@@ -1,6 +1,7 @@
 ﻿using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
+using Humanizer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -618,5 +619,71 @@ namespace HMS.Controllers
                 return StatusCode(503, hMSResponse);
             }
         }
+        [HttpPost("Role/UI/Control/UpdateAccess")]
+        [MenuAuthorize(AuthorisationConstants.UpdateUIAccess)]
+        public async Task<ActionResult<HmsResponse>> ListControl([FromBody] OrgUiControlDTO orgUiControlDTO)
+        {
+            var hMSResponse = new HmsResponse();
+            try
+            {
+                if (orgUiControlDTO == null) return BadRequest("Payload is null.");
+
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                var AccessGrantedBy = _context.Users.FirstOrDefault(x => 
+                x.Username == (HttpContext.User.Identity.Name ?? string.Empty) 
+                && x.OrgId == orgId)?.UserId;
+
+                // 1. Try to find an existing record based on the ID (if provided) 
+                // or by the unique combination of Org + Menu + Role
+                var existingRecord = await _context.OrgUiControls
+                    .FirstOrDefaultAsync(x => x.OrgId == orgId
+                                         && x.UiControlMenuId == orgUiControlDTO.UiControlMenuId
+                                         && x.RoleId == orgUiControlDTO.RoleId);
+
+                if (existingRecord != null)
+                {
+                    // --- UPDATE LOGIC ---
+                    existingRecord.AllowRead = orgUiControlDTO.AllowRead;
+                    existingRecord.AllowEdit = orgUiControlDTO.AllowEdit;
+                    existingRecord.RenderControl = orgUiControlDTO.RenderControl;
+
+                    // Only update 'GrantedBy' if the DTO provides a new value
+                    existingRecord.AccessGrantedBy = AccessGrantedBy;
+                    existingRecord.AccessGrantedOn = DateTime.UtcNow;
+
+                    _context.OrgUiControls.Update(existingRecord);
+                }
+                else
+                {
+                    // --- INSERT LOGIC ---
+                    var newRecord = new OrgUiControl
+                    {
+                        OrgId = orgId,
+                        UiControlMenuId = orgUiControlDTO.UiControlMenuId,
+                        RoleId = orgUiControlDTO.RoleId,
+                        AllowRead = orgUiControlDTO.AllowRead,
+                        AllowEdit = orgUiControlDTO.AllowEdit,
+                        RenderControl = orgUiControlDTO.RenderControl,
+                        AccessGrantedOn = DateTime.UtcNow,
+                        AccessGrantedBy = AccessGrantedBy
+                    };
+                    _context.OrgUiControls.Add(newRecord);
+                }
+
+                _context.SaveChangesAsync();
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = "FAILED";
+                _logger.LogError(ex, $"Failed to fetch menu access for Menu {roleMenuDTO.MenuId} : Role {roleMenuDTO.RoleId}");
+                return StatusCode(503, hMSResponse);
+            }
+        }
+
     }
 }

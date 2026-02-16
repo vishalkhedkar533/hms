@@ -25,7 +25,7 @@ namespace HMS.Controllers
             _authClaimService = authClaimService;
         }
         [HttpPost("Role/List")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.FetchRoles)]
         public async Task<ActionResult<HmsResponse>> GetRoles()
         {
             var response = new HmsResponse();
@@ -46,7 +46,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/Create")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.CreateRole)]
         public async Task<ActionResult<HmsResponse>> CreateRole([FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
@@ -106,7 +106,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/Update/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.DeleteRole)]
         public async Task<ActionResult<HmsResponse>> UpdateRole([FromRoute] int roleId, [FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
@@ -180,7 +180,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/Delete/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.DeleteRole)]
         public async Task<ActionResult<HmsResponse>> DeleteRole([FromRoute] int roleId)
         {
             var response = new HmsResponse();
@@ -212,7 +212,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/MenuAccess/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.GetMenuAccessForRole)]
         public async Task<ActionResult<HmsResponse>> RoleDetails([FromRoute] int roleId)
         {
             var response = new HmsResponse();
@@ -263,7 +263,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/UserList/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.GetUserUnderRole)]
         public async Task<ActionResult<HmsResponse>> GetUserAccessForRole([FromRoute] int roleId)
         {
             var hMSResponse = new HmsResponse();
@@ -300,7 +300,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Role/AddUser")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.AddUserUnderRole)]
         public async Task<ActionResult<HmsResponse>> AddUserToRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
         {
             var hMSResponse = new HmsResponse();
@@ -397,7 +397,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Role/RemoveUser")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.RemoveUserFromRole)]
         public async Task<ActionResult<HmsResponse>> RemoveUserFromRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
         {
             var hMSResponse = new HmsResponse();
@@ -462,7 +462,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/MenuAccess/Grant")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.GrantMenuAccess)]
         public async Task<ActionResult<HmsResponse>> GrantMenuAccess([FromBody] RoleMenuDTO roleMenuDTO )
         {
             var hMSResponse = new HmsResponse();
@@ -555,7 +555,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/MenuAccess/Revoke")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.RevokeMenuAccess)]
         public async Task<ActionResult<HmsResponse>> RevokeMenuAccess([FromBody] RoleMenuDTO roleMenuDTO)
         {
             var hMSResponse = new HmsResponse();

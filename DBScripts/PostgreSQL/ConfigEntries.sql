@@ -291,24 +291,24 @@ VALUES (2, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,
 
 select * from hmsmaster.uicontrol_master
 
-insert into hmsmaster.uicontrol_master(ui_object_name,hierarchy_path)
+insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,hierarchy_path)
 values
-('Agent','1');
-insert into hmsmaster.uicontrol_master(ui_object_name,hierarchy_path)
+(1,'Agent','1');
+insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,hierarchy_path)
 values
-('Channel','1.2'),
-('SubChannel','1.3'),
-('Location','1.4'),
-('Designation','1.5');
+(2,'Channel','1.2'),
+(3,'SubChannel','1.3'),
+(4,'Location','1.4'),
+(5,'Designation','1.5');
 
-insert into hmsmaster.uicontrol_master(ui_object_name,hierarchy_path)
+insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,hierarchy_path)
 values
-('Contact Information','1.6'),
-('Mobile No','1.6.7'),
-('Home No','1.6.8'),
-('Work No','1.6.9'),
-('Email ID','1.6.10'),
-('Contact Person Name','1.6.11'),
-('Contact Person Mobile No','1.6.12'),
-('Contact Person Email ID','1.6.13'),
-('Contact Person Designation','1.6.10');
+(6,'Contact Information','1.6'),
+(7,'Mobile No','1.6.7'),
+(8,'Home No','1.6.8'),
+(9,'Work No','1.6.9'),
+(10,'Email ID','1.6.10'),
+(11,'Contact Person Name','1.6.11'),
+(12,'Contact Person Mobile No','1.6.12'),
+(13,'Contact Person Email ID','1.6.13'),
+(14,'Contact Person Designation','1.6.14');

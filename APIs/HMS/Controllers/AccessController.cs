@@ -1,6 +1,7 @@
 ﻿using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
 using Humanizer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace HMS.Controllers
 {
@@ -19,11 +22,14 @@ namespace HMS.Controllers
         private readonly ILogger<AccessController> _logger;
         private readonly IAuthClaimService _authClaimService;
         private int orgId;
-        public AccessController(HMSContext context, ILogger<AccessController> logger, IAuthClaimService authClaimService)
+        private readonly DatabaseService _db;
+        public AccessController(HMSContext context, ILogger<AccessController> logger, IAuthClaimService authClaimService,
+            DatabaseService db)
         {
             _context = context;
             _logger = logger;
             _authClaimService = authClaimService;
+            _db = db;
         }
         [HttpPost("Role/List")]
         [MenuAuthorize(AuthorisationConstants.FetchRoles)]
@@ -621,7 +627,7 @@ namespace HMS.Controllers
         }
         [HttpPost("Role/UI/Control/UpdateAccess")]
         [MenuAuthorize(AuthorisationConstants.UpdateUIAccess)]
-        public async Task<ActionResult<HmsResponse>> ListControl([FromBody] OrgUiControlDTO orgUiControlDTO)
+        public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] OrgUiControlDTO orgUiControlDTO)
         {
             var hMSResponse = new HmsResponse();
             try
@@ -680,8 +686,54 @@ namespace HMS.Controllers
             {
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
                 hMSResponse.responseHeader.ErrorMessage = "FAILED";
-                _logger.LogError(ex, $"Failed to fetch menu access for Menu {roleMenuDTO.MenuId} : Role {roleMenuDTO.RoleId}");
+                _logger.LogError(ex, $"Failed to Update menu access for RoleID {orgUiControlDTO.RoleId} : MenuID {orgUiControlDTO.UiControlMenuId}");
                 return StatusCode(503, hMSResponse);
+            }
+        }
+        [HttpPost("UIControlAccess")]
+        [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        public async Task<IActionResult> GetUIControlAccess([FromBody] int orgID)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            try
+            {
+                
+                var stringResponse = await _db.ExecuteQueryAsync<string>(
+                    "Master",
+                    "get_ui_control_hierarchy",
+                    new
+                    {
+                        p_orgid = orgId,
+                    });
+
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+                {
+                    var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
+                        stringResponse.FirstOrDefault(),
+                        new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
+
+                    hMSResponse.responseHeader.ErrorCode = 1101;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
+                    return Ok(hMSResponse);
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
+                    return NotFound(hMSResponse);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Occurred In GeoHierarchy");
+                return StatusCode(500, "Internal Server Error");
             }
         }
 

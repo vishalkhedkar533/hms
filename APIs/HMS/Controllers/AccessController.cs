@@ -59,10 +59,10 @@ namespace HMS.Controllers
                     return BadRequest(response);
                 }
 
-                if (!roleDto.Role_ID.HasValue)
+                if (string.IsNullOrEmpty(roleDto.RoleName))
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Role ID is required.";
+                    response.responseHeader.ErrorMessage = "Role Name is required.";
                     return BadRequest(response);
                 }
                 orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");

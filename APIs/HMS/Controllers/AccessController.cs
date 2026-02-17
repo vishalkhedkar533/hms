@@ -687,55 +687,56 @@ namespace HMS.Controllers
         //        return StatusCode(503, hMSResponse);
         //    }
         //}
-        //[HttpPost("UIControlAccess")]
-        ////[MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        //public async Task<IActionResult> GetUIControlAccess()
-        //{
-        //    HmsResponse hMSResponse = new HmsResponse();
-        //    long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+        [HttpPost("UIControlAccess")]
+        //[MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-        //    try
-        //    {
-                
-        //        var stringResponse = await _db.ExecuteQueryAsync<string>(
-        //            "Master",
-        //            "get_ui_control_hierarchy",
-        //            new
-        //            {
-        //                p_orgid = orgId,
-        //            });
+            try
+            {
+                //"Script": "select * from hms.get_ui_control_hierarchy(2, false)"
+                var stringResponse = await _db.ExecuteQueryAsync<string>(
+                    "Master",
+                    "get_ui_control_hierarchy",
+                    new
+                    {
+                        p_orgId = orgId,
+                        p_ShowAll = ShowAll
+                    });
 
-        //        if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
-        //        {
-        //            var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
-        //                stringResponse.FirstOrDefault(),
-        //                new JsonSerializerSettings
-        //                {
-        //                    NullValueHandling = NullValueHandling.Ignore,
-        //                    ContractResolver = new CamelCasePropertyNamesContractResolver()
-        //                });
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+                {
+                    var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
+                        stringResponse.FirstOrDefault(),
+                        new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
 
-        //            // If a root itself should be hidden if RenderControl is false:
-        //            //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
+                    // If a root itself should be hidden if RenderControl is false:
+                    //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
 
-        //            hMSResponse.responseHeader.ErrorCode = 1101;
-        //            hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-        //            hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
-        //            return Ok(hMSResponse);
-        //        }
-        //        else
-        //        {
-        //            hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
-        //            hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
-        //            return NotFound(hMSResponse);
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Error Occurred In GeoHierarchy");
-        //        return StatusCode(500, "Internal Server Error");
-        //    }
-        //}
+                    hMSResponse.responseHeader.ErrorCode = 1101;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
+                    return Ok(hMSResponse);
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
+                    return NotFound(hMSResponse);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Occurred In GeoHierarchy");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
 
     }
 }

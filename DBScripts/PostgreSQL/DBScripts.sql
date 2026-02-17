@@ -2347,8 +2347,26 @@ CREATE SEQUENCE hmsmaster.uicontrolmenu_id_seq
 create table hmsmaster.uicontrol_master ( 
 	uicontrolmenu_id int8,
 	ui_object_name varchar(50) not null,
-	hierarchy_path public.ltree NULL,
+	ui_object_type varchar(50) not null default 'not provided',
 	constraint pk_uicontrol_master primary key (uicontrolmenu_id)
+);
+
+CREATE SEQUENCE hmsmaster.uicontrol_hierarchy_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+--DROP TABLE hmsmaster.uicontrol_hierarchy;
+CREATE TABLE hmsmaster.uicontrol_hierarchy (
+	hierarchy_id int8 DEFAULT nextval('hmsmaster.uicontrol_hierarchy_id_seq'::regclass) NOT NULL,
+	uicontrolmenu_id int8 not null,
+	hierarchy_path public.ltree null,
+	constraint pk_uicontrol_hierarchy primary key (hierarchy_id),
+	constraint control_heirarchy_uq unique (hierarchy_path),
+	CONSTRAINT fk_uictrlh FOREIGN KEY (uicontrolmenu_id) REFERENCES hmsmaster.uicontrol_master(uicontrolmenu_id)
 );
 
 CREATE SEQUENCE hmsmaster.org_uicontrol_id_seq
@@ -2363,67 +2381,84 @@ CREATE SEQUENCE hmsmaster.org_uicontrol_id_seq
 create table hmsmaster.org_uicontrol(
 	org_uicontrol_id int8 default nextval('hmsmaster.org_uicontrol_id_seq'::regclass) not null,
 	orgid int4 not null,
-	uicontrolmenu_id int8 not null ,
+	hierarchy_id int8 not null ,
 	role_id int8 not null,
-	allow_read bool not null default false,
 	allow_edit bool not null default false,
 	render_control bool null default false,
 	access_granted_on timestamp ,
 	access_granted_by int4 ,
 	CONSTRAINT fk_uictrl_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
-	CONSTRAINT fk_uictrl_master FOREIGN KEY (uicontrolmenu_id) REFERENCES hmsmaster.uicontrol_master(uicontrolmenu_id),
+	CONSTRAINT fk_uictrl_master FOREIGN KEY (hierarchy_id) REFERENCES hmsmaster.uicontrol_hierarchy(hierarchy_id),
 	CONSTRAINT fk_uictrl_role FOREIGN KEY (role_id) REFERENCES hms.roles(role_id),
 	CONSTRAINT fk_uictrl_user FOREIGN KEY (access_granted_by) REFERENCES hms."user"(user_id)
 );
 
---DROP FUNCTION hms.get_ui_control_hierarchy
 
-CREATE OR REPLACE FUNCTION hms.get_ui_control_hierarchy(p_orgid bigint)
+-- DROP FUNCTION hms.get_ui_control_hierarchy(int4);
+CREATE OR REPLACE FUNCTION hms.get_ui_control_hierarchy(p_orgId integer, p_showall bool default true)
  RETURNS jsonb
  LANGUAGE sql
 AS $function$
-WITH RECURSIVE hierarchy_cte AS (
-    -- Step 1: Get the path from hms schema
-    SELECT 
-        uh.hierarchy_path,
-        string_to_array(uh.hierarchy_path::TEXT, '.') AS labels
-    FROM hmsmaster.uicontrol_master uh
+WITH RECURSIVE hierarchy AS (
+    -- Step 1: get all paths and convert to array for index-based access
+    SELECT
+        uch.hierarchy_path,
+        uch.hierarchy_id,
+        string_to_array(uch.hierarchy_path::TEXT, '.') AS labels
+    FROM hmsmaster.uicontrol_hierarchy uch
 ),
 json_tree AS (
-    SELECT 
+    -- Step 2: Anchor - Start from the deepest node (the leaf)
+    SELECT
         array_length(labels, 1) AS lvl,
+        labels[array_length(labels,1)]::INT AS control_id,
+        h.hierarchy_id, -- Expose this so the recursive step can see it
         jsonb_build_object(
-        	'allow_Read', ouc.allow_read,
-        	'allow_Edit', ouc.allow_edit,
-        	'render_control', ouc.render_control,
-        	'access_granted_on', ouc.access_granted_on,
-        	'access_granted_by', ouc.access_granted_by, 
-            'parentLocation', NULL -- Matches DTO Property Name
+            'menuID', ouh.uicontrolmenu_id,
+            'menuName', cm.ui_object_name,
+            'menuType', cm.ui_object_type,
+            'allowEdit', ocm.allow_edit,
+            'renderControl', ocm.render_control,
+            'accessGrantedOn', ocm.access_granted_on,
+            'accessGrantedBy', ocm.access_granted_by,
+            'hierarchyId', h.hierarchy_id,
+            'childControl', NULL
         ) AS node,
         labels
-    FROM hierarchy_cte h
-    LEFT JOIN hmsmaster.org_uicontrol ouc ON ouc.uicontrolmenu_id = h.labels[array_length(h.labels, 1)]::int8
-    AND ouc.orgid = p_orgid
+    FROM hierarchy h
+    JOIN hmsmaster.uicontrol_hierarchy ouh ON ouh.uicontrolmenu_id = labels[array_length(labels,1)]::INT
+    JOIN hmsmaster.uicontrol_master cm on ouh.uicontrolmenu_id = cm.uicontrolmenu_id
+    LEFT JOIN hmsmaster.org_uicontrol ocm on h.hierarchy_id = ocm.hierarchy_id and ocm.orgid = p_orgId
+    -- Filter based on p_showall logic
+    WHERE (p_showall = true OR ocm.render_control = true)
+
     UNION ALL
-    -- Step 3: Recursive parents
-    SELECT 
+
+    -- Step 3: Recursive - Build parents and nest the previous 'node' as 'childControl'
+    SELECT
         j.lvl - 1,
+        labels[j.lvl - 1]::INT AS control_id,
+        j.hierarchy_id, -- Pass the leaf's hierarchy_id up the chain
         jsonb_build_object(
-        	'allow_Read', ouc.allow_read,
-        	'allow_Edit', ouc.allow_edit,
-        	'render_control', ouc.render_control,
-        	'access_granted_on', ouc.access_granted_on,
-        	'access_granted_by', ouc.access_granted_by, 
-            'parentLocation', j.node -- Matches DTO Property Name
+            'menuID', cm.uicontrolmenu_id,
+            'menuName', cm.ui_object_name,
+            'menuType', cm.ui_object_type,
+            'allowEdit', ocm.allow_edit,
+            'renderControl', ocm.render_control,
+            'accessGrantedOn', ocm.access_granted_on,
+            'accessGrantedBy', ocm.access_granted_by,
+            'hierarchyId', j.hierarchy_id,
+            'childControl', j.node -- Nesting the child here
         ) AS node,
-        j.labels
+        labels
     FROM json_tree j
-    LEFT JOIN hmsmaster.org_uicontrol ouc ON ouc.uicontrolmenu_id = j.labels[j.lvl - 1]::int8 AND ouc.orgid = p_orgid 
+    JOIN hmsmaster.uicontrol_master cm ON cm.uicontrolmenu_id = labels[j.lvl - 1]::INT
+    LEFT JOIN hmsmaster.org_uicontrol ocm on j.hierarchy_id = ocm.hierarchy_id and ocm.orgid = p_orgId
     WHERE j.lvl > 1
+    AND (p_showall = true OR ocm.render_control = true)
 )
+-- Step 4: Final output - Only take the top-level nodes (lvl 1)
 SELECT jsonb_agg(node)
 FROM json_tree
 WHERE lvl = 1;
-$function$
-;
-select * from hms.get_ui_control_hierarchy(2);
+$function$;

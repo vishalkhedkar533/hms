@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using System.Security.Claims;
 
 namespace HMS.Controllers
 {
@@ -22,9 +23,10 @@ namespace HMS.Controllers
         private readonly FileService _fileService;
         private int refreshInterval = 15;
         private readonly HMSContext _context;
-
+        private int orgId;
+        private readonly ILogger<AppMastersController> _logger;
         public AppMastersController(HMSContext context, GenericCacheService cacheService, IConfiguration configuration
-            , IAuthClaimService authClaimService, FileService fileService)
+            , IAuthClaimService authClaimService, FileService fileService, ILogger<AppMastersController> logger)
         {
             _cacheService = cacheService;
             _configuration = configuration;
@@ -32,6 +34,7 @@ namespace HMS.Controllers
             _fileService = fileService;
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
             _context = context;
+            _logger = logger;
         }
 
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
@@ -161,6 +164,96 @@ namespace HMS.Controllers
         //}
 
         private bool IsValidSchema(string schema) => string.Equals(schema, "hmsmaster", StringComparison.OrdinalIgnoreCase);
+
+        // POST: api/hms/channelmaster
+        [HttpPost("Channel/Create")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> Create([FromBody] ChannelMasterDto dto)
+        {
+            var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            if (dto is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                // Use provided OrgId from DTO. If you want to pull from claims, adapt here.
+                var channelMaster = await _context.ChannelMaster.AddAsync(new ChannelMaster
+                {
+                    ChannelCode = dto.ChannelCode,
+                    ChannelName = dto.ChannelName,
+                    Description = dto.Description,
+                    IsActive = dto.IsActive,
+                    OrgId = orgId,
+                    CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier),
+                    CreatedDate = DateTime.UtcNow,
+                    RowVersion = 1,
+                    CreatedEntities = 0,
+                    TerminatedEntities = 0,
+                    TotalEntities = 0,
+                });
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Channel master created successfully.";
+                var result = await _context.SaveChangesAsync();
+                response.responseBody.channels = new List<ChannelMaster>();
+                response.responseBody.channels.Add(channelMaster.Entity);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inserting into hmsmaster.channel_master. DTO: {@dto}", dto);
+                return StatusCode(500, response);
+            }
+
+        }
+
+        [HttpPost("Channel/Update/{ChannelId}")]
+        public async Task<IActionResult> Update([FromRoute] int ChannelId, [FromBody] ChannelMasterDto ChannelMaster)
+        {
+            var response = new HmsResponse();
+            if (ChannelMaster is null)
+                return BadRequest("Request body is required.");
+
+            if (ChannelMaster.ChannelId.HasValue && ChannelMaster.ChannelId.Value != ChannelId)
+                return BadRequest("URL id does not match body id.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                var channel =_context.ChannelMaster.FirstOrDefault(x=> x.ChannelId == ChannelMaster.ChannelId && x.OrgId == orgId);
+
+                if (channel ==  null)
+                {
+                    response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    return NotFound(response);
+                }
+
+                channel.ChannelCode = ChannelMaster.ChannelCode;
+                channel.ChannelName = ChannelMaster.ChannelName;
+                await _context.SaveChangesAsync();
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message"; ;
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error updating hmsmaster.channel_master id {ChannelMaster.ChannelId}");
+                return StatusCode(500, "An error occurred while updating the channel master.");
+            }
+        }
     }
 }
 //new Comment

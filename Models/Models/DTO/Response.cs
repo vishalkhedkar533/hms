@@ -47,6 +47,7 @@ namespace Models.DTO
         public List<UserRoleMapping>? UserRoleMapping { get; set; } = null;
         public FileUploadResponse? fileUpload { get; set; } = null;
         public List<RoleMenuMapping>? RoleMenuMapping { get; set; } = null;
+        public List<ChannelMaster>? channels { get; set; } = null;
     }
 
     public class UpdatedAgentField

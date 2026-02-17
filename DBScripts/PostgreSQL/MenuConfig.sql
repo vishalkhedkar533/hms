@@ -40,6 +40,23 @@ INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1014, 'Revoke Menu Access to Role', 1005, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
 
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1015, 'Update UI Access', 1005, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
+
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1016, 'UI Control Access', 1005, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
+
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1017, 'Channel Management', null, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
+
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1018, 'Create Update Delete', 1017, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
+
+
 insert into hms.role_menu_mapping (role_id,menu_id,is_visible,is_enabled,created_by,created_date,orgid)
 select 1, mm.menu_id,true,true ,'System', now(), 2
 from hms.menu_master mm

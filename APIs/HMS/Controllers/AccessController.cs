@@ -36,9 +36,10 @@ namespace HMS.Controllers
         public async Task<ActionResult<HmsResponse>> GetRoles()
         {
             var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             try
             {
-                var roles = await _context.Roles.AsNoTracking().ToListAsync();
+                var roles = await _context.Roles.Where(x=> x.OrgId == orgId).AsNoTracking().ToListAsync();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
                 response.responseBody.roles = roles;

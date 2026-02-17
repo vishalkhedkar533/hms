@@ -32,8 +32,21 @@ namespace HMS.Controllers
             {
                 //_logger.LogInformation("Information Log is Working");
                 //_logger.LogWarning("Warning Log is Working");
-                //Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
-                //HttpContext?.User?.Identity?.Name;
+                /*
+                var claims = new List<Claim>
+                {
+                    // Standard claims
+                    new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),        // 👈 JWT standard "sub"
+                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),          // 👈 .NET convention
+                    new Claim(ClaimTypes.Name, user.Username),                             // Username
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),     // Unique token ID,
+                    new Claim(ApiConstants.OrganisationId, user.OrgId.ToString()),         // Custom claim for User ID
+                    new Claim(ApiConstants.OrganisationName, user.OrgName.ToString()),     // Custom claim for User ID
+                    new Claim(ApiConstants.SubscriberId, user.SubscriberId.ToString()),    // Custom claim for User ID
+                    new Claim(ApiConstants.SubscriberName, user.SubscriberName.ToString()) // Custom claim for User ID
+                };
+                 */
+
                 await _context.agent.FindAsync(-1000);
                 return Ok(new
                 {

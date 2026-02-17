@@ -689,7 +689,7 @@ namespace HMS.Controllers
         //    }
         //}
         [HttpPost("UIControlAccess")]
-        //[MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
         public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
         {
             HmsResponse hMSResponse = new HmsResponse();

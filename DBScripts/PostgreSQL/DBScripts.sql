@@ -2481,3 +2481,14 @@ SELECT jsonb_agg(node)
 FROM json_tree
 WHERE lvl = 1;
 $function$;
+
+CREATE TABLE hms.temp_designation_update (
+    temp_designation_update_id bigserial PRIMARY KEY,
+    agent_code              varchar(50)  NOT NULL,
+    designation             varchar(100) NOT NULL,
+    business_effective_date date         NOT NULL,
+    processing_status       varchar(20)  NOT NULL DEFAULT 'Pending',
+    comments                varchar(20),
+    reason                  text,
+    orgid                   int          NOT NULL
+);

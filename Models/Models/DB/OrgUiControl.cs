@@ -21,7 +21,7 @@ namespace Models.DB
 
         [Required]
         [Column("role_id")]
-        public long RoleId { get; set; }
+        public int RoleId { get; set; }
 
         [Required]
         [Column("allow_edit")]

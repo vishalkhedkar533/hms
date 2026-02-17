@@ -31,5 +31,10 @@ namespace CommonLibrary
             // Return the claim value, or null/empty if not found
             return organisationIdClaim?.Value;
         }
+
+        public string GetClaim(object nameIdentifier)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

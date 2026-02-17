@@ -333,8 +333,3 @@ INSERT INTO hmsmaster.org_uicontrol
 select 2,uch.hierarchy_id , 1, true,true,now(),1
 from hmsmaster.uicontrol_hierarchy uch
 where not exists(select 1 from hmsmaster.org_uicontrol ouc where uch.hierarchy_id  = ouc.hierarchy_id )
-
-
-VALUES(0, 0, 0, false, false, '', 0);
-
-

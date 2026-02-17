@@ -690,20 +690,21 @@ namespace HMS.Controllers
         //}
         [HttpPost("UIControlAccess")]
         //[MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetUIControlAccess([FromBody] bool showAll = false)
+        public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
         {
             HmsResponse hMSResponse = new HmsResponse();
-            long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
             try
             {
+                //"Script": "select * from hms.get_ui_control_hierarchy(2, false)"
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Master",
                     "get_ui_control_hierarchy",
                     new
                     {
-                        p_orgid = orgId,
-                        p_showall = showAll
+                        p_orgId = orgId,
+                        p_ShowAll = ShowAll
                     });
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))

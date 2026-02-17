@@ -2343,3 +2343,14 @@ CREATE TABLE IF NOT EXISTS hms.temp_manager_update (
     status varchar(20) NOT NULL DEFAULT 'Pending',
     orgid int NOT NULL
 );
+
+CREATE TABLE hms.temp_status_update (
+    temp_status_update_id bigserial PRIMARY KEY,
+    agent_code              varchar(50)  NOT NULL,
+    status                  varchar(50)  NOT NULL,
+    business_effective_date date         NOT NULL,
+    processing_status       varchar(20)  NOT NULL DEFAULT 'Pending',
+    comments                varchar(20),
+    reason                  text,
+    orgid                   int          NOT NULL
+);

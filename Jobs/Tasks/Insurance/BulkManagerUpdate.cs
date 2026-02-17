@@ -90,7 +90,7 @@ namespace Tasks.Insurance
 
                 var username = string.IsNullOrWhiteSpace(task.CreatedBy) ? "System" : task.CreatedBy;
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
-                var tempRows = new List<(string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange, int OrgId)>();
+                var tempRows = new List<(string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange, int OrgId, string Comments, string Reason)>();
                 var todayRows = new List<(int RowNumber, string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange)>();
 
                 foreach (var item in rows.Select((row, index) => new { Row = row, RowNumber = index + 2 }))
@@ -102,23 +102,26 @@ namespace Tasks.Insurance
                     if (string.IsNullOrWhiteSpace(agentCode))
                     {
                         AddError(response, item.RowNumber, agentCode, supervisorCode, "Agent Code is required.");
+                        tempRows.Add((agentCode ?? string.Empty, supervisorCode ?? string.Empty, DateOnly.MinValue, task.OrgId ?? orgId, "Rejected", "Agent Code is required."));
                         continue;
                     }
 
                     if (string.IsNullOrWhiteSpace(supervisorCode))
                     {
                         AddError(response, item.RowNumber, agentCode, supervisorCode, "Reporting Agent Code is required.");
+                        tempRows.Add((agentCode, supervisorCode ?? string.Empty, DateOnly.MinValue, task.OrgId ?? orgId, "Rejected", "Reporting Agent Code is required."));
                         continue;
                     }
 
                     if (effectiveDate is null)
                     {
                         AddError(response, item.RowNumber, agentCode, supervisorCode, "Effective Date Of Change is required.");
+                        tempRows.Add((agentCode, supervisorCode, DateOnly.MinValue, task.OrgId ?? orgId, "Rejected", "Effective Date Of Change is required."));
                         continue;
                     }
 
                     var effectiveDateOnly = DateOnly.FromDateTime(effectiveDate.Value);
-                    tempRows.Add((agentCode, supervisorCode, effectiveDateOnly, task.OrgId ?? orgId));
+                    tempRows.Add((agentCode, supervisorCode, effectiveDateOnly, task.OrgId ?? orgId, "Proceed", string.Empty));
 
                     if (effectiveDateOnly == today)
                     {
@@ -137,18 +140,19 @@ namespace Tasks.Insurance
                         writer.StartRow();
                         writer.Write(row.AgentCode);
                         writer.Write(row.SupervisorCode);
-                        writer.Write(row.EffectiveDateOfChange);
+                        writer.Write(row.EffectiveDateOfChange == DateOnly.MinValue ? (DateOnly?)null : row.EffectiveDateOfChange);
                         writer.Write("Pending");
                         writer.Write(row.OrgId);
+                        writer.Write(row.Comments);
+                        writer.Write(row.Reason);
                     }
 
                     await writer.CompleteAsync(token);
                 }
 
-                var updatedAgents = new List<object>();
-                var auditEntries = new List<object>();
-                var successRowsForExport = new List<object>();
-                var updatedTempRows = new List<object>();
+                var rejectedTempRows = new List<object>();
+                string? successDataEncoded = null;
+                byte[]? errorFile = null;
 
                 if (todayRows.Count > 0)
                 {
@@ -171,127 +175,136 @@ namespace Tasks.Insurance
 
                         if (!agentByCode.TryGetValue(agentCode, out var agent))
                         {
-                            AddError(response, item.RowNumber, agentCode, supervisorCode, "Invalid Agent Code.");
+                            var reason = "Invalid Agent Code.";
+                            AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
+                            rejectedTempRows.Add(new
+                            {
+                                AgentCode = agentCode,
+                                SupervisorCode = supervisorCode,
+                                EffectiveDateOfChange = item.EffectiveDateOfChange.ToDateTime(TimeOnly.MinValue),
+                                Comments = "Rejected",
+                                Reason = reason,
+                                OrgId = task.OrgId ?? orgId
+                            });
                             continue;
                         }
 
                         if (!agentByCode.TryGetValue(supervisorCode, out var supervisor))
                         {
-                            AddError(response, item.RowNumber, agentCode, supervisorCode, "Reporting Agent Code not found.");
+                            var reason = "Reporting Agent Code not found.";
+                            AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
+                            rejectedTempRows.Add(new
+                            {
+                                AgentCode = agentCode,
+                                SupervisorCode = supervisorCode,
+                                EffectiveDateOfChange = item.EffectiveDateOfChange.ToDateTime(TimeOnly.MinValue),
+                                Comments = "Rejected",
+                                Reason = reason,
+                                OrgId = task.OrgId ?? orgId
+                            });
                             continue;
                         }
 
                         if (agent.Channel != supervisor.Channel)
                         {
-                            AddError(response, item.RowNumber, agentCode, supervisorCode,
-                                $"Supervisor is in channel '{supervisor.Channel}', but Agent is in '{agent.Channel}'. Channels must match.");
-                            continue;
-                        }
-
-                        if (agent.SupervisorId != supervisor.AgentId)
-                        {
-                            updatedAgents.Add(new
-                            {
-                                AgentId = agent.AgentId,
-                                SupervisorId = supervisor.AgentId,
-                                ModifiedBy = username
-                            });
-
-                            auditEntries.Add(new
-                            {
-                                AgentId = agent.AgentId,
-                                FieldName = "SupervisorId",
-                                OldValue = agent.SupervisorId?.ToString() ?? "None",
-                                NewValue = supervisor.AgentId.ToString(),
-                                ChangedBy = username,
-                                ChangedDate = DateTime.UtcNow,
-                                CreatedBy = username,
-                                CreatedDate = DateTime.UtcNow,
-                                ModifiedBy = username,
-                                ModifiedDate = DateTime.UtcNow
-                            });
-
-                            updatedTempRows.Add(new
+                            var reason = $"Supervisor is in channel '{supervisor.Channel}', but Agent is in '{agent.Channel}'. Channels must match.";
+                            AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
+                            rejectedTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 SupervisorCode = supervisorCode,
-                                EffectiveDateOfChange = item.EffectiveDateOfChange,
-                                Status = "Updated",
+                                EffectiveDateOfChange = item.EffectiveDateOfChange.ToDateTime(TimeOnly.MinValue),
+                                Comments = "Rejected",
+                                Reason = reason,
                                 OrgId = task.OrgId ?? orgId
                             });
-
-                            successRowsForExport.Add(new
-                            {
-                                Row_Number = item.RowNumber,
-                                Agent_Code = agentCode,
-                                New_Supervisor_Code = supervisorCode,
-                                Previous_Supervisor_Id = agent.SupervisorId,
-                                Status = "Updated"
-                            });
-
-                            response.UpdatedRows++;
                         }
                     }
                 }
 
                 response.FailedRows = response.Errors.Count;
 
-                // Execute Database Updates
-                if (updatedAgents.Count > 0)
+                if (rejectedTempRows.Count > 0)
                 {
-                    var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
-                    var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
-                    var updateTempSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
-
-                    await using var tx = await conn.BeginTransactionAsync(token);
-                    await conn.ExecuteAsync(updateSql, updatedAgents, tx);
-                    await conn.ExecuteAsync(auditSql, auditEntries, tx);
-                    await conn.ExecuteAsync(updateTempSql, updatedTempRows, tx);
-                    await tx.CommitAsync(token);
+                    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
+                    await conn.ExecuteAsync(reviewSql, rejectedTempRows);
                 }
+
+                var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
+                    ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
+                response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
+
+                response.FailedRows = response.Errors.Count;
+
+                // Execute Database Updates
+                // (handled by temp table apply)
+                //if (updatedAgents.Count > 0 || rejectedTempRows.Count > 0)
+                //{
+                //    var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
+                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
+                //    var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
+                //        ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
+                //    var updateTempSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
+                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
+                //    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
+                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
+
+                //    await using var tx = await conn.BeginTransactionAsync(token);
+                //    if (updatedAgents.Count > 0)
+                //    {
+                //        await conn.ExecuteAsync(updateSql, updatedAgents, tx);
+                //        await conn.ExecuteAsync(auditSql, auditEntries, tx);
+                //        await conn.ExecuteAsync(updateTempSql, updatedTempRows, tx);
+                //    }
+
+                //    if (rejectedTempRows.Count > 0)
+                //    {
+                //        await conn.ExecuteAsync(reviewSql, rejectedTempRows, tx);
+                //    }
+
+                //    await tx.CommitAsync(token);
+                //}
 
                 // --- HANDLE SUCCESS DATA EXPORT ---
-                string? successDataEncoded = null;
-                if (successRowsForExport.Any())
-                {
-                    using var successStream = new MemoryStream();
-                    await MiniExcel.SaveAsAsync(successStream, successRowsForExport);
-                    successDataEncoded = Convert.ToBase64String(successStream.ToArray());
-                }
+                //string? successDataEncoded = null;
+                //if (successRowsForExport.Any())
+                //{
+                //    using var successStream = new MemoryStream();
+                //    await MiniExcel.SaveAsAsync(successStream, successRowsForExport);
+                //    successDataEncoded = Convert.ToBase64String(successStream.ToArray());
+                //}
 
                 // --- HANDLE ERROR DATA EXPORT ---
-                if (response.Errors.Any())
-                {
-                    var errorExport = response.Errors.Select(e => new
-                    {
-                        Row_Number = e.RowNumber,
-                        Agent_Code = e.AgentCode,
-                        Supervisor_Code = e.SupervisorCode,
-                        Error_Message = e.Message
-                    });
+                //if (response.Errors.Any())
+                //{
+                //    var errorExport = response.Errors.Select(e => new
+                //    {
+                //        Row_Number = e.RowNumber,
+                //        Agent_Code = e.AgentCode,
+                //        Supervisor_Code = e.SupervisorCode,
+                //        Error_Message = e.Message
+                //    });
 
-                    var rootFolder = Path.Combine(AppContext.BaseDirectory, "RejectedFiles");
-                    Directory.CreateDirectory(rootFolder);
-                    var fileName = $"Rejected_Manager_Update_{orgId}_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
-                    var filePath = Path.Combine(rootFolder, fileName);
+                //    var rootFolder = Path.Combine(AppContext.BaseDirectory, "RejectedFiles");
+                //    Directory.CreateDirectory(rootFolder);
+                //    var fileName = $"Rejected_Manager_Update_{orgId}_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
+                //    var filePath = Path.Combine(rootFolder, fileName);
 
-                    await using var memoryStream = new MemoryStream();
-                    await MiniExcel.SaveAsAsync(memoryStream, errorExport);
-                    response.ErrorFile = memoryStream.ToArray();
+                //    await using var memoryStream = new MemoryStream();
+                //    await MiniExcel.SaveAsAsync(memoryStream, errorExport);
+                //    response.ErrorFile = memoryStream.ToArray();
 
-                    await File.WriteAllBytesAsync(filePath, response.ErrorFile, token);
-                    _logger.LogInformation("Rejected rows exported to Excel: {FilePath}", filePath);
-                }
+                //    await File.WriteAllBytesAsync(filePath, response.ErrorFile, token);
+                //    _logger.LogInformation("Rejected rows exported to Excel: {FilePath}", filePath);
+                //}
 
                 // Final Task Table Update
                 var updateTaskSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTask")?.Script
                     ?? throw new Exception("SQL for ManagerUpdate/UpdateTask missing");
 
-                var errorMessageEncoded = response.ErrorFile != null
-                    ? Convert.ToBase64String(response.ErrorFile)
+                var errorMessageEncoded = errorFile != null
+                    ? Convert.ToBase64String(errorFile)
                     : null;
 
                 await conn.ExecuteAsync(updateTaskSql, new

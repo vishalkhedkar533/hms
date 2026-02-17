@@ -501,3 +501,8 @@ CREATE SEQUENCE hms.rolemapping_seq
 ALTER TABLE hms.role_menu_mapping 
     ALTER COLUMN mapping_id SET DEFAULT nextval('hms.rolemapping_seq'::regclass),
     ALTER COLUMN mapping_id SET NOT NULL;
+
+alter table hms.temp_manager_update  
+add column comments varchar,
+add column reason varchar
+

@@ -6,6 +6,7 @@ namespace CommonLibrary
     public interface IAuthClaimService
     {
         string GetClaim(String ClaimType);
+        string GetClaim(object nameIdentifier);
     }
     public class AuthClaimService : IAuthClaimService
     {
@@ -29,6 +30,11 @@ namespace CommonLibrary
 
             // Return the claim value, or null/empty if not found
             return organisationIdClaim?.Value;
+        }
+
+        public string GetClaim(object nameIdentifier)
+        {
+            throw new NotImplementedException();
         }
     }
 }

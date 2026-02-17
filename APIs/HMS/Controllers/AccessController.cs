@@ -2,8 +2,6 @@
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
-using Humanizer;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
@@ -11,6 +9,7 @@ using Models.DTO;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Security.Claims;
 
 namespace HMS.Controllers
 {
@@ -682,7 +681,7 @@ namespace HMS.Controllers
             {
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
                 hMSResponse.responseHeader.ErrorMessage = "FAILED";
-                _logger.LogError(ex, $"Failed to Update menu access for RoleID {orgUiControlDTO.RoleId} : MenuID {orgUiControlDTO.UiControlMenuId}");
+                _logger.LogError(ex, $"Failed to Update menu access for RoleID {orgUiControlDTO.RoleId} : MenuID {orgUiControlDTO.HierarchyId}");
                 return StatusCode(503, hMSResponse);
             }
         }

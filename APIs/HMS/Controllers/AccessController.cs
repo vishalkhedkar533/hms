@@ -626,117 +626,117 @@ namespace HMS.Controllers
                 return StatusCode(503, hMSResponse);
             }
         }
-        [HttpPost("Role/UI/Control/UpdateAccess")]
-        [MenuAuthorize(AuthorisationConstants.UpdateUIAccess)]
-        public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] OrgUiControlDTO orgUiControlDTO)
-        {
-            var hMSResponse = new HmsResponse();
-            try
-            {
-                if (orgUiControlDTO == null) return BadRequest("Payload is null.");
+        //[HttpPost("Role/UI/Control/UpdateAccess")]
+        //[MenuAuthorize(AuthorisationConstants.UpdateUIAccess)]
+        //public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] OrgUiControlDTO orgUiControlDTO)
+        //{
+        //    var hMSResponse = new HmsResponse();
+        //    try
+        //    {
+        //        if (orgUiControlDTO == null) return BadRequest("Payload is null.");
 
-                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+        //        orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-                // 1. Try to find an existing record based on the ID (if provided) 
-                // or by the unique combination of Org + Menu + Role
-                var existingRecord = await _context.OrgUiControls
-                    .FirstOrDefaultAsync(x => x.OrgId == orgId
-                                         && x.UiControlMenuId == orgUiControlDTO.UiControlMenuId
-                                         && x.RoleId == orgUiControlDTO.RoleId);
+        //        // 1. Try to find an existing record based on the ID (if provided) 
+        //        // or by the unique combination of Org + Menu + Role
+        //        var existingRecord = await _context.OrgUiControls
+        //            .FirstOrDefaultAsync(x => x.OrgId == orgId
+        //                                 && x.UiControlMenuId == orgUiControlDTO.UiControlMenuId
+        //                                 && x.RoleId == orgUiControlDTO.RoleId);
 
-                if (existingRecord != null)
-                {
-                    // --- UPDATE LOGIC ---
-                    existingRecord.AllowRead = orgUiControlDTO.AllowRead;
-                    existingRecord.AllowEdit = orgUiControlDTO.AllowEdit;
-                    existingRecord.RenderControl = orgUiControlDTO.RenderControl;
+        //        if (existingRecord != null)
+        //        {
+        //            // --- UPDATE LOGIC ---
+        //            existingRecord.AllowRead = orgUiControlDTO.AllowRead;
+        //            existingRecord.AllowEdit = orgUiControlDTO.AllowEdit;
+        //            existingRecord.RenderControl = orgUiControlDTO.RenderControl;
 
-                    // Only update 'GrantedBy' if the DTO provides a new value
-                    existingRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
-                    existingRecord.AccessGrantedOn = DateTime.UtcNow;
+        //            // Only update 'GrantedBy' if the DTO provides a new value
+        //            existingRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
+        //            existingRecord.AccessGrantedOn = DateTime.UtcNow;
 
-                    _context.OrgUiControls.Update(existingRecord);
-                }
-                else
-                {
-                    // --- INSERT LOGIC ---
-                    var newRecord = new OrgUiControl
-                    {
-                        OrgId = orgId,
-                        UiControlMenuId = orgUiControlDTO.UiControlMenuId,
-                        RoleId = orgUiControlDTO.RoleId,
-                        AllowRead = orgUiControlDTO.AllowRead,
-                        AllowEdit = orgUiControlDTO.AllowEdit,
-                        RenderControl = orgUiControlDTO.RenderControl,
-                        AccessGrantedOn = DateTime.UtcNow,
-                        AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier))
-                    };
-                    _context.OrgUiControls.Add(newRecord);
-                }
+        //            _context.OrgUiControls.Update(existingRecord);
+        //        }
+        //        else
+        //        {
+        //            // --- INSERT LOGIC ---
+        //            var newRecord = new OrgUiControl
+        //            {
+        //                OrgId = orgId,
+        //                UiControlMenuId = orgUiControlDTO.UiControlMenuId,
+        //                RoleId = orgUiControlDTO.RoleId,
+        //                AllowRead = orgUiControlDTO.AllowRead,
+        //                AllowEdit = orgUiControlDTO.AllowEdit,
+        //                RenderControl = orgUiControlDTO.RenderControl,
+        //                AccessGrantedOn = DateTime.UtcNow,
+        //                AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier))
+        //            };
+        //            _context.OrgUiControls.Add(newRecord);
+        //        }
 
-                await _context.SaveChangesAsync();
-                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+        //        await _context.SaveChangesAsync();
+        //        hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+        //        hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
 
-                return Ok(hMSResponse);
-            }
-            catch (Exception ex)
-            {
-                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                hMSResponse.responseHeader.ErrorMessage = "FAILED";
-                _logger.LogError(ex, $"Failed to Update menu access for RoleID {orgUiControlDTO.RoleId} : MenuID {orgUiControlDTO.UiControlMenuId}");
-                return StatusCode(503, hMSResponse);
-            }
-        }
-        [HttpPost("UIControlAccess")]
-        //[MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetUIControlAccess()
-        {
-            HmsResponse hMSResponse = new HmsResponse();
-            long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+        //        return Ok(hMSResponse);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+        //        hMSResponse.responseHeader.ErrorMessage = "FAILED";
+        //        _logger.LogError(ex, $"Failed to Update menu access for RoleID {orgUiControlDTO.RoleId} : MenuID {orgUiControlDTO.UiControlMenuId}");
+        //        return StatusCode(503, hMSResponse);
+        //    }
+        //}
+        //[HttpPost("UIControlAccess")]
+        ////[MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        //public async Task<IActionResult> GetUIControlAccess()
+        //{
+        //    HmsResponse hMSResponse = new HmsResponse();
+        //    long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-            try
-            {
+        //    try
+        //    {
                 
-                var stringResponse = await _db.ExecuteQueryAsync<string>(
-                    "Master",
-                    "get_ui_control_hierarchy",
-                    new
-                    {
-                        p_orgid = orgId,
-                    });
+        //        var stringResponse = await _db.ExecuteQueryAsync<string>(
+        //            "Master",
+        //            "get_ui_control_hierarchy",
+        //            new
+        //            {
+        //                p_orgid = orgId,
+        //            });
 
-                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
-                {
-                    var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
-                        stringResponse.FirstOrDefault(),
-                        new JsonSerializerSettings
-                        {
-                            NullValueHandling = NullValueHandling.Ignore,
-                            ContractResolver = new CamelCasePropertyNamesContractResolver()
-                        });
+        //        if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+        //        {
+        //            var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
+        //                stringResponse.FirstOrDefault(),
+        //                new JsonSerializerSettings
+        //                {
+        //                    NullValueHandling = NullValueHandling.Ignore,
+        //                    ContractResolver = new CamelCasePropertyNamesContractResolver()
+        //                });
 
-                    // If a root itself should be hidden if RenderControl is false:
-                    //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
+        //            // If a root itself should be hidden if RenderControl is false:
+        //            //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
 
-                    hMSResponse.responseHeader.ErrorCode = 1101;
-                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                    hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
-                    return Ok(hMSResponse);
-                }
-                else
-                {
-                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
-                    return NotFound(hMSResponse);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error Occurred In GeoHierarchy");
-                return StatusCode(500, "Internal Server Error");
-            }
-        }
+        //            hMSResponse.responseHeader.ErrorCode = 1101;
+        //            hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+        //            hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
+        //            return Ok(hMSResponse);
+        //        }
+        //        else
+        //        {
+        //            hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+        //            hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
+        //            return NotFound(hMSResponse);
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error Occurred In GeoHierarchy");
+        //        return StatusCode(500, "Internal Server Error");
+        //    }
+        //}
 
     }
 }

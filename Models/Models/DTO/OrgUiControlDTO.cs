@@ -7,5 +7,6 @@
         public bool AllowRead { get; set; } = false;
         public bool AllowEdit { get; set; } = false;
         public bool? RenderControl { get; set; } = false;
+        public int? AccessGrantedBy { get; set; }
     }
 }

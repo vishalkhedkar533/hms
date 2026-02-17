@@ -11,7 +11,6 @@ using Models.DTO;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using System.Security.Claims;
 
 namespace HMS.Controllers
 {

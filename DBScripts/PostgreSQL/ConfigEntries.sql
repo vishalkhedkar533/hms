@@ -201,19 +201,6 @@ VALUES (2, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''FI
 
 
 
-INSERT INTO hms.role_master 
-(role_id, role_name, description, is_system_role, is_active, created_by, created_date, rowversion)
-VALUES
-(101, 'DOPS Processor', 'Entry-level operations; data entry and document upload', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(102, 'DOPS Approver', 'Operations supervisor; final verification of policy data', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(103, 'ROM', 'Regional Operations Manager; oversees ops across multiple branches', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(104, 'BM', 'Branch Manager; responsible for branch targets and administration', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(105, 'RH', 'Regional Head; strategic lead for a specific geographic region', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(106, 'Channel Head', 'National head of a specific sales distribution channel', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(107, 'ECOM Specialist', 'Handles digital sales and online policy management', false, true, 'admin', CURRENT_TIMESTAMP, 1),
-(108, 'BO Admin', 'Branch Office Administrator; handles local office logistics', false, true, 'admin', CURRENT_TIMESTAMP, 1);
-
-
 INSERT INTO hmsmaster.location_master (channel_id, sub_channel_id, orgid, location_code, 
 location_desc, is_active, created_by, created_date)
  VALUES 
@@ -300,3 +287,28 @@ values
 
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
 VALUES (2, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');
+
+
+select * from hmsmaster.uicontrol_master
+
+insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,hierarchy_path)
+values
+(1,'Agent','1');
+insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,hierarchy_path)
+values
+(2,'Channel','1.2'),
+(3,'SubChannel','1.3'),
+(4,'Location','1.4'),
+(5,'Designation','1.5');
+
+insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,hierarchy_path)
+values
+(6,'Contact Information','1.6'),
+(7,'Mobile No','1.6.7'),
+(8,'Home No','1.6.8'),
+(9,'Work No','1.6.9'),
+(10,'Email ID','1.6.10'),
+(11,'Contact Person Name','1.6.11'),
+(12,'Contact Person Mobile No','1.6.12'),
+(13,'Contact Person Email ID','1.6.13'),
+(14,'Contact Person Designation','1.6.14');

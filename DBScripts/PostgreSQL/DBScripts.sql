@@ -2290,7 +2290,7 @@ WITH RECURSIVE hierarchy_cte AS (
     WHERE gh.channel_id = p_channel_id 
           AND (p_subchannel_id IS NULL OR gh.sub_channel_id = p_subchannel_id)
           AND gh.orgid = p_orgid::int
-          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text)::lquery
+          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text || '.*')::lquery
 ),
 json_tree AS (
     -- Step 2: Leaf node (Agent)
@@ -2335,3 +2335,95 @@ WHERE lvl = 1;
 $function$
 ;
 
+CREATE SEQUENCE hmsmaster.uicontrolmenu_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+--drop table hmsmaster.uicontrol_master;
+create table hmsmaster.uicontrol_master ( 
+	uicontrolmenu_id int8,
+	ui_object_name varchar(50) not null,
+	hierarchy_path public.ltree NULL,
+	constraint pk_uicontrol_master primary key (uicontrolmenu_id)
+);
+
+CREATE SEQUENCE hmsmaster.org_uicontrol_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+--drop table hmsmaster.org_uicontrol;
+create table hmsmaster.org_uicontrol(
+	org_uicontrol_id int8 default nextval('hmsmaster.org_uicontrol_id_seq'::regclass) not null,
+	orgid int4 not null,
+	uicontrolmenu_id int8 not null ,
+	role_id int8 not null,
+	allow_read bool not null default false,
+	allow_edit bool not null default false,
+	render_control bool null default false,
+	access_granted_on timestamp ,
+	access_granted_by int4 ,
+	CONSTRAINT fk_uictrl_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+	CONSTRAINT fk_uictrl_master FOREIGN KEY (uicontrolmenu_id) REFERENCES hmsmaster.uicontrol_master(uicontrolmenu_id),
+	CONSTRAINT fk_uictrl_role FOREIGN KEY (role_id) REFERENCES hms.roles(role_id),
+	CONSTRAINT fk_uictrl_user FOREIGN KEY (access_granted_by) REFERENCES hms."user"(user_id)
+);
+
+--DROP FUNCTION hms.get_ui_control_hierarchy
+
+CREATE OR REPLACE FUNCTION hms.get_ui_control_hierarchy(p_orgid bigint)
+ RETURNS jsonb
+ LANGUAGE sql
+AS $function$
+WITH RECURSIVE hierarchy_cte AS (
+    -- Step 1: Get the path from hms schema
+    SELECT 
+        uh.hierarchy_path,
+        string_to_array(uh.hierarchy_path::TEXT, '.') AS labels
+    FROM hmsmaster.uicontrol_master uh
+),
+json_tree AS (
+    SELECT 
+        array_length(labels, 1) AS lvl,
+        jsonb_build_object(
+        	'allow_Read', ouc.allow_read,
+        	'allow_Edit', ouc.allow_edit,
+        	'render_control', ouc.render_control,
+        	'access_granted_on', ouc.access_granted_on,
+        	'access_granted_by', ouc.access_granted_by, 
+            'parentLocation', NULL -- Matches DTO Property Name
+        ) AS node,
+        labels
+    FROM hierarchy_cte h
+    LEFT JOIN hmsmaster.org_uicontrol ouc ON ouc.uicontrolmenu_id = h.labels[array_length(h.labels, 1)]::int8
+    AND ouc.orgid = p_orgid
+    UNION ALL
+    -- Step 3: Recursive parents
+    SELECT 
+        j.lvl - 1,
+        jsonb_build_object(
+        	'allow_Read', ouc.allow_read,
+        	'allow_Edit', ouc.allow_edit,
+        	'render_control', ouc.render_control,
+        	'access_granted_on', ouc.access_granted_on,
+        	'access_granted_by', ouc.access_granted_by, 
+            'parentLocation', j.node -- Matches DTO Property Name
+        ) AS node,
+        j.labels
+    FROM json_tree j
+    LEFT JOIN hmsmaster.org_uicontrol ouc ON ouc.uicontrolmenu_id = j.labels[j.lvl - 1]::int8 AND ouc.orgid = p_orgid 
+    WHERE j.lvl > 1
+)
+SELECT jsonb_agg(node)
+FROM json_tree
+WHERE lvl = 1;
+$function$
+;
+select * from hms.get_ui_control_hierarchy(2);

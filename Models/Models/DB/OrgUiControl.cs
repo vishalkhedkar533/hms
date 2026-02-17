@@ -7,8 +7,8 @@ namespace Models.DB
     public class OrgUiControl
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("org_uicontrol_id")]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long OrgUiControlId { get; set; }
 
         [Required]
@@ -16,23 +16,12 @@ namespace Models.DB
         public int OrgId { get; set; }
 
         [Required]
-        [Column("uicontrolmenu_id")]
-        public long UiControlMenuId { get; set; }
-
-        /// <summary>
-        /// Maps to PostgreSQL 'ltree'. 
-        /// Requires Npgsql.EntityFrameworkCore.PostgreSQL for proper mapping.
-        /// </summary>
-        [Column("hierarchy_path", TypeName = "ltree")]
-        public string? HierarchyPath { get; set; }
+        [Column("hierarchy_id")]
+        public long HierarchyId { get; set; }
 
         [Required]
         [Column("role_id")]
         public long RoleId { get; set; }
-
-        [Required]
-        [Column("allow_read")]
-        public bool AllowRead { get; set; } = false;
 
         [Required]
         [Column("allow_edit")]
@@ -47,13 +36,18 @@ namespace Models.DB
         [Column("access_granted_by")]
         public int? AccessGrantedBy { get; set; }
 
-        // --- Navigation Properties ---
+        // Navigation Properties (Optional, based on your FKs)
 
-        [ForeignKey("UiControlMenuId")]
-        public virtual UiControlMaster? UiControlMaster { get; set; }
+        [ForeignKey("OrgId")]
+        public virtual Organisation Organisation { get; set; }
 
-        // Note: You would typically have models for Organisation, Role, and User 
-        // to link these foreign keys as virtual properties.
+        [ForeignKey("HierarchyId")]
+        public virtual UiControlHierarchy UiControlHierarchy { get; set; }
+
+        [ForeignKey("RoleId")]
+        public virtual Role Role { get; set; }
+
+        [ForeignKey("AccessGrantedBy")]
+        public virtual User AccessGrantedByUser { get; set; }
     }
-
 }

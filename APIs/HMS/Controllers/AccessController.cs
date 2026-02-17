@@ -635,26 +635,22 @@ namespace HMS.Controllers
                 if (orgUiControlDTO == null) return BadRequest("Payload is null.");
 
                 orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-                var AccessGrantedBy = _context.Users.FirstOrDefault(x => 
-                x.Username == (HttpContext.User.Identity.Name ?? string.Empty) 
-                && x.OrgId == orgId)?.UserId;
 
                 // 1. Try to find an existing record based on the ID (if provided) 
                 // or by the unique combination of Org + Menu + Role
                 var existingRecord = await _context.OrgUiControls
                     .FirstOrDefaultAsync(x => x.OrgId == orgId
-                                         && x.UiControlMenuId == orgUiControlDTO.UiControlMenuId
+                                         && x.HierarchyId == orgUiControlDTO.HierarchyId
                                          && x.RoleId == orgUiControlDTO.RoleId);
 
                 if (existingRecord != null)
                 {
                     // --- UPDATE LOGIC ---
-                    existingRecord.AllowRead = orgUiControlDTO.AllowRead;
                     existingRecord.AllowEdit = orgUiControlDTO.AllowEdit;
                     existingRecord.RenderControl = orgUiControlDTO.RenderControl;
 
                     // Only update 'GrantedBy' if the DTO provides a new value
-                    existingRecord.AccessGrantedBy = AccessGrantedBy;
+                    existingRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
                     existingRecord.AccessGrantedOn = DateTime.UtcNow;
 
                     _context.OrgUiControls.Update(existingRecord);
@@ -665,18 +661,17 @@ namespace HMS.Controllers
                     var newRecord = new OrgUiControl
                     {
                         OrgId = orgId,
-                        UiControlMenuId = orgUiControlDTO.UiControlMenuId,
+                        HierarchyId = orgUiControlDTO.HierarchyId,
                         RoleId = orgUiControlDTO.RoleId,
-                        AllowRead = orgUiControlDTO.AllowRead,
                         AllowEdit = orgUiControlDTO.AllowEdit,
                         RenderControl = orgUiControlDTO.RenderControl,
                         AccessGrantedOn = DateTime.UtcNow,
-                        AccessGrantedBy = AccessGrantedBy
+                        AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier))
                     };
                     _context.OrgUiControls.Add(newRecord);
                 }
 
-                _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
 
@@ -692,20 +687,21 @@ namespace HMS.Controllers
         }
         [HttpPost("UIControlAccess")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetUIControlAccess([FromBody] int orgID)
+        public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
         {
             HmsResponse hMSResponse = new HmsResponse();
-            long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
             try
             {
-                
+                //"Script": "select * from hms.get_ui_control_hierarchy(2, false)"
                 var stringResponse = await _db.ExecuteQueryAsync<string>(
                     "Master",
                     "get_ui_control_hierarchy",
                     new
                     {
-                        p_orgid = orgId,
+                        p_orgId = orgId,
+                        p_ShowAll = ShowAll
                     });
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
@@ -717,6 +713,9 @@ namespace HMS.Controllers
                             NullValueHandling = NullValueHandling.Ignore,
                             ContractResolver = new CamelCasePropertyNamesContractResolver()
                         });
+
+                    // If a root itself should be hidden if RenderControl is false:
+                    //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
 
                     hMSResponse.responseHeader.ErrorCode = 1101;
                     hMSResponse.responseHeader.ErrorMessage = "SUCCESS";

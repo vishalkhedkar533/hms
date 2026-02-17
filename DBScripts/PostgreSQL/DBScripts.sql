@@ -2290,7 +2290,7 @@ WITH RECURSIVE hierarchy_cte AS (
     WHERE gh.channel_id = p_channel_id 
           AND (p_subchannel_id IS NULL OR gh.sub_channel_id = p_subchannel_id)
           AND gh.orgid = p_orgid::int
-          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text)::lquery
+          AND gh.hierarchy_path ~ ('*.' || p_branch_id::text || '.*')::lquery
 ),
 json_tree AS (
     -- Step 2: Leaf node (Agent)

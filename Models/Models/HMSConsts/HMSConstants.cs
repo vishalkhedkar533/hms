@@ -39,5 +39,6 @@
         public const int MENU_NOT_AVAILABLE = 1601;
         public const int ROLE_NOT_AVAILABLE = 1602;
         public const int USER_ROLE_MAPPING_NOT_AVAILABLE = 1603;
+        public const int MENU_ROLE_MAPPING_NOT_AVAILABLE = 1604;
     }
 }

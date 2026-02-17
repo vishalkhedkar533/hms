@@ -1,12 +1,16 @@
 ﻿using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
+using Humanizer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace HMS.Controllers
 {
@@ -18,14 +22,17 @@ namespace HMS.Controllers
         private readonly ILogger<AccessController> _logger;
         private readonly IAuthClaimService _authClaimService;
         private int orgId;
-        public AccessController(HMSContext context, ILogger<AccessController> logger, IAuthClaimService authClaimService)
+        private readonly DatabaseService _db;
+        public AccessController(HMSContext context, ILogger<AccessController> logger, IAuthClaimService authClaimService,
+            DatabaseService db)
         {
             _context = context;
             _logger = logger;
             _authClaimService = authClaimService;
+            _db = db;
         }
         [HttpPost("Role/List")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.FetchRoles)]
         public async Task<ActionResult<HmsResponse>> GetRoles()
         {
             var response = new HmsResponse();
@@ -46,7 +53,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/Create")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.CreateRole)]
         public async Task<ActionResult<HmsResponse>> CreateRole([FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
@@ -59,10 +66,10 @@ namespace HMS.Controllers
                     return BadRequest(response);
                 }
 
-                if (!roleDto.Role_ID.HasValue)
+                if (string.IsNullOrEmpty(roleDto.RoleName))
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Role ID is required.";
+                    response.responseHeader.ErrorMessage = "Role Name is required.";
                     return BadRequest(response);
                 }
                 orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
@@ -106,7 +113,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/Update/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.DeleteRole)]
         public async Task<ActionResult<HmsResponse>> UpdateRole([FromRoute] int roleId, [FromBody] RoleSaveDto roleDto)
         {
             var response = new HmsResponse();
@@ -180,7 +187,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/Delete/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.DeleteRole)]
         public async Task<ActionResult<HmsResponse>> DeleteRole([FromRoute] int roleId)
         {
             var response = new HmsResponse();
@@ -212,7 +219,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/MenuAccess/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.GetMenuAccessForRole)]
         public async Task<ActionResult<HmsResponse>> RoleDetails([FromRoute] int roleId)
         {
             var response = new HmsResponse();
@@ -263,7 +270,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/UserList/{roleId}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.GetUserUnderRole)]
         public async Task<ActionResult<HmsResponse>> GetUserAccessForRole([FromRoute] int roleId)
         {
             var hMSResponse = new HmsResponse();
@@ -300,7 +307,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Role/AddUser")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.AddUserUnderRole)]
         public async Task<ActionResult<HmsResponse>> AddUserToRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
         {
             var hMSResponse = new HmsResponse();
@@ -397,7 +404,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Role/RemoveUser")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.RemoveUserFromRole)]
         public async Task<ActionResult<HmsResponse>> RemoveUserFromRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
         {
             var hMSResponse = new HmsResponse();
@@ -459,6 +466,274 @@ namespace HMS.Controllers
                 hMSResponse.responseHeader.ErrorMessage = "FAILED";
                 _logger.LogError(ex, $"Failed to fetch menu access for User {userRoleMappingDTO.UserName} : Role {userRoleMappingDTO.RoleId}");
                 return StatusCode(503, hMSResponse);
+            }
+        }
+        [HttpPost("Role/MenuAccess/Grant")]
+        [MenuAuthorize(AuthorisationConstants.GrantMenuAccess)]
+        public async Task<ActionResult<HmsResponse>> GrantMenuAccess([FromBody] RoleMenuDTO roleMenuDTO )
+        {
+            var hMSResponse = new HmsResponse();
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                if (roleMenuDTO.MenuId == 0 ||
+                    roleMenuDTO.RoleId == 0)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var Role = _context.Roles.FirstOrDefault(x => x.RoleId == roleMenuDTO.RoleId
+                && x.OrgId == orgId);
+                if (Role == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var menu = _context.MenuMasters.FirstOrDefault(x => x.MenuId == roleMenuDTO.MenuId);
+
+                if (menu == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                // 1. Check for existing mapping
+                var newMenuRoleMapping = await _context.RoleMenuMapping.FirstOrDefaultAsync(
+                    urm => urm.RoleId == roleMenuDTO.RoleId
+                    && urm.OrgId == orgId
+                    && urm.MenuId == roleMenuDTO.MenuId);
+
+                if (newMenuRoleMapping == null)
+                {
+                    var newRecord = new RoleMenuMapping
+                    {
+                        CreatedBy = HttpContext?.User?.Identity?.Name,
+                        CreatedDate = DateTime.UtcNow.Date,
+                        MenuId = roleMenuDTO.MenuId,
+                        IsEnabled = true,
+                        IsVisible = true,
+                        OrgId = orgId,
+                        RoleId = roleMenuDTO.RoleId
+                    };
+
+                    try
+                    {
+                        _context.RoleMenuMapping.Add(newRecord);
+                        await _context.SaveChangesAsync();
+
+                        // IMPORTANT: EF Core automatically populates newRecord.MappingId 
+                        // after SaveChangesAsync(). You do NOT need to query again.
+                        newMenuRoleMapping = newRecord;
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        // This catches the PK or Unique constraint violation if another thread
+                        // inserted the record between your 'if' check and your 'Save'.
+                        newMenuRoleMapping = await _context.RoleMenuMapping.AsNoTracking().FirstOrDefaultAsync(
+                            urm => urm.RoleId == roleMenuDTO.RoleId
+                            && urm.OrgId == orgId
+                            && urm.MenuId == roleMenuDTO.MenuId);
+
+                        if (newMenuRoleMapping == null) throw; // If it's still null, it's a different DB error
+                    }
+                }
+
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseBody.RoleMenuMapping = new List<RoleMenuMapping> { newMenuRoleMapping };
+
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = "FAILED";
+                _logger.LogError(ex, $"Failed to fetch menu access for Menu {roleMenuDTO.MenuId} : Role {roleMenuDTO.RoleId}");
+                return StatusCode(503, hMSResponse);
+            }
+        }
+        [HttpPost("Role/MenuAccess/Revoke")]
+        [MenuAuthorize(AuthorisationConstants.RevokeMenuAccess)]
+        public async Task<ActionResult<HmsResponse>> RevokeMenuAccess([FromBody] RoleMenuDTO roleMenuDTO)
+        {
+            var hMSResponse = new HmsResponse();
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                if (roleMenuDTO.MenuId == 0 ||
+                    roleMenuDTO.RoleId == 0)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var Role = _context.Roles.FirstOrDefault(x => x.RoleId == roleMenuDTO.RoleId
+                && x.OrgId == orgId);
+                if (Role == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                var menu = _context.MenuMasters.FirstOrDefault(x => x.MenuId == roleMenuDTO.MenuId);
+
+                if (menu == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+
+                    return BadRequest(hMSResponse);
+                }
+
+                // 1. Check for existing mapping
+                var newMenuRoleMapping = _context.RoleMenuMapping.Where(
+                    urm => urm.RoleId == roleMenuDTO.RoleId
+                    && urm.OrgId == orgId
+                    && urm.MenuId == roleMenuDTO.MenuId);
+
+                if (newMenuRoleMapping == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
+                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
+                    return BadRequest(hMSResponse);
+                }
+                newMenuRoleMapping.ExecuteDeleteAsync();
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = "FAILED";
+                _logger.LogError(ex, $"Failed to fetch menu access for Menu {roleMenuDTO.MenuId} : Role {roleMenuDTO.RoleId}");
+                return StatusCode(503, hMSResponse);
+            }
+        }
+        [HttpPost("Role/UI/Control/UpdateAccess")]
+        [MenuAuthorize(AuthorisationConstants.UpdateUIAccess)]
+        public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] OrgUiControlDTO orgUiControlDTO)
+        {
+            var hMSResponse = new HmsResponse();
+            try
+            {
+                if (orgUiControlDTO == null) return BadRequest("Payload is null.");
+
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                var AccessGrantedBy = _context.Users.FirstOrDefault(x => 
+                x.Username == (HttpContext.User.Identity.Name ?? string.Empty) 
+                && x.OrgId == orgId)?.UserId;
+
+                // 1. Try to find an existing record based on the ID (if provided) 
+                // or by the unique combination of Org + Menu + Role
+                var existingRecord = await _context.OrgUiControls
+                    .FirstOrDefaultAsync(x => x.OrgId == orgId
+                                         && x.UiControlMenuId == orgUiControlDTO.UiControlMenuId
+                                         && x.RoleId == orgUiControlDTO.RoleId);
+
+                if (existingRecord != null)
+                {
+                    // --- UPDATE LOGIC ---
+                    existingRecord.AllowRead = orgUiControlDTO.AllowRead;
+                    existingRecord.AllowEdit = orgUiControlDTO.AllowEdit;
+                    existingRecord.RenderControl = orgUiControlDTO.RenderControl;
+
+                    // Only update 'GrantedBy' if the DTO provides a new value
+                    existingRecord.AccessGrantedBy = AccessGrantedBy;
+                    existingRecord.AccessGrantedOn = DateTime.UtcNow;
+
+                    _context.OrgUiControls.Update(existingRecord);
+                }
+                else
+                {
+                    // --- INSERT LOGIC ---
+                    var newRecord = new OrgUiControl
+                    {
+                        OrgId = orgId,
+                        UiControlMenuId = orgUiControlDTO.UiControlMenuId,
+                        RoleId = orgUiControlDTO.RoleId,
+                        AllowRead = orgUiControlDTO.AllowRead,
+                        AllowEdit = orgUiControlDTO.AllowEdit,
+                        RenderControl = orgUiControlDTO.RenderControl,
+                        AccessGrantedOn = DateTime.UtcNow,
+                        AccessGrantedBy = AccessGrantedBy
+                    };
+                    _context.OrgUiControls.Add(newRecord);
+                }
+
+                _context.SaveChangesAsync();
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+
+                return Ok(hMSResponse);
+            }
+            catch (Exception ex)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = "FAILED";
+                _logger.LogError(ex, $"Failed to Update menu access for RoleID {orgUiControlDTO.RoleId} : MenuID {orgUiControlDTO.UiControlMenuId}");
+                return StatusCode(503, hMSResponse);
+            }
+        }
+        [HttpPost("UIControlAccess")]
+        [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        public async Task<IActionResult> GetUIControlAccess([FromBody] int orgID)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            long orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            try
+            {
+                
+                var stringResponse = await _db.ExecuteQueryAsync<string>(
+                    "Master",
+                    "get_ui_control_hierarchy",
+                    new
+                    {
+                        p_orgid = orgId,
+                    });
+
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+                {
+                    var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
+                        stringResponse.FirstOrDefault(),
+                        new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
+
+                    hMSResponse.responseHeader.ErrorCode = 1101;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
+                    return Ok(hMSResponse);
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
+                    return NotFound(hMSResponse);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Occurred In GeoHierarchy");
+                return StatusCode(500, "Internal Server Error");
             }
         }
 

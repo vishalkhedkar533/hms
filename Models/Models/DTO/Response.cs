@@ -38,6 +38,7 @@ namespace Models.DTO
         public List<ProcessCommissionDTO>? processCommissionList { get; set; }
         public FileDownloadDto? fileDownload { get; set; } = null;
         public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
+        public List<UIMenuHeirarchyDTO>? uiMenuHeirarchy { get; set; } = null;
         public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
         public List<BatchListDto>? batches { get; set; } = null;
         public List<Role>? roles { get; set; } = null;
@@ -45,6 +46,7 @@ namespace Models.DTO
         public List<UserListDto>? UserList { get; set; } = null;
         public List<UserRoleMapping>? UserRoleMapping { get; set; } = null;
         public FileUploadResponse? fileUpload { get; set; } = null;
+        public List<RoleMenuMapping>? RoleMenuMapping { get; set; } = null;
     }
 
     public class UpdatedAgentField

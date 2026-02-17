@@ -175,8 +175,8 @@ namespace Tasks.Insurance
                             .FirstOrDefault(x => x.ChannelId.Equals(currChannel?.ChannelId ?? -1000) 
                             && x.DesignationName.Equals(r.DesignationCodeDesc));
 
-                        var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{r.CreatedDate.ToString("yyMMddHH")}{index.ToString().PadLeft(3, '0')}";//eg: AG26021114001
-
+                        var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{DateTime.Now:yyMMddHHmm}{index.ToString().PadLeft(3, '0')}";
+                        
                         writer.Write(r.AgentId.ToString());
                         writer.Write(agentCode);
                         writer.Write(r.AgentName ?? "");

@@ -65,6 +65,12 @@ namespace HMS.Controllers
                     error = ex.Message,
                     timestamp = DateTime.UtcNow
                 });
+                /*
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = $"An error occurred while creating the sub channel master {SubChannelMaster.SubChannelName}";
+                _logger.LogError(ex, response.responseHeader.ErrorMessage);
+                return BadRequest(response);
+                 */
             }
         }
     }

@@ -28,7 +28,7 @@ namespace HMS.Data
         public DbSet<ErrorMaster> errorMaster => Set<ErrorMaster>();
         public DbSet<ChannelMaster> ChannelMaster => Set<ChannelMaster>();
         public DbSet<DesignationMaster> DesignationMaster => Set<DesignationMaster>();
-        public DbSet<SubchannelMaster> SubchannelMaster => Set<SubchannelMaster>();
+        public DbSet<SubChannelMaster> SubchannelMaster => Set<SubChannelMaster>();
         public DbSet<BankAccount> BankAccount => Set<BankAccount>();
         public DbSet<Address> Address => Set<Address>();
         public DbSet<Nominee> Nominee => Set<Nominee>();

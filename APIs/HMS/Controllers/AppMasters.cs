@@ -113,7 +113,7 @@ namespace HMS.Controllers
             var result = await _cacheService.RefreshCacheAsync(masterTableConfigs.SchemaName
                 , masterTableConfigs.TableName
                 , Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0")
-                , EntryCategory );
+                , EntryCategory);
             return Ok(result);
         }
 
@@ -209,7 +209,6 @@ namespace HMS.Controllers
             }
 
         }
-
         [HttpPost("Channel/Update/{ChannelId}")]
         public async Task<IActionResult> Update([FromRoute] int ChannelId, [FromBody] ChannelMasterDto ChannelMaster)
         {
@@ -226,9 +225,9 @@ namespace HMS.Controllers
             try
             {
                 orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-                var channel =_context.ChannelMaster.FirstOrDefault(x=> x.ChannelId == ChannelMaster.ChannelId && x.OrgId == orgId);
+                var channel = _context.ChannelMaster.FirstOrDefault(x => x.ChannelId == ChannelMaster.ChannelId && x.OrgId == orgId);
 
-                if (channel ==  null)
+                if (channel == null)
                 {
                     response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
                     response.responseHeader.ErrorMessage = await _context.errorMaster
@@ -254,6 +253,127 @@ namespace HMS.Controllers
                 return StatusCode(500, "An error occurred while updating the channel master.");
             }
         }
+        [HttpPost("Channel/{ChannelId}/SubChannel/Create")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> CreateSubChannel([FromRoute] int ChannelId, [FromBody] SubChannelMasterDto SubChannelMaster)
+        {
+            var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            if (SubChannelMaster is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                if (ChannelId != SubChannelMaster.ChannelId)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Channel ID in URL does not match Channel ID in body.";
+                    return BadRequest(response);
+                }
+
+                var Channel = await _context.ChannelMaster.FirstOrDefaultAsync(x => x.ChannelId == ChannelId && x.OrgId == orgId);
+                if (Channel == null)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid Channel ID";
+                    return BadRequest(response);
+                }
+                // Use provided OrgId from DTO. If you want to pull from claims, adapt here.
+                var subChannelMaster = await _context.SubchannelMaster.AddAsync(new SubChannelMaster
+                {
+                    SubChannelCode = SubChannelMaster.SubChannelCode,
+                    ChannelId = Channel.ChannelId,
+                    ChannelCode = Channel.ChannelCode,
+                    SubChannelName = SubChannelMaster.SubChannelName,
+                    Description = SubChannelMaster.Description,
+                    IsActive = true,
+                    OrgId = orgId,
+                    CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier),
+                    CreatedDate = DateTime.UtcNow,
+                    RowVersion = 1,
+                });
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = $"SubChannel master created successfully under Channel {Channel.ChannelName}";
+                var result = await _context.SaveChangesAsync();
+                response.responseBody.subChannels = new List<SubChannelMaster>();
+                response.responseBody.subChannels.Add(subChannelMaster.Entity);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = $"An error occurred while creating the sub channel master {SubChannelMaster.SubChannelName}";
+                _logger.LogError(ex, response.responseHeader.ErrorMessage);
+                return BadRequest(response);
+            }
+
+        }
+        [HttpPost("Channel/{ChannelId}/SubChannel/Update/{SubChannelId}")]
+        public async Task<IActionResult> UpdateSubChannel([FromRoute] int ChannelId, [FromRoute] int SubChannelId,
+            [FromBody] SubChannelMasterDto subChannelMaster)
+        {
+            var response = new HmsResponse();
+            if (subChannelMaster is null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return BadRequest(response);
+            }
+
+            if ((subChannelMaster.ChannelId.HasValue && subChannelMaster.ChannelId.Value != ChannelId) ||
+                (subChannelMaster.SubChannelId.HasValue && subChannelMaster.SubChannelId.Value != SubChannelId))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Channel Sub Channel ID does not match";
+                return BadRequest(response);
+            }
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                var channel = _context.ChannelMaster.FirstOrDefault(x => x.ChannelId == subChannelMaster.ChannelId && x.OrgId == orgId);
+
+                if (channel == null)
+                {
+                    response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    return NotFound(response);
+                }
+
+                var subChannel = _context.
+                    SubchannelMaster.
+                    FirstOrDefault(x => x.SubChannelId == subChannelMaster.SubChannelId
+                    && x.OrgId == orgId
+                    && x.ChannelId == subChannelMaster.ChannelId);
+
+                subChannel.ChannelCode = channel.ChannelCode;
+                subChannel.SubChannelCode = subChannelMaster.SubChannelCode;
+                subChannel.SubChannelName = subChannelMaster.SubChannelName;
+                subChannel.RowVersion = (subChannel.RowVersion ?? 0) + 1;
+                await _context.SaveChangesAsync();
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message"; ;
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while updating the sub channel master.";
+                _logger.LogError(ex, $"Error updating ChannelID {subChannelMaster.ChannelId} and SubChannelID {subChannelMaster.SubChannelId}");
+                return BadRequest(response);
+            }
+        }
     }
 }
-//new Comment

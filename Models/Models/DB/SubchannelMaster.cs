@@ -8,30 +8,31 @@ namespace Models.DB
     /// Represents a subchannel master
     /// </summary>
     [Table("subchannel_master", Schema = "hmsmaster")]
-    public class SubchannelMaster
+    public class SubChannelMaster
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("sub_channel_id")]
         [SwaggerSchema("Primary key: unique identifier for the subchannel.")]
-        public long SubChannelId { get; set; } // Matches int8 primary key
+        public long SubChannelId { get; set; }
 
         [Required]
+        [StringLength(20)]
         [Column("subchannel_code")]
-        [StringLength(20)]
         [SwaggerSchema("Unique code for the subchannel.")]
-        public string SubchannelCode { get; set; } = null!;
+        public string SubChannelCode { get; set; } = null!;
 
         [Required]
-        [Column("channel_code")]
         [StringLength(20)]
+        [Column("channel_code")]
         [SwaggerSchema("Code of the parent channel.")]
         public string ChannelCode { get; set; } = null!;
 
         [Required]
-        [Column("subchannel_name")]
         [StringLength(100)]
+        [Column("subchannel_name")]
         [SwaggerSchema("Name of the subchannel.")]
-        public string SubchannelName { get; set; } = null!;
+        public string SubChannelName { get; set; } = null!;
 
         [Column("description", TypeName = "text")]
         [SwaggerSchema("Description of the subchannel.")]
@@ -43,42 +44,55 @@ namespace Models.DB
         public bool IsActive { get; set; }
 
         [Required]
+        [StringLength(100)]
+        [Column("created_by")]
+        public string CreatedBy { get; set; } = null!;
+
+        [Required]
+        [Column("created_date")]
+        public DateTime CreatedDate { get; set; }
+
+        [StringLength(100)]
+        [Column("modified_by")]
+        public string? ModifiedBy { get; set; }
+
+        [Column("modified_date")]
+        public DateTime? ModifiedDate { get; set; }
+
+        [ConcurrencyCheck]
+        [Column("rowversion")]
+        [SwaggerSchema("Concurrency token (int4).")]
+        public int? RowVersion { get; set; }
+
         [Column("orgid")]
         [SwaggerSchema("Organization ID reference.")]
-        public int? OrgId { get; set; } 
+        public int? OrgId { get; set; }
 
         [Column("channel_id")]
         [SwaggerSchema("Foreign key referencing the channel master ID.")]
         public long? ChannelId { get; set; }
 
-        [Required]
-        [Column("created_by")]
+        // Navigation Property
+        [ForeignKey("ChannelId")]
+        public virtual ChannelMaster? Channel { get; set; }
+    }
+    public class SubChannelMasterDto
+    {
+        public long? SubChannelId { get; set; }
+        [Required(ErrorMessage = "Subchannel Code is required")]
+        [StringLength(20)]
+        public string SubChannelCode { get; set; } = null!;
+        [Required(ErrorMessage = "Channel Code is required")]
+        [StringLength(20)]
+        public string ChannelCode { get; set; } = null!;
+        [Required(ErrorMessage = "Subchannel Name is required")]
         [StringLength(100)]
-        [SwaggerSchema("User who created the record.")]
-        public string CreatedBy { get; set; } = "System";
-
-        [Required]
-        [Column("created_date")]
-        [SwaggerSchema("Date and time the record was created.")]
-        public DateTime CreatedDate { get; set; } = DateTime.Now;
-
-        [Column("modified_by")]
-        [StringLength(100)]
-        [SwaggerSchema("User who last modified the record.")]
-        public string? ModifiedBy { get; set; }
-
-        [Column("modified_date")]
-        [SwaggerSchema("Date and time of last modification.")]
-        public DateTime? ModifiedDate { get; set; }
-
-        [Column("rowversion")]
-        [ConcurrencyCheck]
-        [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
+        public string SubChannelName { get; set; } = null!;
+        public string? Description { get; set; }
+        public bool IsActive { get; set; }
+        public int? OrgId { get; set; }
+        public long? ChannelId { get; set; }
+        // Required for optimistic concurrency during updates
         public int? RowVersion { get; set; }
-
-        // Navigation property
-        [ForeignKey(nameof(ChannelId))]
-        [SwaggerSchema("The related channel master entity.")]
-        public virtual ChannelMaster? ChannelMaster { get; set; }
     }
 }

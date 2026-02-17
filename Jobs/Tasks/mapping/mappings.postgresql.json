@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=7"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=142"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -78,6 +78,48 @@
       "InsertAuditTrail": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "INSERT INTO hms.agent_audit_trail (agent_id, field_name, old_value, new_value, changed_by, changed_date, created_by, created_date, modified_by, modified_date) VALUES (@AgentId, @FieldName, @OldValue, @NewValue, @ChangedBy, @ChangedDate, @CreatedBy, @CreatedDate, @ModifiedBy, @ModifiedDate)"
+      },
+      "BulkCopyTempManagerUpdate": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "COPY hms.temp_manager_update (agent_code, supervisor_code, effective_date_of_change, status, orgid, comments, reason) FROM STDIN (FORMAT BINARY)"
+      },
+      "InsertTempManagerUpdate": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "INSERT INTO hms.temp_manager_update (agent_code, supervisor_code, effective_date_of_change, status, orgid) VALUES (@AgentCode, @SupervisorCode, @EffectiveDateOfChange, @Status, @OrgId)"
+      },
+      "UpdateTempManagerUpdateReview": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_manager_update SET comments = @Comments, reason = @Reason WHERE orgid = @OrgId AND agent_code = @AgentCode AND supervisor_code = @SupervisorCode AND effective_date_of_change = @EffectiveDateOfChange"
+      },
+      "ApplyTempManagerUpdate": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "WITH candidates AS (\n    SELECT t.agent_code, t.supervisor_code, t.effective_date_of_change, t.orgid, a.agent_id, s.agent_id AS supervisor_id\n    FROM hms.temp_manager_update t\n    JOIN hms.agent a ON a.agent_code = t.agent_code AND a.orgid = t.orgid\n    JOIN hms.agent s ON s.agent_code = t.supervisor_code AND s.orgid = t.orgid\n    WHERE t.orgid = @OrgId\n      AND t.comments = 'Proceed'\n      AND t.status = 'Pending'\n      AND t.effective_date_of_change = CURRENT_DATE\n), updated AS (\n    UPDATE hms.agent a\n    SET supervisor_id = c.supervisor_id, modified_by = @ModifiedBy, modified_date = NOW()\n    FROM candidates c\n    WHERE a.agent_id = c.agent_id\n    RETURNING a.agent_id\n), temp_updated AS (\n    UPDATE hms.temp_manager_update t\n    SET status = 'Updated'\n    FROM candidates c\n    WHERE t.orgid = c.orgid\n      AND t.agent_code = c.agent_code\n      AND t.supervisor_code = c.supervisor_code\n      AND t.effective_date_of_change = c.effective_date_of_change\n    RETURNING t.agent_code\n)\nSELECT COUNT(*) FROM updated;"
+      },
+      "UpdateTask": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.fileprocessingtasks SET totalrows = @TotalRows, rowsprocessed = @RowsProcessed, rowsrejected = @RowsRejected, errormessage = @ErrorMessage, successdata = @SuccessData, status = @Status, completedat = NOW() WHERE id = @Id;"
+      }
+    },
+    "StatusUpdate": {
+      "GetPendingTasks": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT id, filepath, orgid, createdby FROM hms.fileprocessingtasks WHERE status = 'Pending' AND filetype = 'status_update'"
+      },
+      "GetAgentsByCode": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
+      },
+      "BulkCopyTempStatusUpdate": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "COPY hms.temp_status_update (agent_code, status, business_effective_date, processing_status, comments, reason, orgid) FROM STDIN (FORMAT BINARY)"
+      },
+      "UpdateTempStatusUpdateReview": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_status_update SET comments = @Comments, reason = @Reason WHERE orgid = @OrgId AND agent_code = @AgentCode AND status = @Status AND business_effective_date = @BusinessEffectiveDate"
+      },
+      "ApplyTempStatusUpdate": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "WITH candidates AS (\n    SELECT t.agent_code, t.status, t.business_effective_date, t.orgid, a.agent_id\n    FROM hms.temp_status_update t\n    JOIN hms.agent a ON a.agent_code = t.agent_code AND a.orgid = t.orgid\n    WHERE t.orgid = @OrgId\n      AND t.comments = 'Proceed'\n      AND t.processing_status = 'Pending'\n      AND t.business_effective_date = CURRENT_DATE\n), updated AS (\n    UPDATE hms.agent a\n    SET agent_status_code = c.status, modified_by = @ModifiedBy, modified_date = NOW()\n    FROM candidates c\n    WHERE a.agent_id = c.agent_id\n    RETURNING a.agent_id\n), temp_updated AS (\n    UPDATE hms.temp_status_update t\n    SET processing_status = 'Updated'\n    FROM candidates c\n    WHERE t.orgid = c.orgid\n      AND t.agent_code = c.agent_code\n      AND t.status = c.status\n      AND t.business_effective_date = c.business_effective_date\n    RETURNING t.agent_code\n)\nSELECT COUNT(*) FROM updated;"
       },
       "UpdateTask": {
         "ConnectionStringKey": "CommissionDB",

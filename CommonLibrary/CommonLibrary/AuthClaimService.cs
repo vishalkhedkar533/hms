@@ -6,6 +6,7 @@ namespace CommonLibrary
     public interface IAuthClaimService
     {
         string GetClaim(String ClaimType);
+        string GetClaim(object nameIdentifier);
     }
     public class AuthClaimService : IAuthClaimService
     {

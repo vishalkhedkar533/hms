@@ -4,41 +4,31 @@ namespace Models.DTO
 {
     public class UIMenuHeirarchyDTO
     {
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = string.Empty;
+        [JsonPropertyName("menuID")]
+        public int MenuID { get; set; }
 
-        [JsonPropertyName("menu_id")]
-        public long MenuId { get; set; }
+        [JsonPropertyName("menuName")]
+        public string MenuName { get; set; }
 
-        [JsonPropertyName("allow_Edit")]
-        public bool AllowEdit { get; set; }
+        [JsonPropertyName("menuType")]
+        public string MenuType { get; set; }
 
-        [JsonPropertyName("allow_Read")]
-        public bool AllowRead { get; set; }
+        [JsonPropertyName("allowEdit")]
+        public bool? AllowEdit { get; set; }
 
-        [JsonPropertyName("render_control")]
-        public bool RenderControl { get; set; }
+        [JsonPropertyName("hierarchyId")]
+        public int HierarchyId { get; set; }
 
-        [JsonPropertyName("access_granted_by")]
+        [JsonPropertyName("childControl")]
+        public UIMenuHeirarchyDTO ChildControl { get; set; }
+
+        [JsonPropertyName("renderControl")]
+        public bool? RenderControl { get; set; }
+
+        [JsonPropertyName("accessGrantedBy")]
         public int? AccessGrantedBy { get; set; }
 
-        [JsonPropertyName("access_granted_on")]
+        [JsonPropertyName("accessGrantedOn")]
         public DateTime? AccessGrantedOn { get; set; }
-
-        [JsonPropertyName("children")]
-        public List<UIMenuHeirarchyDTO> Children { get; set; } = new();
-        public void FilterActive()
-        {
-            if (Children == null || Children.Count == 0) return;
-
-            // Remove direct children that are inactive
-            Children = Children.Where(c => c.RenderControl).ToList();
-
-            // Recurse into the remaining children
-            foreach (var child in Children)
-            {
-                child.FilterActive();
-            }
-        }
     }
 }

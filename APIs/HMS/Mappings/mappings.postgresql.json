@@ -56,7 +56,7 @@
       },
       "get_ui_control_hierarchy": {
         "Function": "hms.get_ui_control_hierarchy",
-        "Script": "SELECT hms.get_ui_control_hierarchy(@p_orgid)"
+        "Script": "select * from hms.get_ui_control_hierarchy(@p_orgid, @p_showall)"
       }
     },
     "Commission": {

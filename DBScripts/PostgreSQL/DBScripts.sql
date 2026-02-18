@@ -2502,29 +2502,35 @@ CREATE TABLE hms.temp_designation_update (
   DROP TABLE hmsmaster.ui_components;
 */
 CREATE TABLE hmsmaster.ui_components (
-    component_id          INTEGER PRIMARY KEY,
-    path        LTREE NOT NULL,
-    label       TEXT NOT NULL, -- e.g., 'Agent', 'Personal'
-    elementType TEXT NOT null  -- e.g., 'Screen', 'Tab', 'Section'
+	component_id int4 NOT NULL,
+	"path" public.ltree NOT NULL,
+	"label" text NOT NULL,
+	elementtype text NOT NULL,
+	CONSTRAINT ui_components_pkey PRIMARY KEY (component_id)
 );
+CREATE INDEX idx_ui_components_path ON hmsmaster.ui_components USING gist (path);
 
--- The fields table (Inputs, Buttons, etc.)
 CREATE TABLE hmsmaster.ui_fields (
-    cntrl_id            INTEGER PRIMARY KEY,
-    component_id  INTEGER REFERENCES hmsmaster.ui_components(component_id) ON DELETE CASCADE,
-    cntrl_name    TEXT NOT NULL
+	cntrl_id int4 NOT NULL,
+	component_id int4 NULL,
+	cntrl_name text NOT NULL,
+	CONSTRAINT ui_fields_pkey PRIMARY KEY (cntrl_id),
+	CONSTRAINT ui_fields_component_id_fkey FOREIGN KEY (component_id) REFERENCES hmsmaster.ui_components(component_id) ON DELETE CASCADE
 );
+CREATE INDEX idx_ui_fields_comp_id ON hmsmaster.ui_fields USING btree (component_id);
+
 
 CREATE TABLE hmsmaster.ui_fields_setting (
-    id            SERIAL PRIMARY KEY,
-    orgid         int4 not null REFERENCES app_subscription.organisation(orgid) ON DELETE CASCADE,
-    field_id      INTEGER REFERENCES hmsmaster.ui_fields(cntrl_id) ON DELETE CASCADE,
-    render        BOOLEAN DEFAULT true,
-    allow_edit    BOOLEAN DEFAULT false,
-    sort_order    INTEGER DEFAULT 0, -- Added to keep fields in order
-    access_granted_on timestamp not null,
-    access_granted_by int4 not null references hms."user"(user_id) ON DELETE CASCADE
+	id serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	cntrl_id int4 NULL,
+	render bool DEFAULT true NULL,
+	allow_edit bool DEFAULT false NULL,
+	sort_order int4 DEFAULT 0 NULL,
+	access_granted_on timestamp NOT NULL,
+	access_granted_by int4 NOT NULL,
+	CONSTRAINT ui_fields_setting_pkey PRIMARY KEY (id),
+	CONSTRAINT ui_fields_setting_access_granted_by_fkey FOREIGN KEY (access_granted_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE,
+	CONSTRAINT ui_fields_setting_cntrl_id_fkey FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id) ON DELETE CASCADE,
+	CONSTRAINT ui_fields_setting_orgid_fkey FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE CASCADE
 );
-
-CREATE INDEX idx_ui_components_path ON hmsmaster.ui_components USING GIST (path);
-CREATE INDEX idx_ui_fields_comp_id ON hmsmaster.ui_fields(component_id);

@@ -19,7 +19,7 @@ WITH flat_data AS (
         ) as field_list
     FROM hmsmaster.ui_components c
     LEFT JOIN hmsmaster.ui_fields f ON c.component_id = f.component_id
-    LEFT JOIN hmsmaster.ui_fields_setting s ON f.cntrl_id = s.cntrl_id AND s.orgid = 1 -- Replace with @orgId
+    LEFT JOIN hmsmaster.ui_fields_setting s ON f.cntrl_id = s.cntrl_id AND s.orgid = @orgId -- Replace with @orgId
     GROUP BY c.component_id, c.path, c.label, c.elementType
 ),
 level_3 AS (

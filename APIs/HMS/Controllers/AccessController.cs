@@ -685,7 +685,7 @@ namespace HMS.Controllers
                 return StatusCode(503, hMSResponse);
             }
         }
-        [HttpPost("UIControlAccess")]
+        [HttpPost("Role/UI/Control/AccessList")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
         public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
         {

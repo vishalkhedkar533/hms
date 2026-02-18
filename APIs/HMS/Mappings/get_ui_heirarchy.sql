@@ -1,5 +1,5 @@
 WITH flat_data AS (
-    -- Step 1: Combine components and fields into a single list
+    /*Combine components and fields into a single list*/
     SELECT 
         c.component_id, 
         c.path, 
@@ -11,19 +11,19 @@ WITH flat_data AS (
                 jsonb_build_object(
                     'cntrlid', f.cntrl_id,
                     'cntrlName', f.cntrl_name,
-                    'render', COALESCE(s.render, true),
+                    'render', COALESCE(s.render, false),
                     'allowedit', COALESCE(s.allow_edit, false)
                 ) ORDER BY s.sort_order, f.cntrl_id
-            ) FILTER (WHERE f.cntrl_id IS NOT NULL), 
+            ) FILTER (WHERE f.cntrl_id IS NOT null AND (p_ShowAll = true OR COALESCE(s.render, false) = true)), 
             '[]'::jsonb
         ) as field_list
     FROM hmsmaster.ui_components c
     LEFT JOIN hmsmaster.ui_fields f ON c.component_id = f.component_id
-    LEFT JOIN hmsmaster.ui_fields_setting s ON f.cntrl_id = s.cntrl_id AND s.orgid = @orgId -- Replace with @orgId
+    LEFT JOIN hmsmaster.ui_fields_setting s ON f.cntrl_id = s.cntrl_id AND s.orgid = p_orgId
     GROUP BY c.component_id, c.path, c.label, c.elementType
 ),
 level_3 AS (
-    -- Step 2: Aggregate the deepest nodes (Sections)
+    /*Step 2: Aggregate the deepest nodes (Sections)*/
     SELECT 
         subpath(path, 0, lvl - 1) as parent_path,
         jsonb_agg(
@@ -38,7 +38,7 @@ level_3 AS (
     GROUP BY 1
 ),
 level_2 AS (
-    -- Step 3: Join Sections into Tabs
+    /*Step 3: Join Sections into Tabs*/
     SELECT 
         subpath(f.path, 0, f.lvl - 1) as parent_path,
         jsonb_agg(
@@ -53,7 +53,7 @@ level_2 AS (
     WHERE f.lvl = 2
     GROUP BY 1
 )
--- Step 4: Final output (Join Tabs into Screen)
+/*Step 4: Final output (Join Tabs into Screen)*/
 SELECT jsonb_build_object(
     'UIMenu', jsonb_agg(
         jsonb_strip_nulls(jsonb_build_object(

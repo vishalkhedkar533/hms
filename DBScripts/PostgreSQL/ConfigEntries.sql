@@ -333,3 +333,21 @@ INSERT INTO hmsmaster.org_uicontrol
 select 2,uch.hierarchy_id , 1, true,true,now(),1
 from hmsmaster.uicontrol_hierarchy uch
 where not exists(select 1 from hmsmaster.org_uicontrol ouc where uch.hierarchy_id  = ouc.hierarchy_id )
+
+-- 1. Insert UI Components (Hierarchy)
+INSERT INTO hmsmaster.ui_components (component_id, path, label, elementType) VALUES 
+(100, 'Agent', 'Agent', 'Screen'),
+(101, 'Agent.Personal', 'Personal', 'Tab'),
+(102, 'Agent.Personal.PersonalInfo', 'PersonalInfo', 'Section'),
+(103, 'Agent.Personal.IndividualAction', 'IndividualAction', 'Section');
+
+-- 2. Insert UI Fields (Controls)
+-- Fields for PersonalInfo (component_id 102)
+INSERT INTO hmsmaster.ui_fields (cntrl_id, component_id, cntrl_name) VALUES 
+(501, 102, 'title'),
+(502, 102, 'lastName');
+
+-- Fields for IndividualAction (component_id 103)
+INSERT INTO hmsmaster.ui_fields (cntrl_id, component_id, cntrl_name) VALUES 
+(503, 103, 'Channel'),
+(504, 103, 'subChannel');

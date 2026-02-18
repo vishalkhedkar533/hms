@@ -48,6 +48,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
+    <None Update="Mappings\get_ui_heirarchy.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Templates\Mail\accountlocked.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

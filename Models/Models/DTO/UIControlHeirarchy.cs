@@ -2,33 +2,42 @@
 
 namespace Models.DTO
 {
-    public class UIMenuHeirarchyDTO
+    public class UIMenuResponse
     {
-        [JsonPropertyName("menuID")]
-        public int MenuID { get; set; }
+        [JsonPropertyName("UIMenu")]
+        public List<UIComponentDto> UIMenu { get; set; } = new();
+    }
 
-        [JsonPropertyName("menuName")]
-        public string MenuName { get; set; }
+    public class UIComponentDto
+    {
+        [JsonPropertyName("Section")]
+        public string Section { get; set; } = string.Empty;
 
-        [JsonPropertyName("menuType")]
-        public string MenuType { get; set; }
+        [JsonPropertyName("Type")]
+        public string Type { get; set; } = string.Empty;
 
-        [JsonPropertyName("allowEdit")]
-        public bool? AllowEdit { get; set; }
+        // This property allows for infinite nesting (Screen -> Tab -> Section, etc.)
+        [JsonPropertyName("SubSection")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<UIComponentDto>? SubSection { get; set; }
 
-        [JsonPropertyName("hierarchyId")]
-        public int HierarchyId { get; set; }
+        [JsonPropertyName("FieldList")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public List<FieldDto>? FieldList { get; set; }
+    }
 
-        [JsonPropertyName("childControl")]
-        public UIMenuHeirarchyDTO ChildControl { get; set; }
+    public class FieldDto
+    {
+        [JsonPropertyName("cntrlid")]
+        public int CntrlId { get; set; }
 
-        [JsonPropertyName("renderControl")]
-        public bool? RenderControl { get; set; }
+        [JsonPropertyName("cntrlName")]
+        public string CntrlName { get; set; } = string.Empty;
 
-        [JsonPropertyName("accessGrantedBy")]
-        public int? AccessGrantedBy { get; set; }
+        [JsonPropertyName("render")]
+        public bool Render { get; set; }
 
-        [JsonPropertyName("accessGrantedOn")]
-        public DateTime? AccessGrantedOn { get; set; }
+        [JsonPropertyName("allowedit")]
+        public bool AllowEdit { get; set; }
     }
 }

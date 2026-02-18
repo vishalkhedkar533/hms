@@ -2536,3 +2536,8 @@ CREATE TABLE hmsmaster.ui_fields_setting (
 );
 
 alter TABLE hmsmaster.ui_fields_setting add column role_id int4 REFERENCES hms.roles(role_id);
+alter TABLE hmsmaster.ui_fields_setting add column ApproverOneID int4 REFERENCES hms."user"(user_id);
+alter TABLE hmsmaster.ui_fields_setting add column ApproverTwoID int4 REFERENCES hms."user"(user_id);
+alter TABLE hmsmaster.ui_fields_setting add column ApproverThreeID int4 REFERENCES hms."user"(user_id);
+alter TABLE hmsmaster.ui_fields_setting add column UseDefaultApprover bool default true;
+ALTER TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_ui_fields_setting_ctrl FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id);

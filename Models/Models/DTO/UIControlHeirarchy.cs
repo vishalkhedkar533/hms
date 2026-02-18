@@ -23,6 +23,12 @@ namespace Models.DTO
         public int cntrlid { get; set; }
         public bool allowedit { get; set; }
         public string cntrlName { get; set; }
+        public int? access_granted_by { get; set; }
+        public DateTime? access_granted_on { get; set; }
+        public int? ApproverOneID { get; set; }
+        public int? ApproverTwoID { get; set; }
+        public int? ApproverThreeID { get; set; }
+        public bool UseDefaultApprover { get; set; } = false;
     }
 
 

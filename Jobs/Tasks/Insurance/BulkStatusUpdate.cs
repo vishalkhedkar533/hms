@@ -148,6 +148,7 @@ namespace Tasks.Insurance
                 }
 
                 var rejectedTempRows = new List<object>();
+                var approvedTempRows = new List<object>();
                 string? successDataEncoded = null;
                 byte[]? errorFile = null;
 
@@ -183,7 +184,16 @@ namespace Tasks.Insurance
                                 Reason = reason,
                                 OrgId = task.OrgId ?? orgId
                             });
+                            continue;
                         }
+
+                        approvedTempRows.Add(new
+                        {
+                            AgentCode = agentCode,
+                            Status = status,
+                            BusinessEffectiveDate = item.BusinessEffectiveDate.ToDateTime(TimeOnly.MinValue),
+                            OrgId = task.OrgId ?? orgId
+                        });
                     }
                 }
 
@@ -196,9 +206,18 @@ namespace Tasks.Insurance
                     await conn.ExecuteAsync(reviewSql, rejectedTempRows);
                 }
 
-                var applySql = _mappingProvider.GetScriptForOperation("StatusUpdate", "ApplyTempStatusUpdate")?.Script
-                    ?? throw new Exception("SQL for StatusUpdate/ApplyTempStatusUpdate missing");
-                response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
+                if (approvedTempRows.Count > 0)
+                {
+                    var statusSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "UpdateTempStatusUpdateStatus")?.Script
+                        ?? throw new Exception("SQL for StatusUpdate/UpdateTempStatusUpdateStatus missing");
+                    await conn.ExecuteAsync(statusSql, approvedTempRows);
+                }
+
+                // var applySql = _mappingProvider.GetScriptForOperation("StatusUpdate", "ApplyTempStatusUpdate")?.Script
+                //     ?? throw new Exception("SQL for StatusUpdate/ApplyTempStatusUpdate missing");
+                // response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
+
+                response.UpdatedRows = 0;
 
                 response.FailedRows = response.Errors.Count;
 

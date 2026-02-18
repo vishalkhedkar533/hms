@@ -151,6 +151,7 @@ namespace Tasks.Insurance
                 }
 
                 var rejectedTempRows = new List<object>();
+                var approvedTempRows = new List<object>();
                 string? successDataEncoded = null;
                 byte[]? errorFile = null;
 
@@ -218,7 +219,16 @@ namespace Tasks.Insurance
                                 Reason = reason,
                                 OrgId = task.OrgId ?? orgId
                             });
+                            continue;
                         }
+
+                        approvedTempRows.Add(new
+                        {
+                            AgentCode = agentCode,
+                            SupervisorCode = supervisorCode,
+                            EffectiveDateOfChange = item.EffectiveDateOfChange.ToDateTime(TimeOnly.MinValue),
+                            OrgId = task.OrgId ?? orgId
+                        });
                     }
                 }
 
@@ -231,9 +241,18 @@ namespace Tasks.Insurance
                     await conn.ExecuteAsync(reviewSql, rejectedTempRows);
                 }
 
-                var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
-                    ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
-                response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
+                if (approvedTempRows.Count > 0)
+                {
+                    var statusSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
+                    await conn.ExecuteAsync(statusSql, approvedTempRows);
+                }
+
+                // var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
+                //     ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
+                // response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
+
+                response.UpdatedRows = 0;
 
                 response.FailedRows = response.Errors.Count;
 

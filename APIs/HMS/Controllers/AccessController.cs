@@ -706,7 +706,7 @@ namespace HMS.Controllers
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
                 {
-                    var uiMenuResponse = JsonConvert.DeserializeObject<List<UIMenuResponse>>(
+                    var uiMenuResponse = JsonConvert.DeserializeObject<UIMenuResponse>(
                         stringResponse.FirstOrDefault(),
                         new JsonSerializerSettings
                         {

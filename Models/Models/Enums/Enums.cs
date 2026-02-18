@@ -38,4 +38,9 @@
         OnHold = 4,
         Paid = 5
     }
+    public enum MenuSearchFor : int
+    {
+        User = 1,
+        Role = 2
+    }
 }

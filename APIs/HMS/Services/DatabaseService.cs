@@ -45,15 +45,21 @@ namespace HMS.Services
         private string GetScript(string entity, string action)
         {
             var script = _dbMappings["Entities"]?[entity]?[action]?["Script"]?.ToString();
-            if (string.IsNullOrEmpty(script))
+            var SQLFile = _dbMappings["Entities"]?[entity]?[action]?["SQLFile"]?.ToString();
+            if (string.IsNullOrEmpty(script) && string.IsNullOrEmpty(SQLFile))
                 throw new InvalidOperationException($"Script not defined for {entity}.{action}");
 
             // ✅ Auto-cast any ltree columns to text
             if (_provider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
             {
-                script = CastLtreeColumnsToText(script);
+                if (!string.IsNullOrEmpty(SQLFile))
+                {
+                    script = LoadSqlFromFile(SQLFile);
+                }
+                else { 
+                    script = CastLtreeColumnsToText(script);
+                }                    
             }
-
             return script;
         }
 
@@ -102,7 +108,13 @@ namespace HMS.Services
                    + script.Substring(selectMatch.Groups[3].Index + selectMatch.Groups[3].Length);
         }
 
-
+        private string LoadSqlFromFile(string sqlFile)
+        {
+            var filePath = Path.Combine(AppContext.BaseDirectory, "Mappings", sqlFile);
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"SQL file not found: {filePath}");
+             return File.ReadAllText(filePath);
+        }
 
         public async Task<IEnumerable<T>> ExecuteQueryAsync<T>(string entity, string action, object parameters)
         {

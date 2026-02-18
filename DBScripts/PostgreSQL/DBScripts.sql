@@ -2495,24 +2495,30 @@ CREATE TABLE hms.temp_designation_update (
 
 
 -- The structural table (Screens, Tabs, Sections)
+/*
+ * 
+  DROP TABLE hmsmaster.ui_fields_setting;
+  DROP TABLE hmsmaster.ui_fields;
+  DROP TABLE hmsmaster.ui_components;
+*/
 CREATE TABLE hmsmaster.ui_components (
-    id          SERIAL PRIMARY KEY,
+    component_id          INTEGER PRIMARY KEY,
     path        LTREE NOT NULL,
     label       TEXT NOT NULL, -- e.g., 'Agent', 'Personal'
-    type        TEXT NOT null,  -- e.g., 'Screen', 'Tab', 'Section'
+    elementType TEXT NOT null  -- e.g., 'Screen', 'Tab', 'Section'
 );
 
 -- The fields table (Inputs, Buttons, etc.)
 CREATE TABLE hmsmaster.ui_fields (
-    id            SERIAL PRIMARY KEY,
-    component_id  INTEGER REFERENCES hmsmaster.ui_components(id) ON DELETE CASCADE,
-    cntrl_name    TEXT NOT NULL,
+    cntrl_id            INTEGER PRIMARY KEY,
+    component_id  INTEGER REFERENCES hmsmaster.ui_components(component_id) ON DELETE CASCADE,
+    cntrl_name    TEXT NOT NULL
 );
 
 CREATE TABLE hmsmaster.ui_fields_setting (
     id            SERIAL PRIMARY KEY,
     orgid         int4 not null REFERENCES app_subscription.organisation(orgid) ON DELETE CASCADE,
-    field_id      INTEGER REFERENCES hmsmaster.ui_fields(id) ON DELETE CASCADE,
+    field_id      INTEGER REFERENCES hmsmaster.ui_fields(cntrl_id) ON DELETE CASCADE,
     render        BOOLEAN DEFAULT true,
     allow_edit    BOOLEAN DEFAULT false,
     sort_order    INTEGER DEFAULT 0, -- Added to keep fields in order

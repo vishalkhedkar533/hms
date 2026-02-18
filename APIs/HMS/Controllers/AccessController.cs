@@ -685,7 +685,7 @@ namespace HMS.Controllers
                 return StatusCode(503, hMSResponse);
             }
         }
-        [HttpPost("UIControlAccess")]
+        [HttpPost("Role/UI/Control/AccessList")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
         public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
         {
@@ -706,7 +706,7 @@ namespace HMS.Controllers
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
                 {
-                    var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
+                    var uiMenuResponse = JsonConvert.DeserializeObject<UIMenuResponse>(
                         stringResponse.FirstOrDefault(),
                         new JsonSerializerSettings
                         {
@@ -719,7 +719,7 @@ namespace HMS.Controllers
 
                     hMSResponse.responseHeader.ErrorCode = 1101;
                     hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                    hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
+                    hMSResponse.responseBody.uiMenuResponse = uiMenuResponse;
                     return Ok(hMSResponse);
                 }
                 else

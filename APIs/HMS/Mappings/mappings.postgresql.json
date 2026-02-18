@@ -55,8 +55,9 @@
         "Script": "select * from hmsmaster.KeyValueEntries where orgid = @orgid and EntryCategory =@EntryCategory"
       },
       "get_ui_control_hierarchy": {
+        "SQLFile": "get_ui_heirarchy.sql",
         "Function": "hms.get_ui_control_hierarchy",
-        "Script": "select * from hms.get_ui_control_hierarchy(@p_orgId, @p_ShowAll)"
+        "Script": ""
       }
     },
     "Commission": {

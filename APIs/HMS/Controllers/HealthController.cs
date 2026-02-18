@@ -36,8 +36,8 @@ namespace HMS.Controllers
                 var claims = new List<Claim>
                 {
                     // Standard claims
-                    new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),        // 👈 JWT standard "sub"
-                    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),          // 👈 .NET convention
+                    new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),        // JWT standard "sub"
+                    _authClaimService.GetClaim(ClaimTypes.NameIdentifier),          // .NET convention
                     new Claim(ClaimTypes.Name, user.Username),                             // Username
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),     // Unique token ID,
                     new Claim(ApiConstants.OrganisationId, user.OrgId.ToString()),         // Custom claim for User ID

@@ -54,9 +54,15 @@
         "Function": "na",
         "Script": "select * from hmsmaster.KeyValueEntries where orgid = @orgid and EntryCategory =@EntryCategory"
       },
-      "get_ui_control_hierarchy": {
-        "Function": "hms.get_ui_control_hierarchy",
-        "Script": "select * from hms.get_ui_control_hierarchy(@p_orgId, @p_ShowAll)"
+      "get_ui_heirarchy_user": {
+        "SQLFile": "get_ui_heirarchy_user.sql",
+        "Function": "hms.get_ui_heirarchy_user",
+        "Script": ""
+      },
+      "get_ui_heirarchy_role": {
+        "SQLFile": "get_ui_heirarchy_role.sql",
+        "Function": "hms.get_ui_heirarchy_role",
+        "Script": ""
       }
     },
     "Commission": {

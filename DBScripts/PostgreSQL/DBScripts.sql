@@ -2514,3 +2514,50 @@ CREATE TABLE hms.temp_location_update (
         FOREIGN KEY (orgid) 
         REFERENCES app_subscription.organisation (orgid)
 );
+-- The structural table (Screens, Tabs, Sections)
+/*
+ * 
+  DROP TABLE hmsmaster.ui_fields_setting;
+  DROP TABLE hmsmaster.ui_fields;
+  DROP TABLE hmsmaster.ui_components;
+*/
+CREATE TABLE hmsmaster.ui_components (
+	component_id int4 NOT NULL,
+	"path" public.ltree NOT NULL,
+	"label" text NOT NULL,
+	elementtype text NOT NULL,
+	CONSTRAINT ui_components_pkey PRIMARY KEY (component_id)
+);
+CREATE INDEX idx_ui_components_path ON hmsmaster.ui_components USING gist (path);
+
+CREATE TABLE hmsmaster.ui_fields (
+	cntrl_id int4 NOT NULL,
+	component_id int4 NULL,
+	cntrl_name text NOT NULL,
+	CONSTRAINT ui_fields_pkey PRIMARY KEY (cntrl_id),
+	CONSTRAINT ui_fields_component_id_fkey FOREIGN KEY (component_id) REFERENCES hmsmaster.ui_components(component_id) ON DELETE CASCADE
+);
+CREATE INDEX idx_ui_fields_comp_id ON hmsmaster.ui_fields USING btree (component_id);
+
+
+CREATE TABLE hmsmaster.ui_fields_setting (
+	id serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	cntrl_id int4 NULL,
+	render bool DEFAULT true NULL,
+	allow_edit bool DEFAULT false NULL,
+	sort_order int4 DEFAULT 0 NULL,
+	access_granted_on timestamp NOT NULL,
+	access_granted_by int4 NOT NULL,
+	CONSTRAINT ui_fields_setting_pkey PRIMARY KEY (id),
+	CONSTRAINT ui_fields_setting_access_granted_by_fkey FOREIGN KEY (access_granted_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE,
+	CONSTRAINT ui_fields_setting_cntrl_id_fkey FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id) ON DELETE CASCADE,
+	CONSTRAINT ui_fields_setting_orgid_fkey FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE CASCADE
+);
+
+alter TABLE hmsmaster.ui_fields_setting add column role_id int4 REFERENCES hms.roles(role_id);
+alter TABLE hmsmaster.ui_fields_setting add column ApproverOneID int4 REFERENCES hms."user"(user_id);
+alter TABLE hmsmaster.ui_fields_setting add column ApproverTwoID int4 REFERENCES hms."user"(user_id);
+alter TABLE hmsmaster.ui_fields_setting add column ApproverThreeID int4 REFERENCES hms."user"(user_id);
+alter TABLE hmsmaster.ui_fields_setting add column UseDefaultApprover bool default true;
+ALTER TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_ui_fields_setting_ctrl FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id);

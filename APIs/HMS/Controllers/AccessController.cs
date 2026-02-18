@@ -9,6 +9,7 @@ using Models.DTO;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Data.Common;
 using System.Security.Claims;
 
 namespace HMS.Controllers
@@ -627,48 +628,69 @@ namespace HMS.Controllers
         }
         [HttpPost("Role/UI/Control/UpdateAccess")]
         [MenuAuthorize(AuthorisationConstants.UpdateUIAccess)]
-        public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] OrgUiControlDTO orgUiControlDTO)
+        public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] UiFieldsSetting uiFieldsSetting)
         {
             var hMSResponse = new HmsResponse();
+            orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             try
             {
-                if (orgUiControlDTO == null) return BadRequest("Payload is null.");
-
-                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-                // 1. Try to find an existing record based on the ID (if provided) 
-                // or by the unique combination of Org + Menu + Role
-                var existingRecord = await _context.OrgUiControls
-                    .FirstOrDefaultAsync(x => x.OrgId == orgId
-                                         && x.HierarchyId == orgUiControlDTO.HierarchyId
-                                         && x.RoleId == orgUiControlDTO.RoleId);
-
-                if (existingRecord != null)
+                var Role = await _context.Roles.AsNoTracking().FirstOrDefaultAsync(
+                    x => x.RoleId == uiFieldsSetting.RoleId && x.OrgId == orgId);
+                if (Role == null)
                 {
-                    // --- UPDATE LOGIC ---
-                    existingRecord.AllowEdit = orgUiControlDTO.AllowEdit;
-                    existingRecord.RenderControl = orgUiControlDTO.RenderControl;
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hMSResponse.responseHeader.ErrorMessage = "Invalid Role";
+                    return Conflict(hMSResponse);
+                }
 
-                    // Only update 'GrantedBy' if the DTO provides a new value
-                    existingRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
-                    existingRecord.AccessGrantedOn = DateTime.UtcNow;
+                // Safely check existence of the control in uiField.
+                // Some deployments may have different DB column names; guard against column-not-found errors.
+                 var uiField = await _context.uiField.AsNoTracking()
+                        .AnyAsync(x => x.CntrlId == uiFieldsSetting.CntrlId);
 
-                    _context.OrgUiControls.Update(existingRecord);
+                if (uiField == null)
+                {
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hMSResponse.responseHeader.ErrorMessage = "Invalid Control ID";
+                    return Conflict(hMSResponse);
+                }
+
+                var existingSetting = await _context.uiFieldsSettings.FirstOrDefaultAsync(
+                    s => s.OrgId == orgId
+                         && s.RoleId == uiFieldsSetting.RoleId
+                         && s.CntrlId == uiFieldsSetting.CntrlId);
+
+                if (existingSetting == null)
+                {
+                    var newRecord = new UiFieldsSetting
+                    {
+                        RoleId = uiFieldsSetting.RoleId,
+                        CntrlId = uiFieldsSetting.CntrlId,
+                        Render = uiFieldsSetting.Render,
+                        AllowEdit = uiFieldsSetting.AllowEdit,
+                        SortOrder = uiFieldsSetting.SortOrder,
+                        ApproverOneId = uiFieldsSetting.ApproverOneId,
+                        ApproverTwoId = uiFieldsSetting.ApproverTwoId,
+                        ApproverThreeId = uiFieldsSetting.ApproverThreeId,
+                        AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0"),
+                        AccessGrantedOn = DateTime.UtcNow.Date,
+                        OrgId = orgId
+                    };
+                    _context.uiFieldsSettings.Add(newRecord);
                 }
                 else
                 {
-                    // --- INSERT LOGIC ---
-                    var newRecord = new OrgUiControl
-                    {
-                        OrgId = orgId,
-                        HierarchyId = orgUiControlDTO.HierarchyId,
-                        RoleId = orgUiControlDTO.RoleId,
-                        AllowEdit = orgUiControlDTO.AllowEdit,
-                        RenderControl = orgUiControlDTO.RenderControl,
-                        AccessGrantedOn = DateTime.UtcNow,
-                        AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier))
-                    };
-                    _context.OrgUiControls.Add(newRecord);
+                    existingSetting.Render = uiFieldsSetting.Render;
+                    existingSetting.AllowEdit = uiFieldsSetting.AllowEdit;
+                    existingSetting.SortOrder = uiFieldsSetting.SortOrder;
+                    existingSetting.RoleId = uiFieldsSetting.RoleId;
+                    existingSetting.ApproverOneId = uiFieldsSetting.ApproverOneId;
+                    existingSetting.ApproverTwoId = uiFieldsSetting.ApproverTwoId;
+                    existingSetting.ApproverThreeId = uiFieldsSetting.ApproverThreeId;
+                    existingSetting.CntrlId = uiFieldsSetting.CntrlId;
+                    existingSetting.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+                    existingSetting.AccessGrantedOn = DateTime.UtcNow;
+                    _context.uiFieldsSettings.Update(existingSetting);
                 }
 
                 await _context.SaveChangesAsync();
@@ -677,36 +699,59 @@ namespace HMS.Controllers
 
                 return Ok(hMSResponse);
             }
+            catch (DbException dbEx)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = "DATABASE_ERROR";
+                _logger.LogError(dbEx, "Database error occurred while updating UI access.");
+                return StatusCode(503, hMSResponse);
+            }
             catch (Exception ex)
             {
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
                 hMSResponse.responseHeader.ErrorMessage = "FAILED";
-                _logger.LogError(ex, $"Failed to Update menu access for RoleID {orgUiControlDTO.RoleId} : MenuID {orgUiControlDTO.HierarchyId}");
+                _logger.LogError(ex, "Failed to update UI access for RoleId {RoleId} CntrlId {CntrlId}", uiFieldsSetting.RoleId, uiFieldsSetting.CntrlId);
                 return StatusCode(503, hMSResponse);
             }
         }
-        [HttpPost("UIControlAccess")]
+        [HttpPost("Role/UI/Control/AccessList")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
+        public async Task<IActionResult> GetAccessList([FromBody] SearchMenu searchMenu )
         {
             HmsResponse hMSResponse = new HmsResponse();
             orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
             try
             {
-                //"Script": "select * from hms.get_ui_control_hierarchy(2, false)"
-                var stringResponse = await _db.ExecuteQueryAsync<string>(
-                    "Master",
-                    "get_ui_control_hierarchy",
-                    new
-                    {
-                        p_orgId = orgId,
-                        p_ShowAll = ShowAll
-                    });
+                IEnumerable<string> stringResponse = Enumerable.Empty<string>();
+                switch (searchMenu.SearchFor)
+                {
+                    case Models.Enums.MenuSearchFor.User:
+                        stringResponse = await _db.ExecuteQueryAsync<string>(
+                            "Master",
+                            "get_ui_heirarchy_user",
+                            new
+                            {
+                                p_orgId = orgId,
+                                LoggedInUserID = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier))
+                            });
+                        break;
+                    case Models.Enums.MenuSearchFor.Role:
+                        stringResponse = await _db.ExecuteQueryAsync<string>(
+                            "Master",
+                            "get_ui_heirarchy_role",
+                            new
+                            {
+                                p_orgId = orgId,
+                                p_RoleId = searchMenu.RoleId
+                            });
+                        break;
+                    default:
+                        break;
+                }
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
                 {
-                    var uiMenuHeirarchy = JsonConvert.DeserializeObject<List<UIMenuHeirarchyDTO>>(
+                    var uiMenuResponse = JsonConvert.DeserializeObject<UIMenuResponse>(
                         stringResponse.FirstOrDefault(),
                         new JsonSerializerSettings
                         {
@@ -719,7 +764,7 @@ namespace HMS.Controllers
 
                     hMSResponse.responseHeader.ErrorCode = 1101;
                     hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                    hMSResponse.responseBody.uiMenuHeirarchy = uiMenuHeirarchy;
+                    hMSResponse.responseBody.uiMenuResponse = uiMenuResponse;
                     return Ok(hMSResponse);
                 }
                 else

@@ -38,7 +38,7 @@ namespace Models.DTO
         public List<ProcessCommissionDTO>? processCommissionList { get; set; }
         public FileDownloadDto? fileDownload { get; set; } = null;
         public List<GeoHierarchyDto>? geoHierarchy { get; set; } = null;
-        public List<UIMenuHeirarchyDTO>? uiMenuHeirarchy { get; set; } = null;
+        public UIMenuResponse? uiMenuResponse { get; set; } = null;
         public List<GeoHierarchyAgentDto>? geoAgentHierarchy { get; set; } = null;
         public List<BatchListDto>? batches { get; set; } = null;
         public List<Role>? roles { get; set; } = null;

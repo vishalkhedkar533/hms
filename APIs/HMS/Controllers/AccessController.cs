@@ -687,22 +687,39 @@ namespace HMS.Controllers
         }
         [HttpPost("Role/UI/Control/AccessList")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetUIControlAccess([FromBody] bool ShowAll = false)
+        public async Task<IActionResult> GetAccessList([FromBody] SearchMenu searchMenu )
         {
             HmsResponse hMSResponse = new HmsResponse();
             orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
             try
             {
                 //"Script": "select * from hms.get_ui_control_hierarchy(2, false)"
-                var stringResponse = await _db.ExecuteQueryAsync<string>(
-                    "Master",
-                    "get_ui_control_hierarchy",
-                    new
-                    {
-                        p_orgId = orgId,
-                        p_ShowAll = ShowAll
-                    });
+                IEnumerable<string> stringResponse = Enumerable.Empty<string>();
+                switch (searchMenu.SearchFor)
+                {
+                    case Models.Enums.MenuSearchFor.User:
+                        stringResponse = await _db.ExecuteQueryAsync<string>(
+                            "Master",
+                            "get_ui_heirarchy_user",
+                            new
+                            {
+                                p_orgId = orgId,
+                                LoggedInUserID = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier))
+                            });
+                        break;
+                    case Models.Enums.MenuSearchFor.Role:
+                        stringResponse = await _db.ExecuteQueryAsync<string>(
+                            "Master",
+                            "get_ui_heirarchy_role",
+                            new
+                            {
+                                p_orgId = orgId,
+                                p_RoleId = searchMenu.RoleId
+                            });
+                        break;
+                    default:
+                        break;
+                }
 
                 if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
                 {

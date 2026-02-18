@@ -2534,3 +2534,5 @@ CREATE TABLE hmsmaster.ui_fields_setting (
 	CONSTRAINT ui_fields_setting_cntrl_id_fkey FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id) ON DELETE CASCADE,
 	CONSTRAINT ui_fields_setting_orgid_fkey FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE CASCADE
 );
+
+alter TABLE hmsmaster.ui_fields_setting add column role_id int4 REFERENCES hms.roles(role_id);

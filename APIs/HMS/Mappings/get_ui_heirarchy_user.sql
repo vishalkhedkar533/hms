@@ -14,12 +14,18 @@ WITH flat_data AS (
                     'render', COALESCE(s.render, false),
                     'allowedit', COALESCE(s.allow_edit, false)
                 ) ORDER BY s.sort_order, f.cntrl_id
-            ) FILTER (WHERE f.cntrl_id IS NOT null AND (p_ShowAll = true OR COALESCE(s.render, false) = true)), 
+            ) FILTER (WHERE f.cntrl_id IS NOT null 
+                      AND COALESCE(s.render, false) = true
+                      AND exists (select 1 
+                                  from hms.user_role_mapping urm 
+                                  WHERE s.role_id = urm.role_id 
+                                        and coalesce(urm.user_id,-1000) = coalesce(:LoggedInUserID, coalesce(urm.user_id,-1000)))
+                          ), 
             '[]'::jsonb
         ) as field_list
     FROM hmsmaster.ui_components c
     LEFT JOIN hmsmaster.ui_fields f ON c.component_id = f.component_id
-    LEFT JOIN hmsmaster.ui_fields_setting s ON f.cntrl_id = s.cntrl_id AND s.orgid = p_orgId
+    LEFT JOIN hmsmaster.ui_fields_setting s ON f.cntrl_id = s.cntrl_id AND s.orgid = :p_orgId
     GROUP BY c.component_id, c.path, c.label, c.elementType
 ),
 level_3 AS (

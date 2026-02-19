@@ -238,24 +238,21 @@ namespace HMS.Controllers
 
                 var menuAccessList = await (from mm in _context.MenuMasters.AsNoTracking()
                                             join parent in _context.MenuMasters.AsNoTracking()
-                                                on mm.ParentMenuId equals parent.MenuId into parentJoin
-                                            from parentMenu in parentJoin.DefaultIfEmpty()
-                                            join rmm in _context.RoleMenuMapping
-                                                .AsNoTracking()
-                                                .Where(r => r.RoleId == roleId 
-                                                && r.OrgId == orgId)
-                                                on mm.MenuId equals rmm.MenuId into rmmJoin
-                                            from mapping in rmmJoin.DefaultIfEmpty()
+                                                on mm.ParentMenuId equals parent.MenuId
+                                            join mapping in _context.RoleMenuMapping.AsNoTracking()
+                                                on mm.MenuId equals mapping.MenuId
+                                            where mapping.RoleId == roleId && mapping.OrgId == orgId
                                             select new MenuAccessDto
                                             {
                                                 MenuId = mm.MenuId,
                                                 MenuName = mm.MenuName,
-                                                ParentMenuId = parentMenu != null ? (int?)parentMenu.MenuId : null,
-                                                ParentMenuName = parentMenu != null ? parentMenu.MenuName : null,
-                                                HasAccess = mapping != null
+                                                ParentMenuId = parent.MenuId,
+                                                ParentMenuName = parent.MenuName,
+                                                HasAccess = true // Since it's an inner join, access must exist to be here
                                             })
-                                           .OrderBy(a => a.ParentMenuName)
-                                           .ThenBy(a => a.MenuName).ToListAsync();
+                            .OrderBy(a => a.ParentMenuName)
+                            .ThenBy(a => a.MenuName)
+                            .ToListAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";

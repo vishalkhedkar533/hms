@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
@@ -72,6 +73,7 @@ namespace Models.DB
         public int? DesignationLevel { get; set; }
         public bool IsActive { get; set; } = true;
         public long? ChannelId { get; set; }
+        [SwaggerSchema("Code will will be prefixed during code generation")]
         public string? CodeFormat { get; set; }
         public long? SubChannelId { get; set; }
     }

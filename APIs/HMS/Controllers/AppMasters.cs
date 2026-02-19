@@ -398,11 +398,11 @@ namespace HMS.Controllers
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
 
-            var channel = await _context.ChannelMaster.
+            var channel = await _context.ChannelMaster.AsNoTracking().
                 FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId 
                 && x.OrgId == orgId);
 
-            var subChannel = await _context.SubchannelMaster.
+            var subChannel = await _context.SubchannelMaster.AsNoTracking().
                 FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId 
                 && x.OrgId == orgId 
                 && x.ChannelId == designationMaster.ChannelId);
@@ -455,7 +455,8 @@ namespace HMS.Controllers
             designation.IsActive = designationMaster.IsActive;
             designation.ChannelId = designationMaster.ChannelId;
             designation.OrgId = orgId;
-            //designation.HierarchyPath = dto.HierarchyPath;
+            //ltree is not supported in EF Core, so we will handle HierarchyPath manually via a stored procedure after saving the record to get the generated DesignationId
+            designation.HierarchyPath = null;
             designation.CodeFormat = designationMaster.CodeFormat;
             designation.SubChannelId = designationMaster.SubChannelId;
 
@@ -471,7 +472,7 @@ namespace HMS.Controllers
             try
             {
                 await _context.SaveChangesAsync();
-                if (!string.IsNullOrEmpty(parentDesignation.HierarchyPath))
+                if (!string.IsNullOrEmpty(parentDesignation?.HierarchyPath))
                 {
                     parentDesignation.HierarchyPath = parentDesignation.HierarchyPath.Concat(".").ToString();
                 }
@@ -481,7 +482,7 @@ namespace HMS.Controllers
                             new
                             {
                                 
-                                p_hierarchy_path = parentDesignation.HierarchyPath.Concat(designation.DesignationId.ToString()),
+                                p_hierarchy_path = string.Concat ((parentDesignation?.HierarchyPath?? string.Empty),designation.DesignationId.ToString()),
                                 p_orgId = orgId,
                                 p_channelID = designation.ChannelId,
                                 p_subChannelId = designation.SubChannelId,

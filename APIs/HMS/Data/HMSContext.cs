@@ -121,6 +121,10 @@ namespace HMS.Data
             {
                 entity.ToTable("organisation", "app_subscription");
             });
+            modelBuilder.Entity<DesignationMaster>()
+                .Property(e => e.HierarchyPath)
+                .HasColumnType("ltree");
+
             modelBuilder.HasDefaultSchema("hms");
         }
     }

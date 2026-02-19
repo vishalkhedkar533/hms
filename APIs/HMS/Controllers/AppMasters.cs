@@ -10,6 +10,7 @@ using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
+using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -213,7 +214,7 @@ namespace HMS.Controllers
             }
 
         }
-        [HttpPost("Channel/Update/{ChannelId}")]
+        [HttpPost("{ChannelId}/Update")]
         public async Task<IActionResult> Update([FromRoute] int ChannelId, [FromBody] ChannelMasterDto ChannelMaster)
         {
             var response = new HmsResponse();
@@ -257,7 +258,7 @@ namespace HMS.Controllers
                 return StatusCode(500, "An error occurred while updating the channel master.");
             }
         }
-        [HttpPost("Channel/{ChannelId}/SubChannel/Create")]
+        [HttpPost("{ChannelId}/SubChannel/Create")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> CreateSubChannel([FromRoute] int ChannelId, [FromBody] SubChannelMasterDto SubChannelMaster)
         {
@@ -315,7 +316,7 @@ namespace HMS.Controllers
             }
 
         }
-        [HttpPost("Channel/{ChannelId}/SubChannel/Update/{SubChannelId}")]
+        [HttpPost("{ChannelId}/{SubChannelId}/Update")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> UpdateSubChannel([FromRoute] int ChannelId, [FromRoute] int SubChannelId,
             [FromBody] SubChannelMasterDto subChannelMaster)
@@ -380,9 +381,11 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
-        [HttpPost("Channel/{ChannelId}/SubChannel/{SubChannelId}/Designation/Save")]
+        [HttpPost("{ChannelId}/{SubChannelId}/Designation/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
-        public async Task<IActionResult> UpsertDesignation([FromBody] DesignationMasterDto designationMaster)
+        public async Task<IActionResult> UpsertDesignation([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, 
+            [FromBody] DesignationMasterDto designationMaster)
         {
             HmsResponse response = new HmsResponse();
 
@@ -404,12 +407,14 @@ namespace HMS.Controllers
                 && x.OrgId == orgId 
                 && x.ChannelId == designationMaster.ChannelId);
 
-            if (channel == null || subChannel == null)
+            if (channel == null || 
+                subChannel == null || 
+                ChannelId != designationMaster.ChannelId || 
+                SubChannelId != designationMaster.SubChannelId)
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Verify the channel and subchannel belong to the organisation.";
                 return Conflict(response);
-
             }
 
             // 1. Try to find existing record

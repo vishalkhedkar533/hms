@@ -470,7 +470,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/MenuAccess/Grant")]
-        [MenuAuthorize(AuthorisationConstants.GrantMenuAccess)]
+        [MenuAuthorize(AuthorisationConstants.GrantRevokeMenuAccess)]
         public async Task<ActionResult<HmsResponse>> GrantMenuAccess([FromBody] RoleMenuDTO roleMenuDTO )
         {
             var hMSResponse = new HmsResponse();
@@ -563,7 +563,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("Role/MenuAccess/Revoke")]
-        [MenuAuthorize(AuthorisationConstants.RevokeMenuAccess)]
+        [MenuAuthorize(AuthorisationConstants.GrantRevokeMenuAccess)]
         public async Task<ActionResult<HmsResponse>> RevokeMenuAccess([FromBody] RoleMenuDTO roleMenuDTO)
         {
             var hMSResponse = new HmsResponse();

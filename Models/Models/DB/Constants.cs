@@ -19,8 +19,7 @@
         public const Int32 GetMenuAccessForRole = 1009;
         public const Int32 GetUserUnderRole = 1010;
         public const Int32 AddRemoveUserUnderRole = 1011;
-        public const Int32 GrantMenuAccess = 1013;
-        public const Int32 RevokeMenuAccess = 1014;
+        public const Int32 GrantRevokeMenuAccess = 1013;
         public const Int32 UpdateUIAccess = 1015;
         public const Int32 UIControlAccess = 1016;
         public const Int32 CreateUpdateDeleteChannel = 1018;

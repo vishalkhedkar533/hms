@@ -18,8 +18,7 @@
         public const Int32 DeleteRole = 1008;
         public const Int32 GetMenuAccessForRole = 1009;
         public const Int32 GetUserUnderRole = 1010;
-        public const Int32 AddUserUnderRole = 1011;
-        public const Int32 RemoveUserFromRole = 1012;
+        public const Int32 AddRemoveUserUnderRole = 1011;
         public const Int32 GrantMenuAccess = 1013;
         public const Int32 RevokeMenuAccess = 1014;
         public const Int32 UpdateUIAccess = 1015;

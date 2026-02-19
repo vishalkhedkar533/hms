@@ -1,5 +1,3 @@
-update hms.menu_master set menu_name =  'Modify agent' where menu_id = 1002;
-
 INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1001, 'Search agent', null, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
@@ -7,7 +5,6 @@ VALUES(1001, 'Search agent', null, null, 1, true, true, 'navin', '2026-02-16', n
 INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1002, 'Modify Add agent', null, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
-
 
 INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
@@ -66,6 +63,10 @@ VALUES(1017, 'Channel Management', null, null, 1, true, true, 'navin', '2026-02-
 INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1018, 'Create Update Delete', 1017, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
+
+update hms.menu_master set menu_name = 'Add Remove User from Role' where menu_id = 1011;
+delete from hms.role_menu_mapping where menu_id= 1012;
+delete from hms.menu_master where menu_id = 1012;
 
 insert into hms.role_menu_mapping (role_id,menu_id,is_visible,is_enabled,created_by,created_date,orgid)
 select 1, mm.menu_id,true,true ,'System', now(), 2

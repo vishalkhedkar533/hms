@@ -308,7 +308,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Role/AddUser")]
-        [MenuAuthorize(AuthorisationConstants.AddUserUnderRole)]
+        [MenuAuthorize(AuthorisationConstants.AddRemoveUserUnderRole)]
         public async Task<ActionResult<HmsResponse>> AddUserToRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
         {
             var hMSResponse = new HmsResponse();
@@ -405,7 +405,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Role/RemoveUser")]
-        [MenuAuthorize(AuthorisationConstants.RemoveUserFromRole)]
+        [MenuAuthorize(AuthorisationConstants.AddRemoveUserUnderRole)]
         public async Task<ActionResult<HmsResponse>> RemoveUserFromRole([FromBody] UserRoleMappingDTO userRoleMappingDTO)
         {
             var hMSResponse = new HmsResponse();
@@ -429,7 +429,7 @@ namespace HMS.Controllers
                     hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
                     hMSResponse.responseHeader.ErrorMessage = "FAILED";
 
-                    return BadRequest(hMSResponse);
+                    return Conflict(hMSResponse);
                 }
 
                 var User = _context.Users.FirstOrDefault(x => x.Username == userRoleMappingDTO.UserName
@@ -452,7 +452,7 @@ namespace HMS.Controllers
                     hMSResponse.responseHeader.ErrorCode = AccessConstants.USER_ROLE_MAPPING_NOT_AVAILABLE;
                     hMSResponse.responseHeader.ErrorMessage = "FAILED";
 
-                    return BadRequest(hMSResponse);
+                    return Conflict(hMSResponse);
                 }
                 newUserRoleMapping.ExecuteDeleteAsync();
 

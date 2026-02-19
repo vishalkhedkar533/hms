@@ -3,6 +3,7 @@ using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
+using Humanizer;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -418,7 +419,7 @@ namespace HMS.Controllers
             }
 
             // 1. Try to find existing record
-            var designation = await _context.DesignationMaster.AsNoTracking()
+            var designation = await _context.DesignationMaster
                 .FirstOrDefaultAsync(x => x.DesignationCode == designationMaster.DesignationCode
                 && x.OrgId == orgId
                 && x.ChannelId == designationMaster.ChannelId
@@ -443,9 +444,15 @@ namespace HMS.Controllers
             }
             else
             {
-                // Set modification metadata for existing record
                 designation.ModifiedBy = LoggedInUserId;
-                designation.ModifiedDate = DateTime.UtcNow;
+                designation.ModifiedDate = DateTime.UtcNow; // Already UTC
+
+                // Safety check: If the existing CreatedDate was loaded as 'Unspecified', 
+                // force it to UTC so SaveChanges doesn't complain about it.
+                if (designation.CreatedDate.Kind == DateTimeKind.Unspecified)
+                {
+                    designation.CreatedDate = DateTime.SpecifyKind(designation.CreatedDate, DateTimeKind.Utc);
+                }
             }
 
             // 2. Map fields from DTO to Model

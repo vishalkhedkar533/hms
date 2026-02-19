@@ -254,7 +254,8 @@ namespace HMS.Controllers
                                                 ParentMenuName = parentMenu != null ? parentMenu.MenuName : null,
                                                 HasAccess = mapping != null
                                             })
-                                           .ToListAsync();
+                                           .OrderBy(a => a.ParentMenuName)
+                                           .ThenBy(a => a.MenuName).ToListAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";

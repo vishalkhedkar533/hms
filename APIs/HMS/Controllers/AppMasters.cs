@@ -2,6 +2,7 @@
 using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -25,8 +26,10 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private int orgId;
         private readonly ILogger<AppMastersController> _logger;
+        private readonly DatabaseService _db;
         public AppMastersController(HMSContext context, GenericCacheService cacheService, IConfiguration configuration
-            , IAuthClaimService authClaimService, FileService fileService, ILogger<AppMastersController> logger)
+            , IAuthClaimService authClaimService, FileService fileService, ILogger<AppMastersController> logger,
+            DatabaseService db)
         {
             _cacheService = cacheService;
             _configuration = configuration;
@@ -35,6 +38,7 @@ namespace HMS.Controllers
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
             _context = context;
             _logger = logger;
+            _db = db;
         }
 
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
@@ -462,6 +466,22 @@ namespace HMS.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+                if (!string.IsNullOrEmpty(parentDesignation.HierarchyPath))
+                {
+                    parentDesignation.HierarchyPath = parentDesignation.HierarchyPath.Concat(".").ToString();
+                }
+                await _db.ExecuteQueryAsync<string>(
+                            "Channel",
+                            "UpdateDesignation",
+                            new
+                            {
+                                
+                                p_hierarchy_path = parentDesignation.HierarchyPath.Concat(designation.DesignationId.ToString()),
+                                p_orgId = orgId,
+                                p_channelID = designation.ChannelId,
+                                p_subChannelId = designation.SubChannelId,
+                                p_designation = designation.DesignationId
+                            });
 
                 // Update DTO with the generated ID if it was a new record
                 designationMaster.DesignationId = designation.DesignationId;
@@ -470,16 +490,15 @@ namespace HMS.Controllers
                 response.responseBody.designations = new List<DesignationMaster>();
                 response.responseBody.designations.Add(designation);
 
-                return Ok(new
-                {
-                    message = isNew ? "Created successfully" : "Updated successfully",
-                    data = designationMaster
-                });
+                return Ok(response);
             }
             catch (DbUpdateException ex)
             {
                 // Handle Unique Constraint violations (DesignationCode, etc.)
-                return Conflict(new { message = "Database error: Possible duplicate code or constraint violation.", details = ex.Message });
+                _logger.LogError(ex, $"Error updating DesignationMaster OrgID {orgId} ChannelID {designationMaster.ChannelId} SubChannelID {designationMaster.SubChannelId} DesignationCode {designationMaster.DesignationCode}");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Database error: Possible duplicate code or constraint violation.";
+                return Conflict(response);
             }
         }
 

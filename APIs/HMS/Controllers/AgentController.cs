@@ -589,8 +589,8 @@ namespace HMS.Controllers
 
         #region Agent Details
         [HttpPost("AgentList")]
-        [MenuAuthorize(1001)]
-        public async Task<IActionResult> AgetList()
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
+        public async Task<IActionResult> AgentList()
         {
             HmsResponse hMSResponse = new HmsResponse();
 
@@ -626,7 +626,7 @@ namespace HMS.Controllers
             //return Ok(agent); ;
         }
         [HttpPost("AgentByCode")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> GetAgentByCode(SearchAgent agentDto)
         {
             HmsResponse hMSResponse = new HmsResponse();
@@ -657,7 +657,7 @@ namespace HMS.Controllers
         #region Agent save details
 
         [HttpPost("SaveAgentlicense")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
         public async Task<IActionResult> SaveAgentlicense([FromBody] DtoAgentLicense agentLicense)
         {
             if (!ModelState.IsValid)
@@ -698,7 +698,7 @@ namespace HMS.Controllers
         }
         #endregion
         [HttpPost("Bulk/Create")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
         public async Task<IActionResult> BulkAgentCreate(SearchAgent searchAgent,
             [FromServices] IExcelProcessingQueue queue)
         {
@@ -712,7 +712,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("UpdateAgent/{id}/{sectionName}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
         public async Task<IActionResult> UpdateAgent(
             [FromRoute] int id,
             [FromRoute] string sectionName,
@@ -1612,7 +1612,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("GeoHierarchy")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> GetGeoHierarchy([FromBody] GeoSearchRequest request)
         {
             HmsResponse hMSResponse = new HmsResponse();
@@ -1669,7 +1669,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("ReporteesByChannelLocation")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> GetReporteesByChannelLocation([FromBody] ReporteesByLocationRequest request)
         {
             var channelCode = request.ChannelCode.Trim();
@@ -1732,7 +1732,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("GeoChildren")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> GetGeoChildren([FromBody] GeoChildrenRequest request)
         {
             HmsResponse hMSResponse = new HmsResponse();

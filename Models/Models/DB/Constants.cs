@@ -11,6 +11,8 @@
     }
     public static class AuthorisationConstants
     {
+        public const Int32 SearchAgent = 1001;
+        public const Int32 ModifyAgent = 1002;
         public const Int32 FetchRoles = 1006;
         public const Int32 CreateRole=1007;
         public const Int32 DeleteRole = 1008;

@@ -82,12 +82,6 @@ VALUES(3, 'Commission Config Viewer', 'This role will allow the user to view com
 INSERT INTO hms.roles (role_id, role_name, description, is_system_role, is_active, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(4, 'Commission Config Approver', 'This role will allow the user to approve commission cofiguration', true, true, '', CURRENT_DATE, '', CURRENT_DATE, 0);
 
-INSERT INTO hms.menu_master(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
-VALUES(1003, 'Save Commission Configuration', null, '', 0, false, false, '', CURRENT_DATE, '', CURRENT_DATE, 0);
-
-INSERT INTO hms.menu_master(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
-VALUES(1004, 'View Commission Configuration', null, '', 0, false, false, '', CURRENT_DATE, '', CURRENT_DATE, 0);
-
 INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
 VALUES(2, 'PREMIUM_COLLECTED_TYPE', 1, 'New Business', null, true);
 

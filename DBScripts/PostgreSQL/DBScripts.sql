@@ -2362,34 +2362,6 @@ CREATE SEQUENCE hmsmaster.uicontrolmenu_id_seq
 	CACHE 1
 	NO CYCLE;
 
---drop table hmsmaster.uicontrol_master;
-create table hmsmaster.uicontrol_master ( 
-	uicontrolmenu_id int8,
-	ui_object_name varchar(50) not null,
-	ui_object_type varchar(50) not null default 'not provided',
-	constraint pk_uicontrol_master primary key (uicontrolmenu_id)
-);
-
-CREATE SEQUENCE hmsmaster.uicontrol_hierarchy_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
---DROP TABLE hmsmaster.uicontrol_hierarchy;
-CREATE TABLE hmsmaster.uicontrol_hierarchy (
-	hierarchy_id int8 DEFAULT nextval('hmsmaster.uicontrol_hierarchy_id_seq'::regclass) NOT NULL,
-	uicontrolmenu_id int8 not null,
-	hierarchy_path public.ltree null,
-	constraint pk_uicontrol_hierarchy primary key (hierarchy_id),
-	constraint control_heirarchy_uq unique (hierarchy_path),
-	CONSTRAINT fk_uictrlh FOREIGN KEY (uicontrolmenu_id) REFERENCES hmsmaster.uicontrol_master(uicontrolmenu_id)
-);
-
-
-
 CREATE TABLE hms.temp_designation_update (
     temp_designation_update_id bigserial PRIMARY KEY,
     agent_code              varchar(50)  NOT NULL,
@@ -2464,8 +2436,12 @@ CREATE TABLE hmsmaster.ui_fields_setting (
 );
 
 alter TABLE hmsmaster.ui_fields_setting add column role_id int4 REFERENCES hms.roles(role_id);
-alter TABLE hmsmaster.ui_fields_setting add column ApproverOneID int4 REFERENCES hms."user"(user_id);
-alter TABLE hmsmaster.ui_fields_setting add column ApproverTwoID int4 REFERENCES hms."user"(user_id);
-alter TABLE hmsmaster.ui_fields_setting add column ApproverThreeID int4 REFERENCES hms."user"(user_id);
+alter TABLE hmsmaster.ui_fields_setting add column ApproverOneID int4;
+alter TABLE hmsmaster.ui_fields_setting add column ApproverTwoID int4;
+alter TABLE hmsmaster.ui_fields_setting add column ApproverThreeID int4;
 alter TABLE hmsmaster.ui_fields_setting add column UseDefaultApprover bool default true;
 ALTER TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_ui_fields_setting_ctrl FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id);
+
+alter TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_approver_one FOREIGN KEY (ApproverOneID) REFERENCES hms.roles(role_id);
+alter TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_approver_two FOREIGN KEY (ApproverOneID) REFERENCES hms.roles(role_id);
+alter TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_approver_three FOREIGN KEY (ApproverOneID) REFERENCES hms.roles(role_id);

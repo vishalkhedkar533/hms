@@ -7,6 +7,7 @@ namespace Models.DB
     public class DesignationMaster
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("designation_id")]
         public long DesignationId { get; set; }
 
@@ -64,7 +65,7 @@ namespace Models.DB
     }
     public class DesignationMasterDto
     {
-        public long DesignationId { get; set; }
+        public long? DesignationId { get; set; }
         public long? ParentDesignationId { get; set; }
         public string DesignationCode { get; set; } = string.Empty;
         public string DesignationName { get; set; } = string.Empty;

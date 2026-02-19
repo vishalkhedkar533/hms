@@ -49,6 +49,7 @@ namespace Models.DTO
         public List<RoleMenuMapping>? RoleMenuMapping { get; set; } = null;
         public List<ChannelMaster>? channels { get; set; } = null;
         public List<SubChannelMaster>? subChannels { get; set; } = null;
+        public List<DesignationMaster>? designations { get; set; } = null;
     }
 
     public class UpdatedAgentField

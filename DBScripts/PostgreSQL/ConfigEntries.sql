@@ -288,52 +288,6 @@ values
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
 VALUES (2, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');
 
-
-select * from hmsmaster.uicontrol_master
-
-insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,ui_object_type)
-values
-(1,'Agent','TAB'),
-(2,'Channel','TextBox'),
-(3,'SubChannel','TextBox'),
-(4,'Location','TextBox'),
-(5,'Designation','TextBox');
-
-insert into hmsmaster.uicontrol_hierarchy(uicontrolmenu_id,hierarchy_path)
-values
-(1,'1'::ltree),
-(2,'1.2'::ltree),
-(3,'1.3'::ltree),
-(4,'1.4'::ltree),
-(5,'1.5'::ltree);
-insert into hmsmaster.uicontrol_master(uicontrolmenu_id,ui_object_name,ui_object_type)
-values
-(6,'PersonalInfo','Section'),
-(7,'MobileNo','TextBox'),
-(8,'Home','TextBox'),
-(9,'Work','TextBox'),
-(10,'ContactPerName','TextBox'),
-(11,'ContactPerPhone','TextBox'),
-(12,'ContactPerEmailID','TextBox'),
-(13,'ContactPerDesig','TextBox');
-
-insert into hmsmaster.uicontrol_hierarchy(uicontrolmenu_id,hierarchy_path)
-values
-(6,'1.6'::ltree),
-(7,'1.6.7'::ltree),
-(8,'1.6.8'::ltree),
-(9,'1.6.9'::ltree),
-(10,'1.6.10'::ltree),
-(11,'1.6.11'::ltree),
-(12,'1.6.12'::ltree),
-(13,'1.6.13'::ltree);
-
-INSERT INTO hmsmaster.org_uicontrol
-(orgid, hierarchy_id, role_id, allow_edit, render_control, access_granted_on, access_granted_by)
-select 2,uch.hierarchy_id , 1, true,true,now(),1
-from hmsmaster.uicontrol_hierarchy uch
-where not exists(select 1 from hmsmaster.org_uicontrol ouc where uch.hierarchy_id  = ouc.hierarchy_id )
-
 -- 1. Insert UI Components (Hierarchy)
 INSERT INTO hmsmaster.ui_components (component_id, path, label, elementType) VALUES 
 (100, 'Agent', 'Agent', 'Screen'),

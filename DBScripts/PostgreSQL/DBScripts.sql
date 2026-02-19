@@ -2494,6 +2494,26 @@ CREATE TABLE hms.temp_designation_update (
 );
 
 
+CREATE TABLE hms.temp_location_update (
+    temp_location_id   bigserial PRIMARY KEY,
+    agent_code         varchar(50)  NOT NULL,
+    location_type      varchar(50),
+    location_code      varchar(20)  NOT NULL,
+    current_channel    varchar(100) NOT NULL,
+    current_subchannel varchar(100) NOT NULL,
+    status             varchar(50)  NOT NULL DEFAULT 'Pending',
+    orgid              int          NOT NULL,
+    comment            varchar(20),
+    reason             text,
+
+    CONSTRAINT fk_temp_location_agent_org_lookup
+        FOREIGN KEY (agent_code, orgid) 
+        REFERENCES hms.agent (agent_code, orgid),
+        
+   CONSTRAINT fk_temp_location_org
+        FOREIGN KEY (orgid) 
+        REFERENCES app_subscription.organisation (orgid)
+);
 -- The structural table (Screens, Tabs, Sections)
 /*
  * 

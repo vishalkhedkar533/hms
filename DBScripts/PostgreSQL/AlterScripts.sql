@@ -506,3 +506,20 @@ alter table hms.temp_manager_update
 add column comments varchar,
 add column reason varchar
 
+ALTER TABLE hms.agent 
+ADD CONSTRAINT uq_agent_code UNIQUE (agent_code, orgid)
+
+ALTER TABLE hms.temp_designation_update 
+ADD CONSTRAINT fk_temp_designation_agent 
+FOREIGN KEY (agent_code, orgid) 
+REFERENCES hms.agent (agent_code, orgid);
+
+ALTER TABLE hms.temp_manager_update 
+ADD CONSTRAINT fk_temp_manager_agent 
+FOREIGN KEY (agent_code, orgid) 
+REFERENCES hms.agent (agent_code, orgid);
+
+ALTER TABLE hms.temp_status_update 
+ADD CONSTRAINT fk_temp_status_agent 
+FOREIGN KEY (agent_code, orgid) 
+REFERENCES hms.agent (agent_code, orgid);

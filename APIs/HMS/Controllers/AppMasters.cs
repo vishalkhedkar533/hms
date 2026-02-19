@@ -2,6 +2,7 @@
 using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
+using HMS.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
+using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -25,8 +27,10 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private int orgId;
         private readonly ILogger<AppMastersController> _logger;
+        private readonly DatabaseService _db;
         public AppMastersController(HMSContext context, GenericCacheService cacheService, IConfiguration configuration
-            , IAuthClaimService authClaimService, FileService fileService, ILogger<AppMastersController> logger)
+            , IAuthClaimService authClaimService, FileService fileService, ILogger<AppMastersController> logger,
+            DatabaseService db)
         {
             _cacheService = cacheService;
             _configuration = configuration;
@@ -35,6 +39,7 @@ namespace HMS.Controllers
             int refreshInterval = _configuration.GetValue<int>("Caching:refreshIntervalMinutes", 15);
             _context = context;
             _logger = logger;
+            _db = db;
         }
 
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
@@ -209,7 +214,7 @@ namespace HMS.Controllers
             }
 
         }
-        [HttpPost("Channel/Update/{ChannelId}")]
+        [HttpPost("{ChannelId}/Update")]
         public async Task<IActionResult> Update([FromRoute] int ChannelId, [FromBody] ChannelMasterDto ChannelMaster)
         {
             var response = new HmsResponse();
@@ -253,7 +258,7 @@ namespace HMS.Controllers
                 return StatusCode(500, "An error occurred while updating the channel master.");
             }
         }
-        [HttpPost("Channel/{ChannelId}/SubChannel/Create")]
+        [HttpPost("{ChannelId}/SubChannel/Create")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> CreateSubChannel([FromRoute] int ChannelId, [FromBody] SubChannelMasterDto SubChannelMaster)
         {
@@ -311,7 +316,8 @@ namespace HMS.Controllers
             }
 
         }
-        [HttpPost("Channel/{ChannelId}/SubChannel/Update/{SubChannelId}")]
+        [HttpPost("{ChannelId}/{SubChannelId}/Update")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> UpdateSubChannel([FromRoute] int ChannelId, [FromRoute] int SubChannelId,
             [FromBody] SubChannelMasterDto subChannelMaster)
         {
@@ -375,5 +381,132 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
+        [HttpPost("{ChannelId}/{SubChannelId}/Designation/Save")]
+        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        public async Task<IActionResult> UpsertDesignation([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, 
+            [FromBody] DesignationMasterDto designationMaster)
+        {
+            HmsResponse response = new HmsResponse();
+
+            if (designationMaster == null) { 
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return Conflict(response);
+            }
+
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
+
+            var channel = await _context.ChannelMaster.AsNoTracking().
+                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId 
+                && x.OrgId == orgId);
+
+            var subChannel = await _context.SubchannelMaster.AsNoTracking().
+                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId 
+                && x.OrgId == orgId 
+                && x.ChannelId == designationMaster.ChannelId);
+
+            if (channel == null || 
+                subChannel == null || 
+                ChannelId != designationMaster.ChannelId || 
+                SubChannelId != designationMaster.SubChannelId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the channel and subchannel belong to the organisation.";
+                return Conflict(response);
+            }
+
+            // 1. Try to find existing record
+            var designation = await _context.DesignationMaster.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.DesignationCode == designationMaster.DesignationCode
+                && x.OrgId == orgId
+                && x.ChannelId == designationMaster.ChannelId
+                && x.SubChannelId == designationMaster.SubChannelId
+                );
+            bool isNew = designation == null;
+
+            var parentDesignation = await _context.DesignationMaster.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.DesignationId == (designationMaster.ParentDesignationId ?? -1000)
+                && x.OrgId == orgId
+                && x.ChannelId == designationMaster.ChannelId
+                && x.SubChannelId == designationMaster.SubChannelId);
+
+            if (isNew)
+            {
+                // Create new instance if not found
+                designation = new DesignationMaster
+                {
+                    CreatedBy = LoggedInUserId, // Usually taken from User.Identity in production
+                    CreatedDate = DateTime.UtcNow                    
+                };
+            }
+            else
+            {
+                // Set modification metadata for existing record
+                designation.ModifiedBy = LoggedInUserId;
+                designation.ModifiedDate = DateTime.UtcNow;
+            }
+
+            // 2. Map fields from DTO to Model
+            designation.DesignationCode = designationMaster.DesignationCode;
+            designation.DesignationName = designationMaster.DesignationName;
+            designation.DesignationLevel = designationMaster.DesignationLevel;
+            designation.IsActive = designationMaster.IsActive;
+            designation.ChannelId = designationMaster.ChannelId;
+            designation.OrgId = orgId;
+            //ltree is not supported in EF Core, so we will handle HierarchyPath manually via a stored procedure after saving the record to get the generated DesignationId
+            designation.HierarchyPath = null;
+            designation.CodeFormat = designationMaster.CodeFormat;
+            designation.SubChannelId = designationMaster.SubChannelId;
+
+            if (isNew)
+            {
+                _context.DesignationMaster.Add(designation);
+            }
+            else
+            {
+                _context.DesignationMaster.Update(designation);
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                if (!string.IsNullOrEmpty(parentDesignation?.HierarchyPath))
+                {
+                    parentDesignation.HierarchyPath = parentDesignation.HierarchyPath.Concat(".").ToString();
+                }
+                await _db.ExecuteQueryAsync<string>(
+                            "Channel",
+                            "UpdateDesignation",
+                            new
+                            {
+                                
+                                p_hierarchy_path = string.Concat ((parentDesignation?.HierarchyPath?? string.Empty),designation.DesignationId.ToString()),
+                                p_orgId = orgId,
+                                p_channelID = designation.ChannelId,
+                                p_subChannelId = designation.SubChannelId,
+                                p_designation = designation.DesignationId
+                            });
+
+                // Update DTO with the generated ID if it was a new record
+                designationMaster.DesignationId = designation.DesignationId;
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = isNew ? "Designation created successfully." : "Designation updated successfully.";
+                response.responseBody.designations = new List<DesignationMaster>();
+                response.responseBody.designations.Add(designation);
+
+                return Ok(response);
+            }
+            catch (DbUpdateException ex)
+            {
+                // Handle Unique Constraint violations (DesignationCode, etc.)
+                _logger.LogError(ex, $"Error updating DesignationMaster OrgID {orgId} ChannelID {designationMaster.ChannelId} SubChannelID {designationMaster.SubChannelId} DesignationCode {designationMaster.DesignationCode}");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Database error: Possible duplicate code or constraint violation.";
+                return Conflict(response);
+            }
+        }
+
     }
 }

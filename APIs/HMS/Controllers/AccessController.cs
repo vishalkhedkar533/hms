@@ -635,11 +635,16 @@ namespace HMS.Controllers
             try
             {
                 var Role = await _context.Roles.AsNoTracking().FirstOrDefaultAsync(
-                    x => x.RoleId == uiFieldsSetting.RoleId && x.OrgId == orgId);
+                    x => new int[] {uiFieldsSetting.RoleId ?? 0,
+                        uiFieldsSetting.ApproverOneId ?? 0, 
+                        uiFieldsSetting.ApproverTwoId ?? 0, 
+                        uiFieldsSetting.ApproverThreeId ?? 0 }
+                    .Contains(x.RoleId) && x.OrgId == orgId);
+                //verify if the roles exist  for the org
                 if (Role == null)
                 {
                     hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    hMSResponse.responseHeader.ErrorMessage = "Invalid Role";
+                    hMSResponse.responseHeader.ErrorMessage = "Invalid Role verify RoleId/ApproverOneId/ApproverTwoId/ApproverThreeId";
                     return Conflict(hMSResponse);
                 }
 

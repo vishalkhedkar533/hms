@@ -312,6 +312,7 @@ namespace HMS.Controllers
 
         }
         [HttpPost("Channel/{ChannelId}/SubChannel/Update/{SubChannelId}")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> UpdateSubChannel([FromRoute] int ChannelId, [FromRoute] int SubChannelId,
             [FromBody] SubChannelMasterDto subChannelMaster)
         {
@@ -375,5 +376,77 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
+        [HttpPost("Channel/{ChannelId}/SubChannel/{SubChannelId}/Designation/Save")]
+        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        public async Task<IActionResult> UpsertDesignation([FromBody] DesignationMasterDto designationMaster)
+        {
+            if (designationMaster == null) return BadRequest("Invalid payload.");
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            // 1. Try to find existing record
+            var designation = await _context.DesignationMaster
+                .FirstOrDefaultAsync(x => x.DesignationId == designationMaster.DesignationId 
+                && x.OrgId == orgId
+                && x.ChannelId == designationMaster.ChannelId
+                && x.SubChannelId == designationMaster.SubChannelId
+                );
+
+            bool isNew = designation == null;
+
+            if (isNew)
+            {
+                // Create new instance if not found
+                designation = new DesignationMaster
+                {
+                    CreatedBy = dto.CreatedBy, // Usually taken from User.Identity in production
+                    CreatedDate = DateTime.UtcNow
+                };
+            }
+            else
+            {
+                // Set modification metadata for existing record
+                designation.ModifiedBy = dto.ModifiedBy;
+                designation.ModifiedDate = DateTime.UtcNow;
+            }
+
+            // 2. Map fields from DTO to Model
+            designation.DesignationCode = dto.DesignationCode;
+            designation.DesignationName = dto.DesignationName;
+            designation.DesignationLevel = dto.DesignationLevel;
+            designation.IsActive = dto.IsActive;
+            designation.ChannelId = dto.ChannelId;
+            designation.OrgId = dto.OrgId;
+            //designation.HierarchyPath = dto.HierarchyPath;
+            designation.CodeFormat = dto.CodeFormat;
+            designation.SubChannelId = dto.SubChannelId;
+
+            if (isNew)
+            {
+                _context.DesignationMasters.Add(designation);
+            }
+            else
+            {
+                _context.DesignationMasters.Update(designation);
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+
+                // Update DTO with the generated ID if it was a new record
+                dto.DesignationId = designation.DesignationId;
+
+                return Ok(new
+                {
+                    message = isNew ? "Created successfully" : "Updated successfully",
+                    data = dto
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                // Handle Unique Constraint violations (DesignationCode, etc.)
+                return Conflict(new { message = "Database error: Possible duplicate code or constraint violation.", details = ex.Message });
+            }
+        }
+
     }
 }

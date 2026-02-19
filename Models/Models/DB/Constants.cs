@@ -23,5 +23,7 @@
         public const Int32 UpdateUIAccess = 1015;
         public const Int32 UIControlAccess = 1016;
         public const Int32 CreateUpdateDeleteChannel = 1018;
+        public const Int32 SaveChannelDetails = 1019;
+
     }
 }

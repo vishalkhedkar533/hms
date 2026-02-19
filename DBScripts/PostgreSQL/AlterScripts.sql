@@ -523,3 +523,7 @@ ALTER TABLE hms.temp_status_update
 ADD CONSTRAINT fk_temp_status_agent 
 FOREIGN KEY (agent_code, orgid) 
 REFERENCES hms.agent (agent_code, orgid);
+
+alter table hmsmaster.designation_master ADD CONSTRAINT fk_desig_subchannel
+FOREIGN KEY (sub_channel_id) 
+REFERENCES hmsmaster.subchannel_master (sub_channel_id);

@@ -626,7 +626,7 @@ namespace HMS.Controllers
         }
         [HttpPost("Role/UI/Control/UpdateAccess")]
         [MenuAuthorize(AuthorisationConstants.UpdateUIAccess)]
-        public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] UiFieldsSetting uiFieldsSetting)
+        public async Task<ActionResult<HmsResponse>> UpdateUIAccess([FromBody] UiFieldsSettingDto uiFieldsSetting)
         {
             var hMSResponse = new HmsResponse();
             orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");

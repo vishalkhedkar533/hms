@@ -519,6 +519,7 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
         }
+        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         [HttpPost("{ChannelId}/{SubChannelId}/Location/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         public async Task<IActionResult> UpsertLocation([FromRoute] long ChannelId,

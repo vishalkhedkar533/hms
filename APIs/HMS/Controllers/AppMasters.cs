@@ -385,12 +385,13 @@ namespace HMS.Controllers
         [HttpPost("{ChannelId}/{SubChannelId}/Designation/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         public async Task<IActionResult> UpsertDesignation([FromRoute] long ChannelId,
-            [FromRoute] long SubChannelId, 
+            [FromRoute] long SubChannelId,
             [FromBody] DesignationMasterDto designationMaster)
         {
             HmsResponse response = new HmsResponse();
 
-            if (designationMaster == null) { 
+            if (designationMaster == null)
+            {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Request body is required.";
                 return Conflict(response);
@@ -400,17 +401,17 @@ namespace HMS.Controllers
             var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
 
             var channel = await _context.ChannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId 
+                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId
                 && x.OrgId == orgId);
 
             var subChannel = await _context.SubchannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId 
-                && x.OrgId == orgId 
+                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId
+                && x.OrgId == orgId
                 && x.ChannelId == designationMaster.ChannelId);
 
-            if (channel == null || 
-                subChannel == null || 
-                ChannelId != designationMaster.ChannelId || 
+            if (channel == null ||
+                subChannel == null ||
+                ChannelId != designationMaster.ChannelId ||
                 SubChannelId != designationMaster.SubChannelId)
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -439,7 +440,7 @@ namespace HMS.Controllers
                 designation = new DesignationMaster
                 {
                     CreatedBy = LoggedInUserId, // Usually taken from User.Identity in production
-                    CreatedDate = DateTime.UtcNow                    
+                    CreatedDate = DateTime.UtcNow
                 };
             }
             else
@@ -488,8 +489,8 @@ namespace HMS.Controllers
                             "UpdateDesignation",
                             new
                             {
-                                
-                                p_hierarchy_path = string.Concat ((parentDesignation?.HierarchyPath?? string.Empty),designation.DesignationId.ToString()),
+
+                                p_hierarchy_path = string.Concat((parentDesignation?.HierarchyPath ?? string.Empty), designation.DesignationId.ToString()),
                                 p_orgId = orgId,
                                 p_channelID = designation.ChannelId,
                                 p_subChannelId = designation.SubChannelId,
@@ -518,7 +519,7 @@ namespace HMS.Controllers
         [HttpPost("{ChannelId}/{SubChannelId}/Location/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         public async Task<IActionResult> UpsertLocation([FromRoute] long ChannelId,
-            [FromRoute] long SubChannelId,[FromBody] LocationMasterDto locationMaster)
+            [FromRoute] long SubChannelId, [FromBody] LocationMasterDto locationMaster)
         {
             HmsResponse response = new HmsResponse();
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -607,6 +608,7 @@ namespace HMS.Controllers
                 return StatusCode(500, response);
             }
             return Ok(response);
+        }
         [HttpPost("Branch/Create")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> CreateBranch([FromBody] BranchMasterDto dto)

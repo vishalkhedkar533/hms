@@ -671,7 +671,7 @@ namespace HMS.Controllers
                         CntrlId = uiFieldsSetting.CntrlId,
                         Render = uiFieldsSetting.Render,
                         AllowEdit = uiFieldsSetting.AllowEdit,
-                        SortOrder = uiFieldsSetting.SortOrder,
+                        SortOrder = 1,
                         ApproverOneId = uiFieldsSetting.ApproverOneId,
                         ApproverTwoId = uiFieldsSetting.ApproverTwoId,
                         ApproverThreeId = uiFieldsSetting.ApproverThreeId,
@@ -685,7 +685,7 @@ namespace HMS.Controllers
                 {
                     existingSetting.Render = uiFieldsSetting.Render;
                     existingSetting.AllowEdit = uiFieldsSetting.AllowEdit;
-                    existingSetting.SortOrder = uiFieldsSetting.SortOrder;
+                    existingSetting.SortOrder = 1;
                     existingSetting.RoleId = uiFieldsSetting.RoleId;
                     existingSetting.ApproverOneId = uiFieldsSetting.ApproverOneId;
                     existingSetting.ApproverTwoId = uiFieldsSetting.ApproverTwoId;
@@ -783,7 +783,5 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
-
     }
-
 }

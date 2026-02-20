@@ -142,7 +142,16 @@ namespace HMS.Data
             modelBuilder.Entity<DesignationMaster>()
                 .Property(e => e.HierarchyPath)
                 .HasColumnType("ltree");
+            modelBuilder.Entity<LocationMaster>(entity =>
+            {
+                // Define the Unique Constraint (uq_loc)
+                entity.HasIndex(e => new { e.OrgId, e.ChannelId, e.SubChannelId, e.LocationCode })
+                      .IsUnique()
+                      .HasDatabaseName("uq_loc");
 
+                // Optional: Map to the specific schema if not using [Table] attribute
+                entity.ToTable("location_master", "hmsmaster");
+            });
             modelBuilder.HasDefaultSchema("hms");
         }
     }

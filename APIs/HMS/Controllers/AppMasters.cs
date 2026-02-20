@@ -1,17 +1,15 @@
-﻿using CommonLibrary;
+﻿using AutoMapper;
+using CommonLibrary;
 using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
-using Humanizer;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
-using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -24,6 +22,7 @@ namespace HMS.Controllers
         private readonly IConfiguration _configuration;
         private readonly IAuthClaimService _authClaimService;
         private readonly FileService _fileService;
+        private readonly IMapper _mapper;
         private int refreshInterval = 15;
         private readonly HMSContext _context;
         private int orgId;
@@ -31,7 +30,7 @@ namespace HMS.Controllers
         private readonly DatabaseService _db;
         public AppMastersController(HMSContext context, GenericCacheService cacheService, IConfiguration configuration
             , IAuthClaimService authClaimService, FileService fileService, ILogger<AppMastersController> logger,
-            DatabaseService db)
+            DatabaseService db, IMapper mapper)
         {
             _cacheService = cacheService;
             _configuration = configuration;
@@ -41,6 +40,7 @@ namespace HMS.Controllers
             _context = context;
             _logger = logger;
             _db = db;
+            _mapper = mapper;
         }
 
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
@@ -515,6 +515,98 @@ namespace HMS.Controllers
             }
         }
 
+        [HttpPost("{ChannelId}/{SubChannelId}/Location/Save")]
+        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        public async Task<IActionResult> UpsertLocation([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId,[FromBody] LocationMasterDto locationMaster)
+        {
+            HmsResponse response = new HmsResponse();
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            // 1. UNIQUE CONSTRAINT CHECK
+            // Check if another record (not this one) already uses the same unique combination
+
+            if (ChannelId != locationMaster.ChannelId ||
+                SubChannelId != locationMaster.SubChannelId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the channel and subchannel";
+                return Conflict(response);
+            }
+
+            var validChannelSubChannel = await _context.SubchannelMaster.AsNoTracking().AnyAsync(x =>
+                x.OrgId == orgId &&
+                x.ChannelId == locationMaster.ChannelId &&
+                x.SubChannelId == locationMaster.SubChannelId);
+            if (!validChannelSubChannel)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "A location with the same code already exists for this channel and subchannel.";
+                return Conflict(response);
+            }
+
+            var isDuplicate = await _context.LocationMasters.AsNoTracking().AnyAsync(x =>
+                x.LocationMasterId != locationMaster.LocationMasterId && // Don't check against itself during update
+                x.OrgId == orgId &&
+                x.ChannelId == locationMaster.ChannelId &&
+                x.SubChannelId == locationMaster.SubChannelId &&
+                x.LocationCode == locationMaster.LocationCode);
+
+            if (isDuplicate)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "A location with the same code already exists for this channel and subchannel.";
+                return Conflict(response);
+            }
+
+            // 2. FIND EXISTING OR CREATE NEW
+            var existingLocation = await _context.LocationMasters
+                .FirstOrDefaultAsync(x => x.LocationMasterId == locationMaster.LocationMasterId);
+            try
+            {
+
+                if (existingLocation == null)
+                {
+                    // --- INSERT ---
+                    var newLocation = _mapper.Map<LocationMaster>(locationMaster);
+                    newLocation.CreatedDate = DateTime.UtcNow;
+                    newLocation.CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier);
+                    _context.LocationMasters.Add(newLocation);
+                    await _context.SaveChangesAsync();
+
+                    response.responseBody.locations = new List<LocationMaster> { newLocation };
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Location created successfully.";
+                    response.responseBody.locations.Add(newLocation);
+                }
+                else
+                {
+                    // --- UPDATE ---
+                    _mapper.Map(locationMaster, existingLocation);
+                    existingLocation.ModifiedDate = DateTime.UtcNow;
+                    existingLocation.ModifiedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier);
+                    await _context.SaveChangesAsync();
+                    response.responseBody.locations = new List<LocationMaster> { existingLocation };
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Location updated successfully.";
+                    response.responseBody.locations.Add(existingLocation);
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, $"Database error while upserting LocationMaster OrgID {orgId} ChannelID {locationMaster.ChannelId} SubChannelID {locationMaster.SubChannelId} LocationCode {locationMaster.LocationCode}");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Database error: Possible duplicate code or constraint violation.";
+                return Conflict(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Unexpected error while upserting LocationMaster OrgID {orgId} ChannelID {locationMaster.ChannelId} SubChannelID {locationMaster.SubChannelId} LocationCode {locationMaster.LocationCode}");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An unexpected error occurred while saving the location.";
+                return StatusCode(500, response);
+            }
+            return Ok(response);
         [HttpPost("Branch/Create")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> CreateBranch([FromBody] BranchMasterDto dto)

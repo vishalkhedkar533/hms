@@ -72,7 +72,7 @@ namespace Models.DB
     }
     public class UiFieldsSettingDto
     {
-        public int Id { get; set; }
+        public int? Id { get; set; }
         public int? CntrlId { get; set; }
         // Settings with default values matching your DB logic
         public bool Render { get; set; } = true;

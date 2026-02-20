@@ -46,7 +46,7 @@ namespace HMS.Controllers
 
             if (string.IsNullOrWhiteSpace(model.FileType))
                 return BadRequest("File type is required.");
-
+            var username = _authClaimService.GetClaim(ClaimTypes.Name);
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
             {
@@ -58,24 +58,31 @@ namespace HMS.Controllers
             try
             {
                 int organisationId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
-                // 1. Create uploads/userid folder
+                // 1. Setup the Root User Folder
                 //var userFolderPath = Path.Combine(_environment.WebRootPath, "uploads", model.UserId.ToString());
                 var root = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
                 var userFolderPath = Path.Combine(root, userId.ToString());
+
+                // 2. Create a UNIQUE Sub-folder (This acts as the "encryption/obfuscation")
+                var uniqueFolder = Guid.NewGuid().ToString();
+                var finalSavePath = Path.Combine(userFolderPath, uniqueFolder);
                 // Ensure the directory exists
                 if (!Directory.Exists(userFolderPath))
                 {
                     Directory.CreateDirectory(userFolderPath);
                 }
 
-                // 2. Prepare file info
-                var fileExtension = Path.GetExtension(model.File.FileName);
-                var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
-                var filePath = Path.Combine(userFolderPath, uniqueFileName);
+                // 3. Prepare File Info using the ORIGINAL name
+                // Path.GetFileName handles security by removing any path manipulation (like ../)
+                var originalFileName = Path.GetFileName(model.File.FileName);
+                var fileExtension = Path.GetExtension(originalFileName);
+                var filePath = Path.Combine(finalSavePath);
 
-                // 3. Save file physically
+                // 4. Save file physically
                 using (var stream = new FileStream(filePath, FileMode.Create))
+                {
                     await model.File.CopyToAsync(stream);
+                }
 
                 var fileInfo = new FileInfo(filePath);
 
@@ -84,8 +91,8 @@ namespace HMS.Controllers
                 {
                     FilePath = filePath,
                     Status = "Pending",
-                    CreatedBy = userId.ToString(),
-                    FileName = uniqueFileName,
+                    CreatedBy = username,
+                    FileName = originalFileName,
                     FileExtension = fileExtension,
                     FileType = fileType,
                     FileSize = fileInfo.Length,
@@ -113,8 +120,9 @@ namespace HMS.Controllers
                 hmsResponse.responseBody.fileUpload = new FileUploadResponse
                 {
                     FileTaskId = fileTask.Id,
-                    FileName = uniqueFileName,
+                    FileName = originalFileName,
                     FilePath = filePath,
+                    FileType = fileType
                 };
                 return Ok(hmsResponse);
             }

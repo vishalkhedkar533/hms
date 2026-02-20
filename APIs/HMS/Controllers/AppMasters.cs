@@ -607,6 +607,109 @@ namespace HMS.Controllers
                 return StatusCode(500, response);
             }
             return Ok(response);
+        [HttpPost("Branch/Create")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> CreateBranch([FromBody] BranchMasterDto dto)
+        {
+            var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            if (dto is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var branch = await _context.BranchMaster.AddAsync(new BranchMaster
+                {
+                    BranchCode = dto.BranchCode ?? string.Empty,
+                    BranchName = dto.BranchName ?? string.Empty,
+                    Address = dto.Address,
+                    State = dto.State,
+                    PhoneNumber = dto.PhoneNumber,
+                    EmailId = dto.EmailId,
+                    IsActive = dto.IsActive,
+                    LocationMasterId = dto.LocationMasterId,
+                    OrgId = orgId,
+                    CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "System",
+                    CreatedDate = DateTime.UtcNow,
+                    RowVersion = 1
+                });
+
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Branch master created successfully.";
+                response.responseBody.branches = new List<BranchMaster> { branch.Entity };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inserting into hmsmaster.branch_master. DTO: {@dto}", dto);
+                return StatusCode(500, response);
+            }
+        }
+
+        [HttpPost("Branch/{BranchId}/Update")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> UpdateBranch([FromRoute] long BranchId, [FromBody] BranchMasterDto dto)
+        {
+            var response = new HmsResponse();
+
+            if (dto is null)
+                return BadRequest("Request body is required.");
+
+            if (dto.BranchId.HasValue && dto.BranchId.Value != BranchId)
+                return BadRequest("URL id does not match body id.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+                var branch = await _context.BranchMaster
+                    .FirstOrDefaultAsync(x => x.BranchId == BranchId && x.OrgId == orgId);
+
+                if (branch == null)
+                {
+                    response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    return NotFound(response);
+                }
+
+                branch.BranchCode = dto.BranchCode ?? branch.BranchCode;
+                branch.BranchName = dto.BranchName ?? branch.BranchName;
+                branch.Address = dto.Address;
+                branch.State = dto.State;
+                branch.PhoneNumber = dto.PhoneNumber;
+                branch.EmailId = dto.EmailId;
+                branch.IsActive = dto.IsActive;
+                branch.LocationMasterId = dto.LocationMasterId;
+                branch.ModifiedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "System";
+                branch.ModifiedDate = DateTime.UtcNow;
+                branch.RowVersion = (branch.RowVersion ?? 0) + 1;
+
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Branch master updated successfully.";
+                response.responseBody.branches = new List<BranchMaster> { branch };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating hmsmaster.branch_master id {BranchId}", BranchId);
+                return StatusCode(500, "An error occurred while updating the branch master.");
+            }
         }
     }
 }

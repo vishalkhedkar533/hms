@@ -77,7 +77,7 @@ namespace Models.DB
         // Settings with default values matching your DB logic
         public bool Render { get; set; } = true;
         public bool AllowEdit { get; set; } = false;
-        public int SortOrder { get; set; } = 0;
+        //public int SortOrder { get; set; } = 0;
         // Permissions and Approvers
         public int? RoleId { get; set; }
         public int? ApproverOneId { get; set; }

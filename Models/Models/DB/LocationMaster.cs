@@ -1,76 +1,92 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
+﻿using AutoMapper;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
-    // Note: Updated Schema to "hmsmaster" to match your SQL Script
     [Table("location_master", Schema = "hmsmaster")]
+    //also called officetype 
     public class LocationMaster
     {
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Key]
         [Column("location_master_id")]
-        [SwaggerSchema("Identity key for location master.")]
         public long LocationMasterId { get; set; }
 
-        [Required]
         [Column("channel_id")]
-        [SwaggerSchema("Foreign key to channel master.")]
         public long ChannelId { get; set; }
 
         [Column("sub_channel_id")]
-        [SwaggerSchema("Foreign key to channel master.")]
         public long SubChannelId { get; set; }
 
         [Column("orgid")]
-        [SwaggerSchema("Organization identifier.")]
         public int? OrgId { get; set; }
 
-        [Key] // Kept as key since your SQL defines location_code as the Primary Key
+        [Required]
+        [MaxLength(20)]
         [Column("location_code")]
-        [StringLength(20)]
-        [SwaggerSchema("Primary key: location code.")]
-        public string LocationCode { get; set; } = null!;
+        public string LocationCode { get; set; }
 
         [Required]
+        [MaxLength(20)]
         [Column("location_desc")]
-        [StringLength(100)]
-        [SwaggerSchema("Description of the location.")]
-        public string LocationDesc { get; set; } = null!;
+        public string LocationDesc { get; set; }
 
-        [Required]
         [Column("is_active")]
-        [SwaggerSchema("Indicates if the location is active.")]
         public bool IsActive { get; set; }
 
         [Required]
+        [MaxLength(100)]
         [Column("created_by")]
-        [StringLength(100)]
-        [SwaggerSchema("User who created the record.")]
-        public string CreatedBy { get; set; } = null!;
+        public string CreatedBy { get; set; }
 
-        [Required]
         [Column("created_date")]
-        [SwaggerSchema("Date and time when the record was created.")]
         public DateTime CreatedDate { get; set; }
 
+        [MaxLength(100)]
         [Column("modified_by")]
-        [StringLength(100)]
-        [SwaggerSchema("User who last modified the record.")]
         public string? ModifiedBy { get; set; }
 
         [Column("modified_date")]
-        [SwaggerSchema("Date and time of last modification.")]
         public DateTime? ModifiedDate { get; set; }
 
         [Column("rowversion")]
-        [ConcurrencyCheck]
-        [SwaggerSchema("Concurrency token.")]
         public int? RowVersion { get; set; }
+    }
+    public class LocationMasterDto
+    {
+        public long LocationMasterId { get; set; }
+        [Required]
+        public long ChannelId { get; set; }
+        [Required]
+        public long SubChannelId { get; set; }
+        [Required]
+        [StringLength(20)]
+        public string LocationCode { get; set; }
+        [Required]
+        [StringLength(20)]
+        public string LocationDesc { get; set; }
+        public bool IsActive { get; set; }
+    }
+    public class LocationMappingProfile : Profile
+    {
+        public LocationMappingProfile()
+        {
+            // DTO -> Entity
+            CreateMap<LocationMasterDto, LocationMaster>()
+                // 1. Ignore the Primary Key so AutoMapper doesn't try to change it
+                .ForMember(dest => dest.LocationMasterId, opt => opt.Ignore())
 
-        /* Note: The SQL script you provided does NOT have PARENT_LOCATION_CODE. 
-           In your architecture, hierarchy is managed via the 'channel_location_heirarchy' table.
-           If you want to keep the self-reference, you must add the column to your DB first.
-        */
+                // 3. Protect Audit fields from being overwritten with null/defaults
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore()) // Handled manually or via Base Class
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.RowVersion, opt => opt.Ignore())
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore());
+
+            // Entity -> DTO
+            CreateMap<LocationMaster, LocationMasterDto>();
+        }
     }
 }

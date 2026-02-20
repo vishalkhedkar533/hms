@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using CommonLibrary;
-using CommonLibrary.Background;
 using HMS.Caching;
 using HMS.Data;
 using HMS.Logging;
@@ -9,13 +8,12 @@ using HMS.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Models.DB;
 using Models.Mapping;
 using Npgsql;
 using System.Reflection;
-using System.Security.Claims;
 using System.Text;
 using System.Threading.Channels;
-using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +48,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<AgentProfile>();
     cfg.AddProfile<AuditTrailProfile>();
     cfg.AddProfile<CommissionMgmtProfile>();
+    cfg.AddProfile<LocationMappingProfile>();
 });
 
 // ----------------------------

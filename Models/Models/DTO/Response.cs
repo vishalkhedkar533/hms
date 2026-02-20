@@ -50,6 +50,7 @@ namespace Models.DTO
         public List<ChannelMaster>? channels { get; set; } = null;
         public List<SubChannelMaster>? subChannels { get; set; } = null;
         public List<DesignationMaster>? designations { get; set; } = null;
+        public List<LocationMaster>? locations { get; set; } = null;
     }
 
     public class UpdatedAgentField

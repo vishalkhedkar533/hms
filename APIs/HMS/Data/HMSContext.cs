@@ -51,11 +51,29 @@ namespace HMS.Data
         public DbSet<UiFieldsSetting>  uiFieldsSettings => Set<UiFieldsSetting>();
         public DbSet<UiField>  uiField => Set<UiField>();
         public DbSet<UiComponent> uiComponent => Set<UiComponent>();
+        public DbSet<BranchMaster> BranchMaster => Set<BranchMaster>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // Optionally configure schema explicitly
+
+            modelBuilder.Entity<LocationMaster>(entity =>
+            {
+                entity.ToTable("location_master", "hmsmaster");
+                entity.HasKey(e => e.LocationCode);
+                entity.HasAlternateKey(e => e.LocationMasterId);
+            });
+
+            modelBuilder.Entity<BranchMaster>(entity =>
+            {
+                entity.ToTable("branch_master", "hmsmaster");
+                entity.HasOne(b => b.LocationMaster)
+                    .WithMany()
+                    .HasForeignKey(b => b.LocationMasterId)
+                    .HasPrincipalKey(l => l.LocationMasterId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<AgentMovementHistory>(entity =>
             {
                 entity.ToTable("AGENT_MOVEMENT_HISTORY", "hms");

@@ -519,7 +519,101 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
         }
+        [HttpPost("{ChannelId}/{SubChannelId}/Designation/Fetch")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        public async Task<IActionResult> FetchDesignation([FromRoute] long ChannelId,
+           [FromRoute] long SubChannelId,
+           [FromBody] DesignationMasterDto designationMaster)
+        {
+            HmsResponse response = new HmsResponse();
+
+            if (designationMaster == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return Conflict(response);
+            }
+
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
+
+            var channel = await _context.ChannelMaster.AsNoTracking().
+                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId
+                && x.OrgId == orgId);
+
+            var subChannel = await _context.SubchannelMaster.AsNoTracking().
+                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId
+                && x.OrgId == orgId
+                && x.ChannelId == designationMaster.ChannelId);
+
+            if (channel == null ||
+                subChannel == null ||
+                ChannelId != designationMaster.ChannelId ||
+                SubChannelId != designationMaster.SubChannelId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the channel and subchannel belong to the organisation.";
+                return Conflict(response);
+            }
+
+
+            try
+            {
+
+                // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
+                var flatList = await _context.DesignationMaster.AsNoTracking()
+                    .Where(d => d.OrgId == orgId
+                             && d.ChannelId == designationMaster.ChannelId
+                             && d.SubChannelId == designationMaster.SubChannelId)
+                    .OrderBy(d => d.HierarchyPath) // This now translates to: ORDER BY hierarchy_path
+                    .ToListAsync();
+
+                // 2. Build the tree in memory
+                var nodeDict = flatList.ToDictionary(
+                   d => d?.HierarchyPath?.ToString(),
+                    d => new DesignationNode
+                    {
+                        Id = d.DesignationId,
+                        Name = d.DesignationName,
+                        Code = d.DesignationCode
+                    });
+
+                List<DesignationNode> rootNodes = new();
+
+                foreach (var item in flatList)
+                {
+                    string path = item.HierarchyPath.ToString();
+                    var node = nodeDict[path];
+
+                    // Find parent path using LTree logic
+                    int lastDot = path.LastIndexOf('.');
+
+                    if (lastDot == -1)
+                    {
+                        rootNodes.Add(node); // It's a root
+                    }
+                    else
+                    {
+                        string parentPath = path.Substring(0, lastDot);
+                        if (nodeDict.TryGetValue(parentPath, out var parentNode))
+                        {
+                            parentNode.ReportingDesignations.Add(node);
+                        }
+                    }
+                }
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Designations fetched successfully.";
+                response.responseBody.designationHierarchy = rootNodes;
+                return Ok(response); // This is your nested JSON-ready object
+            }
+            catch (Exception ex)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while fetching designations.";
+                _logger.LogError(ex, $"Error fetching designations for ChannelID {designationMaster.ChannelId} and SubChannelID {designationMaster.SubChannelId}");
+                return Conflict(response);
+            }
+        }
         [HttpPost("{ChannelId}/{SubChannelId}/Location/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         public async Task<IActionResult> UpsertLocation([FromRoute] long ChannelId,
@@ -579,7 +673,7 @@ namespace HMS.Controllers
                     _context.LocationMasters.Add(newLocation);
                     await _context.SaveChangesAsync();
 
-                    response.responseBody.locations = new List<LocationMaster> { newLocation };
+                    response.responseBody.locations = new List<LocationMaster>();
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "Location created successfully.";
                     response.responseBody.locations.Add(newLocation);
@@ -612,6 +706,62 @@ namespace HMS.Controllers
                 return StatusCode(500, response);
             }
             return Ok(response);
+        }
+        [HttpPost("{ChannelId}/{SubChannelId}/Location/Fetch")]
+        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        public async Task<IActionResult> FetcLocation([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromBody] LocationMasterDto locationMaster)
+        {
+            HmsResponse response = new HmsResponse();
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            // 1. UNIQUE CONSTRAINT CHECK
+            // Check if another record (not this one) already uses the same unique combination
+            if (locationMaster == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Invalid parameter";
+                return BadRequest(response);
+            }
+            if (ChannelId != locationMaster.ChannelId ||
+                SubChannelId != locationMaster.SubChannelId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the channel and subchannel";
+                return Conflict(response);
+            }
+
+            var validChannelSubChannel = await _context.SubchannelMaster.AsNoTracking().AnyAsync(x =>
+                x.OrgId == orgId &&
+                x.ChannelId == locationMaster.ChannelId &&
+                x.SubChannelId == locationMaster.SubChannelId);
+            if (!validChannelSubChannel)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "A location with the same code already exists for this channel and subchannel.";
+                return Conflict(response);
+            }
+
+            var locationList = _context.LocationMasters.AsNoTracking().FirstOrDefault(x =>
+                x.OrgId == orgId &&
+                x.ChannelId == locationMaster.ChannelId &&
+                x.SubChannelId == locationMaster.SubChannelId &&
+                x.LocationCode == locationMaster.LocationCode);
+
+            if (locationList != null)
+            {
+                response.responseBody.locations = new List<LocationMaster>();
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Location created successfully.";
+                response.responseBody.locations.Add(locationList);
+                return Ok(response);
+            }
+            else
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Location not found.";
+                return NotFound(response);
+            }
         }
         [HttpPost("Branch/Create")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
@@ -717,101 +867,6 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "An error occurred while updating the branch master.";
                 return StatusCode(500, response);
-            }
-        }
-        [HttpPost("{ChannelId}/{SubChannelId}/Designation/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
-        public async Task<IActionResult> FetchDesignation([FromRoute] long ChannelId,
-           [FromRoute] long SubChannelId,
-           [FromBody] DesignationMasterDto designationMaster)
-        {
-            HmsResponse response = new HmsResponse();
-
-            if (designationMaster == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Request body is required.";
-                return Conflict(response);
-            }
-
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-            var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
-
-            var channel = await _context.ChannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId
-                && x.OrgId == orgId);
-
-            var subChannel = await _context.SubchannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId
-                && x.OrgId == orgId
-                && x.ChannelId == designationMaster.ChannelId);
-
-            if (channel == null ||
-                subChannel == null ||
-                ChannelId != designationMaster.ChannelId ||
-                SubChannelId != designationMaster.SubChannelId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Verify the channel and subchannel belong to the organisation.";
-                return Conflict(response);
-            }
-
-
-            try
-            {
-
-                // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
-                var flatList = await _context.DesignationMaster.AsNoTracking()
-                    .Where(d => d.OrgId == orgId
-                             && d.ChannelId == designationMaster.ChannelId
-                             && d.SubChannelId == designationMaster.SubChannelId)
-                    .OrderBy(d => d.HierarchyPath) // This now translates to: ORDER BY hierarchy_path
-                    .ToListAsync();
-
-                // 2. Build the tree in memory
-                var nodeDict = flatList.ToDictionary(
-                   d => d?.HierarchyPath?.ToString(),
-                    d => new DesignationNode
-                    {
-                        Id = d.DesignationId,
-                        Name = d.DesignationName,
-                        Code = d.DesignationCode
-                    });
-
-                List<DesignationNode> rootNodes = new();
-
-                foreach (var item in flatList)
-                {
-                    string path = item.HierarchyPath.ToString();
-                    var node = nodeDict[path];
-
-                    // Find parent path using LTree logic
-                    int lastDot = path.LastIndexOf('.');
-
-                    if (lastDot == -1)
-                    {
-                        rootNodes.Add(node); // It's a root
-                    }
-                    else
-                    {
-                        string parentPath = path.Substring(0, lastDot);
-                        if (nodeDict.TryGetValue(parentPath, out var parentNode))
-                        {
-                            parentNode.ReportingDesignations.Add(node);
-                        }
-                    }
-                }
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "Designations fetched successfully.";
-                response.responseBody.designationHierarchy = rootNodes;
-                return Ok(response); // This is your nested JSON-ready object
-            }
-            catch (Exception ex)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "An error occurred while fetching designations.";
-                _logger.LogError(ex, $"Error fetching designations for ChannelID {designationMaster.ChannelId} and SubChannelID {designationMaster.SubChannelId}");
-                return Conflict(response);
             }
         }
 

@@ -82,7 +82,7 @@ namespace Models.DB
     {
         public long Id { get; set; }
         public string Name { get; set; }
-        public List<DesignationNode> Children { get; set; } = new();
+        public List<DesignationNode> ReportingDesignations { get; set; } = new();
         public string Code { get; set; }
     }
 }

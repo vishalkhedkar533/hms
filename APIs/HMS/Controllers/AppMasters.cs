@@ -760,7 +760,7 @@ namespace HMS.Controllers
             {
 
                 // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
-                var flatList = await _context.DesignationMaster
+                var flatList = await _context.DesignationMaster.AsNoTracking()
                     .Where(d => d.OrgId == orgId
                              && d.ChannelId == designationMaster.ChannelId
                              && d.SubChannelId == designationMaster.SubChannelId)
@@ -796,7 +796,7 @@ namespace HMS.Controllers
                         string parentPath = path.Substring(0, lastDot);
                         if (nodeDict.TryGetValue(parentPath, out var parentNode))
                         {
-                            parentNode.Children.Add(node);
+                            parentNode.ReportingDesignations.Add(node);
                         }
                     }
                 }

@@ -49,6 +49,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<AuditTrailProfile>();
     cfg.AddProfile<CommissionMgmtProfile>();
     cfg.AddProfile<LocationMappingProfile>();
+    cfg.AddProfile<UiFieldsMappingProfile>();
 });
 
 // ----------------------------

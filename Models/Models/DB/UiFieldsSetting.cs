@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Routing.Constraints;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
@@ -83,6 +85,53 @@ namespace Models.DB
         public int? ApproverOneId { get; set; }
         public int? ApproverTwoId { get; set; }
         public int? ApproverThreeId { get; set; }
-        public bool UseDefaultApprover { get; set; } = true;
+        public bool? UseDefaultApprover { get; set; } = null;
+
+    }
+    public class UiFieldsMappingProfile : Profile
+    {
+        public UiFieldsMappingProfile()
+        {
+            // --- Entity to DTO ---
+            CreateMap<UiFieldsSetting, UiFieldsSettingDto>()
+                .ForMember(dest => dest.Render, opt => opt.MapFrom(src => src.Render ?? true))
+                .ForMember(dest => dest.AllowEdit, opt => opt.MapFrom(src => src.AllowEdit ?? false))
+                .ForMember(dest => dest.UseDefaultApprover, opt => opt.MapFrom(src => src.UseDefaultApprover ?? true));
+            // Note: Navigation Properties are automatically ignored because 
+            // the DTO has no matching "UiField" or "GrantedByUser" object properties.
+
+            // --- DTO to Entity ---
+            CreateMap<UiFieldsSettingDto, UiFieldsSetting>()
+                // 1. Ignore Audit/Internal fields
+                .ForMember(dest => dest.AccessGrantedOn, opt => opt.Ignore())
+                .ForMember(dest => dest.AccessGrantedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+                .ForMember(dest => dest.SortOrder, opt => opt.Ignore())
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                // 2. Explicitly Ignore Navigation Objects
+                // We do this to prevent AutoMapper from trying to create new empty objects 
+                // or overwriting existing EF proxies with null.
+                .ForMember(dest => dest.UiField, opt => opt.Ignore())
+                .ForMember(dest => dest.GrantedByUser, opt => opt.Ignore())
+                .ForMember(dest => dest.ApproverOne, opt => opt.Ignore())
+                .ForMember(dest => dest.ApproverTwo, opt => opt.Ignore())
+                .ForMember(dest => dest.ApproverThree, opt => opt.Ignore())
+                .ForMember(dest => dest.Role, opt => opt.Ignore())
+
+                // 3. Map the Foreign Key IDs (the actual database columns)
+                .ForMember(dest => dest.CntrlId, opt => opt.MapFrom(src => src.CntrlId))
+                .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => src.RoleId))
+                .ForMember(dest => dest.ApproverOneId, opt => opt.MapFrom(src => src.ApproverOneId))
+                .ForMember(dest => dest.ApproverTwoId, opt => opt.MapFrom(src => src.ApproverTwoId))
+                .ForMember(dest => dest.ApproverThreeId, opt => opt.MapFrom(src => src.ApproverThreeId));
+        }
     }
 }
+
+/*
+ * UiField
+GrantedByUser
+ApproverOne
+ApproverTwo
+ApproverThree
+ */

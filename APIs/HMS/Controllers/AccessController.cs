@@ -1,4 +1,5 @@
-﻿using CommonLibrary;
+﻿using AutoMapper;
+using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
@@ -21,15 +22,17 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private readonly ILogger<AccessController> _logger;
         private readonly IAuthClaimService _authClaimService;
+        private readonly IMapper _mapper;
         private int orgId;
         private readonly DatabaseService _db;
         public AccessController(HMSContext context, ILogger<AccessController> logger, IAuthClaimService authClaimService,
-            DatabaseService db)
+            DatabaseService db, IMapper mapper)
         {
             _context = context;
             _logger = logger;
             _authClaimService = authClaimService;
             _db = db;
+            _mapper = mapper;
         }
         [HttpPost("Role/List")]
         [MenuAuthorize(AuthorisationConstants.FetchRoles)]
@@ -663,42 +666,28 @@ namespace HMS.Controllers
                          && s.RoleId == uiFieldsSetting.RoleId
                          && s.CntrlId == uiFieldsSetting.CntrlId);
 
+                hMSResponse.responseBody.uiFieldsSettings = new List<UiFieldsSetting>();
                 if (existingSetting == null)
                 {
-                    var newRecord = new UiFieldsSetting
-                    {
-                        RoleId = uiFieldsSetting.RoleId,
-                        CntrlId = uiFieldsSetting.CntrlId,
-                        Render = uiFieldsSetting.Render,
-                        AllowEdit = uiFieldsSetting.AllowEdit,
-                        SortOrder = 1,
-                        ApproverOneId = uiFieldsSetting.ApproverOneId,
-                        ApproverTwoId = uiFieldsSetting.ApproverTwoId,
-                        ApproverThreeId = uiFieldsSetting.ApproverThreeId,
-                        AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0"),
-                        AccessGrantedOn = DateTime.UtcNow.Date,
-                        OrgId = orgId
-                    };
+                    var newRecord = _mapper.Map<UiFieldsSetting>(uiFieldsSetting);
+                    newRecord.OrgId = orgId;
+                    newRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+                    newRecord.AccessGrantedOn = DateTime.UtcNow;
                     _context.uiFieldsSettings.Add(newRecord);
+                    hMSResponse.responseBody.uiFieldsSettings.Add(newRecord);
                 }
                 else
                 {
-                    existingSetting.Render = uiFieldsSetting.Render;
-                    existingSetting.AllowEdit = uiFieldsSetting.AllowEdit;
-                    existingSetting.SortOrder = 1;
-                    existingSetting.RoleId = uiFieldsSetting.RoleId;
-                    existingSetting.ApproverOneId = uiFieldsSetting.ApproverOneId;
-                    existingSetting.ApproverTwoId = uiFieldsSetting.ApproverTwoId;
-                    existingSetting.ApproverThreeId = uiFieldsSetting.ApproverThreeId;
-                    existingSetting.CntrlId = uiFieldsSetting.CntrlId;
+                    _mapper.Map(uiFieldsSetting, existingSetting);
                     existingSetting.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
                     existingSetting.AccessGrantedOn = DateTime.UtcNow;
-                    _context.uiFieldsSettings.Update(existingSetting);
+                    hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
+                    //_context.uiFieldsSettings.Update(existingSetting);
                 }
 
                 await _context.SaveChangesAsync();
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                hMSResponse.responseHeader.ErrorMessage = "Access updated successfully";
 
                 return Ok(hMSResponse);
             }

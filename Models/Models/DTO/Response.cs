@@ -52,6 +52,7 @@ namespace Models.DTO
         public List<DesignationMaster>? designations { get; set; } = null;
         public List<LocationMaster>? locations { get; set; } = null;
         public List<BranchMaster>? branches { get; set; } = null;
+        public List<UiFieldsSetting>? uiFieldsSettings { get; set; } = null;
     }
 
     public class UpdatedAgentField

@@ -77,4 +77,12 @@ namespace Models.DB
         public string? CodeFormat { get; set; }
         public long? SubChannelId { get; set; }
     }
+
+    public class DesignationNode
+    {
+        public long Id { get; set; }
+        public string Name { get; set; }
+        public List<DesignationNode> ReportingDesignations { get; set; } = new();
+        public string Code { get; set; }
+    }
 }

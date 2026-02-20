@@ -10,6 +10,7 @@ using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
+using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -480,17 +481,21 @@ namespace HMS.Controllers
             try
             {
                 await _context.SaveChangesAsync();
-                if (!string.IsNullOrEmpty(parentDesignation?.HierarchyPath))
-                {
-                    parentDesignation.HierarchyPath = parentDesignation.HierarchyPath.Concat(".").ToString();
-                }
+
+                // SAFELY build hierarchy path as a string.
+                // Avoid using Enumerable.Concat which produces an iterator type when called on a non-string enumerable.
+                var parentPathStr = parentDesignation?.HierarchyPath?.ToString() ?? string.Empty;
+                // If parentPathStr is empty, the hierarchy path is just the current designation id.
+                string heirarchyPath = string.IsNullOrEmpty(parentPathStr)
+                    ? designation.DesignationId.ToString()
+                    : parentPathStr + "." + designation.DesignationId.ToString();
+
                 await _db.ExecuteQueryAsync<string>(
-                            "Channel",
+                            "Master",
                             "UpdateDesignation",
                             new
                             {
-
-                                p_hierarchy_path = string.Concat((parentDesignation?.HierarchyPath ?? string.Empty), designation.DesignationId.ToString()),
+                                p_hierarchy_path = heirarchyPath,
                                 p_orgId = orgId,
                                 p_channelID = designation.ChannelId,
                                 p_subChannelId = designation.SubChannelId,
@@ -503,7 +508,6 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorMessage = isNew ? "Designation created successfully." : "Designation updated successfully.";
                 response.responseBody.designations = new List<DesignationMaster>();
                 response.responseBody.designations.Add(designation);
-
                 return Ok(response);
             }
             catch (DbUpdateException ex)
@@ -515,7 +519,6 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
         }
-
         [HttpPost("{ChannelId}/{SubChannelId}/Location/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         public async Task<IActionResult> UpsertLocation([FromRoute] long ChannelId,
@@ -710,8 +713,106 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating hmsmaster.branch_master id {BranchId}", BranchId);
-                return StatusCode(500, "An error occurred while updating the branch master.");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while updating the branch master.";
+                return StatusCode(500, response);
             }
         }
+        [HttpPost("{ChannelId}/{SubChannelId}/Designation/Fetch")]
+        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        public async Task<IActionResult> FetchDesignation([FromRoute] long ChannelId,
+           [FromRoute] long SubChannelId,
+           [FromBody] DesignationMasterDto designationMaster)
+        {
+            HmsResponse response = new HmsResponse();
+
+            if (designationMaster == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return Conflict(response);
+            }
+
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
+
+            var channel = await _context.ChannelMaster.AsNoTracking().
+                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId
+                && x.OrgId == orgId);
+
+            var subChannel = await _context.SubchannelMaster.AsNoTracking().
+                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId
+                && x.OrgId == orgId
+                && x.ChannelId == designationMaster.ChannelId);
+
+            if (channel == null ||
+                subChannel == null ||
+                ChannelId != designationMaster.ChannelId ||
+                SubChannelId != designationMaster.SubChannelId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the channel and subchannel belong to the organisation.";
+                return Conflict(response);
+            }
+
+
+            try
+            {
+
+                // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
+                var flatList = await _context.DesignationMaster.AsNoTracking()
+                    .Where(d => d.OrgId == orgId
+                             && d.ChannelId == designationMaster.ChannelId
+                             && d.SubChannelId == designationMaster.SubChannelId)
+                    .OrderBy(d => d.HierarchyPath) // This now translates to: ORDER BY hierarchy_path
+                    .ToListAsync();
+
+                // 2. Build the tree in memory
+                var nodeDict = flatList.ToDictionary(
+                   d => d?.HierarchyPath?.ToString(),
+                    d => new DesignationNode
+                    {
+                        Id = d.DesignationId,
+                        Name = d.DesignationName,
+                        Code = d.DesignationCode
+                    });
+
+                List<DesignationNode> rootNodes = new();
+
+                foreach (var item in flatList)
+                {
+                    string path = item.HierarchyPath.ToString();
+                    var node = nodeDict[path];
+
+                    // Find parent path using LTree logic
+                    int lastDot = path.LastIndexOf('.');
+
+                    if (lastDot == -1)
+                    {
+                        rootNodes.Add(node); // It's a root
+                    }
+                    else
+                    {
+                        string parentPath = path.Substring(0, lastDot);
+                        if (nodeDict.TryGetValue(parentPath, out var parentNode))
+                        {
+                            parentNode.ReportingDesignations.Add(node);
+                        }
+                    }
+                }
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Designations fetched successfully.";
+                response.responseBody.designationHierarchy = rootNodes;
+                return Ok(response); // This is your nested JSON-ready object
+            }
+            catch (Exception ex)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while fetching designations.";
+                _logger.LogError(ex, $"Error fetching designations for ChannelID {designationMaster.ChannelId} and SubChannelID {designationMaster.SubChannelId}");
+                return Conflict(response);
+            }
+        }
+
     }
 }

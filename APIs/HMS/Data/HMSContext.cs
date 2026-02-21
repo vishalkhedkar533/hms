@@ -57,22 +57,22 @@ namespace HMS.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<LocationMaster>(entity =>
-            {
-                entity.ToTable("location_master", "hmsmaster");
-                entity.HasKey(e => e.LocationCode);
-                entity.HasAlternateKey(e => e.LocationMasterId);
-            });
+            // 1. Explicitly define Primary Keys
+            modelBuilder.Entity<LocationMaster>().HasKey(l => l.LocationMasterId);
+            modelBuilder.Entity<BranchMaster>().HasKey(b => b.BranchId);
 
-            modelBuilder.Entity<BranchMaster>(entity =>
-            {
-                entity.ToTable("branch_master", "hmsmaster");
-                entity.HasOne(b => b.LocationMaster)
-                    .WithMany()
-                    .HasForeignKey(b => b.LocationMasterId)
-                    .HasPrincipalKey(l => l.LocationMasterId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
+            // 2. Explicitly define the Relationship
+            modelBuilder.Entity<BranchMaster>()
+                .HasOne(b => b.Location)
+                .WithMany() // No collection in LocationMaster
+                .HasForeignKey(b => b.LocationMasterId)
+                .HasPrincipalKey(l => l.LocationMasterId); // Points to the numeric PK
+
+            // 3. Define the Unique Index for Branch
+            modelBuilder.Entity<BranchMaster>()
+                .HasIndex(b => new { b.OrgId, b.BranchCode, b.LocationMasterId })
+                .IsUnique()
+                .HasDatabaseName("branch_uq");
 
             modelBuilder.Entity<AgentMovementHistory>(entity =>
             {

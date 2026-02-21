@@ -5,6 +5,7 @@ using HMS.Data;
 using HMS.Security;
 using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.FlowAnalysis;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
@@ -669,7 +670,7 @@ namespace HMS.Controllers
                     // --- INSERT ---
                     var newLocation = _mapper.Map<LocationMaster>(locationMaster);
                     newLocation.CreatedDate = DateTime.UtcNow;
-                    newLocation.CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier);
+                    newLocation.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
                     _context.LocationMasters.Add(newLocation);
                     await _context.SaveChangesAsync();
 
@@ -683,7 +684,7 @@ namespace HMS.Controllers
                     // --- UPDATE ---
                     _mapper.Map(locationMaster, existingLocation);
                     existingLocation.ModifiedDate = DateTime.UtcNow;
-                    existingLocation.ModifiedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier);
+                    existingLocation.ModifiedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
                     await _context.SaveChangesAsync();
                     response.responseBody.locations = new List<LocationMaster> { existingLocation };
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
@@ -710,7 +711,7 @@ namespace HMS.Controllers
         [HttpPost("{ChannelId}/{SubChannelId}/Location/Fetch")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         public async Task<IActionResult> FetcLocation([FromRoute] long ChannelId,
-            [FromRoute] long SubChannelId, [FromBody] LocationMasterDto locationMaster)
+        [FromRoute] long SubChannelId, [FromBody] LocationMasterDto locationMaster)
         {
             HmsResponse response = new HmsResponse();
             if (!ModelState.IsValid) return BadRequest(ModelState);
@@ -763,110 +764,149 @@ namespace HMS.Controllers
                 return NotFound(response);
             }
         }
-        [HttpPost("Branch/Create")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
-        public async Task<IActionResult> CreateBranch([FromBody] BranchMasterDto dto)
+        [HttpPost("{ChannelId}/{SubChannelId}/{LocationId}/Branch/Save")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]   
+        public async Task<IActionResult> InsertUpdateBranch([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromRoute] long LocationId, [FromBody] BranchMasterDto branchMaster)
         {
             var response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-            if (dto is null)
+            if (branchMaster is null)
                 return BadRequest("Request body is required.");
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            if (LocationId != branchMaster.LocationMasterId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the location";
+                return Conflict(response);
+            }
+
+            var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
+                x.OrgId == orgId &&
+                x.LocationMasterId == branchMaster.LocationMasterId);
+
+            if (location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
+            {
+
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the channel and subchannel";
+                return Conflict(response);
+            }
 
             try
             {
-                var branch = await _context.BranchMaster.AddAsync(new BranchMaster
+                // 1. Check if record exists
+                var existingBranch = await _context.BranchMaster
+                    .FirstOrDefaultAsync(x => x.BranchCode == branchMaster.BranchCode && 
+                    x.LocationMasterId == branchMaster.LocationMasterId);
+
+                if (existingBranch == null)
                 {
-                    BranchCode = dto.BranchCode ?? string.Empty,
-                    BranchName = dto.BranchName ?? string.Empty,
-                    Address = dto.Address,
-                    State = dto.State,
-                    PhoneNumber = dto.PhoneNumber,
-                    EmailId = dto.EmailId,
-                    IsActive = dto.IsActive,
-                    LocationMasterId = dto.LocationMasterId,
-                    OrgId = orgId,
-                    CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "System",
-                    CreatedDate = DateTime.UtcNow,
-                    RowVersion = 1
-                });
+                    // INSERT LOGIC
+                    var newBranch = _mapper.Map<BranchMaster>(branchMaster);
 
-                await _context.SaveChangesAsync();
+                    // Manual override if DTO string/int conversion is needed
+                     newBranch.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
+                    newBranch.RowVersion = 1; // Initialize RowVersion for new record
 
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "Branch master created successfully.";
-                response.responseBody.branches = new List<BranchMaster> { branch.Entity };
+                    _context.BranchMaster.Add(newBranch);
+                    await _context.SaveChangesAsync();
 
-                return Ok(response);
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Branch created successfully.";
+                    response.responseBody.branches = new List<BranchMaster>();
+                    response.responseBody.branches.Add(newBranch);
+
+                    return Ok(response);
+                }
+                else
+                {
+                    // UPDATE LOGIC
+                    // Map DTO values onto the existing tracked entity
+                    _mapper.Map(branchMaster, existingBranch);
+
+                    // Update Audit fields
+                    existingBranch.ModifiedDate = DateTime.Now;
+                    existingBranch.ModifiedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
+
+                    _context.Entry(existingBranch).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Branch updated successfully.";
+                    response.responseBody.branches = new List<BranchMaster>();
+                    response.responseBody.branches.Add(existingBranch);
+
+                    return Ok(response);
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                return Conflict(new { message = "Database constraint violation (check unique index)", details = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error inserting into hmsmaster.branch_master. DTO: {@dto}", dto);
-                return StatusCode(500, response);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 
-        [HttpPost("Branch/{BranchId}/Update")]
+        [HttpPost("{ChannelId}/{SubChannelId}/{LocationId}/Branch/Fetch")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
-        public async Task<IActionResult> UpdateBranch([FromRoute] long BranchId, [FromBody] BranchMasterDto dto)
+        public async Task<IActionResult> FetchBranch([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromRoute] long LocationId, [FromBody] BranchMasterDto branchMaster)
         {
             var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-            if (dto is null)
+            if (branchMaster is null)
                 return BadRequest("Request body is required.");
 
-            if (dto.BranchId.HasValue && dto.BranchId.Value != BranchId)
-                return BadRequest("URL id does not match body id.");
+            if (LocationId != branchMaster.LocationMasterId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the location";
+                return Conflict(response);
+            }
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
+                x.OrgId == orgId &&
+                x.LocationMasterId == branchMaster.LocationMasterId);
+
+            if (location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Verify the channel and subchannel";
+                return Conflict(response);
+            }
 
             try
             {
-                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-                var branch = await _context.BranchMaster
-                    .FirstOrDefaultAsync(x => x.BranchId == BranchId && x.OrgId == orgId);
-
-                if (branch == null)
-                {
-                    response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
-                        .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
-                        .Select(x => x.ErrorMsg)
-                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                var existingBranch = await _context.BranchMaster
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.BranchCode == branchMaster.BranchCode &&
+                    x.LocationMasterId == branchMaster.LocationMasterId &&
+                    x.OrgId == orgId);
+                if (existingBranch == null)
+                {   response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Branch not found.";
                     return NotFound(response);
                 }
-
-                branch.BranchCode = dto.BranchCode ?? branch.BranchCode;
-                branch.BranchName = dto.BranchName ?? branch.BranchName;
-                branch.Address = dto.Address;
-                branch.State = dto.State;
-                branch.PhoneNumber = dto.PhoneNumber;
-                branch.EmailId = dto.EmailId;
-                branch.IsActive = dto.IsActive;
-                branch.LocationMasterId = dto.LocationMasterId;
-                branch.ModifiedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "System";
-                branch.ModifiedDate = DateTime.UtcNow;
-                branch.RowVersion = (branch.RowVersion ?? 0) + 1;
-
-                await _context.SaveChangesAsync();
-
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "Branch master updated successfully.";
-                response.responseBody.branches = new List<BranchMaster> { branch };
-
-                return Ok(response);
+                else
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Branch fetched successfully.";
+                    response.responseBody.branches = new List<BranchMaster>();
+                    response.responseBody.branches.Add(existingBranch);
+                    return Ok(response);
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                return Conflict(new { message = "Database constraint violation (check unique index)", details = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating hmsmaster.branch_master id {BranchId}", BranchId);
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "An error occurred while updating the branch master.";
-                return StatusCode(500, response);
+                return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
 

@@ -1,4 +1,4 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
+﻿using AutoMapper;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,85 +8,115 @@ namespace Models.DB
     public class BranchMaster
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("branch_id")]
-        [SwaggerSchema("Primary key: unique branch identifier.")]
-        public long BranchId { get; set; }
+        public long BranchId { get; set; } // int8 -> long
 
         [Column("orgid")]
-        [SwaggerSchema("Foreign key referencing the organisation.")]
         public int? OrgId { get; set; }
 
         [Required]
+        [MaxLength(20)]
         [Column("branch_code")]
-        [StringLength(20)]
-        [SwaggerSchema("Unique code for the branch within an organization.")]
-        public string BranchCode { get; set; } = null!;
+        public string BranchCode { get; set; } = string.Empty;
 
         [Required]
+        [MaxLength(100)]
         [Column("branch_name")]
-        [StringLength(100)]
-        [SwaggerSchema("Name of the branch.")]
-        public string BranchName { get; set; } = null!;
+        public string BranchName { get; set; } = string.Empty;
 
         [Column("address")]
-        [SwaggerSchema("Physical address of the branch.")]
         public string? Address { get; set; }
 
         [Column("state")]
-        [SwaggerSchema("State identifier.")]
         public int? State { get; set; }
 
+        [MaxLength(20)]
         [Column("phone_number")]
-        [StringLength(20)]
-        [SwaggerSchema("Contact phone number.")]
         public string? PhoneNumber { get; set; }
 
+        [EmailAddress]
+        [MaxLength(100)]
         [Column("email_id")]
-        [StringLength(100)]
-        [SwaggerSchema("Contact email address.")]
         public string? EmailId { get; set; }
 
         [Required]
         [Column("is_active")]
-        [SwaggerSchema("Indicates if the branch is active.")]
         public bool IsActive { get; set; }
 
+        // FOREIGN KEY PROPERTY
         [Column("location_master_id")]
-        [SwaggerSchema("Foreign key referencing the location master.")]
-        public long? LocationMasterId { get; set; }
+        public long? LocationMasterId { get; set; } // int8 -> long?
 
         [Required]
         [Column("created_by")]
-        [StringLength(100)]
-        [SwaggerSchema("User who created the record.")]
-        public string CreatedBy { get; set; } = null!;
+        public int CreatedBy { get; set; }
 
         [Required]
         [Column("created_date")]
-        [SwaggerSchema("Timestamp when the record was created.")]
         public DateTime CreatedDate { get; set; }
 
         [Column("modified_by")]
-        [StringLength(100)]
-        [SwaggerSchema("User who last modified the record.")]
-        public string? ModifiedBy { get; set; }
+        public int? ModifiedBy { get; set; }
 
         [Column("modified_date")]
-        [SwaggerSchema("Timestamp of the last modification.")]
         public DateTime? ModifiedDate { get; set; }
 
         [Column("rowversion")]
-        [ConcurrencyCheck]
-        [SwaggerSchema("Concurrency token.")]
         public int? RowVersion { get; set; }
 
-        // --- Navigation Properties ---
+        // NAVIGATION PROPERTY
+        [ForeignKey("LocationMasterId")]
+        public virtual LocationMaster? Location { get; set; }
+    }
+    public class BranchMasterDto
+    {
+        public long? BranchId { get; set; }
+        [Required(ErrorMessage = "Branch Code is required")]
+        [MaxLength(20)]
+        public string BranchCode { get; set; } = string.Empty;
 
-        [ForeignKey(nameof(OrgId))]
-        public virtual Organisation? Organisation { get; set; }
+        [Required(ErrorMessage = "Branch Name is required")]
+        [MaxLength(100)]
+        public string BranchName { get; set; } = string.Empty;
 
-        [ForeignKey(nameof(LocationMasterId))]
-        public virtual LocationMaster? LocationMaster { get; set; }
+        public string? Address { get; set; }
+
+        public int? State { get; set; }
+
+        [MaxLength(20)]
+        public string? PhoneNumber { get; set; }
+
+        [EmailAddress]
+        [MaxLength(100)]
+        public string? EmailId { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        public long? LocationMasterId { get; set; }
+    }
+    public class BranchMasterProfile : Profile
+    {
+        public BranchMasterProfile()
+        {
+            // 1. Request DTO -> Database Entity
+            CreateMap<BranchMasterDto, BranchMaster>()
+                // Always ignore the PK on Upsert/Create
+                .ForMember(dest => dest.BranchId, opt => opt.Ignore())
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+                // Ignore Audit & Navigation properties (handled by DB or Logic)
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.Location, opt => opt.Ignore())
+                .ForMember(dest => dest.RowVersion, opt => opt.Ignore());
+
+            // 2. Database Entity -> Response DTO
+            CreateMap<BranchMaster, BranchMasterDto>()
+                // If you truly need the -1000 fallback, keep this. 
+                // Otherwise, AutoMapper maps LocationMasterId automatically.
+                .ForMember(dest => dest.LocationMasterId,
+                           opt => opt.MapFrom(src => src.LocationMasterId ?? -1000));
+        }
     }
 }

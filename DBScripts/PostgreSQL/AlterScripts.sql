@@ -527,3 +527,26 @@ REFERENCES hms.agent (agent_code, orgid);
 alter table hmsmaster.designation_master ADD CONSTRAINT fk_desig_subchannel
 FOREIGN KEY (sub_channel_id) 
 REFERENCES hmsmaster.subchannel_master (sub_channel_id);
+
+update hmsmaster.location_master set   created_by = '1', modified_by = '1';
+-- 2. Alter the columns with an explicit type cast and add the foreign key
+ALTER TABLE hmsmaster.location_master 
+    ALTER COLUMN created_by TYPE int4 USING (created_by::int4),
+    ALTER COLUMN modified_by TYPE int4 USING (modified_by::int4);
+
+-- 3. Add the Foreign Key constraints
+ALTER TABLE hmsmaster.location_master 
+    ADD CONSTRAINT fk_location_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id),
+    ADD CONSTRAINT fk_location_modified_by FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id);
+
+
+update hmsmaster.branch_master set   created_by = '1', modified_by = '1';
+ALTER TABLE hmsmaster.branch_master
+    ALTER COLUMN created_by TYPE int4 USING (created_by::int4),
+    ALTER COLUMN modified_by TYPE int4 USING (modified_by::int4);
+ALTER TABLE hmsmaster.branch_master 
+    ADD CONSTRAINT fk_location_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id),
+    ADD CONSTRAINT fk_location_modified_by FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id);
+
+ALTER TABLE hmsmaster.location_master 
+    ALTER COLUMN orgid SET NOT NULL;

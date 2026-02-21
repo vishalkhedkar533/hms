@@ -50,6 +50,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<CommissionMgmtProfile>();
     cfg.AddProfile<LocationMappingProfile>();
     cfg.AddProfile<UiFieldsMappingProfile>();
+    cfg.AddProfile<BranchMasterProfile>();
 });
 
 // ----------------------------

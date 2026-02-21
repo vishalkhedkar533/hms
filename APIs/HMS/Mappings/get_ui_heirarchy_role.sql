@@ -13,7 +13,7 @@ WITH flat_data AS (
                     'cntrlName', f.cntrl_name,
                     'render', COALESCE(s.render, false),
                     'allowedit', COALESCE(s.allow_edit, false)
-                ) ORDER BY s.sort_order, f.cntrl_id
+                ) ORDER BY s.sort_order, f.cntrl_name, c.label
             ) FILTER (WHERE f.cntrl_id IS NOT null), 
             '[]'::jsonb
         ) as field_list
@@ -21,6 +21,7 @@ WITH flat_data AS (
     LEFT JOIN hmsmaster.ui_fields f ON c.component_id = f.component_id
     LEFT JOIN hmsmaster.ui_fields_setting s ON f.cntrl_id = s.cntrl_id AND s.orgid = :p_orgId and s.role_id = :p_RoleId 
     GROUP BY c.component_id, c.path, c.label, c.elementType
+    order by c.path
 ),
 level_3 AS (
     /*Step 2: Aggregate the deepest nodes (Sections)*/

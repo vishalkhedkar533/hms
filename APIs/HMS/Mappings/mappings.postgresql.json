@@ -68,10 +68,6 @@
         "Function": "na",
         "Script": "update hmsmaster.designation_master set hierarchy_path = @p_hierarchy_path ::ltree where orgid = @p_orgId and channel_id = @p_channelID and sub_channel_id = @p_subChannelId and designation_id = @p_designation"
       },
-      "Get_Branch_hierarchy_path": {
-        "Function": "na",
-        "Script": "select hierarchy_path from hmsmaster.branch_master where orgid = @p_orgId and location_master_id = @p_locationId and branch_id = @p_branchId"
-      },
       "UpdateBranchHierarchy": {
         "Function": "na",
         "Script": "update hmsmaster.branch_master set hierarchy_path = @p_hierarchy_path::ltree where orgid = @p_orgId and location_master_id = @p_locationId and branch_id = @p_branchId"

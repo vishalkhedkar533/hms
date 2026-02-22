@@ -844,28 +844,11 @@ namespace HMS.Controllers
                 await _context.SaveChangesAsync();
 
                 // 5. Build Hierarchy Path for the custom SQL script
-               
-                var parent_branch_hierarchy =
-                    (await _db.ExecuteQueryAsync<BranchMaster>(
-                        "Master",
-                        "Get_Branch_hierarchy_path",
-                        new
-                        {
-                            p_branch_id = branchMasterDto.ParentBranchId,
-                            p_orgId = orgId,
-                            p_locationId = LocationId,
-                        })).FirstOrDefault();
-
-                if (!string.IsNullOrEmpty(parent_branch_hierarchy?.HierarchyPath))
-                {
-                    parent_branch_hierarchy.HierarchyPath = parent_branch_hierarchy.HierarchyPath + ".";
-                }
-
-                //var parentBranch = await _context.BranchMaster.AsNoTracking()
-                //   .FirstOrDefaultAsync(x => x.BranchId == (branchMasterDto.ParentBranchId ?? -1000) &&
-                //                             x.OrgId == orgId);
-                //var parentPathStr = parentBranch?.HierarchyPath ?? string.Empty;
-                //string newHierarchyPath = string.IsNullOrEmpty(parentPathStr)? branch.BranchId.ToString(): $"{parentPathStr}.{branch.BranchId}";
+                var parentBranch = await _context.BranchMaster.AsNoTracking()
+                   .FirstOrDefaultAsync(x => x.BranchId == (branchMasterDto.ParentBranchId ?? -1000) &&
+                                             x.OrgId == orgId);
+                var parentPathStr = parentBranch?.HierarchyPath ?? string.Empty;
+                string newHierarchyPath = string.IsNullOrEmpty(parentPathStr) ? branch.BranchId.ToString() : $"{parentPathStr}.{branch.BranchId}";
 
                 // 6. Call custom SQL to update ltree path using explicit cast
                 await _db.ExecuteQueryAsync<string>(
@@ -873,7 +856,7 @@ namespace HMS.Controllers
                     "UpdateBranchHierarchy",
                     new
                     {
-                        p_hierarchy_path = (parent_branch_hierarchy?.HierarchyPath ?? string.Empty) + branch.BranchId,
+                        p_hierarchy_path = newHierarchyPath,
                         p_orgId = orgId,
                         p_locationId = LocationId,
                         p_branchId = branch.BranchId
@@ -882,7 +865,7 @@ namespace HMS.Controllers
                 // 7. Prepare success response
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = isNew ? "Branch created successfully." : "Branch updated successfully.";
-                branch.HierarchyPath = (parent_branch_hierarchy?.HierarchyPath ?? string.Empty) + branch.BranchId;
+                branch.HierarchyPath = newHierarchyPath;
                 response.responseBody.branches = new List<BranchMaster> { branch };
 
                 return Ok(response);

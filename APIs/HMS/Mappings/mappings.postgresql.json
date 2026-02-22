@@ -67,6 +67,14 @@
       "UpdateDesignation": {
         "Function": "na",
         "Script": "update hmsmaster.designation_master set hierarchy_path = @p_hierarchy_path ::ltree where orgid = @p_orgId and channel_id = @p_channelID and sub_channel_id = @p_subChannelId and designation_id = @p_designation"
+      },
+      "GetBranchHierarchyByBranchId": {
+        "Function": "na",
+        "Script": "SELECT channel_location_heirarchy_id ChannelLocationHeirarchyId, hierarchy_path HierarchyPath,channel_id ChannelId, sub_channel_id SubChannelId FROM hmsmaster.channel_branch_heirarchy WHERE hierarchy_path ~ CAST('*.' || @p_branchId AS lquery) AND orgid = @p_orgId AND channel_id = @p_channelId AND sub_channel_id = @p_subChannelId"
+      },
+      "UpdateChannelBranchHierarchyPath": {
+        "Function": "na",
+        "Script": "UPDATE hmsmaster.channel_branch_heirarchy SET hierarchy_path = @p_path::ltree, modified_date = NOW(), modified_by = @p_modifiedBy WHERE channel_location_heirarchy_id = @p_id"
       }
     },
     "Commission": {

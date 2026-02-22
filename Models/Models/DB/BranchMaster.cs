@@ -93,6 +93,7 @@ namespace Models.DB
         public bool IsActive { get; set; } = true;
 
         public long? LocationMasterId { get; set; }
+        public long? ParentBranchId { get; set; } 
     }
     public class BranchMasterProfile : Profile
     {
@@ -100,10 +101,8 @@ namespace Models.DB
         {
             // 1. Request DTO -> Database Entity
             CreateMap<BranchMasterDto, BranchMaster>()
-                // Always ignore the PK on Upsert/Create
                 .ForMember(dest => dest.BranchId, opt => opt.Ignore())
                 .ForMember(dest => dest.OrgId, opt => opt.Ignore())
-                // Ignore Audit & Navigation properties (handled by DB or Logic)
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
@@ -113,8 +112,10 @@ namespace Models.DB
 
             // 2. Database Entity -> Response DTO
             CreateMap<BranchMaster, BranchMasterDto>()
-                // If you truly need the -1000 fallback, keep this. 
-                // Otherwise, AutoMapper maps LocationMasterId automatically.
+                // FIX: Ignore ParentBranchId because it doesn't exist in the BranchMaster table
+                .ForMember(dest => dest.ParentBranchId, opt => opt.Ignore())
+
+                // Keep your existing location fallback logic
                 .ForMember(dest => dest.LocationMasterId,
                            opt => opt.MapFrom(src => src.LocationMasterId ?? -1000));
         }

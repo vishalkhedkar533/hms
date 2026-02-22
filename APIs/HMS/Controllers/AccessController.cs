@@ -662,12 +662,6 @@ namespace HMS.Controllers
                     }
                 }
 
-                /*
-                 * ?? 0,
-                        uiFieldsSetting.ApproverOneId ?? 0, 
-                        uiFieldsSetting.ApproverTwoId ?? 0, 
-                        uiFieldsSetting.ApproverThreeId ?? 0 
-                 */
                 // Safely check existence of the control in uiField.
                 // Some deployments may have different DB column names; guard against column-not-found errors.
                 var uiField = await _context.uiField.AsNoTracking()

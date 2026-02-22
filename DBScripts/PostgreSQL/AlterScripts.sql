@@ -552,3 +552,6 @@ ALTER TABLE hmsmaster.location_master
     ALTER COLUMN orgid SET NOT NULL;
 
 ALTER TABLE hmsmaster.branch_master ADD hierarchy_path public.ltree NULL;
+
+ALTER TABLE hmsmaster.branch_master 
+DROP COLUMN hierarchy_path;

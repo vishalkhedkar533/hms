@@ -67,9 +67,6 @@ namespace Models.DB
         // NAVIGATION PROPERTY
         [ForeignKey("LocationMasterId")]
         public virtual LocationMaster? Location { get; set; }
-
-        [Column("hierarchy_path", TypeName = "ltree")]
-        public string? HierarchyPath { get; set; }
     }
     public class BranchMasterDto
     {
@@ -111,7 +108,6 @@ namespace Models.DB
                 .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.Location, opt => opt.Ignore())
-                .ForMember(dest => dest.HierarchyPath, opt => opt.Ignore())
                 .ForMember(dest => dest.RowVersion, opt => opt.Ignore());
 
             // 2. Database Entity -> Response DTO

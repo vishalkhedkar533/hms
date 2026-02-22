@@ -765,61 +765,40 @@ namespace HMS.Controllers
             }
         }
 
-
         [HttpPost("{ChannelId}/{SubChannelId}/{LocationId}/Branch/Save")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> InsertUpdateBranch(
-        [FromRoute] long ChannelId,
-        [FromRoute] long SubChannelId,
-        [FromRoute] long LocationId,
-        [FromBody] BranchMasterDto branchMasterDto)
+            [FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId,
+            [FromRoute] long LocationId,
+            [FromBody] BranchMasterDto branchMasterDto)
         {
             var response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             var loggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0";
-
-            if (branchMasterDto is null)
-                return BadRequest("Request body is required.");
-
-            // 1. Validation: Route Consistency
-            if (LocationId != branchMasterDto.LocationMasterId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Location ID mismatch.";
-                return Conflict(response);
-            }
-
-            // 2. Validation: Verify Location exists and belongs to the Channel
-            var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
-                x.OrgId == orgId &&
-                x.LocationMasterId == LocationId);
-
-            if (location == null || location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Verify the channel, subchannel, and location mapping.";
-                return Conflict(response);
-            }
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
-                // 3. Find existing branch or prepare for new
-                var branch = await _context.BranchMaster
-                    .FirstOrDefaultAsync(x => x.BranchId == branchMasterDto.BranchId &&
-                                              x.LocationMasterId == LocationId &&
-                                              x.OrgId == orgId);
+                var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
+                    x.OrgId == orgId && x.LocationMasterId == LocationId);
 
-                bool isNew = branch == null;
+                if (location == null || location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Verify the channel, subchannel, and location mapping.";
+                    return Conflict(response);
+                }
+                var branch = await _context.BranchMaster.FirstOrDefaultAsync(x =>
+                    x.BranchId == branchMasterDto.BranchId && x.OrgId == orgId);
 
-                if (isNew)
+                bool isNewBranch = branch == null;
+                if (isNewBranch)
                 {
                     branch = _mapper.Map<BranchMaster>(branchMasterDto);
                     branch.OrgId = orgId;
                     branch.CreatedBy = int.Parse(loggedInUserId);
                     branch.CreatedDate = DateTime.UtcNow;
-                    branch.RowVersion = 1;
-                    branch.HierarchyPath = null;
-
                     _context.BranchMaster.Add(branch);
                 }
                 else
@@ -827,58 +806,89 @@ namespace HMS.Controllers
                     _mapper.Map(branchMasterDto, branch);
                     branch.ModifiedBy = int.Parse(loggedInUserId);
                     branch.ModifiedDate = DateTime.UtcNow;
-                    branch.RowVersion = (branch.RowVersion ?? 0) + 1;
-
-                    // Handle PostgreSQL UTC Kind requirement
-                    if (branch.CreatedDate.Kind == DateTimeKind.Unspecified)
-                        branch.CreatedDate = DateTime.SpecifyKind(branch.CreatedDate, DateTimeKind.Utc);
-
-                    // Set HierarchyPath to null here as well to avoid the type mismatch error
-                    branch.HierarchyPath = null;
-
+                    branch.CreatedDate = DateTime.SpecifyKind(branch.CreatedDate, DateTimeKind.Utc);
                     _context.BranchMaster.Update(branch);
                 }
 
-                // 4. Save Changes (This generates the BranchId for new records)
-                // This will succeed because hierarchy_path is being sent as NULL
                 await _context.SaveChangesAsync();
 
-                // 5. Build Hierarchy Path for the custom SQL script
-                var parentBranch = await _context.BranchMaster.AsNoTracking()
-                   .FirstOrDefaultAsync(x => x.BranchId == (branchMasterDto.ParentBranchId ?? -1000) &&
-                                             x.OrgId == orgId);
-                var parentPathStr = parentBranch?.HierarchyPath ?? string.Empty;
-                string newHierarchyPath = string.IsNullOrEmpty(parentPathStr) ? branch.BranchId.ToString() : $"{parentPathStr}.{branch.BranchId}";
-
-                // 6. Call custom SQL to update ltree path using explicit cast
-                await _db.ExecuteQueryAsync<string>(
+                var parentResult = await _db.ExecuteQueryAsync<ChannelBranchHeirarchy>(
                     "Master",
-                    "UpdateBranchHierarchy",
+                    "GetBranchHierarchyByBranchId",
                     new
                     {
-                        p_hierarchy_path = newHierarchyPath,
+                        p_branchId = branchMasterDto.ParentBranchId,
                         p_orgId = orgId,
-                        p_locationId = LocationId,
-                        p_branchId = branch.BranchId
+                        p_channelId = ChannelId,
+                        p_subChannelId = SubChannelId
                     });
 
-                // 7. Prepare success response
+                string parentPath = parentResult.FirstOrDefault()?.HierarchyPath ?? string.Empty;
+                string newPath = string.IsNullOrEmpty(parentPath) ? branch.BranchId.ToString() : $"{parentPath}.{branch.BranchId}";
+
+                var existingHierResult = await _db.ExecuteQueryAsync<ChannelBranchHeirarchy>(
+                    "Master",
+                    "GetBranchHierarchyByBranchId",
+                    new
+                    {
+                        p_branchId = branch.BranchId,
+                        p_orgId = orgId,
+                        p_channelId = ChannelId,
+                        p_subChannelId = SubChannelId
+                    });
+
+                var existingHierarchy = existingHierResult.FirstOrDefault();
+
+                if (existingHierarchy == null)
+                {
+                    var newHierarchy = new ChannelBranchHeirarchy
+                    {
+                        OrgId = orgId,
+                        ChannelId = ChannelId,
+                        SubChannelId = SubChannelId,
+                        CreatedBy = loggedInUserId,
+                        CreatedDate = DateTime.UtcNow, 
+                        EffectiveFromDate = DateTime.UtcNow.Date,
+                        HierarchyPath = null
+                    };
+                    _context.ChannelBranchHeirarchies.Add(newHierarchy);
+                    await _context.SaveChangesAsync();
+
+                    await _db.ExecuteQueryAsync<int>(
+                        "Master",
+                        "UpdateChannelBranchHierarchyPath",
+                        new
+                        {
+                            p_path = newPath,
+                            p_id = newHierarchy.ChannelLocationHeirarchyId,
+                            p_modifiedBy = loggedInUserId
+                        });
+                }
+                else
+                {
+                    await _db.ExecuteQueryAsync<int>(
+                        "Master",
+                        "UpdateChannelBranchHierarchyPath",
+                        new
+                        {
+                            p_path = newPath,
+                            p_id = existingHierarchy.ChannelLocationHeirarchyId,
+                            p_modifiedBy = loggedInUserId
+                        });
+                }
+                await transaction.CommitAsync();
+
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = isNew ? "Branch created successfully." : "Branch updated successfully.";
-                branch.HierarchyPath = newHierarchyPath;
+                response.responseHeader.ErrorMessage = "Branch and Hierarchy saved successfully.";
                 response.responseBody.branches = new List<BranchMaster> { branch };
 
                 return Ok(response);
             }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database error during Branch save for Code: {Code}", branchMasterDto.BranchCode);
-                return Conflict(new { message = "Database constraint violation.", details = ex.InnerException?.Message ?? ex.Message });
-            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Internal server error during Branch save.");
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error during Branch and Hierarchy save.");
+                return StatusCode(500, ex.Message);
             }
         }
 

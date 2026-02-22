@@ -635,23 +635,42 @@ namespace HMS.Controllers
             orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             try
             {
-                var Role = await _context.Roles.AsNoTracking().FirstOrDefaultAsync(
-                    x => new int[] {uiFieldsSetting.RoleId ?? 0,
-                        uiFieldsSetting.ApproverOneId ?? 0, 
-                        uiFieldsSetting.ApproverTwoId ?? 0, 
-                        uiFieldsSetting.ApproverThreeId ?? 0 }
-                    .Contains(x.RoleId) && x.OrgId == orgId);
+                var Role = await _context.Roles.AsNoTracking().AnyAsync(
+                    x => x.RoleId == uiFieldsSetting.RoleId && x.OrgId == orgId);
                 //verify if the roles exist  for the org
-                if (Role == null)
+                if (!Role)
                 {
                     hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    hMSResponse.responseHeader.ErrorMessage = "Invalid Role verify RoleId/ApproverOneId/ApproverTwoId/ApproverThreeId";
+                    hMSResponse.responseHeader.ErrorMessage = "Invalid Role verify RoleId";
                     return Conflict(hMSResponse);
                 }
 
+                if (((uiFieldsSetting.ApproverOneId ?? 0) != 0 )
+                    || ((uiFieldsSetting.ApproverTwoId ?? 0) != 0 )
+                    || ((uiFieldsSetting.ApproverThreeId ?? 0) != 0 )
+                    )
+                {
+                    if (!(await _context.Roles.AsNoTracking().AnyAsync(
+                        x => new int[] { (uiFieldsSetting.ApproverOneId ?? 0), 
+                            (uiFieldsSetting.ApproverTwoId ?? 0), 
+                            (uiFieldsSetting.ApproverThreeId ?? 0) }
+                        .Contains(x.RoleId) && x.OrgId == orgId)))
+                    {
+                        hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                        hMSResponse.responseHeader.ErrorMessage = "Invalid Role ApproverOneId/ApproverTwoId/ApproverThreeId";
+                        return Conflict(hMSResponse);
+                    }
+                }
+
+                /*
+                 * ?? 0,
+                        uiFieldsSetting.ApproverOneId ?? 0, 
+                        uiFieldsSetting.ApproverTwoId ?? 0, 
+                        uiFieldsSetting.ApproverThreeId ?? 0 
+                 */
                 // Safely check existence of the control in uiField.
                 // Some deployments may have different DB column names; guard against column-not-found errors.
-                 var uiField = await _context.uiField.AsNoTracking()
+                var uiField = await _context.uiField.AsNoTracking()
                         .AnyAsync(x => x.CntrlId == uiFieldsSetting.CntrlId);
 
                 if (!uiField )

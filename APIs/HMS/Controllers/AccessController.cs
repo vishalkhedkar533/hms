@@ -654,7 +654,7 @@ namespace HMS.Controllers
                  var uiField = await _context.uiField.AsNoTracking()
                         .AnyAsync(x => x.CntrlId == uiFieldsSetting.CntrlId);
 
-                if (uiField == null)
+                if (!uiField )
                 {
                     hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
                     hMSResponse.responseHeader.ErrorMessage = "Invalid Control ID";

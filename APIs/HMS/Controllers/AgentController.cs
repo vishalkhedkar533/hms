@@ -713,10 +713,8 @@ namespace HMS.Controllers
 
         [HttpPost("UpdateAgent/{id}/{sectionName}")]
         [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
-        public async Task<IActionResult> UpdateAgent(
-            [FromRoute] int id,
-            [FromRoute] string sectionName,
-            [FromBody] AgentDto agentDto)
+        public async Task<IActionResult> UpdateAgent([FromRoute] int id, [FromRoute] string sectionName,
+         [FromBody] AgentDto agentDto)
         {
             ModelState.Clear();
             HmsResponse hmsResponse = new HmsResponse();
@@ -830,10 +828,10 @@ namespace HMS.Controllers
                             agent.Channel = agentDto.Channel; 
                         if (agentDto.SubChannel.HasValue)
                             agent.SubChannel = agentDto.SubChannel; 
-                        if (agentDto.CommissionClass.HasValue)
-                            agent.CommissionClass = agentDto.CommissionClass; 
                         if (agentDto.DesignationCode.HasValue)
-                            agent.DesignationCode = agentDto.DesignationCode; 
+                            agent.DesignationCode = agentDto.DesignationCode;
+                        if (agentDto.LocationCode.HasValue)
+                            agent.LocationCode = agentDto.LocationCode;
                         
                         break;
 
@@ -1297,7 +1295,10 @@ namespace HMS.Controllers
 
                         agent.IsLicensed = agentDto.IsLicensed;
 
-                    break;
+                        if (agentDto.CommissionClass.HasValue)
+                            agent.CommissionClass = agentDto.CommissionClass;
+
+                        break;
 
                       case "training_details":
 

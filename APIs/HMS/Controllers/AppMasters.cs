@@ -852,11 +852,8 @@ namespace HMS.Controllers
 
         [HttpPost("{ChannelId}/{SubChannelId}/{LocationId}/Branch/Save")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
-        public async Task<IActionResult> InsertUpdateBranch(
-            [FromRoute] long ChannelId,
-            [FromRoute] long SubChannelId,
-            [FromRoute] long LocationId,
-            [FromBody] BranchMasterDto branchMasterDto)
+        public async Task<IActionResult> InsertUpdateBranch([FromRoute] long ChannelId, [FromRoute] long SubChannelId,
+        [FromRoute] long LocationId, [FromBody] BranchMasterDto branchMasterDto)
         {
             var response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
@@ -968,6 +965,10 @@ namespace HMS.Controllers
                 response.responseBody.branches = new List<BranchMaster> { branch };
 
                 return Ok(response);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("Record updated by another user");
             }
             catch (Exception ex)
             {

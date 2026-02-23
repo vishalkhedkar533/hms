@@ -79,20 +79,14 @@ namespace Models.DB
     public class SubChannelMasterDto
     {
         public long? SubChannelId { get; set; }
-        [Required(ErrorMessage = "Subchannel Code is required")]
         [StringLength(20)]
-        public string SubChannelCode { get; set; } = null!;
-        [Required(ErrorMessage = "Channel Code is required")]
+        public string? SubChannelCode { get; set; } = null!;
         [StringLength(20)]
-        public string ChannelCode { get; set; } = null!;
-        [Required(ErrorMessage = "Subchannel Name is required")]
+        public string? ChannelCode { get; set; } = null!;
         [StringLength(100)]
-        public string SubChannelName { get; set; } = null!;
+        public string? SubChannelName { get; set; } = null!;
         public string? Description { get; set; }
-        public bool IsActive { get; set; }
-        public int? OrgId { get; set; }
+        public bool? IsActive { get; set; } = true;
         public long? ChannelId { get; set; }
-        // Required for optimistic concurrency during updates
-        public int? RowVersion { get; set; }
     }
 }

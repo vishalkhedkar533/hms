@@ -7,6 +7,6 @@
         public string? ChannelCode { get; init; }
         public string? ChannelName { get; init; }
         public string? Description { get; init; }
-        public bool IsActive { get; init; } = true;
+        public bool? IsActive { get; init; } = true;
     }
 }

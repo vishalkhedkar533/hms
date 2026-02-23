@@ -174,6 +174,36 @@ namespace HMS.Controllers
         private bool IsValidSchema(string schema) => string.Equals(schema, "hmsmaster", StringComparison.OrdinalIgnoreCase);
 
         // POST: api/hms/channelmaster
+        [HttpPost("Channel/Fetch")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> ChannelFetch([FromBody] ChannelMasterDto dto)
+        {
+            var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            if (dto is null)
+                return BadRequest("Request body is required.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                // Use provided OrgId from DTO. If you want to pull from claims, adapt here.
+                var channelMaster = _context.ChannelMaster.AsNoTracking().Where(x => x.OrgId == orgId && 
+                x.ChannelId == ( dto.ChannelId == null ? x.ChannelId : dto.ChannelId) &&
+                x.ChannelCode == (dto.ChannelCode ==  null ? x.ChannelCode : dto.ChannelCode)).ToList();
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Fetched Channel List";
+                response.responseBody.channels = channelMaster;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error inserting into hmsmaster.channel_master. DTO: {@dto}", dto);
+                return StatusCode(500, response);
+            }
+
+        }
         [HttpPost("Channel/Create")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> Create([FromBody] ChannelMasterDto dto)
@@ -194,7 +224,7 @@ namespace HMS.Controllers
                     ChannelCode = dto.ChannelCode,
                     ChannelName = dto.ChannelName,
                     Description = dto.Description,
-                    IsActive = dto.IsActive,
+                    IsActive = dto.IsActive ?? true,
                     OrgId = orgId,
                     CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier),
                     CreatedDate = DateTime.UtcNow,

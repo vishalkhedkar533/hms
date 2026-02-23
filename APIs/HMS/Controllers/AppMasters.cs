@@ -248,6 +248,7 @@ namespace HMS.Controllers
 
         }
         [HttpPost("{ChannelId}/Update")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> Update([FromRoute] int ChannelId, [FromBody] ChannelMasterDto ChannelMaster)
         {
             var response = new HmsResponse();
@@ -288,6 +289,57 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Error updating hmsmaster.channel_master id {ChannelMaster.ChannelId}");
+                return StatusCode(500, "An error occurred while updating the channel master.");
+            }
+        }
+        [HttpPost("{ChannelId}/SubChannel/Fetch")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> SubChannelFetch([FromRoute] int ChannelId, [FromBody] SubChannelMasterDto SubChannelMaster)
+        {
+            var response = new HmsResponse();
+            if (SubChannelMaster is null)
+                return BadRequest("Request body is required.");
+
+            if (SubChannelMaster?.ChannelId != ChannelId)
+                return BadRequest("URL Channel ID does not match body id.");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+                var channel = _context.ChannelMaster.AsNoTracking().FirstOrDefault(x => x.ChannelId == SubChannelMaster.ChannelId 
+                && x.OrgId == orgId);
+
+                if (channel == null)
+                {
+                    response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
+                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    return NotFound(response);
+                }
+
+                var subChannels = _context.SubchannelMaster.AsNoTracking().
+                    Where(x => x.ChannelId == SubChannelMaster.ChannelId && x.OrgId == orgId
+                    && x.SubChannelId == (SubChannelMaster.SubChannelId == null ? x.SubChannelId :  SubChannelMaster.SubChannelId)
+                    && x.SubChannelCode == (SubChannelMaster.SubChannelCode == null ? x.SubChannelCode :  SubChannelMaster.SubChannelCode)
+                    ).
+                    ToList();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = await _context.errorMaster
+                        .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
+                        .Select(x => x.ErrorMsg)
+                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                response.responseBody.subChannels = subChannels;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error fetching sub Channel master");
                 return StatusCode(500, "An error occurred while updating the channel master.");
             }
         }

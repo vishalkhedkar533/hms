@@ -2445,3 +2445,35 @@ ALTER TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_ui_fields_setting_ctrl
 alter TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_approver_one FOREIGN KEY (ApproverOneID) REFERENCES hms.roles(role_id);
 alter TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_approver_two FOREIGN KEY (ApproverOneID) REFERENCES hms.roles(role_id);
 alter TABLE hmsmaster.ui_fields_setting ADD CONSTRAINT fk_approver_three FOREIGN KEY (ApproverOneID) REFERENCES hms.roles(role_id);
+
+--drop table hms.inbox;
+
+create table hms.inbox
+(
+	srNo serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	RequestDets varchar(1000) not null,
+	RequestorNote varchar(3000) not null,
+	created_by int4 NOT NULL,
+	created_date timestamp NOT NULL,
+	srStatus int4 not null,
+	statusUpdated_by int4 NULL,
+	statusModified_on timestamp NULL,
+	CONSTRAINT inbox_pkey PRIMARY KEY (srNo),
+	CONSTRAINT ui_fields_setting_orgid_fkey FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
+	CONSTRAINT ui_inbox_created_by_fkey FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE,
+	CONSTRAINT ui_inbox_statusUpdated_by_fkey FOREIGN KEY (statusUpdated_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE
+);
+
+create table hms.sr_approver
+(
+	sr_approverId serial4 NOT NULL,
+	approverLevel int4 not null,
+	allocatedRoleId int4 not null,
+	decisionBy int4 NULL,
+	decisionOn timestamp NULL,
+	approvalpayload text not null,
+	approvalapiresponse text not null,
+    CONSTRAINT sr_approver_pkey PRIMARY KEY (sr_approverId),
+    CONSTRAINT sr_approver_decisionBy_fkey FOREIGN KEY (decisionBy) REFERENCES hms."user"(user_id) ON DELETE CASCADE
+);

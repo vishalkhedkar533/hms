@@ -2464,7 +2464,7 @@ create table hms.inbox
 	CONSTRAINT ui_inbox_created_by_fkey FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE,
 	CONSTRAINT ui_inbox_statusUpdated_by_fkey FOREIGN KEY (statusUpdated_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE
 );
-
+--drop table hms.sr_approver
 create table hms.sr_approver
 (
 	sr_approverId serial4 NOT NULL,
@@ -2472,6 +2472,7 @@ create table hms.sr_approver
 	allocatedRoleId int4 not null,
 	decisionBy int4 NULL,
 	decisionOn timestamp NULL,
+	approvalendpoint varchar(2000) not null,
 	approvalpayload text not null,
 	approvalapiresponse text not null,
     CONSTRAINT sr_approver_pkey PRIMARY KEY (sr_approverId),

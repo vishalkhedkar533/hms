@@ -51,6 +51,8 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<LocationMappingProfile>();
     cfg.AddProfile<UiFieldsMappingProfile>();
     cfg.AddProfile<BranchMasterProfile>();
+    cfg.AddProfile<InboxProfile>();
+    cfg.AddProfile<SrApproverProfile>();
 });
 
 // ----------------------------

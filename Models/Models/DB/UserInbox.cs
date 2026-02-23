@@ -54,6 +54,9 @@ namespace Models.DB
         [Required]
         [Column("orgid")]
         public int OrgId { get; set; }
+        [Column("srno")]
+        [Required]
+        public int SrNo { get; set; }
         [Required]
         [Column("approverlevel")]
         public int ApproverLevel { get; set; }
@@ -83,18 +86,18 @@ namespace Models.DB
     }
     public class InboxDto
     {
-        public int SrNo { get; set; }
+        public int? SrNo { get; set; }
 
         [Required]
         [StringLength(1000)]
-        public string RequestDets { get; set; }
+        public string? RequestDets { get; set; }
 
         [Required]
         [StringLength(3000)]
-        public string RequestorNote { get; set; }
+        public string? RequestorNote { get; set; }
 
         [Required]
-        public int SrStatus { get; set; }
+        public int? SrStatus { get; set; }
     }
     public class SrApproverDto
     {
@@ -118,7 +121,6 @@ namespace Models.DB
         [Required]
         public string ApprovalApiResponse { get; set; }
     }
-
     public class InboxProfile : Profile
     {
         public InboxProfile()

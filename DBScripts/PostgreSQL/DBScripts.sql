@@ -2469,6 +2469,7 @@ create table hms.sr_approver
 (
 	sr_approverId serial4 NOT NULL,
 	orgid int4 NOT NULL,
+	srNo int4 NOT null,
 	approverLevel int4 not null,
 	allocatedRoleId int4 not null,
 	decisionBy int4 NULL,
@@ -2478,5 +2479,6 @@ create table hms.sr_approver
 	approvalapiresponse text not null,
     CONSTRAINT sr_approver_pkey PRIMARY KEY (sr_approverId),
     CONSTRAINT ui_fields_setting_orgid_fkey FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
-    CONSTRAINT sr_approver_decisionBy_fkey FOREIGN KEY (decisionBy) REFERENCES hms."user"(user_id) ON DELETE CASCADE
+    CONSTRAINT sr_approver_decisionBy_fkey FOREIGN KEY (decisionBy) REFERENCES hms."user"(user_id) ON DELETE cascade,
+    CONSTRAINT sr_no_fkey FOREIGN KEY (srNo) REFERENCES hms.inbox(srNo) ON DELETE cascade
 );

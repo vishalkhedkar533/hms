@@ -309,18 +309,15 @@ namespace HMS.Controllers
             try
             {
                 orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-                var channel = _context.ChannelMaster.AsNoTracking().FirstOrDefault(x => x.ChannelId == SubChannelMaster.ChannelId 
+                var IsChannelValid = _context.ChannelMaster.AsNoTracking().Any(x => x.ChannelId == SubChannelMaster.ChannelId 
                 && x.OrgId == orgId);
 
-                if (channel == null)
+                if (!IsChannelValid)
                 {
-                    response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
-                        .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
-                        .Select(x => x.ErrorMsg)
-                        .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "No Channel Found";
                     return NotFound(response);
-                }
+                }         
 
                 var subChannels = _context.SubchannelMaster.AsNoTracking().
                     Where(x => x.ChannelId == SubChannelMaster.ChannelId && x.OrgId == orgId
@@ -329,6 +326,12 @@ namespace HMS.Controllers
                     ).
                     ToList();
 
+                if (subChannels == null || subChannels.Count  ==0 )
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "No SubChannel Found";
+                    return NotFound(response);
+                }
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = await _context.errorMaster
                         .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")

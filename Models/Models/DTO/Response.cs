@@ -54,6 +54,7 @@ namespace Models.DTO
         public List<BranchMaster>? branches { get; set; } = null;
         public List<UiFieldsSetting>? uiFieldsSettings { get; set; } = null;
         public List<DesignationNode>? designationHierarchy { get; set; } = null;
+        public List<Inbox>? InboxData { get; set; } = null;
 
     }
 

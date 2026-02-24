@@ -137,6 +137,7 @@ namespace Models.DB
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.StatusUpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.StatusModifiedOn, opt => opt.Ignore());
+
         }
     }
     public class SrApproverProfile : Profile
@@ -150,7 +151,9 @@ namespace Models.DB
             // We must explicitly ignore fields that exist in 'SrApprover' but not in 'SrApproverDto'
             CreateMap<SrApproverDto, SrApprover>()
                 .ForMember(dest => dest.OrgId, opt => opt.Ignore())
-                .ForMember(dest => dest.DecisionBy, opt => opt.Ignore());
+                .ForMember(dest => dest.DecisionBy, opt => opt.Ignore())
+                .ForMember(dest => dest.SrNo, opt => opt.Ignore());
+
         }
     }
 }

@@ -86,3 +86,7 @@ VALUES(1021, 'Create Agent Update SR', 1020, null, 1, true, true, 'navin', '2026
 INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1022, 'Approve Reject Agent Update SR', 1020, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);
+
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1023, 'Fetch SRs', 1020, null, 1, true, true, 'navin', '2026-02-16', null, null, 0);

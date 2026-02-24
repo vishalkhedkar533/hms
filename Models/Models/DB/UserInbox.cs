@@ -48,6 +48,9 @@ namespace Models.DB
         [Required]
         [Column ("cntrl_id")]
         public int? ControlId { get; set; }
+        [NotMapped]
+        public string? CreatedByUsername { get; set; }
+
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -143,7 +146,9 @@ namespace Models.DB
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.StatusUpdatedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.StatusModifiedOn, opt => opt.Ignore());
+                .ForMember(dest => dest.StatusModifiedOn, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedByUsername, opt => opt.Ignore())
+                ;
 
         }
     }
@@ -162,5 +167,11 @@ namespace Models.DB
                 .ForMember(dest => dest.SrNo, opt => opt.Ignore());
 
         }
+    }
+    public class SearchInboxDto
+    {
+        public SrStatus? SrStatus { get; set; }
+        public DateTime? CreatedDateFrom { get; set; }
+        public DateTime? CreatedDateTo { get; set; }
     }
 }

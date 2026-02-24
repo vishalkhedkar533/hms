@@ -5,6 +5,7 @@ using HMS.Data;
 using HMS.Security;
 using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
@@ -82,5 +83,58 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
+
+        [HttpPost("FetchSr")]
+        [MenuAuthorize(AuthorisationConstants.FetchSRs)]
+        public async Task<IActionResult> FetchServiceRequest([FromBody] SearchInboxDto searchInboxDto)
+        {
+            var response = new HmsResponse();
+
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var inboxList = (from i in _context.Inbox
+                                 join sra in _context.SrApprovers
+                                     on new { i.SrNo, i.OrgId } equals new { sra.SrNo, sra.OrgId }
+                                 join u in _context.Users
+                                     on new { UserId = i.CreatedBy, i.OrgId } equals new { u.UserId, OrgId = u.OrgId ?? 0 }
+                                 where (int)i.SrStatus == 2 &&
+                                       _context.UserRoleMappings.Any(urm =>
+                                           urm.RoleId == sra.AllocatedRoleId &&
+                                           urm.UserId == userId)
+                                 select new { i, u.Username }).ToList();
+
+                // Map the username into the Inbox object's NotMapped property 
+                // (Assuming you added CreatedByUsername to the Inbox class as well)
+                var result = inboxList.Select(x =>
+                {
+                    x.i.CreatedByUsername = x.Username; // Assign the joined username
+                    return x.i;
+                }).ToList();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = (result.Count == 0 ?
+                    "No Service Requests found" : $"{result.Count} Service Request(s) fetched successfully");
+
+                // This will now work as 'result' is a List<Inbox>
+                response.responseBody.InboxData = result;
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while creating the Service Request");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while fetching Service Requests.";
+                return BadRequest(response);
+            }
+
+        }
+
     }
 }

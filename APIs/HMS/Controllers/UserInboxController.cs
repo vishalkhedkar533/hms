@@ -5,8 +5,10 @@ using HMS.Data;
 using HMS.Security;
 using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.Enums;
 using Models.HMSConsts;
 using System.Security.Claims;
 
@@ -14,6 +16,7 @@ namespace HMS.Controllers
 {
     public class UserInboxController : Controller
     {
+        private const string SrStatusEntryCategory = "SR_STATUS";
         private readonly GenericCacheService _cacheService;
         private readonly IConfiguration _configuration;
         private readonly IAuthClaimService _authClaimService;
@@ -56,6 +59,50 @@ namespace HMS.Controllers
             }
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            if (inboxDto.ControlId == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Control Id is required.";
+                return BadRequest(response);
+            }
+
+            var isValidControlId = await _context.uiFieldsSettings
+                .AsNoTracking()
+                .AnyAsync(setting => setting.OrgId == orgId && setting.CntrlId == inboxDto.ControlId);
+
+            if (!isValidControlId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Invalid Control Id for this organisation.";
+                return BadRequest(response);
+            }
+
+            if (!Enum.IsDefined(typeof(SrStatus), inboxDto.SrStatus))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Invalid Service Request status.";
+                return BadRequest(response);
+            }
+
+            var srStatusEntries = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                "Master",
+                "getKeyValueEntries",
+                new
+                {
+                    orgid = orgId,
+                    EntryCategory = SrStatusEntryCategory
+                });
+
+            var isValidSrStatus = srStatusEntries.Any(entry =>
+                entry.EntryIdentity == (int)inboxDto.SrStatus && (entry.ActiveStatus ?? true));
+
+            if (!isValidSrStatus)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Service Request status is not valid for this organisation.";
+                return BadRequest(response);
+            }
 
             try
             {

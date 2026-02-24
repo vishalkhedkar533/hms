@@ -556,7 +556,13 @@ ALTER TABLE hmsmaster.branch_master ADD hierarchy_path public.ltree NULL;
 ALTER TABLE hmsmaster.branch_master 
 DROP COLUMN hierarchy_path;
 
-alter table hms.inbox add role_id int4 references hms.roles(role_id);
-update hms.inbox set role_id  =1;
-ALTER TABLE hms.inbox ALTER COLUMN role_id SET NOT NULL;
+ALTER TABLE hms.inbox 
+DROP COLUMN cntrl_id;
+
+ALTER TABLE hms.inbox 
+DROP COLUMN role_id;
+
+alter table hms.inbox add cntrl_id int4 references hmsmaster.ui_fields(cntrl_id);
+update hms.inbox set cntrl_id  =1037;
+ALTER TABLE hms.inbox ALTER COLUMN cntrl_id SET NOT NULL;
 

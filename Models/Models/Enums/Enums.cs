@@ -43,4 +43,12 @@
         User = 1,
         Role = 2
     }
+
+    public enum SrStatus : int
+    {
+        Created = 1,
+        Pending = 2,
+        Approved = 3,
+        Rejected = 4,
+    }
 }

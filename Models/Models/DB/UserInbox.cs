@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -36,13 +37,17 @@ namespace Models.DB
 
         [Required]
         [Column("srstatus")]
-        public int SrStatus { get; set; }
+        public SrStatus SrStatus { get; set; }
 
         [Column("statusupdated_by")]
         public int? StatusUpdatedBy { get; set; }
 
         [Column("statusmodified_on")]
         public DateTime? StatusModifiedOn { get; set; }
+
+        [Required]
+        [Column ("cntrl_id")]
+        public int? ControlId { get; set; }
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -74,15 +79,15 @@ namespace Models.DB
         [Required]
         [StringLength(2000)]
         [Column("approvalendpoint")]
-        public string ApprovalEndpoint { get; set; }
+        public string? ApprovalEndpoint { get; set; }
 
         [Required]
         [Column("approvalpayload")]
-        public string ApprovalPayload { get; set; }
+        public string? ApprovalPayload { get; set; }
 
         [Required]
         [Column("approvalapiresponse")]
-        public string ApprovalApiResponse { get; set; }
+        public string? ApprovalApiResponse { get; set; }
     }
     public class InboxDto
     {
@@ -97,7 +102,9 @@ namespace Models.DB
         public string? RequestorNote { get; set; }
 
         [Required]
-        public int? SrStatus { get; set; }
+        public SrStatus SrStatus { get; set; }
+        [Required]
+        public int? ControlId { get; set; }
     }
     public class SrApproverDto
     {

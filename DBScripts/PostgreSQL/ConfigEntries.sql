@@ -414,3 +414,10 @@ INSERT INTO hmsmaster.ui_fields (cntrl_id, component_id, cntrl_name) VALUES
 (1099,139,'Last Working Date'),
 (1100,139,'Last Promotion Date');
 
+INSERT INTO hmsmaster.keyvalueentries 
+    (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+    (2, 'SR_STATUS', 1, 'Created', NULL, true),
+    (2, 'SR_STATUS', 2, 'Pending', NULL, true),
+    (2, 'SR_STATUS', 3, 'Approved', NULL, true),
+    (2, 'SR_STATUS', 4, 'Rejected', NULL, true);

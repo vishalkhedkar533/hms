@@ -173,5 +173,8 @@ namespace Models.DB
         public SrStatus? SrStatus { get; set; }
         public DateTime? CreatedDateFrom { get; set; }
         public DateTime? CreatedDateTo { get; set; }
+        public int? UserId { get; set; }
+        public int? PageNo { get; set; } = 1;
+        public int? PageSize { get; set; } = 10;
     }
 }

@@ -134,7 +134,6 @@ const AgentDetail = ({ agent, getOptions, activeTab }: AgentDetailProps) => {
 
 
 
-
   const agentForm = useAppForm({
     defaultValues: {
       // ---- Already existing fields ----

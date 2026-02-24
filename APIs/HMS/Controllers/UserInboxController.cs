@@ -5,7 +5,6 @@ using HMS.Data;
 using HMS.Security;
 using HMS.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
@@ -42,59 +41,45 @@ namespace HMS.Controllers
 
         [HttpPost("CreateSr")]
         [MenuAuthorize(AuthorisationConstants.CreateAgentUpdateSR)]
-        public async Task<IActionResult> CreateServiceRequest([FromRoute] int ChannelId, [FromBody] List<InboxDto> InboxDto)
+        public async Task<IActionResult> CreateServiceRequest([FromBody] InboxDto inboxDto)
         {
             var response = new HmsResponse();
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-            if (InboxDto is null || !InboxDto.Any())
-                return BadRequest("Request body is required.");
 
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (inboxDto == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Inbox Details Needed.";
+                return BadRequest(response);
+            }
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             try
             {
-                if (ChannelId != SubChannelMaster.ChannelId)
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Channel ID in URL does not match Channel ID in body.";
-                    return BadRequest(response);
-                }
+                var inboxEntry = _mapper.Map<Inbox>(inboxDto);
 
-                var Channel = await _context.ChannelMaster.FirstOrDefaultAsync(x => x.ChannelId == ChannelId && x.OrgId == orgId);
-                if (Channel == null)
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Invalid Channel ID";
-                    return BadRequest(response);
-                }
-                // Use provided OrgId from DTO. If you want to pull from claims, adapt here.
-                var subChannelMaster = await _context.SubchannelMaster.AddAsync(new SubChannelMaster
-                {
-                    SubChannelCode = SubChannelMaster.SubChannelCode,
-                    ChannelId = Channel.ChannelId,
-                    ChannelCode = Channel.ChannelCode,
-                    SubChannelName = SubChannelMaster.SubChannelName,
-                    Description = SubChannelMaster.Description,
-                    IsActive = true,
-                    OrgId = orgId,
-                    CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier),
-                    CreatedDate = DateTime.UtcNow,
-                    RowVersion = 1,
-                });
+                // Manually set fields ignored by AutoMapper (Security/Audit fields)
+                inboxEntry.OrgId = orgId;
+                inboxEntry.CreatedBy = userId;
+                inboxEntry.CreatedDate = DateTime.UtcNow;
+                // StatusUpdatedBy and StatusModifiedOn stay null for a new record
+
+                await _context.Inbox.AddAsync(inboxEntry);
+                await _context.SaveChangesAsync();
+
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = $"SubChannel master created successfully under Channel {Channel.ChannelName}";
-                var result = await _context.SaveChangesAsync();
-                response.responseBody.subChannels = new List<SubChannelMaster>();
-                response.responseBody.subChannels.Add(subChannelMaster.Entity);
+                response.responseHeader.ErrorMessage = "Service Request created successfully.";
+                response.responseBody.InboxData = new List<Inbox> { inboxEntry };
+
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = $"An error occurred while creating the sub channel master {SubChannelMaster.SubChannelName}";
-                _logger.LogError(ex, response.responseHeader.ErrorMessage);
-                return BadRequest(response);
+                _logger.LogError(ex, "An error occurred while creating the Service Request");
+                return StatusCode(500, "Internal Server Error");
             }
         }
     }

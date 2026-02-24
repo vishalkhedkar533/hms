@@ -53,6 +53,7 @@ namespace HMS.Data
         public DbSet<UiComponent> uiComponent => Set<UiComponent>();
         public DbSet<BranchMaster> BranchMaster => Set<BranchMaster>();
         public DbSet<ChannelBranchHeirarchy> ChannelBranchHeirarchies => Set<ChannelBranchHeirarchy>();
+        public DbSet<Inbox> Inbox { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

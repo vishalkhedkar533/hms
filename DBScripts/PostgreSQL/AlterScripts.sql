@@ -567,4 +567,4 @@ ALTER TABLE hms.inbox ALTER COLUMN cntrl_id SET NOT NULL;
 
 alter table hms.inbox add column allocated_to_role int4 references hms.roles(role_id);
 
-alter table hms.sr_approver add column decision int4;
+alter table hms.sr_approver add column approver_decision int4;

@@ -223,68 +223,68 @@ namespace HMS.Controllers
 
             try
             {
-                var approvalPendingWith = await _context.SrApprovers
+                var approvalPendingWith = _context.SrApprovers
                     .Where(sa => sa.SrNo == srApproverDto.SrNo && sa.OrgId == orgId)
-                    .OrderBy(sa => sa.ApproverLevel)
-                    .ProjectTo<SrApproverDto>(_mapper.ConfigurationProvider).ToListAsync();
+                    .OrderBy(sa => sa.ApproverLevel);
 
-                if (approvalPendingWith?.Any(x=> x.Decision == null) ?? false)// pending approval
+                var inbox = await _context.Inbox.FirstOrDefaultAsync(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId);
+
+                if (inbox ==  null)
                 {
-                    var currentApprover = approvalPendingWith.FirstOrDefault(x => x.Decision == null);
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Service Request not found.";
+                    return BadRequest(response);
+                }
+
+                if (approvalPendingWith?.Any(x=> x.ApproverDecision == null) ?? false)// pending approval
+                {
+                    var currentApprover = approvalPendingWith.FirstOrDefault(x => x.ApproverDecision == null);
+                    var currentApproverLevel = currentApprover?.ApproverLevel ?? 0;
                     var nextApprover = approvalPendingWith
-                        .Where(x => x.ApproverLevel > (currentApprover?.ApproverLevel ?? 1000))
+                        .Where(x => x.ApproverLevel > currentApproverLevel)
                         .OrderBy(x => x.ApproverLevel)
                         .FirstOrDefault();
                     if (currentApprover != null)
                     {
-                        currentApprover.Decision = srApproverDto.Decision;
+                        currentApprover.ApproverDecision = srApproverDto.ApproverDecision;
                         currentApprover.DecisionOn = DateTime.UtcNow;
-                        var approverEntity = _mapper.Map<SrApprover>(currentApprover);
-                        
+                        currentApprover.DecisionBy = userId;
+                        //var approverEntity = _mapper.Map<SrApprover>(currentApprover);
+                        inbox.StatusUpdatedBy = userId;
+                        inbox.StatusModifiedOn = DateTime.UtcNow;
+
+
                         if (nextApprover != null)
                         {
                             //allocate to next approver
-                            switch (srApproverDto.Decision)
+                            switch (srApproverDto.ApproverDecision)
                             {
                                 case ApproverDecision.Rejected:
                                     //since current user has rejected, we can move the status to rejected and no more approver can take action
-                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Rejected) // Rejected
-                                        .SetProperty(p => p.StatusUpdatedBy, userId)
-                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    inbox.SrStatus = SrStatus.Rejected; // Rejected
                                     break;
                                 default:
                                     //case ApproverDecision.Approved:
                                     //case ApproverDecision.OnHold:
-                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.PendingDecision) // On Hold (can be represented as PendingDecision with a note in real implementation)
-                                        .SetProperty(p => p.StatusUpdatedBy, userId)
-                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    inbox.SrStatus = SrStatus.PendingDecision; // Rejected
                                     break;
                             }
+                            inbox.AllocatedToRole = nextApprover.AllocatedRoleId;
                         }
+                        else
                         {
-                            switch (srApproverDto.Decision)
+                            switch (srApproverDto.ApproverDecision)
                             {
                                 case ApproverDecision.Approved:
-                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Approved) // Rejected
-                                        .SetProperty(p => p.StatusUpdatedBy, userId)
-                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    inbox.SrStatus = SrStatus.Approved; // Rejected
                                     break;
                                 case ApproverDecision.Rejected:
                                     //since current user has rejected, we can move the status to rejected and no more approver can take action
-                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Rejected) // Rejected
-                                        .SetProperty(p => p.StatusUpdatedBy, userId)
-                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    inbox.SrStatus = SrStatus.Rejected; // Rejected
                                     break;
                                 default:
                                     //case ApproverDecision.OnHold:
-                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.PendingDecision) // On Hold (can be represented as PendingDecision with a note in real implementation)
-                                        .SetProperty(p => p.StatusUpdatedBy, userId)
-                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    inbox.SrStatus = SrStatus.PendingDecision; // Rejected
                                     break;
                             }
                             //no more approver, mark as completed
@@ -298,27 +298,18 @@ namespace HMS.Controllers
                 }
                 else 
                 {
-                    switch (srApproverDto.Decision)
+                    switch (srApproverDto.ApproverDecision)
                     {
                         case ApproverDecision.Approved:
-                            _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Approved) // Rejected
-                                .SetProperty(p => p.StatusUpdatedBy, userId)
-                                .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                            inbox.SrStatus = SrStatus.Approved; // Rejected
                             break;
                         case ApproverDecision.Rejected:
                             //since current user has rejected, we can move the status to rejected and no more approver can take action
-                            _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Rejected) // Rejected
-                                .SetProperty(p => p.StatusUpdatedBy, userId)
-                                .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                            inbox.SrStatus = SrStatus.Rejected; // Rejected
                             break;
                         default:
                             //case ApproverDecision.OnHold:
-                            _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
-                                .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.PendingDecision) // On Hold (can be represented as PendingDecision with a note in real implementation)
-                                .SetProperty(p => p.StatusUpdatedBy, userId)
-                                .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                            inbox.SrStatus = SrStatus.PendingDecision; // Rejected
                             break;
                     }
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;

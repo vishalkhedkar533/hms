@@ -8,7 +8,15 @@ where not exists (select 1 from hms.role_menu_mapping rmm  where mm.menu_id  = r
 INSERT INTO hmsmaster.keyvalueentries 
     (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
 VALUES 
-    (:p_orgid, 'SR_DECISION', 1, 'Pending', NULL, true),
-    (:p_orgid, 'SR_DECISION', 2, 'Approved', NULL, true),
-    (:p_orgid, 'SR_DECISION', 3, 'Rejected', NULL, true),
-    (:p_orgid, 'SR_DECISION', 4, 'OnHold', NULL, true);
+    (:p_orgid, 'SR_STATUS', 1, 'Created', NULL, true),
+    (:p_orgid, 'SR_STATUS', 2, 'Pending', NULL, true),
+    (:p_orgid, 'SR_STATUS', 3, 'Approved', NULL, true),
+    (:p_orgid, 'SR_STATUS', 4, 'Rejected', NULL, true);
+
+INSERT INTO hmsmaster.keyvalueentries 
+    (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+    (:p_orgid, 'APPROVER_DECISION', 1, 'Pending', NULL, true),
+    (:p_orgid, 'APPROVER_DECISION', 2, 'Approved', NULL, true),
+    (:p_orgid, 'APPROVER_DECISION', 3, 'Rejected', NULL, true),
+    (:p_orgid, 'APPROVER_DECISION', 4, 'OnHold', NULL, true);

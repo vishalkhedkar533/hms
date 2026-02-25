@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using CommonLibrary;
 using HMS.Caching;
 using HMS.Data;
@@ -205,5 +206,63 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
+
+        [HttpPost("UpdateSrDecision")]
+        [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
+        public async Task<IActionResult> UpdateSrDecision([FromBody] SrApproverDto  srApproverDto)
+        {
+            var response = new HmsResponse();
+
+            // Get claims
+            int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var nextApproverDto = await _context.SrApprovers
+                    .Where(sa => sa.SrNo == srApproverDto.SrNo && sa.OrgId == orgId)
+                    .OrderBy(sa => sa.ApproverLevel)
+                    .ProjectTo<SrApproverDto>(_mapper.ConfigurationProvider).ToListAsync();
+
+                if (nextApproverDto.Any(x=> x.Decision == null))// pending approval
+                {
+                    var currentApprover = nextApproverDto.FirstOrDefault(x => x.Decision == null);
+                    if (currentApprover != null)
+                    {
+                        currentApprover.Decision = srApproverDto.Decision;
+                        currentApprover.DecisionOn = DateTime.UtcNow;
+
+                        var approverEntity = _mapper.Map<SrApprover>(currentApprover);
+                        _context.SrApprovers.Update(approverEntity);
+                        var nextApprover = nextApproverDto.Skip(1).FirstOrDefault(x => x.Decision == null);
+                        if (nextApprover != null)
+                        {
+                            //allocate to next approver
+                            nextApprover.ApprovalEndpoint = _configuration.GetValue<string>("ServiceRequest:ApprovalEndpoint");
+                        }
+                        await _context.SaveChangesAsync();
+
+                        response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                        response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
+                    }
+                }
+                else 
+                {
+
+                }
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating the Service Request decision");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while updating the Service Request decision.";
+                return BadRequest(response);
+            }
+        }
+
     }
 }

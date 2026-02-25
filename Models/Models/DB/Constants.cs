@@ -27,6 +27,7 @@
         public const Int32 CreateAgentUpdateSR = 1021;
         public const Int32 ApproveRejectAgentUpdateSR = 1022;
         public const Int32 FetchSRs = 1023;
+        public const Int32 UpdateSRDecision = 1024;
 
     }
 }

@@ -51,4 +51,10 @@
         Approved = 3,
         Rejected = 4,
     }
+    public enum SrDecision : int
+    {
+        Approve = 1,
+        Reject = 2,
+        Hold = 3
+    }
 }

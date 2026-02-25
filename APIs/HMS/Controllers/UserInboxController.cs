@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using CommonLibrary;
 using HMS.Caching;
 using HMS.Data;
@@ -10,6 +11,7 @@ using Models.DB;
 using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
+using System.Linq;
 using System.Security.Claims;
 
 namespace HMS.Controllers
@@ -205,5 +207,124 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
+
+        [HttpPost("UpdateSrDecision")]
+        [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
+        public async Task<IActionResult> UpdateSrDecision([FromBody] SrApproverDto  srApproverDto)
+        {
+            var response = new HmsResponse();
+
+            // Get claims
+            int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var approvalPendingWith = _context.SrApprovers
+                    .Where(sa => sa.SrNo == srApproverDto.SrNo && sa.OrgId == orgId)
+                    .OrderBy(sa => sa.ApproverLevel);
+
+                var inbox = await _context.Inbox.FirstOrDefaultAsync(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId);
+
+                if (inbox ==  null)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Service Request not found.";
+                    return BadRequest(response);
+                }
+
+                if (approvalPendingWith?.Any(x=> x.ApproverDecision == null) ?? false)// pending approval
+                {
+                    var currentApprover = approvalPendingWith.FirstOrDefault(x => x.ApproverDecision == null);
+                    var currentApproverLevel = currentApprover?.ApproverLevel ?? 0;
+                    var nextApprover = approvalPendingWith
+                        .Where(x => x.ApproverLevel > currentApproverLevel)
+                        .OrderBy(x => x.ApproverLevel)
+                        .FirstOrDefault();
+                    if (currentApprover != null)
+                    {
+                        currentApprover.ApproverDecision = srApproverDto.ApproverDecision;
+                        currentApprover.DecisionOn = DateTime.UtcNow;
+                        currentApprover.DecisionBy = userId;
+                        //var approverEntity = _mapper.Map<SrApprover>(currentApprover);
+                        inbox.StatusUpdatedBy = userId;
+                        inbox.StatusModifiedOn = DateTime.UtcNow;
+
+
+                        if (nextApprover != null)
+                        {
+                            //allocate to next approver
+                            switch (srApproverDto.ApproverDecision)
+                            {
+                                case ApproverDecision.Rejected:
+                                    //since current user has rejected, we can move the status to rejected and no more approver can take action
+                                    inbox.SrStatus = SrStatus.Rejected; // Rejected
+                                    break;
+                                default:
+                                    //case ApproverDecision.Approved:
+                                    //case ApproverDecision.OnHold:
+                                    inbox.SrStatus = SrStatus.PendingDecision; // Rejected
+                                    break;
+                            }
+                            inbox.AllocatedToRole = nextApprover.AllocatedRoleId;
+                        }
+                        else
+                        {
+                            switch (srApproverDto.ApproverDecision)
+                            {
+                                case ApproverDecision.Approved:
+                                    inbox.SrStatus = SrStatus.Approved; // Rejected
+                                    break;
+                                case ApproverDecision.Rejected:
+                                    //since current user has rejected, we can move the status to rejected and no more approver can take action
+                                    inbox.SrStatus = SrStatus.Rejected; // Rejected
+                                    break;
+                                default:
+                                    //case ApproverDecision.OnHold:
+                                    inbox.SrStatus = SrStatus.PendingDecision; // Rejected
+                                    break;
+                            }
+                            //no more approver, mark as completed
+
+                        }
+                        await _context.SaveChangesAsync();
+
+                        response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                        response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
+                    }
+                }
+                else 
+                {
+                    switch (srApproverDto.ApproverDecision)
+                    {
+                        case ApproverDecision.Approved:
+                            inbox.SrStatus = SrStatus.Approved; // Rejected
+                            break;
+                        case ApproverDecision.Rejected:
+                            //since current user has rejected, we can move the status to rejected and no more approver can take action
+                            inbox.SrStatus = SrStatus.Rejected; // Rejected
+                            break;
+                        default:
+                            //case ApproverDecision.OnHold:
+                            inbox.SrStatus = SrStatus.PendingDecision; // Rejected
+                            break;
+                    }
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
+                }
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while updating the Service Request decision");
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while updating the Service Request decision.";
+                return BadRequest(response);
+            }
+        }
+
     }
 }

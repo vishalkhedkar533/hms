@@ -563,6 +563,8 @@ ALTER TABLE hms.inbox
 DROP COLUMN role_id;
 
 alter table hms.inbox add cntrl_id int4 references hmsmaster.ui_fields(cntrl_id);
-update hms.inbox set cntrl_id  =1037;
 ALTER TABLE hms.inbox ALTER COLUMN cntrl_id SET NOT NULL;
 
+alter table hms.inbox add column allocated_to_role int4 references hms.roles(role_id);
+
+alter table hms.sr_approver add column approver_decision int4;

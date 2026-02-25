@@ -48,6 +48,8 @@ namespace Models.DB
         [Required]
         [Column ("cntrl_id")]
         public int? ControlId { get; set; }
+        [Column("allocated_to_role")]
+        public int? AllocatedToRole { get; set; }
         [NotMapped]
         public string? CreatedByUsername { get; set; }
 
@@ -91,6 +93,8 @@ namespace Models.DB
         [Required]
         [Column("approvalapiresponse")]
         public string? ApprovalApiResponse { get; set; }
+        [Column("approver_decision")] // Added missing column from SQL
+        public ApproverDecision? ApproverDecision { get; set; }
     }
     public class InboxDto
     {
@@ -108,28 +112,20 @@ namespace Models.DB
         public SrStatus SrStatus { get; set; }
         [Required]
         public int? ControlId { get; set; }
+        public int? AllocatedToRole { get; set; }
     }
     public class SrApproverDto
     {
         public int SrApproverId { get; set; }
-
-        [Required]
         public int ApproverLevel { get; set; }
-
-        [Required]
         public int AllocatedRoleId { get; set; }
-
         public DateTime? DecisionOn { get; set; }
-
-        [Required]
         [StringLength(2000)]
-        public string ApprovalEndpoint { get; set; }
-
-        [Required]
-        public string ApprovalPayload { get; set; }
-
-        [Required]
-        public string ApprovalApiResponse { get; set; }
+        public string? ApprovalEndpoint { get; set; }
+        public string? ApprovalPayload { get; set; }
+        public string? ApprovalApiResponse { get; set; }
+        public int? SrNo { get; set; }
+        public ApproverDecision? ApproverDecision { get; set; }
     }
     public class InboxProfile : Profile
     {
@@ -148,8 +144,7 @@ namespace Models.DB
                 .ForMember(dest => dest.StatusUpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.StatusModifiedOn, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedByUsername, opt => opt.Ignore())
-                ;
-
+                .ForMember(dest => dest.AllocatedToRole, opt => opt.Ignore());
         }
     }
     public class SrApproverProfile : Profile

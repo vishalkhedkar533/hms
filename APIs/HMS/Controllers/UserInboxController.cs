@@ -122,6 +122,7 @@ namespace HMS.Controllers
                 // 3. Get Total Count for Pagination Metadata (Before Skip/Take)
                 int totalRecords = await query.CountAsync();
 
+
                 // 4. Apply Pagination
                 int pageNo = searchInboxDto.PageNo ?? 1;
                 int pageSize = searchInboxDto.PageSize ?? 10;

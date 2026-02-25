@@ -136,7 +136,8 @@ namespace HMS.Controllers
         {
             var response = new HmsResponse();
 
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            // Get claims
+            int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
 
             if (!ModelState.IsValid)
@@ -144,43 +145,65 @@ namespace HMS.Controllers
 
             try
             {
-                var inboxList = (from i in _context.Inbox
-                                 join sra in _context.SrApprovers
-                                     on new { i.SrNo, i.OrgId } equals new { sra.SrNo, sra.OrgId }
-                                 join u in _context.Users
-                                     on new { UserId = i.CreatedBy, i.OrgId } equals new { u.UserId, OrgId = u.OrgId ?? 0 }
-                                 where (int)i.SrStatus == 2 &&
-                                       _context.UserRoleMappings.Any(urm =>
-                                           urm.RoleId == sra.AllocatedRoleId &&
-                                           urm.UserId == userId)
-                                 select new { i, u.Username }).ToList();
+                // 1. Build the base query (IQueryable)
+                var query = from i in _context.Inbox.AsNoTracking()
+                            join sra in _context.SrApprovers
+                                on new { i.SrNo, i.OrgId } equals new { sra.SrNo, sra.OrgId }
+                            join u in _context.Users.AsNoTracking()
+                                on new { UserId = i.CreatedBy, i.OrgId } equals new { u.UserId, OrgId = u.OrgId ?? 0 }
+                            where i.OrgId == orgId && // Ensure tenant isolation
+                                  (int)i.SrStatus == 2 &&
+                                  _context.UserRoleMappings.AsNoTracking().Any(urm =>
+                                      urm.RoleId == sra.AllocatedRoleId &&
+                                      urm.UserId == userId)
+                            select new { i, u.Username };
 
-                // Map the username into the Inbox object's NotMapped property 
-                // (Assuming you added CreatedByUsername to the Inbox class as well)
-                var result = inboxList.Select(x =>
+                // 2. Apply Dynamic Filters from SearchInboxDto
+                if (searchInboxDto.CreatedDateFrom.HasValue)
+                    query = query.Where(x => x.i.CreatedDate >= searchInboxDto.CreatedDateFrom.Value);
+
+                if (searchInboxDto.CreatedDateTo.HasValue)
+                    query = query.Where(x => x.i.CreatedDate <= searchInboxDto.CreatedDateTo.Value);
+
+                // 3. Get Total Count for Pagination Metadata (Before Skip/Take)
+                int totalRecords = await query.CountAsync();
+
+
+                // 4. Apply Pagination
+                int pageNo = searchInboxDto.PageNo ?? 1;
+                int pageSize = searchInboxDto.PageSize ?? 10;
+
+                var pagedData = await query.AsNoTracking()
+                    .OrderByDescending(x => x.i.CreatedDate) // Always order before paging
+                    .Skip((pageNo - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                // 5. Map to Model and include Username
+                var result = pagedData.Select(x =>
                 {
-                    x.i.CreatedByUsername = x.Username; // Assign the joined username
+                    x.i.CreatedByUsername = x.Username;
                     return x.i;
                 }).ToList();
 
+                // 6. Finalize Response
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = (result.Count == 0 ?
-                    "No Service Requests found" : $"{result.Count} Service Request(s) fetched successfully");
+                    "No Service Requests found" : $"{totalRecords} Service Request(s) found");
 
-                // This will now work as 'result' is a List<Inbox>
                 response.responseBody.InboxData = result;
+                // Optional: If your responseBody has space for metadata:
+                // response.responseBody.TotalCount = totalRecords; 
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred while creating the Service Request");
+                _logger.LogError(ex, "An error occurred while fetching the Service Requests");
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "An error occurred while fetching Service Requests.";
                 return BadRequest(response);
             }
-
         }
-
     }
 }

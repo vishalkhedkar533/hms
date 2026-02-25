@@ -815,29 +815,20 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
 
-            var validChannelSubChannel = await _context.SubchannelMaster.AsNoTracking().AnyAsync(x =>
-                x.OrgId == orgId &&
-                x.ChannelId == locationMaster.ChannelId &&
-                x.SubChannelId == locationMaster.SubChannelId);
-            if (!validChannelSubChannel)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "A location with the same code already exists for this channel and subchannel.";
-                return Conflict(response);
-            }
-
-            var locationList = _context.LocationMasters.AsNoTracking().FirstOrDefault(x =>
-                x.OrgId == orgId &&
-                x.ChannelId == locationMaster.ChannelId &&
-                x.SubChannelId == locationMaster.SubChannelId &&
-                x.LocationCode == locationMaster.LocationCode);
+            var locationList = _context.LocationMasters.AsNoTracking().Where(x =>
+                x.OrgId == orgId 
+                && x.ChannelId == locationMaster.ChannelId 
+                && x.SubChannelId == locationMaster.SubChannelId 
+                && x.LocationCode == (string.IsNullOrEmpty(locationMaster.LocationCode)? x.LocationCode : locationMaster.LocationCode)
+                && x.LocationMasterId == (locationMaster.LocationMasterId ?? x.LocationMasterId)
+                ).OrderByDescending( y =>  y.LocationCode).ThenBy(y => y.LocationDesc);
 
             if (locationList != null)
             {
                 response.responseBody.locations = new List<LocationMaster>();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "Location created successfully.";
-                response.responseBody.locations.Add(locationList);
+                response.responseHeader.ErrorMessage = "Location fetched successfully.";
+                response.responseBody.locations.AddRange(locationList);
                 return Ok(response);
             }
             else

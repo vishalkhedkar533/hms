@@ -94,7 +94,7 @@ namespace Models.DB
         [Column("approvalapiresponse")]
         public string? ApprovalApiResponse { get; set; }
         [Column("decision")] // Added missing column from SQL
-        public SrDecision? Decision { get; set; }
+        public ApproverDecision? Decision { get; set; }
     }
     public class InboxDto
     {
@@ -125,7 +125,7 @@ namespace Models.DB
         public string? ApprovalPayload { get; set; }
         public string? ApprovalApiResponse { get; set; }
         public int? SrNo { get; set; }
-        public SrDecision? Decision { get; set; }
+        public ApproverDecision? Decision { get; set; }
     }
     public class InboxProfile : Profile
     {

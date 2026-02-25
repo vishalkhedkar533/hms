@@ -11,6 +11,7 @@ using Models.DB;
 using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
+using System.Linq;
 using System.Security.Claims;
 
 namespace HMS.Controllers
@@ -222,26 +223,72 @@ namespace HMS.Controllers
 
             try
             {
-                var nextApproverDto = await _context.SrApprovers
+                var approvalPendingWith = await _context.SrApprovers
                     .Where(sa => sa.SrNo == srApproverDto.SrNo && sa.OrgId == orgId)
                     .OrderBy(sa => sa.ApproverLevel)
                     .ProjectTo<SrApproverDto>(_mapper.ConfigurationProvider).ToListAsync();
 
-                if (nextApproverDto.Any(x=> x.Decision == null))// pending approval
+                if (approvalPendingWith?.Any(x=> x.Decision == null) ?? false)// pending approval
                 {
-                    var currentApprover = nextApproverDto.FirstOrDefault(x => x.Decision == null);
+                    var currentApprover = approvalPendingWith.FirstOrDefault(x => x.Decision == null);
+                    var nextApprover = approvalPendingWith
+                        .Where(x => x.ApproverLevel > (currentApprover?.ApproverLevel ?? 1000))
+                        .OrderBy(x => x.ApproverLevel)
+                        .FirstOrDefault();
                     if (currentApprover != null)
                     {
                         currentApprover.Decision = srApproverDto.Decision;
                         currentApprover.DecisionOn = DateTime.UtcNow;
-
                         var approverEntity = _mapper.Map<SrApprover>(currentApprover);
-                        _context.SrApprovers.Update(approverEntity);
-                        var nextApprover = nextApproverDto.Skip(1).FirstOrDefault(x => x.Decision == null);
+                        
                         if (nextApprover != null)
                         {
                             //allocate to next approver
-                            nextApprover.ApprovalEndpoint = _configuration.GetValue<string>("ServiceRequest:ApprovalEndpoint");
+                            switch (srApproverDto.Decision)
+                            {
+                                case ApproverDecision.Rejected:
+                                    //since current user has rejected, we can move the status to rejected and no more approver can take action
+                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Rejected) // Rejected
+                                        .SetProperty(p => p.StatusUpdatedBy, userId)
+                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    break;
+                                default:
+                                    //case ApproverDecision.Approved:
+                                    //case ApproverDecision.OnHold:
+                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.PendingDecision) // On Hold (can be represented as PendingDecision with a note in real implementation)
+                                        .SetProperty(p => p.StatusUpdatedBy, userId)
+                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    break;
+                            }
+                        }
+                        {
+                            switch (srApproverDto.Decision)
+                            {
+                                case ApproverDecision.Approved:
+                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Approved) // Rejected
+                                        .SetProperty(p => p.StatusUpdatedBy, userId)
+                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    break;
+                                case ApproverDecision.Rejected:
+                                    //since current user has rejected, we can move the status to rejected and no more approver can take action
+                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Rejected) // Rejected
+                                        .SetProperty(p => p.StatusUpdatedBy, userId)
+                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    break;
+                                default:
+                                    //case ApproverDecision.OnHold:
+                                    _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.PendingDecision) // On Hold (can be represented as PendingDecision with a note in real implementation)
+                                        .SetProperty(p => p.StatusUpdatedBy, userId)
+                                        .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                                    break;
+                            }
+                            //no more approver, mark as completed
+
                         }
                         await _context.SaveChangesAsync();
 
@@ -251,7 +298,31 @@ namespace HMS.Controllers
                 }
                 else 
                 {
-
+                    switch (srApproverDto.Decision)
+                    {
+                        case ApproverDecision.Approved:
+                            _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Approved) // Rejected
+                                .SetProperty(p => p.StatusUpdatedBy, userId)
+                                .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                            break;
+                        case ApproverDecision.Rejected:
+                            //since current user has rejected, we can move the status to rejected and no more approver can take action
+                            _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.Rejected) // Rejected
+                                .SetProperty(p => p.StatusUpdatedBy, userId)
+                                .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                            break;
+                        default:
+                            //case ApproverDecision.OnHold:
+                            _context.Inbox.Where(i => i.SrNo == srApproverDto.SrNo && i.OrgId == orgId)
+                                .ExecuteUpdateAsync(s => s.SetProperty(p => p.SrStatus, SrStatus.PendingDecision) // On Hold (can be represented as PendingDecision with a note in real implementation)
+                                .SetProperty(p => p.StatusUpdatedBy, userId)
+                                .SetProperty(p => p.StatusModifiedOn, DateTime.UtcNow));
+                            break;
+                    }
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
                 }
                 return Ok(response);
             }

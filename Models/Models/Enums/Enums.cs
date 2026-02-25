@@ -43,18 +43,30 @@
         User = 1,
         Role = 2
     }
-
     public enum SrStatus : int
     {
+        /*
+         * select *
+         * from hmsmaster.keyvalueentries k 
+         * where k.entrycategory  = 'SR_STATUS'
+         * order by  entryidentity ;
+         */
         Created = 1,
-        Pending = 2,
+        PendingDecision = 2,
         Approved = 3,
         Rejected = 4,
     }
-    public enum SrDecision : int
+    public enum ApproverDecision : int
     {
-        Approve = 1,
-        Reject = 2,
-        Hold = 3
+        /*
+         * select *
+         * from hmsmaster.keyvalueentries k 
+         * where k.entrycategory  = 'SR_DECISION'
+         * order by  entryidentity ;
+         */
+        Pending = 1,
+        Approved = 2,
+        Rejected = 3,
+        OnHold = 4
     }
 }

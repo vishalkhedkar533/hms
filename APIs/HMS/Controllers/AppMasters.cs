@@ -214,7 +214,12 @@ namespace HMS.Controllers
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
+            if (_context.ChannelMaster.Any(x=>x.OrgId == orgId && x.ChannelCode == dto.ChannelCode))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "A channel with the same code already exists.";
+                return Conflict(response);
+            }
             try
             {
                 // Use provided OrgId from DTO. If you want to pull from claims, adapt here.
@@ -387,12 +392,22 @@ namespace HMS.Controllers
                     return BadRequest(response);
                 }
 
-                var Channel = await _context.ChannelMaster.FirstOrDefaultAsync(x => x.ChannelId == ChannelId && x.OrgId == orgId);
+                var Channel = await _context.ChannelMaster.AsNoTracking().
+                    FirstOrDefaultAsync(x => x.ChannelId == ChannelId && x.OrgId == orgId);
+                
                 if (Channel == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "Invalid Channel ID";
                     return BadRequest(response);
+                }
+                if (_context.SubchannelMaster.AsNoTracking().
+                    Any(x => x.OrgId == orgId && x.ChannelId == Channel.ChannelId &&
+                    x.SubChannelCode == SubChannelMaster.SubChannelCode))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "A SubChannel with the same code already exists.";
+                    return Conflict(response);
                 }
                 // Use provided OrgId from DTO. If you want to pull from claims, adapt here.
                 var subChannelMaster = await _context.SubchannelMaster.AddAsync(new SubChannelMaster

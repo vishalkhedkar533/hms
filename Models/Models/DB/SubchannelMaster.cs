@@ -81,8 +81,6 @@ namespace Models.DB
         public long? SubChannelId { get; set; }
         [StringLength(20)]
         public string? SubChannelCode { get; set; } = null!;
-        [StringLength(20)]
-        public string? ChannelCode { get; set; } = null!;
         [StringLength(100)]
         public string? SubChannelName { get; set; } = null!;
         public string? Description { get; set; }

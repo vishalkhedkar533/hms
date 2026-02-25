@@ -14,6 +14,7 @@ using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using System.Security.Claims;
 
 namespace HMS.Controllers
 {
@@ -735,6 +736,7 @@ namespace HMS.Controllers
                 }
 
                 var updatedFields = new List<UpdatedAgentField>();
+                var panNumberUpdated = false;
 
                 void RecordChange(string field, object? oldVal, object? newVal)
                 {
@@ -986,7 +988,10 @@ namespace HMS.Controllers
                           if (!string.IsNullOrWhiteSpace(agentDto.ServiceTaxNo))
                               agent.ServiceTaxNo = agentDto.ServiceTaxNo;
                           if (!string.IsNullOrWhiteSpace(agentDto.MaskedPanNumber))
+                          {
                               agent.PanNumber = agentDto.MaskedPanNumber;
+                              panNumberUpdated = true;
+                          }
 
 
                         if (agentDto.bankAccounts != null && agentDto.bankAccounts.Any())
@@ -1155,8 +1160,9 @@ namespace HMS.Controllers
                                 {
                                     existingNom.NomineeName = n.NomineeName ?? existingNom.NomineeName;
                                     existingNom.Relationship = n.Relationship ?? existingNom.Relationship;
-                                    existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
+                                    existingNom.PercentageShare = n.PercentageShare != 0 ? n.PercentageShare : existingNom.PercentageShare;
                                     existingNom.IsActive = n.IsActive;
+                                    existingNom.NomineeAge = n.NomineeAge != 0 ? n.NomineeAge : existingNom.NomineeAge;
                                     _context.Nominee.Update(existingNom);
                                 }
                             }
@@ -1563,6 +1569,11 @@ namespace HMS.Controllers
                 foreach (var kv in snapshot)
                 {
                     var propName = kv.Key;
+                    if (!panNumberUpdated && string.Equals(propName, "PANNumber", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     var oldVal = kv.Value;
                     object? newVal = null;
                     try
@@ -1592,6 +1603,148 @@ namespace HMS.Controllers
                     }).ToList();
 
                     await _context.AgentAuditTrail.AddRangeAsync(auditEntries);
+
+                    //inbox entries
+                    var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    var createdBy = int.TryParse(userIdValue, out var parsedUserId) ? parsedUserId : 0;
+                    var fieldNames = updatedFields
+                        .Select(f => f.FieldName)
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Select(n => n.Trim())
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+
+                    if (fieldNames.Any())
+                    {
+                        string Normalize(string value)
+                        {
+                            if (string.IsNullOrWhiteSpace(value))
+                            {
+                                return string.Empty;
+                            }
+
+                            var cleaned = new string(value.Where(char.IsLetterOrDigit).ToArray());
+                            return cleaned.ToLowerInvariant();
+                        }
+
+                        Dictionary<int, string> ToMap(IEnumerable<KeyValueEntry> entries) => entries
+                            .GroupBy(e => e.EntryIdentity)
+                            .ToDictionary(g => g.Key, g => g.First().EntryDesc ?? string.Empty);
+
+                        var agentProfileMst = GetMasterData("AgentProfileMst");
+                        Dictionary<int, string> GetCategoryMap(string category) => ToMap(agentProfileMst
+                            .Where(x => string.Equals(x.EntryCategory, category, StringComparison.OrdinalIgnoreCase)));
+
+                        var fieldValueLookup = new Dictionary<string, Dictionary<int, string>>(StringComparer.OrdinalIgnoreCase)
+                        {
+                            ["Title"] = GetCategoryMap("TITLE"),
+                            ["Gender"] = GetCategoryMap("GENDER"),
+                            ["MaritalStatus"] = GetCategoryMap("MARITAL_STATUS"),
+                            ["Education"] = GetCategoryMap("EDUCATION_CODE"),
+                            ["Occupation"] = GetCategoryMap("OCCUPATION"),
+                            ["AgentClass"] = GetCategoryMap("AGENT_CLASS"),
+                            ["AgentType"] = GetCategoryMap("AGNT_TYP"),
+                            ["AgentTypeCat"] = GetCategoryMap("AGENT_TYPE_CAT"),
+                            ["AgentTypeCode"] = GetCategoryMap("AGENT_TYPE_CAT"),
+                            ["CandidateType"] = GetCategoryMap("CANDIDATE_TYP"),
+                            ["CommissionClass"] = GetCategoryMap("COMMISSION_CLASS"),
+                            ["BankAccType"] = GetCategoryMap("BANK_ACC_TYP"),
+                            ["LicenseType"] = GetCategoryMap("LICENSE_TYPE"),
+                            ["LicenseStatus"] = GetCategoryMap("LICENSE_STATUS"),
+                            ["Vertical"] = GetCategoryMap("VERTICAL"),
+                            ["TrainingGroupType"] = GetCategoryMap("TRAINING_GROUP"),
+                            ["State"] = GetCategoryMap("STATE_NAME"),
+                            ["Country"] = GetCategoryMap("COUNTRY"),
+                            ["Channel"] = ToMap(GetMasterData("Channel")),
+                            ["SubChannel"] = ToMap(GetMasterData("SubChannel")),
+                            ["DesignationCode"] = ToMap(GetMasterData("Designation")),
+                            ["LocationCode"] = ToMap(GetMasterData("Location")),
+                            ["Branch"] = ToMap(GetMasterData("Branch"))
+                        };
+
+                        string ResolveDisplayValue(string fieldName, string value)
+                        {
+                            if (string.IsNullOrWhiteSpace(value))
+                            {
+                                return value;
+                            }
+
+                            if (!int.TryParse(value, out var id))
+                            {
+                                return value;
+                            }
+
+                            if (string.Equals(fieldName, "AccountType", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return Enum.GetName(typeof(BankAccType), id) ?? value;
+                            }
+
+                            if (string.Equals(fieldName, "PreferredPaymentMode", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return Enum.GetName(typeof(PreferredPaymentMode), id) ?? value;
+                            }
+
+                            if (string.Equals(fieldName, "AddressType", StringComparison.OrdinalIgnoreCase))
+                            {
+                                return Enum.GetName(typeof(AddressType), id) ?? value;
+                            }
+
+                            if (!fieldValueLookup.TryGetValue(fieldName, out var map))
+                            {
+                                return value;
+                            }
+
+                            return map.TryGetValue(id, out var desc) && !string.IsNullOrWhiteSpace(desc) ? desc : value;
+                        }
+
+                        var uiFields = await _context.uiField
+                            .AsNoTracking()
+                            .Select(f => new { f.CntrlId, f.CntrlName })
+                            .ToListAsync();
+
+                        var normalizedUiFields = uiFields
+                            .Select(f => new { f.CntrlId, f.CntrlName, Normalized = Normalize(f.CntrlName) })
+                            .ToList();
+
+                        var controlIdMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+                        foreach (var fieldName in fieldNames)
+                        {
+                            var normalizedField = Normalize(fieldName);
+                            if (string.IsNullOrWhiteSpace(normalizedField))
+                            {
+                                continue;
+                            }
+
+                            var match = normalizedUiFields.FirstOrDefault(f => f.Normalized == normalizedField)
+                                        ?? normalizedUiFields.FirstOrDefault(f => f.Normalized.Contains(normalizedField)
+                                                                              || normalizedField.Contains(f.Normalized));
+
+                            if (match != null && match.CntrlId != 0)
+                            {
+                                controlIdMap[fieldName] = match.CntrlId;
+                            }
+                        }
+
+                        var inboxEntries = updatedFields
+                            .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId) && cntrlId != 0)
+                            .Select(f => new Inbox
+                            {
+                                OrgId = Convert.ToInt32(orgId),
+                                CreatedBy = createdBy,
+                                CreatedDate = DateTime.UtcNow,
+                                SrStatus = SrStatus.Created,
+                                RequestDets = $"{f.FieldName} updated",
+                                RequestorNote = $"Old Value: {ResolveDisplayValue(f.FieldName, f.OldValue)} | New Value: {ResolveDisplayValue(f.FieldName, f.NewValue)}",
+                                ControlId = controlIdMap[f.FieldName]
+                            })
+                            .ToList();
+
+                        if (inboxEntries.Any())
+                        {
+                            await _context.Inbox.AddRangeAsync(inboxEntries);
+                        }
+                    }
                 }
                 await _context.SaveChangesAsync();
 
@@ -1687,7 +1840,6 @@ namespace HMS.Controllers
 
                 if (!channelId.HasValue)
                     return NotFound("Channel code not found.");
-
 
                 var locationId = await _context.LocationMasters
                     .AsNoTracking()

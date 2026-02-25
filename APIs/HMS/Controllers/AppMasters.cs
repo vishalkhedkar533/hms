@@ -10,6 +10,7 @@ using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
+using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -236,6 +237,27 @@ namespace HMS.Controllers
                 var result = await _context.SaveChangesAsync();
                 response.responseBody.channels = new List<ChannelMaster>();
                 response.responseBody.channels.Add(channelMaster.Entity);
+                try
+                {
+                    var subChannelMaster = await _context.SubchannelMaster.AddAsync(new SubChannelMaster
+                    {
+                        SubChannelCode = channelMaster.Entity.ChannelCode,
+                        ChannelId = channelMaster.Entity.ChannelId,
+                        ChannelCode = channelMaster.Entity.ChannelCode,
+                        SubChannelName = channelMaster.Entity.ChannelName,
+                        Description = $" Default Sub Channel Created for {channelMaster.Entity.Description}",
+                        IsActive = true,
+                        OrgId = orgId,
+                        CreatedBy = _authClaimService.GetClaim(ClaimTypes.NameIdentifier),
+                        CreatedDate = DateTime.UtcNow,
+                        RowVersion = 1,
+                    });
+                    _context.SaveChangesAsync();
+                }
+                catch (Exception exDfltSubChannel)
+                {
+                    _logger.LogError(exDfltSubChannel, "Error inserting into hmsmaster.subchannel_master. DTO: {@dto}", dto);
+                }
                 return Ok(response);
             }
             catch (Exception ex)

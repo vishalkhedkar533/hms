@@ -58,16 +58,12 @@ namespace Models.DB
     public class LocationMasterDto
     {
         public long? LocationMasterId { get; set; }
-        [Required]
-        public long ChannelId { get; set; }
-        [Required]
-        public long SubChannelId { get; set; }
-        [Required]
+        public long? ChannelId { get; set; }
+        public long? SubChannelId { get; set; }
         [StringLength(20)]
-        public string LocationCode { get; set; }
-        [Required]
+        public string? LocationCode { get; set; }
         [StringLength(20)]
-        public string LocationDesc { get; set; }
+        public string? LocationDesc { get; set; }
         public bool IsActive { get; set; }
     }
     public class LocationMappingProfile : Profile

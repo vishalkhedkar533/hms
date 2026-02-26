@@ -2475,3 +2475,22 @@ create table hms.sr_approver
 );
 
 drop TABLE hms.designation_master;
+
+CREATE TABLE hmsmaster.partner_branch (
+	partner_branch_heirarchy serial4 NOT NULL,
+	orgid int4 NULL,
+	channel_id int8 not null,
+	sub_channel_id int8 not null,
+	partner_name varchar(100) not null,
+	ho_address varchar(1000) null,
+	mail_id varchar(100) null,
+	phone varchar(100) null,
+	created_by varchar(100) NOT NULL,
+	created_date timestamp NOT NULL,
+	modified_by varchar(100) NULL,
+	modified_date timestamp NULL,
+	--level_criteria varchar(1000) null, -- Zone	Region	Area	Branch	Unit
+	CONSTRAINT fk_partner_branch_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
+	CONSTRAINT fk_partner_branch_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id) ON DELETE cascade,
+	CONSTRAINT fk_partner_branch_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id) ON DELETE cascade
+);

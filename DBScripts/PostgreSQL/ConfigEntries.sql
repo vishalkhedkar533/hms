@@ -17,21 +17,6 @@ insert into hms."api_config"(config_key,config_value) values ('agent_create_chun
 
 insert into hms.errorMaster (error_id,area,error_msg) values (1201, 'MasterConstants', 'Master Entry Not Found.' );
 
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'PREMIUM_COLLECTED_TYPE', 1, 'New Business', null, true);
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'PREMIUM_COLLECTED_TYPE', 2, 'Additional premium (NB)', null, true);
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'PREMIUM_COLLECTED_TYPE', 3, 'Renewal Premium', null, true);
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'PREMIUM_COLLECTED_TYPE', 4, 'Top Up', null, true);
-
-INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
-VALUES(2, 'PREMIUM_COLLECTED_TYPE', 5, 'Premium Reversal', null, true);
-
 insert into hms.errorMaster (error_id,area,error_msg) values (1401, 'CommissionConstants', 'Commission Config Not Found.' );
 
 insert into hms.errorMaster (error_id,area,error_msg) values (1501, 'JobConstants', 'Job Not Found.' );
@@ -61,13 +46,6 @@ where entrycategory in ('Designation');
 
 --delete from hmsmaster.mastertables where orgid = 2 and entrycategory = 'CommissionMsts'
 
-
-INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
-VALUES (2, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''FILE_TYPE''');
-
-
-INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
-VALUES (2, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');
 
 -- 1. Insert UI Components (Hierarchy)
 INSERT INTO hmsmaster.ui_components (component_id, path, label, elementType) VALUES 

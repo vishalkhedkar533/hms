@@ -1,3 +1,18 @@
+INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES(:p_orgid, 'PREMIUM_COLLECTED_TYPE', 1, 'New Business', null, true);
+
+INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES(:p_orgid, 'PREMIUM_COLLECTED_TYPE', 2, 'Additional premium (NB)', null, true);
+
+INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES(:p_orgid, 'PREMIUM_COLLECTED_TYPE', 3, 'Renewal Premium', null, true);
+
+INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES(:p_orgid, 'PREMIUM_COLLECTED_TYPE', 4, 'Top Up', null, true);
+
+INSERT INTO hmsmaster.keyvalueentries (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES(:p_orgid, 'PREMIUM_COLLECTED_TYPE', 5, 'Premium Reversal', null, true);
+
 INSERT INTO hmsmaster.mastertables(orgid,entrycategory,schemaname,tablename,filtercriteria)
 values (:p_orgid, 'BankAccType', 'hmsmaster','keyvalueentries',' AND entrycategory = ''BANK_ACC_TYP''');
 

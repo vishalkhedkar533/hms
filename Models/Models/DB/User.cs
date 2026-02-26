@@ -71,11 +71,15 @@ namespace Models.DB
         public DateTime? lockoutendtime { get; set; } = null;
         [Column("orgid")]
         public int? OrgId { get; set; } = null;
+        [Column("reporting_mgr")]
+        public int? ReportingMgr { get; set; }
         [NotMapped]
         public string? OrgName { get; set; } = null;
         [NotMapped]
         public int? SubscriberId { get; set; } = null;
         [NotMapped]
         public string? SubscriberName { get; set; } = null;
+        [ForeignKey("ReportingMgr")]
+        public virtual User? Manager { get; set; }
     }
 }

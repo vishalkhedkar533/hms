@@ -2093,10 +2093,6 @@ SELECT jsonb_agg(node)
 FROM json_tree
 WHERE lvl = 1;
 $function$;
-ALTER TABLE hms.geo_hierarchy 
-ADD CONSTRAINT fk_designation_code 
-FOREIGN KEY (designation_code) 
-REFERENCES hms.designation_master (designation_code) ON DELETE CASCADE;
 
 CREATE TABLE hms.SUBCHANNEL_MASTER (
     SUBCHANNEL_CODE   VARCHAR(20) PRIMARY KEY,
@@ -2477,3 +2473,5 @@ create table hms.sr_approver
     CONSTRAINT sr_approver_pkey PRIMARY KEY (sr_approverId),
     CONSTRAINT sr_approver_decisionBy_fkey FOREIGN KEY (decisionBy) REFERENCES hms."user"(user_id) ON DELETE CASCADE
 );
+
+drop TABLE hms.designation_master;

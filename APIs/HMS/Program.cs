@@ -53,6 +53,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<BranchMasterProfile>();
     cfg.AddProfile<InboxProfile>();
     cfg.AddProfile<SrApproverProfile>();
+    cfg.AddProfile<PartnerBranchHierarchyProfile>();
 });
 
 // ----------------------------
@@ -243,7 +244,7 @@ builder.Services.AddControllers()
 //        await context.HttpContext.Response.WriteAsync("Rate limit exceeded. Try again later.", token);
 //    };
 //});
-
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {

@@ -10,7 +10,6 @@ using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
-using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -1057,6 +1056,176 @@ namespace HMS.Controllers
             catch (DbUpdateException ex)
             {
                 return Conflict(new { message = "Database constraint violation (check unique index)", details = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("{ChannelId}/{SubChannelId}/PartnerBranchHierarchy/Save")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> SavePartnerBranchHierarchy([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromBody] PartnerBranchHierarchyDto partnerBranchHierarchyDto)
+        {
+            var hmsResponse = new HmsResponse();
+            var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                PartnerBranchHierarchy entity;
+                bool isUpdate = (partnerBranchHierarchyDto.PartnerBranchHierarchyId.HasValue
+                                && partnerBranchHierarchyDto.PartnerBranchHierarchyId > 0) ||
+                                (!string.IsNullOrEmpty(partnerBranchHierarchyDto.PartnerBranchCode));
+
+                // 1. Validation: Relation Manager
+                var agentExists = await _context.agent.AnyAsync(x => x.OrgId == orgId
+                                        && x.AgentId == partnerBranchHierarchyDto.RelationMgr
+                                        && x.Channel == ChannelId // Using route param
+                                        && x.SubChannel == SubChannelId); // Using route param
+
+                if (!agentExists)
+                {
+                    hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hmsResponse.responseHeader.ErrorMessage = "Relation Manager not found in the channel/subchannel.";
+                    return Conflict(hmsResponse);
+                }
+
+                // 2. Fetch Parent Path if a parent is specified
+                string? parentPath = null;
+                if (partnerBranchHierarchyDto.ParentBranchHierarchyId.HasValue && partnerBranchHierarchyDto.ParentBranchHierarchyId > 0)
+                {
+                    parentPath = await _context.PartnerBranchHierarchies
+                        .Where(x => x.PartnerBranchHierarchyId == partnerBranchHierarchyDto.ParentBranchHierarchyId)
+                        .Select(x => x.HierarchyPath)
+                        .FirstOrDefaultAsync();
+                }
+
+                if (isUpdate)
+                {
+                    entity = await _context.PartnerBranchHierarchies
+                        .FirstOrDefaultAsync(x => x.OrgId == orgId
+                        && x.ChannelId == ChannelId
+                        && x.SubChannelId == SubChannelId
+                        && (x.PartnerBranchCode == partnerBranchHierarchyDto.PartnerBranchCode 
+                        || x.PartnerBranchHierarchyId == partnerBranchHierarchyDto.PartnerBranchHierarchyId));
+
+                    if (entity == null)
+                    {
+                        hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                        hmsResponse.responseHeader.ErrorMessage = "Partner Branch Hierarchy not found.";
+                        return NotFound(hmsResponse);
+                    }
+
+                    _mapper.Map(partnerBranchHierarchyDto, entity);
+                    entity.ModifiedBy = loggedInUserId;
+                    entity.ModifiedDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                    // Update Path (ID already exists)
+                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
+                        ? entity.PartnerBranchHierarchyId.ToString()
+                        : $"{parentPath}.{entity.PartnerBranchHierarchyId}";
+
+                    _context.PartnerBranchHierarchies.Update(entity);
+                }
+                else
+                {
+                    entity = _mapper.Map<PartnerBranchHierarchy>(partnerBranchHierarchyDto);
+                    entity.OrgId = orgId;
+                    entity.ChannelId = ChannelId;
+                    entity.SubChannelId = SubChannelId;
+                    entity.CreatedBy = loggedInUserId;
+                    entity.CreatedDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
+
+                    // First Save: To generate the Serial ID
+                    await _context.PartnerBranchHierarchies.AddAsync(entity);
+                    await _context.SaveChangesAsync();
+
+                    // Second Step: Now that we have entity.PartnerBranchHierarchyId, set the path
+                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
+                        ? entity.PartnerBranchHierarchyId.ToString()
+                        : $"{parentPath}.{entity.PartnerBranchHierarchyId}";
+                    // No need for AddAsync again, EF is tracking the 'entity'
+                }
+
+                // Final Save for both New (Path update) and Update (General changes)
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Updated Successfully";
+                hmsResponse.responseBody.PartnerBranchHierarchies = new List<PartnerBranchHierarchy>();
+                hmsResponse.responseBody.PartnerBranchHierarchies.Add(entity);
+                return Ok(_mapper.Map<PartnerBranchHierarchyDto>(entity));
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("{ChannelId}/{SubChannelId}/PartnerBranchHierarchy/Fetch")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> FetchPartnerBranchHierarchy([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromBody] PartnerBranchHierarchyDto partnerBranchHierarchyDto)
+        {
+            var hmsResponse = new HmsResponse();
+            var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
+                var flatList = await _context.PartnerBranchHierarchies.AsNoTracking()
+                    .Where(d => d.OrgId == orgId
+                             && d.ChannelId == ChannelId
+                             && d.SubChannelId == SubChannelId)
+                    .OrderBy(d => d.HierarchyPath) // This now translates to: ORDER BY hierarchy_path
+                    .ToListAsync();
+
+                // 2. Build the tree in memory
+                var nodeDict = flatList.ToDictionary(
+                   d => d?.HierarchyPath?.ToString(),
+                    d => new PartnerBranchNode
+                    {
+                        PartnerBranchHierarchyId = d.PartnerBranchHierarchyId,
+                        PartnerBranch = d.PartnerBranch,
+                        PartnerBranchCode = d.PartnerBranchCode
+                    });
+
+                List<PartnerBranchNode> rootNodes = new();
+
+                foreach (var item in flatList)
+                {
+                    string path = item.HierarchyPath.ToString();
+                    var node = nodeDict[path];
+
+                    // Find parent path using LTree logic
+                    int lastDot = path.LastIndexOf('.');
+
+                    if (lastDot == -1)
+                    {
+                        rootNodes.Add(node); // It's a root
+                    }
+                    else
+                    {
+                        string parentPath = path.Substring(0, lastDot);
+                        if (nodeDict.TryGetValue(parentPath, out var parentNode))
+                        {
+                            parentNode.ReportingBranches?.Add(node);
+                        }
+                    }
+                }
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Updated Successfully";
+                hmsResponse.responseBody.partnerBranchNode = rootNodes;
+                return Ok(hmsResponse);
             }
             catch (Exception ex)
             {

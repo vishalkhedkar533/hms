@@ -55,6 +55,7 @@ namespace HMS.Data
         public DbSet<ChannelBranchHeirarchy> ChannelBranchHeirarchies => Set<ChannelBranchHeirarchy>();
         public DbSet<Inbox> Inbox { get; set; }
         public DbSet<SrApprover> SrApprovers { get; set; }
+        public DbSet<PartnerBranchHierarchy> PartnerBranchHierarchies { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -145,6 +146,7 @@ namespace HMS.Data
             modelBuilder.Entity<DesignationMaster>()
                 .Property(e => e.HierarchyPath)
                 .HasColumnType("ltree");
+
             modelBuilder.Entity<LocationMaster>(entity =>
             {
                 // Define the Unique Constraint (uq_loc)
@@ -155,6 +157,10 @@ namespace HMS.Data
                 // Optional: Map to the specific schema if not using [Table] attribute
                 entity.ToTable("location_master", "hmsmaster");
             });
+            modelBuilder.Entity<PartnerBranchHierarchy>()
+                .Property(e => e.HierarchyPath)
+                .HasColumnType("ltree");
+
             modelBuilder.HasDefaultSchema("hms");
         }
     }

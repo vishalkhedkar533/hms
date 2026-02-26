@@ -2494,10 +2494,12 @@ create table hms.partner_branch_heirarchy
 	created_date timestamp NOT NULL,
 	modified_by int4 NULL,
 	modified_date timestamp NULL,
+	relation_mgr int4 null,
 	CONSTRAINT partner_branch_heirarchy_pkey PRIMARY KEY (partner_branch_heirarchy_id),
 	CONSTRAINT fk_loc_org FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE cascade,
 	CONSTRAINT fk_loc_channel FOREIGN KEY (channel_id) REFERENCES hmsmaster.channel_master(channel_id) ON DELETE cascade,
 	CONSTRAINT fk_loc_subchannel FOREIGN KEY (sub_channel_id) REFERENCES hmsmaster.subchannel_master(sub_channel_id) ON DELETE cascade,
     CONSTRAINT created_by_fkey FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE cascade,
-    CONSTRAINT modified_by_fkey FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE
+    CONSTRAINT modified_by_fkey FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id) ON DELETE cascade,
+    CONSTRAINT relation_mgr_fkey FOREIGN KEY (relation_mgr) REFERENCES hms.agent(agent_id) ON DELETE CASCADE
 );

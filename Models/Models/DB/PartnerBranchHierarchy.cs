@@ -67,6 +67,9 @@ namespace Models.DB
 
         [Column("modified_date")]
         public DateTime? ModifiedDate { get; set; }
+        // New column added from SQL update
+        [Column("relation_mgr")]
+        public int? RelationMgr { get; set; }
 
         // --- Navigation Properties ---
 
@@ -124,9 +127,7 @@ namespace Models.DB
         /// Format: Label1.Label2.Label3
         /// </summary>
         public string? HierarchyPath { get; set; }
-
-        [Required]
-        public int UserId { get; set; } // The ID of the user performing the action
+        public int? RelationMgr { get; set; }
     }
     public class PartnerBranchHierarchyProfile : Profile
     {
@@ -135,7 +136,6 @@ namespace Models.DB
             // 1. Model -> DTO (Read)
             CreateMap<PartnerBranchHierarchy, PartnerBranchHierarchyDto>()
                 // Map CreatedBy to UserId for the response
-                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.CreatedBy))
                 // ParentBranchHierarchyId doesn't exist in the Model, 
                 // so it will remain null/default unless you manually set it in the service
                 .ForMember(dest => dest.ParentBranchHierarchyId, opt => opt.Ignore());

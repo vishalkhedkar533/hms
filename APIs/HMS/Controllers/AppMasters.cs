@@ -1066,5 +1066,111 @@ namespace HMS.Controllers
             }
         }
 
+        [HttpPost("{ChannelId}/{SubChannelId}/PartnerBranchHierarchy/Save")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> SavePartnerBranchHierarchy([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromBody] PartnerBranchHierarchyDto partnerBranchHierarchyDto)
+        {
+            var hmsResponse = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                PartnerBranchHierarchy entity;
+                bool isUpdate = partnerBranchHierarchyDto.PartnerBranchHierarchyId.HasValue 
+                    && partnerBranchHierarchyDto.PartnerBranchHierarchyId > 0;
+
+                var ParentBranchHierarchyId = (partnerBranchHierarchyDto?.ParentBranchHierarchyId ?? -1000);
+
+                if (!_context.agent.Any( x=> x.OrgId == orgId
+                        && x.AgentId == partnerBranchHierarchyDto.RelationMgr
+                        && x.Channel == partnerBranchHierarchyDto.ChannelId
+                        && x.SubChannel== partnerBranchHierarchyDto.SubChannelId))
+                {
+                    hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hmsResponse.responseHeader.ErrorMessage = "Relation Manager not found in the channel/subchannel.";
+                    return Conflict(hmsResponse);
+                }
+
+                var parentPath = await _context.PartnerBranchHierarchies
+                    .Where(x => x.PartnerBranchHierarchyId == ParentBranchHierarchyId)
+                    .Select(x => x.HierarchyPath)
+                    .FirstOrDefaultAsync();
+
+                if (isUpdate)
+                {
+                    // --- UPDATE LOGIC ---
+                    entity = await _context.PartnerBranchHierarchies
+                        .FirstOrDefaultAsync(x => x.PartnerBranchHierarchyId == 
+                        partnerBranchHierarchyDto.PartnerBranchHierarchyId);
+
+                    if (entity == null) 
+                    {
+                        hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                        hmsResponse.responseHeader.ErrorMessage = "Partner Branch Hierarchy not found.";
+                        return NotFound(hmsResponse);
+                    }
+
+                    // Map DTO to existing entity (Automapper ignores audit fields)
+                    _mapper.Map(partnerBranchHierarchyDto, entity);
+
+                    entity.ModifiedBy = loggedInUserId;
+                    entity.ModifiedDate = DateTime.UtcNow;
+
+                    if (parentPath != null)
+                    {
+                        // Append current code to parent path
+                        entity.HierarchyPath = $"{parentPath}.{partnerBranchHierarchyDto.PartnerBranchHierarchyId}";
+                    }
+                    else
+                    {
+                        // Root level node
+                        entity.HierarchyPath = entity.PartnerBranchHierarchyId.ToString();
+                    }
+
+                    _context.PartnerBranchHierarchies.Update(entity);
+                }
+                else
+                {
+                    // --- INSERT LOGIC ---
+                    entity = _mapper.Map<PartnerBranchHierarchy>(partnerBranchHierarchyDto);
+
+                    // Calculate ltree HierarchyPath based on ParentBranchHierarchyId
+
+                    entity.CreatedBy = loggedInUserId;
+                    entity.CreatedDate = DateTime.UtcNow;
+
+                    if (parentPath != null)
+                    {
+                        // Append current code to parent path
+                        entity.HierarchyPath = $"{parentPath}.{partnerBranchHierarchyDto.PartnerBranchHierarchyId}";
+                    }
+                    else
+                    {
+                        // Root level node
+                        entity.HierarchyPath = entity.PartnerBranchHierarchyId.ToString();
+                    }
+
+                    await _context.PartnerBranchHierarchies.AddAsync(entity);
+                }
+
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var resultDto = _mapper.Map<PartnerBranchHierarchyDto>(entity);
+                return Ok(resultDto);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Log exception (ex) here
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
     }
 }

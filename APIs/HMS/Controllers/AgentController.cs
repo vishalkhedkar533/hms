@@ -721,6 +721,8 @@ namespace HMS.Controllers
             HmsResponse hmsResponse = new HmsResponse();
             var username = HttpContext?.User?.Identity?.Name ?? "System";
             var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var saveInboxOnly = true;
+            List<Inbox> inboxEntries = new List<Inbox>();
             try
             {
                 var agent = await _context.Agents.FirstOrDefaultAsync(a => a.AgentId == id && a.OrgId == orgId);
@@ -1588,25 +1590,29 @@ namespace HMS.Controllers
                 }
                 if (updatedFields.Any())
                 {
-                    var auditEntries = updatedFields.Select(f => new AgentAuditTrail
+                    if (!saveInboxOnly)
                     {
-                        AgentId = id,
-                        FieldName = f.FieldName,
-                        OldValue = f.OldValue,
-                        NewValue = f.NewValue,
-                        ChangedBy = username,
-                        ChangedDate = DateTime.UtcNow,
-                        CreatedBy = username,
-                        CreatedDate = DateTime.UtcNow,
-                        ModifiedBy = username,
-                        ModifiedDate = DateTime.UtcNow
-                    }).ToList();
+                        var auditEntries = updatedFields.Select(f => new AgentAuditTrail
+                        {
+                            AgentId = id,
+                            FieldName = f.FieldName,
+                            OldValue = f.OldValue,
+                            NewValue = f.NewValue,
+                            ChangedBy = username,
+                            ChangedDate = DateTime.UtcNow,
+                            CreatedBy = username,
+                            CreatedDate = DateTime.UtcNow,
+                            ModifiedBy = username,
+                            ModifiedDate = DateTime.UtcNow
+                        }).ToList();
 
-                    await _context.AgentAuditTrail.AddRangeAsync(auditEntries);
+                        await _context.AgentAuditTrail.AddRangeAsync(auditEntries);
+                    }
 
                     //inbox entries
                     var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                     var createdBy = int.TryParse(userIdValue, out var parsedUserId) ? parsedUserId : 0;
+                    var orgIdValue = Convert.ToInt32(orgId);
                     var fieldNames = updatedFields
                         .Select(f => f.FieldName)
                         .Where(n => !string.IsNullOrWhiteSpace(n))
@@ -1726,17 +1732,34 @@ namespace HMS.Controllers
                             }
                         }
 
-                        var inboxEntries = updatedFields
+                        var controlIds = controlIdMap.Values.Distinct().ToList();
+                        var allocationLookup = await _context.uiFieldsSettings
+                            .AsNoTracking()
+                            .Where(s => s.OrgId == orgIdValue && s.CntrlId.HasValue && controlIds.Contains(s.CntrlId.Value))
+                            .Select(s => new { s.CntrlId, s.ApproverOneId, s.RoleId })
+                            .ToListAsync();
+
+                        var allocatedRoleMap = allocationLookup
+                            .GroupBy(x => x.CntrlId!.Value)
+                            .ToDictionary(g => g.Key, g => g.Select(x => x.ApproverOneId ?? x.RoleId).FirstOrDefault());
+
+                        inboxEntries = updatedFields
                             .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId) && cntrlId != 0)
-                            .Select(f => new Inbox
+                            .Select(f =>
                             {
-                                OrgId = Convert.ToInt32(orgId),
-                                CreatedBy = createdBy,
-                                CreatedDate = DateTime.UtcNow,
-                                SrStatus = SrStatus.Created,
-                                RequestDets = $"{f.FieldName} updated",
-                                RequestorNote = $"Old Value: {ResolveDisplayValue(f.FieldName, f.OldValue)} | New Value: {ResolveDisplayValue(f.FieldName, f.NewValue)}",
-                                ControlId = controlIdMap[f.FieldName]
+                                var cntrlId = controlIdMap[f.FieldName];
+                                allocatedRoleMap.TryGetValue(cntrlId, out var allocatedRole);
+                                return new Inbox
+                                {
+                                    OrgId = orgIdValue,
+                                    CreatedBy = createdBy,
+                                    CreatedDate = DateTime.UtcNow,
+                                    SrStatus = SrStatus.Created,
+                                    RequestDets = $"{f.FieldName} updated",
+                                    RequestorNote = $"Old Value: {ResolveDisplayValue(f.FieldName, f.OldValue)} | New Value: {ResolveDisplayValue(f.FieldName, f.NewValue)}",
+                                    ControlId = cntrlId,
+                                    AllocatedToRole = allocatedRole
+                                };
                             })
                             .ToList();
 
@@ -1746,12 +1769,31 @@ namespace HMS.Controllers
                         }
                     }
                 }
+
+                if (saveInboxOnly)
+                {
+                    foreach (var entry in _context.ChangeTracker.Entries().Where(e => e.Entity is not Inbox))
+                    {
+                        switch (entry.State)
+                        {
+                            case EntityState.Added:
+                                entry.State = EntityState.Detached;
+                                break;
+                            case EntityState.Modified:
+                            case EntityState.Deleted:
+                                entry.State = EntityState.Unchanged;
+                                break;
+                        }
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "SUCCESS";
                 hmsResponse.responseBody.updatedAgentSectionName = sectionName;
                 hmsResponse.responseBody.updatedAgentFields = updatedFields;
+                hmsResponse.responseBody.InboxData = inboxEntries;
                 return Ok(hmsResponse);
             }
             catch (DbUpdateConcurrencyException)

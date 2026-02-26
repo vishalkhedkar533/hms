@@ -283,7 +283,9 @@ namespace HMS.Controllers
                 List<UserListDto> userList =  await _context.Users
                 .AsNoTracking()
                 .Where(u => u.OrgId == orgId
-                            && _context.UserRoleMappings.Any(urm => urm.UserId == u.UserId))
+                            && _context.UserRoleMappings.Any(urm => urm.UserId == u.UserId 
+                            && urm.RoleId == roleId 
+                            && urm.OrgId == orgId))
                 .Select(u => new UserListDto
                 {
                     UserId = u.UserId,

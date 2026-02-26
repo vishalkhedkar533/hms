@@ -4,6 +4,7 @@ using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
+using Humanizer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
@@ -11,6 +12,7 @@ using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
 using System.Threading.Channels;
+using static Dapper.SqlMapper;
 
 namespace HMS.Controllers
 {

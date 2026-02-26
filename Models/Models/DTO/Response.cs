@@ -55,6 +55,7 @@ namespace Models.DTO
         public List<UiFieldsSetting>? uiFieldsSettings { get; set; } = null;
         public List<DesignationNode>? designationHierarchy { get; set; } = null;
         public List<Inbox>? InboxData { get; set; } = null;
+        public List<PartnerBranchHierarchy>? PartnerBranchHierarchies { get; set; } = null;
 
     }
 

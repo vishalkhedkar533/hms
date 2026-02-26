@@ -53,6 +53,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<BranchMasterProfile>();
     cfg.AddProfile<InboxProfile>();
     cfg.AddProfile<SrApproverProfile>();
+    cfg.AddProfile<PartnerBranchHierarchyProfile>();
 });
 
 // ----------------------------

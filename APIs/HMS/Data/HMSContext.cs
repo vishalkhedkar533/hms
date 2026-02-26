@@ -55,6 +55,7 @@ namespace HMS.Data
         public DbSet<ChannelBranchHeirarchy> ChannelBranchHeirarchies => Set<ChannelBranchHeirarchy>();
         public DbSet<Inbox> Inbox { get; set; }
         public DbSet<SrApprover> SrApprovers { get; set; }
+        public DbSet<PartnerBranchHierarchy> PartnerBranchHierarchies { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

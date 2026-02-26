@@ -92,6 +92,7 @@ namespace Models.DB
         // Null for New, Value for Update
         public int? PartnerBranchHierarchyId { get; set; }
 
+        public int? ParentBranchHierarchyId { get; set; }
         public int? OrgId { get; set; }
 
         [Required(ErrorMessage = "Channel is required")]
@@ -133,27 +134,29 @@ namespace Models.DB
         {
             // 1. Model -> DTO (Read)
             CreateMap<PartnerBranchHierarchy, PartnerBranchHierarchyDto>()
-                // We map CreatedBy to UserId so the DTO knows who owned it last
-                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.CreatedBy));
+                // Map CreatedBy to UserId for the response
+                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.CreatedBy))
+                // ParentBranchHierarchyId doesn't exist in the Model, 
+                // so it will remain null/default unless you manually set it in the service
+                .ForMember(dest => dest.ParentBranchHierarchyId, opt => opt.Ignore());
 
             // 2. DTO -> Model (Create/Update)
             CreateMap<PartnerBranchHierarchyDto, PartnerBranchHierarchy>()
                 // Ignore the Primary Key so the DB handles auto-increment (serial4)
                 .ForMember(dest => dest.PartnerBranchHierarchyId, opt => opt.Ignore())
 
-                // Ignore Audit fields because they aren't in the DTO 
-                // and shouldn't be overwritten by nulls/defaults
+                // Ignore Audit fields to prevent overwriting with defaults
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
 
-                // Ignore Navigation Properties to prevent validation errors 
-                // from the EF tracking engine
+                // Ignore Navigation Properties
                 .ForMember(dest => dest.Creator, opt => opt.Ignore())
                 .ForMember(dest => dest.Modifier, opt => opt.Ignore())
 
-                // Ensure null strings from DTO don't break Required fields if desired
+                // Conditional mapping: only update properties that are not null in the DTO
+                // This is vital for PATCH-style updates
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }

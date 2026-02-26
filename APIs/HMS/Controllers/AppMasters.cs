@@ -4,15 +4,12 @@ using HMS.Caching;
 using HMS.Data;
 using HMS.Security;
 using HMS.Services;
-using Humanizer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
 using System.Security.Claims;
-using System.Threading.Channels;
-using static Dapper.SqlMapper;
 
 namespace HMS.Controllers
 {
@@ -1170,5 +1167,71 @@ namespace HMS.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpPost("{ChannelId}/{SubChannelId}/PartnerBranchHierarchy/Fetch")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> FetchPartnerBranchHierarchy([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromBody] PartnerBranchHierarchyDto partnerBranchHierarchyDto)
+        {
+            var hmsResponse = new HmsResponse();
+            var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            try
+            {
+                // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
+                var flatList = await _context.PartnerBranchHierarchies.AsNoTracking()
+                    .Where(d => d.OrgId == orgId
+                             && d.ChannelId == ChannelId
+                             && d.SubChannelId == SubChannelId)
+                    .OrderBy(d => d.HierarchyPath) // This now translates to: ORDER BY hierarchy_path
+                    .ToListAsync();
+
+                // 2. Build the tree in memory
+                var nodeDict = flatList.ToDictionary(
+                   d => d?.HierarchyPath?.ToString(),
+                    d => new PartnerBranchNode
+                    {
+                        PartnerBranchHierarchyId = d.PartnerBranchHierarchyId,
+                        PartnerBranch = d.PartnerBranch,
+                        PartnerBranchCode = d.PartnerBranchCode
+                    });
+
+                List<PartnerBranchNode> rootNodes = new();
+
+                foreach (var item in flatList)
+                {
+                    string path = item.HierarchyPath.ToString();
+                    var node = nodeDict[path];
+
+                    // Find parent path using LTree logic
+                    int lastDot = path.LastIndexOf('.');
+
+                    if (lastDot == -1)
+                    {
+                        rootNodes.Add(node); // It's a root
+                    }
+                    else
+                    {
+                        string parentPath = path.Substring(0, lastDot);
+                        if (nodeDict.TryGetValue(parentPath, out var parentNode))
+                        {
+                            parentNode.ReportingBranches?.Add(node);
+                        }
+                    }
+                }
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Updated Successfully";
+                hmsResponse.responseBody.partnerBranchNode = rootNodes;
+                return Ok(hmsResponse);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
     }
 }

@@ -160,5 +160,11 @@ namespace Models.DB
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
         }
     }
-
+    public class PartnerBranchNode
+    {
+        public int? PartnerBranchHierarchyId { get; set; }
+        public string? PartnerBranch { get; set; }
+        public string? PartnerBranchCode { get; set; }
+        public List<PartnerBranchNode>? ReportingBranches { get; set; } = new();
+    }
 }

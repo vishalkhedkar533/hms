@@ -1072,105 +1072,103 @@ namespace HMS.Controllers
             [FromRoute] long SubChannelId, [FromBody] PartnerBranchHierarchyDto partnerBranchHierarchyDto)
         {
             var hmsResponse = new HmsResponse();
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 PartnerBranchHierarchy entity;
-                bool isUpdate = partnerBranchHierarchyDto.PartnerBranchHierarchyId.HasValue 
-                    && partnerBranchHierarchyDto.PartnerBranchHierarchyId > 0;
+                bool isUpdate = (partnerBranchHierarchyDto.PartnerBranchHierarchyId.HasValue
+                                && partnerBranchHierarchyDto.PartnerBranchHierarchyId > 0) ||
+                                (!string.IsNullOrEmpty(partnerBranchHierarchyDto.PartnerBranchCode));
 
-                var ParentBranchHierarchyId = (partnerBranchHierarchyDto?.ParentBranchHierarchyId ?? -1000);
+                // 1. Validation: Relation Manager
+                var agentExists = await _context.agent.AnyAsync(x => x.OrgId == orgId
+                                        && x.AgentId == partnerBranchHierarchyDto.RelationMgr
+                                        && x.Channel == ChannelId // Using route param
+                                        && x.SubChannel == SubChannelId); // Using route param
 
-                if (!_context.agent.Any( x=> x.OrgId == orgId
-                        && x.AgentId == partnerBranchHierarchyDto.RelationMgr
-                        && x.Channel == partnerBranchHierarchyDto.ChannelId
-                        && x.SubChannel== partnerBranchHierarchyDto.SubChannelId))
+                if (!agentExists)
                 {
                     hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
                     hmsResponse.responseHeader.ErrorMessage = "Relation Manager not found in the channel/subchannel.";
                     return Conflict(hmsResponse);
                 }
 
-                var parentPath = await _context.PartnerBranchHierarchies
-                    .Where(x => x.PartnerBranchHierarchyId == ParentBranchHierarchyId)
-                    .Select(x => x.HierarchyPath)
-                    .FirstOrDefaultAsync();
+                // 2. Fetch Parent Path if a parent is specified
+                string? parentPath = null;
+                if (partnerBranchHierarchyDto.ParentBranchHierarchyId.HasValue && partnerBranchHierarchyDto.ParentBranchHierarchyId > 0)
+                {
+                    parentPath = await _context.PartnerBranchHierarchies
+                        .Where(x => x.PartnerBranchHierarchyId == partnerBranchHierarchyDto.ParentBranchHierarchyId)
+                        .Select(x => x.HierarchyPath)
+                        .FirstOrDefaultAsync();
+                }
 
                 if (isUpdate)
                 {
-                    // --- UPDATE LOGIC ---
                     entity = await _context.PartnerBranchHierarchies
-                        .FirstOrDefaultAsync(x => x.PartnerBranchHierarchyId == 
-                        partnerBranchHierarchyDto.PartnerBranchHierarchyId);
+                        .FirstOrDefaultAsync(x => x.OrgId == orgId
+                        && x.ChannelId == ChannelId
+                        && x.SubChannelId == SubChannelId
+                        && (x.PartnerBranchCode == partnerBranchHierarchyDto.PartnerBranchCode 
+                        || x.PartnerBranchHierarchyId == partnerBranchHierarchyDto.PartnerBranchHierarchyId));
 
-                    if (entity == null) 
+                    if (entity == null)
                     {
                         hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
                         hmsResponse.responseHeader.ErrorMessage = "Partner Branch Hierarchy not found.";
                         return NotFound(hmsResponse);
                     }
 
-                    // Map DTO to existing entity (Automapper ignores audit fields)
                     _mapper.Map(partnerBranchHierarchyDto, entity);
-
                     entity.ModifiedBy = loggedInUserId;
-                    entity.ModifiedDate = DateTime.UtcNow;
+                    entity.ModifiedDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
-                    if (parentPath != null)
-                    {
-                        // Append current code to parent path
-                        entity.HierarchyPath = $"{parentPath}.{partnerBranchHierarchyDto.PartnerBranchHierarchyId}";
-                    }
-                    else
-                    {
-                        // Root level node
-                        entity.HierarchyPath = entity.PartnerBranchHierarchyId.ToString();
-                    }
+                    // Update Path (ID already exists)
+                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
+                        ? entity.PartnerBranchHierarchyId.ToString()
+                        : $"{parentPath}.{entity.PartnerBranchHierarchyId}";
 
                     _context.PartnerBranchHierarchies.Update(entity);
                 }
                 else
                 {
-                    // --- INSERT LOGIC ---
                     entity = _mapper.Map<PartnerBranchHierarchy>(partnerBranchHierarchyDto);
-
-                    // Calculate ltree HierarchyPath based on ParentBranchHierarchyId
-
+                    entity.OrgId = orgId;
+                    entity.ChannelId = ChannelId;
+                    entity.SubChannelId = SubChannelId;
                     entity.CreatedBy = loggedInUserId;
-                    entity.CreatedDate = DateTime.UtcNow;
+                    entity.CreatedDate = DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc);
 
-                    if (parentPath != null)
-                    {
-                        // Append current code to parent path
-                        entity.HierarchyPath = $"{parentPath}.{partnerBranchHierarchyDto.PartnerBranchHierarchyId}";
-                    }
-                    else
-                    {
-                        // Root level node
-                        entity.HierarchyPath = entity.PartnerBranchHierarchyId.ToString();
-                    }
-
+                    // First Save: To generate the Serial ID
                     await _context.PartnerBranchHierarchies.AddAsync(entity);
+                    await _context.SaveChangesAsync();
+
+                    // Second Step: Now that we have entity.PartnerBranchHierarchyId, set the path
+                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
+                        ? entity.PartnerBranchHierarchyId.ToString()
+                        : $"{parentPath}.{entity.PartnerBranchHierarchyId}";
+                    // No need for AddAsync again, EF is tracking the 'entity'
                 }
 
-
+                // Final Save for both New (Path update) and Update (General changes)
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                var resultDto = _mapper.Map<PartnerBranchHierarchyDto>(entity);
-                return Ok(resultDto);
+                hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Updated Successfully";
+                hmsResponse.responseBody.PartnerBranchHierarchies = new List<PartnerBranchHierarchy>();
+                hmsResponse.responseBody.PartnerBranchHierarchies.Add(entity);
+                return Ok(_mapper.Map<PartnerBranchHierarchyDto>(entity));
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                // Log exception (ex) here
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
     }
 }

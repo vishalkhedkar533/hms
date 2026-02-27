@@ -71,29 +71,27 @@ namespace Models.DB
     public class BranchMasterDto
     {
         public long? BranchId { get; set; }
-        [Required(ErrorMessage = "Branch Code is required")]
-        [MaxLength(20)]
-        public string BranchCode { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Branch Name is required")]
-        [MaxLength(100)]
-        public string BranchName { get; set; } = string.Empty;
+        public string? BranchCode { get; set; }
+        public string? BranchName { get; set; }
 
         public string? Address { get; set; }
-
         public int? State { get; set; }
-
-        [MaxLength(20)]
         public string? PhoneNumber { get; set; }
 
         [EmailAddress]
-        [MaxLength(100)]
         public string? EmailId { get; set; }
 
         public bool IsActive { get; set; } = true;
-
         public long? LocationMasterId { get; set; }
         public long? ParentBranchId { get; set; } 
+    }
+
+    public class BranchNode
+    {
+        public long Id { get; set; }
+        public string? Name { get; set; }
+        public string? Code { get; set; }
+        public List<BranchNode> ReportingBranches { get; set; } = new();
     }
     public class BranchMasterProfile : Profile
     {

@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=7"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=145"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -62,6 +62,24 @@
         "Script": "UPDATE hms.fileprocessingtasks SET totalrows = @TotalRows, rowsprocessed = @RowsProcessed, rowsrejected = @RowsRejected, errormessage = @ErrorMessage, successdata = @SuccessData, status = @Status, completedat = NOW() WHERE id = @Id"
       }
     },
+    "Inbox": {
+      "GetPendingInbox": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT i.srno AS SrNo, i.orgid AS OrgId, i.cntrl_id AS ControlId FROM hms.inbox i WHERE i.srstatus = 1 AND i.orgid = @orgId AND NOT EXISTS (SELECT 1 FROM hms.sr_approver sa WHERE sa.srno = i.srno AND sa.orgid = i.orgid)"
+      },
+      "GetFieldConfig": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT uc.component_id AS ComponentId, uc.\"label\" AS Label, uc.elementtype AS ElementType, uf.cntrl_id AS ControlId, uf.cntrl_name AS ControlName, ufs.role_id AS RoleId, ufs.usedefaultapprover AS UseDefaultApprover, ufs.approveroneid AS ApproverOneId, ufs.approvertwoid AS ApproverTwoId, ufs.approverthreeid AS ApproverThreeId FROM hmsmaster.ui_components uc INNER JOIN hmsmaster.ui_fields uf ON uc.component_id = uf.component_id INNER JOIN hmsmaster.ui_fields_setting ufs ON ufs.orgid = @orgId AND uf.cntrl_id = ufs.cntrl_id WHERE uf.cntrl_id = @cntrlId"
+      },
+      "InsertSrApprover": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid, approvalendpoint, approvalpayload, approvalapiresponse) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId, @approvalEndpoint, @approvalPayload, @approvalApiResponse)"
+      },
+      "UpdateInboxStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.inbox SET srstatus = @srStatus, allocated_to_role = @allocatedRoleId, statusmodified_on = NOW() WHERE srno = @srNo AND orgid = @orgId"
+      }
+    },
     "ManagerUpdate": {
       "GetPendingTasks": {
         "ConnectionStringKey": "CommissionDB",
@@ -101,7 +119,7 @@
       },
       "UpdateTask": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "UPDATE hms.fileprocessingtasks SET totalrows = @TotalRows, rowsprocessed = @RowsProcessed, rowsrejected = @RowsRejected, errormessage = @ErrorMessage, successdata = @SuccessData, status = @Status, completedat = NOW() WHERE id = @Id;"
+        "Script": "UPDATE hms.fileprocessingtasks SET totalrows = @TotalRows, rowsprocessed = @RowsProcessed, rowsrejected = @RowsRejected, errormessage = @ErrorMessage, successdata = @SuccessData, status = @Status, completedat = NOW() WHERE id = @Id"
       }
     },
     "DesignationUpdate": {

@@ -161,6 +161,9 @@ namespace HMS.Controllers
                             select new { i, u.Username };
 
                 // 2. Apply Dynamic Filters from SearchInboxDto
+                if (searchInboxDto.SrNo.HasValue)
+                    query = query.Where(x => x.i.SrNo == searchInboxDto.SrNo.Value);
+
                 if (searchInboxDto.CreatedDateFrom.HasValue)
                     query = query.Where(x => x.i.CreatedDate >= searchInboxDto.CreatedDateFrom.Value);
 

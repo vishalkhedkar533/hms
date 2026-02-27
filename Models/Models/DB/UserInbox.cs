@@ -165,6 +165,7 @@ namespace Models.DB
     }
     public class SearchInboxDto
     {
+        public int? SrNo { get; set; }
         public SrStatus? SrStatus { get; set; }
         public DateTime? CreatedDateFrom { get; set; }
         public DateTime? CreatedDateTo { get; set; }

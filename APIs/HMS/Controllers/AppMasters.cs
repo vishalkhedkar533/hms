@@ -875,10 +875,10 @@ namespace HMS.Controllers
             }
         }
 
-        [HttpPost("{ChannelId}/{SubChannelId}/{LocationId}/Branch/Save")]
+        [HttpPost("{ChannelId}/{SubChannelId}/Branch/Save")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> InsertUpdateBranch([FromRoute] long ChannelId, [FromRoute] long SubChannelId,
-        [FromRoute] long LocationId, [FromBody] BranchMasterDto branchMasterDto)
+        [FromBody] BranchMasterDto branchMasterDto)
         {
             var response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
@@ -887,15 +887,15 @@ namespace HMS.Controllers
 
             try
             {
-                var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
-                    x.OrgId == orgId && x.LocationMasterId == LocationId);
+                //var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
+                //    x.OrgId == orgId && x.LocationMasterId == LocationId);
 
-                if (location == null || location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Verify the channel, subchannel, and location mapping.";
-                    return Conflict(response);
-                }
+                //if (location == null || location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
+                //{
+                //    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                //    response.responseHeader.ErrorMessage = "Verify the channel, subchannel, and location mapping.";
+                //    return Conflict(response);
+                //}
                 var branch = await _context.BranchMaster.FirstOrDefaultAsync(x =>
                     x.BranchId == branchMasterDto.BranchId && x.OrgId == orgId);
 
@@ -1003,10 +1003,10 @@ namespace HMS.Controllers
             }
         }
 
-        [HttpPost("{ChannelId}/{SubChannelId}/{LocationId}/Branch/Fetch")]
+        [HttpPost("{ChannelId}/{SubChannelId}/Branch/Fetch")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> FetchBranch([FromRoute] long ChannelId,
-            [FromRoute] long SubChannelId, [FromRoute] long LocationId, [FromBody] BranchMasterDto branchMaster)
+            [FromRoute] long SubChannelId, [FromBody] BranchMasterDto branchMaster)
         {
             var response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
@@ -1014,30 +1014,30 @@ namespace HMS.Controllers
             if (branchMaster is null)
                 return BadRequest("Request body is required.");
 
-            if (LocationId != branchMaster.LocationMasterId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Verify the location";
-                return Conflict(response);
-            }
+            //if (LocationId != branchMaster.LocationMasterId)
+            //{
+            //    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+            //    response.responseHeader.ErrorMessage = "Verify the location";
+            //    return Conflict(response);
+            //}
 
-            var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
-                x.OrgId == orgId &&
-                x.LocationMasterId == branchMaster.LocationMasterId);
+            //var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
+            //    x.OrgId == orgId &&
+            //    x.LocationMasterId == branchMaster.LocationMasterId);
 
-            if (location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Verify the channel and subchannel";
-                return Conflict(response);
-            }
+            //if (location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
+            //{
+            //    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+            //    response.responseHeader.ErrorMessage = "Verify the channel and subchannel";
+            //    return Conflict(response);
+            //}
 
             try
             {
                 var existingBranch = await _context.BranchMaster
                     .AsNoTracking()
                     .FirstOrDefaultAsync(x => x.BranchCode == branchMaster.BranchCode &&
-                    x.LocationMasterId == branchMaster.LocationMasterId &&
+                    //x.LocationMasterId == branchMaster.LocationMasterId &&
                     x.OrgId == orgId);
                 if (existingBranch == null)
                 {   response.responseHeader.ErrorCode = CommonConstants.FAILED;

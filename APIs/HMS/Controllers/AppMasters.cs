@@ -1011,47 +1011,92 @@ namespace HMS.Controllers
             var response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-            if (branchMaster is null)
-                return BadRequest("Request body is required.");
-
-            //if (LocationId != branchMaster.LocationMasterId)
-            //{
-            //    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-            //    response.responseHeader.ErrorMessage = "Verify the location";
-            //    return Conflict(response);
-            //}
-
-            //var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
-            //    x.OrgId == orgId &&
-            //    x.LocationMasterId == branchMaster.LocationMasterId);
-
-            //if (location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
-            //{
-            //    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-            //    response.responseHeader.ErrorMessage = "Verify the channel and subchannel";
-            //    return Conflict(response);
-            //}
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                var existingBranch = await _context.BranchMaster
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.BranchCode == branchMaster.BranchCode &&
-                    //x.LocationMasterId == branchMaster.LocationMasterId &&
-                    x.OrgId == orgId);
-                if (existingBranch == null)
-                {   response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Branch not found.";
+                var flatList = await _context.ChannelBranchHeirarchies.AsNoTracking()
+                    .Where(h => h.OrgId == orgId
+                             && h.ChannelId == ChannelId
+                             && h.SubChannelId == SubChannelId)
+                    .OrderBy(h => h.HierarchyPath)
+                    .ToListAsync();
+
+                if (flatList.Count == 0)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Branch hierarchy not found.";
                     return NotFound(response);
                 }
-                else
+
+                long? ParseBranchId(string? path)
                 {
-                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                    response.responseHeader.ErrorMessage = "Branch fetched successfully.";
-                    response.responseBody.branches = new List<BranchMaster>();
-                    response.responseBody.branches.Add(existingBranch);
-                    return Ok(response);
+                    if (string.IsNullOrWhiteSpace(path))
+                        return null;
+
+                    var lastSegment = path.Split('.').LastOrDefault();
+                    return long.TryParse(lastSegment, out var id) ? id : null;
                 }
+
+                var branchIds = flatList
+                    .Select(h => ParseBranchId(h.HierarchyPath))
+                    .Where(id => id.HasValue)
+                    .Select(id => id!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var branchMap = await _context.BranchMaster.AsNoTracking()
+                    .Where(b => b.OrgId == orgId && branchIds.Contains(b.BranchId))
+                    .ToDictionaryAsync(b => b.BranchId);
+
+                var nodeDict = flatList
+                    .Where(h => !string.IsNullOrWhiteSpace(h.HierarchyPath))
+                    .ToDictionary(
+                        h => h.HierarchyPath!,
+                        h =>
+                        {
+                            var branchId = ParseBranchId(h.HierarchyPath) ?? 0;
+                            branchMap.TryGetValue(branchId, out var branch);
+                            return new BranchNode
+                            {
+                                Id = branchId,
+                                Name = branch?.BranchName,
+                                Code = branch?.BranchCode
+                            };
+                        });
+
+                List<BranchNode> rootNodes = new();
+
+                foreach (var item in flatList)
+                {
+                    if (string.IsNullOrWhiteSpace(item.HierarchyPath))
+                        continue;
+
+                    string path = item.HierarchyPath;
+                    if (!nodeDict.TryGetValue(path, out var node))
+                        continue;
+
+                    int lastDot = path.LastIndexOf('.');
+
+                    if (lastDot == -1)
+                    {
+                        rootNodes.Add(node);
+                    }
+                    else
+                    {
+                        string parentPath = path.Substring(0, lastDot);
+                        if (nodeDict.TryGetValue(parentPath, out var parentNode))
+                        {
+                            parentNode.ReportingBranches.Add(node);
+                        }
+                    }
+                }
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Branch hierarchy fetched successfully.";
+                response.responseBody.branchHierarchy = rootNodes;
+                return Ok(response);
             }
             catch (DbUpdateException ex)
             {

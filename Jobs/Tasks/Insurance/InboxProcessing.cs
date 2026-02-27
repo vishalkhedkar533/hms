@@ -104,10 +104,7 @@ namespace Tasks.Insurance
                                 orgId = entry.OrgId,
                                 srNo = entry.SrNo,
                                 approverLevel = level,
-                                allocatedRoleId = roleId,
-                                approvalEndpoint = string.Empty,
-                                approvalPayload = string.Empty,
-                                approvalApiResponse = string.Empty
+                                allocatedRoleId = roleId
                             },
                             transaction: tx);
                         level++;

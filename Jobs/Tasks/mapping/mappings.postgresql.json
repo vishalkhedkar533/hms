@@ -73,7 +73,7 @@
       },
       "InsertSrApprover": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid, approvalendpoint, approvalpayload, approvalapiresponse) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId, @approvalEndpoint, @approvalPayload, @approvalApiResponse)"
+        "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId)"
       },
       "UpdateInboxStatus": {
         "ConnectionStringKey": "CommissionDB",

@@ -113,10 +113,6 @@ namespace Models.DB
         [Required]
         public int? ControlId { get; set; }
         public int? AllocatedToRole { get; set; }
-        [StringLength(2000)]
-        public string? ApprovalEndpoint { get; set; }
-        public string? ApprovalPayload { get; set; }
-        public string? ApprovalApiResponse { get; set; }
     }
     public class SrApproverDto
     {
@@ -144,7 +140,11 @@ namespace Models.DB
                 .ForMember(dest => dest.StatusUpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.StatusModifiedOn, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedByUsername, opt => opt.Ignore())
-                .ForMember(dest => dest.AllocatedToRole, opt => opt.Ignore());
+                .ForMember(dest => dest.AllocatedToRole, opt => opt.Ignore())
+                .ForMember(dest => dest.ApprovalEndpoint, opt => opt.Ignore())
+                .ForMember(dest => dest.ApprovalPayload, opt => opt.Ignore())
+                .ForMember(dest => dest.ApprovalApiResponse, opt => opt.Ignore())
+                ;
         }
     }
     public class SrApproverProfile : Profile

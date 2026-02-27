@@ -46,7 +46,9 @@ function RouteComponent() {
     const [loadingSubChannels, setLoadingSubChannels] = useState(false)
     const [selectedChannel, setSelectedChannel] = useState<number | null>(null)
     const [selectedSubChannel, setSelectedSubChannel] = useState<SubChannel | null>(null)
-    const [activeTab, setActiveTab] = useState<'designation' | 'location' | 'branch'>('designation')
+    const [activeTab, setActiveTab] = useState<
+        'designation' | 'location' | 'branch' | 'partner'
+    >('designation')
     const [openAddChannel, setOpenAddChannel] = useState(false)
     const [channelCode, setChannelCode] = useState('')
     const [channelName, setChannelName] = useState('')
@@ -70,11 +72,27 @@ function RouteComponent() {
         name: string
         code: string
     } | null>(null)
+    const [branchTreeData, setBranchTreeData] = useState<any[]>([])
+    const [loadingBranch, setLoadingBranch] = useState(false)
 
+    const [selectedBranch, setSelectedBranch] = useState<{
+        id: number
+        name: string
+        code: string
+    } | null>(null)
+    const [partnerTreeData, setPartnerTreeData] = useState<any[]>([])
+    const [loadingPartner, setLoadingPartner] = useState(false)
+
+    const [selectedPartner, setSelectedPartner] = useState<{
+        id: number
+        name: string
+        code: string
+    } | null>(null)
     const channelTabs = [
         { value: 'designation', label: 'Designation' },
         { value: 'location', label: 'Locations' },
         { value: 'branch', label: 'Branch' },
+        { value: 'partner', label: 'Partner' },   // ✅ new tab
     ]
 
     const locationColumns = [
@@ -132,6 +150,17 @@ function RouteComponent() {
 
     useEffect(() => {
         if (
+            activeTab === "partner" &&
+            selectedChannel &&
+            selectedSubChannel
+        ) {
+            fetchPartnerHierarchy()
+        }
+    }, [activeTab, selectedChannel, selectedSubChannel])
+
+
+    useEffect(() => {
+        if (
             activeTab === "location" &&
             selectedChannel &&
             selectedSubChannel
@@ -139,6 +168,18 @@ function RouteComponent() {
             fetchLocations()
         }
     }, [activeTab, selectedChannel, selectedSubChannel])
+
+
+    useEffect(() => {
+        if (
+            activeTab === "branch" &&
+            selectedChannel &&
+            selectedSubChannel
+        ) {
+            fetchBranchHierarchy()
+        }
+    }, [activeTab, selectedChannel, selectedSubChannel])
+
 
     const fetchLocations = async () => {
         if (!selectedChannel || !selectedSubChannel) return
@@ -212,6 +253,92 @@ function RouteComponent() {
         }
     }
 
+    const fetchBranchHierarchy = async () => {
+        if (!selectedChannel || !selectedSubChannel) return
+
+        try {
+            setLoadingBranch(true)
+            const res = await HMSService.getBranchHierarchy({
+                branchId: 0,
+                branchCode: null,
+                branchName: null,
+                address: null,
+                state: 0,
+                phoneNumber: null,
+                emailId: null,
+                isActive: true,
+                locationMasterId: 0,
+                parentBranchId: 0,
+                channelId: selectedChannel,
+                subChannelId: selectedSubChannel.subChannelId,
+            })
+
+            const apiData = res?.responseBody?.branchHierarchy || []
+
+            const formatTree = (data: any[]): any[] => {
+                return data.map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    code: item.code,
+                    type: "branch",
+                    children: item.reportingBranches?.length
+                        ? formatTree(item.reportingBranches)
+                        : [],
+                }))
+            }
+
+            setBranchTreeData(formatTree(apiData))
+
+        } catch (error) {
+            console.error("Failed to fetch branch hierarchy", error)
+        } finally {
+            setLoadingBranch(false)
+        }
+    }
+
+    const fetchPartnerHierarchy = async () => {
+        if (!selectedChannel || !selectedSubChannel) return
+
+        try {
+            setLoadingPartner(true)
+            const res = await HMSService.getPartnerHierarchy({
+                partnerBranchHierarchyId: 0,
+                parentBranchHierarchyId: 0,
+                orgId: 0,
+                channelId: selectedChannel,
+                subChannelId: selectedSubChannel.subChannelId,
+                partnerBranchCode: "",
+                partnerBranch: "",
+                partnerAddress: "",
+                partnerMail: "",
+                partnerPhone: "",
+                hierarchyPath: "",
+                relationMgr: 0
+            })
+
+            const apiData = res?.responseBody?.partnerHierarchy || []
+
+            const formatTree = (data: any[]): any[] => {
+                return data.map((item) => ({
+                    id: item.id,
+                    name: item.name,
+                    code: item.code,
+                    type: "partner",
+                    children: item.reportingPartners?.length
+                        ? formatTree(item.reportingPartners)
+                        : [],
+                }))
+            }
+
+            setPartnerTreeData(formatTree(apiData))
+            setSelectedPartner(null)
+
+        } catch (error) {
+            console.error("Failed to fetch partner hierarchy", error)
+        } finally {
+            setLoadingPartner(false)
+        }
+    }
     const fetchChannels = async () => {
         try {
             setLoadingChannels(true)
@@ -430,6 +557,99 @@ function RouteComponent() {
         }
     }
 
+    const handleSaveBranch = async () => {
+        if (!selectedChannel || !selectedSubChannel) return
+
+        if (!selectedBranch) {
+            showToast(NOTIFICATION_CONSTANTS.WARNING, "Please select a branch")
+            return
+        }
+
+        try {
+            setGlobalLoading(true)
+            const payload = {
+                branchId: selectedBranch.id ?? 0,
+                branchCode: selectedBranch.code ?? "",
+                branchName: selectedBranch.name ?? "",
+                address: null,
+                state: 0,
+                phoneNumber: null,
+                emailId: null,
+                isActive: true,
+                locationMasterId: 0,
+                parentBranchId: 0,
+                channelId: selectedChannel,
+                subChannelId: selectedSubChannel.subChannelId,
+            }
+
+            const res = await HMSService.saveBranch(payload)
+
+            if (res?.responseHeader?.errorCode === 1101) {
+                showToast(
+                    NOTIFICATION_CONSTANTS.SUCCESS,
+                    "Branch saved successfully"
+                )
+                fetchBranchHierarchy()
+            } else {
+                showToast(
+                    NOTIFICATION_CONSTANTS.ERROR,
+                    res?.responseHeader?.errorMessage || "Save failed"
+                )
+            }
+        } catch (error) {
+            showToast(
+                NOTIFICATION_CONSTANTS.ERROR,
+                "Server error while saving branch"
+            )
+        } finally {
+            setGlobalLoading(false)
+        }
+    }
+
+    const handleSavePartner = async () => {
+        if (!selectedChannel || !selectedSubChannel) return
+
+        if (!selectedPartner) {
+            showToast(NOTIFICATION_CONSTANTS.WARNING, "Please select a partner")
+            return
+        }
+
+        try {
+            setGlobalLoading(true)
+
+            const payload = {
+                partnerId: selectedPartner.id ?? 0,
+                partnerCode: selectedPartner.code ?? "",
+                partnerName: selectedPartner.name ?? "",
+                isActive: true,
+                parentPartnerId: 0,
+                channelId: selectedChannel,
+                subChannelId: selectedSubChannel.subChannelId,
+            }
+
+            const res = await HMSService.savePartner(payload)
+
+            if (res?.responseHeader?.errorCode === 1101) {
+                showToast(
+                    NOTIFICATION_CONSTANTS.SUCCESS,
+                    "Partner saved successfully"
+                )
+                fetchPartnerHierarchy()
+            } else {
+                showToast(
+                    NOTIFICATION_CONSTANTS.ERROR,
+                    res?.responseHeader?.errorMessage || "Save failed"
+                )
+            }
+        } catch (error) {
+            showToast(
+                NOTIFICATION_CONSTANTS.ERROR,
+                "Server error while saving partner"
+            )
+        } finally {
+            setGlobalLoading(false)
+        }
+    }
     return (
         <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen">
             {globalLoading && <Loading />}
@@ -845,11 +1065,188 @@ function RouteComponent() {
                                 )}
 
                                 {activeTab === 'branch' && (
-                                    <div className="text-gray-600">
-                                        Branch Tree View Area
-                                    </div>
+                                    <>
+                                        {loadingBranch ? (
+                                            <div className="flex justify-center items-center py-10">
+                                                <div className="h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                                <span className="ml-2 text-sm text-gray-500">
+                                                    Loading hierarchy...
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-12 gap-4 h-[500px]">
+
+                                                {/* LEFT → TREE */}
+                                                <div className="col-span-3 h-full overflow-y-auto pr-2">
+                                                    <FieldTreeView
+                                                        data={branchTreeData}
+                                                        onSelect={(node) => {
+                                                            if (node.type === "branch") {
+                                                                setSelectedBranch({
+                                                                    id: node.id,
+                                                                    name: node.name,
+                                                                    code: node.code,
+                                                                })
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                {/* RIGHT → DETAILS */}
+                                                <div className="col-span-9 bg-white border rounded-xl p-6 h-full">
+
+                                                    {!selectedBranch ? (
+                                                        <div className="flex items-center justify-center h-full text-gray-400">
+                                                            Select a branch from the hierarchy
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="max-w-xl">
+
+                                                                <h4 className="text-lg font-semibold text-gray-800 mb-6">
+                                                                    Branch Details
+                                                                </h4>
+
+                                                                <div className="space-y-4">
+
+                                                                    <div className="flex justify-between items-center border-b pb-3">
+                                                                        <span className="text-sm font-medium text-gray-500">
+                                                                            Branch ID
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-gray-800">
+                                                                            {selectedBranch.id}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="flex justify-between items-center border-b pb-3">
+                                                                        <span className="text-sm font-medium text-gray-500">
+                                                                            Branch Name
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-gray-800">
+                                                                            {selectedBranch.name}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="flex justify-between items-center border-b pb-3">
+                                                                        <span className="text-sm font-medium text-gray-500">
+                                                                            Branch Code
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-blue-600">
+                                                                            {selectedBranch.code}
+                                                                        </span>
+                                                                    </div>
+
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex justify-start pt-6 mt-6">
+                                                                <button
+                                                                    onClick={handleSaveBranch}
+                                                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg 
+                                    hover:bg-blue-700 transition font-medium"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
 
+                                {activeTab === 'partner' && (
+                                    <>
+                                        {loadingPartner ? (
+                                            <div className="flex justify-center items-center py-10">
+                                                <div className="h-6 w-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                                <span className="ml-2 text-sm text-gray-500">
+                                                    Loading hierarchy...
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-12 gap-4 h-[500px]">
+
+                                                {/* LEFT → TREE */}
+                                                <div className="col-span-3 h-full overflow-y-auto pr-2">
+                                                    <FieldTreeView
+                                                        data={partnerTreeData}
+                                                        onSelect={(node) => {
+                                                            if (node.type === "partner") {
+                                                                setSelectedPartner({
+                                                                    id: node.id,
+                                                                    name: node.name,
+                                                                    code: node.code,
+                                                                })
+                                                            }
+                                                        }}
+                                                    />
+                                                </div>
+
+                                                {/* RIGHT → DETAILS */}
+                                                <div className="col-span-9 bg-white border rounded-xl p-6 h-full">
+
+                                                    {!selectedPartner ? (
+                                                        <div className="flex items-center justify-center h-full text-gray-400">
+                                                            Select a partner from the hierarchy
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="max-w-xl">
+
+                                                                <h4 className="text-lg font-semibold text-gray-800 mb-6">
+                                                                    Partner Details
+                                                                </h4>
+
+                                                                <div className="space-y-4">
+
+                                                                    <div className="flex justify-between items-center border-b pb-3">
+                                                                        <span className="text-sm font-medium text-gray-500">
+                                                                            Partner ID
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-gray-800">
+                                                                            {selectedPartner.id}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="flex justify-between items-center border-b pb-3">
+                                                                        <span className="text-sm font-medium text-gray-500">
+                                                                            Partner Name
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-gray-800">
+                                                                            {selectedPartner.name}
+                                                                        </span>
+                                                                    </div>
+
+                                                                    <div className="flex justify-between items-center border-b pb-3">
+                                                                        <span className="text-sm font-medium text-gray-500">
+                                                                            Partner Code
+                                                                        </span>
+                                                                        <span className="text-sm font-semibold text-blue-600">
+                                                                            {selectedPartner.code}
+                                                                        </span>
+                                                                    </div>
+
+                                                                </div>
+                                                            </div>
+
+                                                            <div className="flex justify-start pt-6 mt-6">
+                                                                <button
+                                                                    onClick={handleSavePartner}
+                                                                    className="bg-blue-600 text-white px-6 py-2 rounded-lg 
+                                    hover:bg-blue-700 transition font-medium"
+                                                                >
+                                                                    Save
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>

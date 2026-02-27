@@ -319,7 +319,7 @@ export const HMSService = {
 
   saveDesignation: async (payload: {
     designationId: number,
-    parentDesignationId: number, 
+    parentDesignationId: number,
     designationCode: string,
     designationName: string,
     designationLevel: number,
@@ -332,9 +332,72 @@ export const HMSService = {
       "saveDesignation",
       [payload]
     )
-  }
-}
+  },
 
+
+
+  getBranchHierarchy: async (payload: {
+    branchId: number,
+    branchCode: null,
+    branchName: null,
+    address: null,
+    state: number,
+    phoneNumber: null,
+    emailId: null,
+    isActive: boolean,
+    locationMasterId: number,
+    parentBranchId: number,
+    channelId: number,
+    subChannelId: number,
+  }) => {
+    return callApi(
+      "getBranchHierarchy",
+      [payload]
+    )
+  },
+
+  saveBranch: async (payload: {
+    branchId: number,
+    branchCode: string,
+    branchName: string,
+    address: null,
+    state: number,
+    phoneNumber: null,
+    emailId: null,
+    isActive: boolean,
+    locationMasterId: number,
+    parentBranchId: number,
+    channelId: number,
+    subChannelId: number,
+  }) => {
+    return callApi(
+      "saveBranch",
+      [payload]
+    )
+  },
+
+
+  getPartnerHierarchy: async (payload: {
+    partnerBranchHierarchyId: number,
+    parentBranchHierarchyId: number,
+    orgId: number,
+    channelId: number,
+    subChannelId: number,
+    partnerBranchCode: string,
+    partnerBranch: string,
+    partnerAddress: string,
+    partnerMail: string,
+    partnerPhone: string,
+    hierarchyPath: string,
+    relationMgr: number
+  }) => {
+    return callApi(
+      "getPartnerHierarchy",
+      [payload]
+    )
+  },
+
+}
 
 
 

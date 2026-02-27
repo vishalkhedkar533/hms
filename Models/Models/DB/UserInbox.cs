@@ -53,6 +53,18 @@ namespace Models.DB
         [NotMapped]
         public string? CreatedByUsername { get; set; }
 
+        [Required]
+        [StringLength(2000)]
+        [Column("approvalendpoint")]
+        public string? ApprovalEndpoint { get; set; }
+
+        [Required]
+        [Column("approvalpayload")]
+        public string? ApprovalPayload { get; set; }
+
+        [Required]
+        [Column("approvalapiresponse")]
+        public string? ApprovalApiResponse { get; set; }
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -81,18 +93,6 @@ namespace Models.DB
         [Column("decisionon")]
         public DateTime? DecisionOn { get; set; }
 
-        [Required]
-        [StringLength(2000)]
-        [Column("approvalendpoint")]
-        public string? ApprovalEndpoint { get; set; }
-
-        [Required]
-        [Column("approvalpayload")]
-        public string? ApprovalPayload { get; set; }
-
-        [Required]
-        [Column("approvalapiresponse")]
-        public string? ApprovalApiResponse { get; set; }
         [Column("approver_decision")] // Added missing column from SQL
         public ApproverDecision? ApproverDecision { get; set; }
     }
@@ -113,6 +113,10 @@ namespace Models.DB
         [Required]
         public int? ControlId { get; set; }
         public int? AllocatedToRole { get; set; }
+        [StringLength(2000)]
+        public string? ApprovalEndpoint { get; set; }
+        public string? ApprovalPayload { get; set; }
+        public string? ApprovalApiResponse { get; set; }
     }
     public class SrApproverDto
     {
@@ -120,10 +124,6 @@ namespace Models.DB
         public int ApproverLevel { get; set; }
         public int AllocatedRoleId { get; set; }
         public DateTime? DecisionOn { get; set; }
-        [StringLength(2000)]
-        public string? ApprovalEndpoint { get; set; }
-        public string? ApprovalPayload { get; set; }
-        public string? ApprovalApiResponse { get; set; }
         public int? SrNo { get; set; }
         public ApproverDecision? ApproverDecision { get; set; }
     }

@@ -570,3 +570,11 @@ alter table hms.inbox add column allocated_to_role int4 references hms.roles(rol
 alter table hms.sr_approver add column approver_decision int4;
 
 alter TABLE hms."user" add reporting_mgr int4 null references hms."user"(user_id);
+
+alter table hms.sr_approver drop column	approvalpayload;
+alter table hms.sr_approver drop column	approvalapiresponse;
+alter table hms.sr_approver drop column approvalendpoint;
+
+alter table hms.inbox add column approvalendpoint varchar(2000);
+alter table hms.inbox add column approvalpayload text null;
+alter table hms.inbox add column approvalapiresponse text null;

@@ -103,23 +103,23 @@ namespace Models.DB
 
         public long? SubChannelId { get; set; }
 
-        [Required]
+        //[Required]
         [StringLength(20)]
         public string PartnerBranchCode { get; set; }
 
-        [Required]
+        //[Required]
         [StringLength(100)]
         public string PartnerBranch { get; set; }
 
-        [Required]
+        //[Required]
         [StringLength(1000)]
         public string PartnerAddress { get; set; }
 
-        [EmailAddress]
+        //[EmailAddress]
         [StringLength(50)]
         public string? PartnerMail { get; set; }
 
-        [Phone]
+        //[Phone]
         [StringLength(50)]
         public string? PartnerPhone { get; set; }
 

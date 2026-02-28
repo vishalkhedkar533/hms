@@ -110,6 +110,7 @@ namespace Models.DB
         // These are nullable (or optional) so validation doesn't trigger
         public long? ChannelId { get; set; }
         public long? SubChannelId { get; set; }
+        public string? PartnerBranchCode { get; set; }
     }
     public class PartnerBranchHierarchyProfile : Profile
     {
@@ -146,9 +147,16 @@ namespace Models.DB
 
     public class PartnerBranchNode
     {
-        public int? Id { get; set; }
+        public int? PartnerBranchHeirarchyId { get; set; }
         public string? Name { get; set; }
-        public string? Code { get; set; }
+        public string? PartnerBranchCode { get; set; } = null!;
+        public long ChannelId { get; set; } // int8 -> long
+        public long? SubChannelId { get; set; } // int8 -> long
+        public string? PartnerBranch { get; set; }
+        public string? PartnerAddress { get; set; }
+        public string? PartnerMail { get; set; }
+        public string? PartnerPhone { get; set; }
+        public int? RelationMgr { get; set; }
         public List<PartnerBranchNode>? ReportingBranches { get; set; } = new();
     }
 }

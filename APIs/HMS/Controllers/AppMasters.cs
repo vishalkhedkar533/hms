@@ -1111,9 +1111,9 @@ namespace HMS.Controllers
         [HttpPost("{ChannelId}/{SubChannelId}/PartnerBranchHierarchy/Save")]
         [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
         public async Task<IActionResult> SavePartnerBranchHierarchy(
-    [FromRoute] long ChannelId,
-    [FromRoute] long SubChannelId,
-    [FromBody] PartnerBranchHierarchyDto dto)
+            [FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId,
+            [FromBody] PartnerBranchHierarchyDto dto)
         {
             // Initialize response wrapper correctly
             var hmsResponse = new HmsResponse { responseHeader = new HmsSResponseHeader() };
@@ -1231,9 +1231,15 @@ namespace HMS.Controllers
                    d => d?.HierarchyPath?.ToString(),
                     d => new PartnerBranchNode
                     {
-                        Id = d.PartnerBranchHeirarchyId,
+                        PartnerBranchHeirarchyId = d.PartnerBranchHeirarchyId,
                         Name = d.PartnerBranch,
-                        Code = d.PartnerBranchCode
+                        PartnerBranchCode = d.PartnerBranchCode,
+                        ChannelId = d.ChannelId,
+                        SubChannelId = d.SubChannelId,
+                        PartnerAddress = d.PartnerAddress,
+                        PartnerMail = d.PartnerMail,
+                        PartnerPhone = d.PartnerPhone,
+                        RelationMgr = d.RelationMgr
                     });
 
                 List<PartnerBranchNode> rootNodes = new();

@@ -17,7 +17,14 @@ namespace Models.DB
         [Required]
         [Column("cntrl_name")]
         public string CntrlName { get; set; } = string.Empty;
-
+        /*
+         * alter table hmsmaster.ui_fields add column object_name  varchar(100) null;
+         * alter table hmsmaster.ui_fields add column object_field varchar(100) null;
+         */
+        [Column("object_name")]
+        public string ObjectName { get; set; } = string.Empty;
+        [Column("object_field")]
+        public string ObjectField { get; set; } = string.Empty;
         // Navigation Property for the foreign key
         [ForeignKey("ComponentId")]
         public virtual UiComponent? Component { get; set; }

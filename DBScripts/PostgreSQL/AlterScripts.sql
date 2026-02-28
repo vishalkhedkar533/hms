@@ -581,3 +581,9 @@ alter table hms.inbox add column approvalapiresponse text null;
 
 alter table hms.inbox add column object_name varchar(100) null;
 alter table hms.inbox add column object_new_value text null;
+
+alter table hmsmaster.ui_fields add column object_name  varchar(100) null;
+alter table hmsmaster.ui_fields add column object_field varchar(100) null;
+
+update hmsmaster.ui_fields set object_name = 'hms.agent';
+

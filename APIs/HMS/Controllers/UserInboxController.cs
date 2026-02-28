@@ -12,6 +12,7 @@ using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Security.Claims;
 
 namespace HMS.Controllers
@@ -211,6 +212,7 @@ namespace HMS.Controllers
             }
         }
 
+
         [HttpPost("UpdateSrDecision")]
         [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
         public async Task<IActionResult> UpdateSrDecision([FromBody] SrApproverDto  srApproverDto)
@@ -315,6 +317,7 @@ namespace HMS.Controllers
                             inbox.SrStatus = SrStatus.PendingDecision; // Rejected
                             break;
                     }
+                    await _context.SaveChangesAsync();
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
                 }

@@ -4,6 +4,10 @@ using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
 using Tasks.Models;
+using System.Data.Common;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
 
 namespace Tasks.Insurance
 {
@@ -14,6 +18,7 @@ namespace Tasks.Insurance
         private readonly ILogger<InboxProcessing> _logger;
         private readonly IConnectionScope _connectionScope;
         private readonly IJobExecutionContext _jobExecutionContext;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly int _orgId;
 
         public InboxProcessing(
@@ -21,7 +26,8 @@ namespace Tasks.Insurance
             IMappingProvider mappingProvider,
             IConfiguration configuration,
             ILogger<InboxProcessing> logger,
-            IConnectionScope connectionScope)
+            IConnectionScope connectionScope,
+            IHttpClientFactory httpClientFactory)
         {
             _jobExecutionContext = jobExecutionContext;
             _orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -35,6 +41,7 @@ namespace Tasks.Insurance
             _configuration = configuration;
             _logger = logger;
             _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
         }
 
         public async Task ProcessInboxData(JobExeHist jobExeHist)
@@ -63,6 +70,8 @@ namespace Tasks.Insurance
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/InsertSrApprover not found.");
             var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/UpdateInboxStatus not found.");
+            //var managerRolesSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
+            //    ?? throw new InvalidOperationException("Operation mapping for Inbox/GetManagerHierarchyRoles not found.");
 
             var token = CancellationToken.None;
             foreach (var entry in entries)
@@ -84,7 +93,16 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                var approverRoles = ResolveApproverRoles(config);
+                if (config.UseDefaultApprover is null)
+                {
+                    await HandleAutoApprovalAsync(conn, updateInboxSql, entry, token);
+                    continue;
+                }
+
+                var approverRoles = config.UseDefaultApprover.Value
+                    ? await ResolveManagerHierarchyRolesAsync(conn, updateInboxSql, entry)
+                    : ResolveCustomApproverRoles(config);
+
                 if (approverRoles.Count == 0)
                 {
                     _logger.LogWarning("No approver roles resolved for OrgId={OrgId}, ControlId={ControlId}, SrNo={SrNo}.", entry.OrgId, entry.ControlId, entry.SrNo);
@@ -134,35 +152,170 @@ namespace Tasks.Insurance
             _logger.LogInformation("InboxProcessing job finished for OrgId={OrgId}", _orgId);
         }
 
-        private static List<int> ResolveApproverRoles(InboxFieldConfig config)
+        private async Task HandleAutoApprovalAsync(DbConnection conn, string updateInboxSql, InboxEntry entry, CancellationToken token)
+        {
+            var applied = await TryInvokeApprovalEndpointAsync(entry, token);
+            if (!applied)
+            {
+                _logger.LogWarning("Auto-approval skipped for SrNo={SrNo} because approval call failed.", entry.SrNo);
+                return;
+            }
+
+            await using var tx = await conn.BeginTransactionAsync(token);
+            try
+            {
+                await conn.ExecuteAsync(
+                    updateInboxSql,
+                    new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        srStatus = 3,
+                        allocatedRoleId = (int?)null
+                    },
+                    transaction: tx);
+
+                await tx.CommitAsync(token);
+                _logger.LogInformation("Auto-approved inbox entry SrNo={SrNo}.", entry.SrNo);
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync(token);
+                _logger.LogError(ex, "Failed to update auto-approved inbox entry SrNo={SrNo}.", entry.SrNo);
+            }
+        }
+
+        private async Task<bool> TryInvokeApprovalEndpointAsync(InboxEntry entry, CancellationToken token)
+        {
+            var baseUrl = _configuration.GetValue<string>("ApiSettings:BaseUrl");
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                _logger.LogWarning("ApiSettings:BaseUrl is not configured. Skipping auto-approval for SrNo={SrNo}.", entry.SrNo);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(entry.ApprovalEndpoint) || string.IsNullOrWhiteSpace(entry.ApprovalPayload))
+            {
+                _logger.LogWarning("Inbox entry SrNo={SrNo} missing approval details; skipping auto-approval.", entry.SrNo);
+                return false;
+            }
+
+            if (!TryBuildApprovalUri(baseUrl, entry.ApprovalEndpoint, out var requestUri))
+            {
+                _logger.LogWarning("Unable to resolve approval endpoint for SrNo={SrNo}.", entry.SrNo);
+                return false;
+            }
+
+            if (!TryExtractPayload(entry.ApprovalPayload, out var payloadJson))
+            {
+                _logger.LogWarning("Unable to parse approval payload for SrNo={SrNo}.", entry.SrNo);
+                return false;
+            }
+
+            var client = _httpClientFactory.CreateClient();
+            var tokenValue = _configuration.GetValue<string>("ApiSettings:AuthToken");
+            if (!string.IsNullOrWhiteSpace(tokenValue))
+            {
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenValue);
+            }
+
+            using var content = new StringContent(payloadJson, Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync(requestUri, content, token);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Approval endpoint failed for SrNo={SrNo}. Status={Status}", entry.SrNo, response.StatusCode);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool TryBuildApprovalUri(string baseUrl, string approvalEndpoint, out Uri requestUri)
+        {
+            requestUri = null!;
+            if (Uri.TryCreate(approvalEndpoint, UriKind.Absolute, out var absolute))
+            {
+                requestUri = absolute;
+                return true;
+            }
+
+            if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri))
+            {
+                return false;
+            }
+
+            return Uri.TryCreate(baseUri, approvalEndpoint.TrimStart('/'), out requestUri);
+        }
+
+        private static bool TryExtractPayload(string payloadJson, out string normalizedPayload)
+        {
+            normalizedPayload = string.Empty;
+            try
+            {
+                using var document = JsonDocument.Parse(payloadJson);
+                if (document.RootElement.ValueKind != JsonValueKind.Object)
+                {
+                    return false;
+                }
+
+                if (document.RootElement.TryGetProperty("payload", out var payloadElement))
+                {
+                    normalizedPayload = payloadElement.GetRawText();
+                    return true;
+                }
+
+                normalizedPayload = document.RootElement.GetRawText();
+                return true;
+            }
+            catch (JsonException)
+            {
+                return false;
+            }
+        }
+
+        private async Task<List<int>> ResolveManagerHierarchyRolesAsync(DbConnection conn, string managerRolesSql, InboxEntry entry)
+        {
+            if (entry.CreatedBy == 0)
+            {
+                _logger.LogWarning("Inbox entry SrNo={SrNo} missing CreatedBy; cannot resolve manager hierarchy.", entry.SrNo);
+                return new List<int>();
+            }
+
+            var roles = await conn.QueryAsync<ManagerHierarchyRole>(
+                managerRolesSql,
+                new { orgId = entry.OrgId, userId = entry.CreatedBy });
+
+            return roles
+                .OrderBy(r => r.Level)
+                .Select(r => r.RoleId)
+                .Distinct()
+                .ToList();
+        }
+
+        private static List<int> ResolveCustomApproverRoles(InboxFieldConfig config)
         {
             var roles = new List<int>();
-            var useDefault = config.UseDefaultApprover ?? true;
 
-            if (useDefault)
+            if (config.ApproverOneId.HasValue)
             {
-                if (config.RoleId.HasValue)
-                {
-                    roles.Add(config.RoleId.Value);
-                }
+                roles.Add(config.ApproverOneId.Value);
             }
-            else
+            if (config.ApproverTwoId.HasValue)
             {
-                if (config.ApproverOneId.HasValue)
-                {
-                    roles.Add(config.ApproverOneId.Value);
-                }
-                if (config.ApproverTwoId.HasValue)
-                {
-                    roles.Add(config.ApproverTwoId.Value);
-                }
-                if (config.ApproverThreeId.HasValue)
-                {
-                    roles.Add(config.ApproverThreeId.Value);
-                }
+                roles.Add(config.ApproverTwoId.Value);
+            }
+            if (config.ApproverThreeId.HasValue)
+            {
+                roles.Add(config.ApproverThreeId.Value);
             }
 
             return roles;
+        }
+
+        private sealed class ManagerHierarchyRole
+        {
+            public int RoleId { get; set; }
+            public int Level { get; set; }
         }
     }
 }

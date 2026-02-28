@@ -31,6 +31,8 @@ builder.Services.AddScoped<IConnectionScope, ConnectionScope>();
 builder.Services.AddScoped<IJobConfigRepository, JobConfigRepository>();
 builder.Services.AddScoped<IJobTriggerRepository, JobTriggerRepository>();
 
+builder.Services.AddHttpClient();
+
 // Example DI registrations to ensure ReflectionJob and dependencies can be resolved.
 // Place these near other service registrations (before building the host).
 builder.Services.AddTransient<Jobs.ReflectionJob>();

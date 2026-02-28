@@ -68,8 +68,6 @@ namespace Models.DB
         //object_name
         [Column("object_name")]
         public string? ObjectName { get; set; }
-        [Column("object_new_value")]
-        public string? ObjectNewValue { get; set; }
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -116,7 +114,6 @@ namespace Models.DB
         public int? ControlId { get; set; }
         public int? AllocatedToRole { get; set; }
         public string? ObjectName { get; set; }
-        public string? ObjectNewValue { get; set; }
     }
     public class SrApproverDto
     {

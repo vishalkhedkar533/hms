@@ -1760,7 +1760,12 @@ namespace HMS.Controllers
                                     ControlId = cntrlId,
                                     AllocatedToRole = allocatedRole,
                                     ObjectName =$"Agent",
-                                    ObjectNewValue = f.NewValue
+                                    ApprovalPayload = JsonConvert.SerializeObject(new
+                                    {
+                                        agentDto
+                                    }, Formatting.None).ToString(),
+                                     ApprovalEndpoint = $"/api/UserInbox/NewEndPoint"
+                                    //save the new enpoint into ApprovalEndpoint and ApprovalPayload
                                 };
                             })
                             .ToList();
@@ -1772,22 +1777,22 @@ namespace HMS.Controllers
                     }
                 }
 
-                if (saveInboxOnly)
-                {
-                    foreach (var entry in _context.ChangeTracker.Entries().Where(e => e.Entity is not Inbox))
-                    {
-                        switch (entry.State)
-                        {
-                            case EntityState.Added:
-                                entry.State = EntityState.Detached;
-                                break;
-                            case EntityState.Modified:
-                            case EntityState.Deleted:
-                                entry.State = EntityState.Unchanged;
-                                break;
-                        }
-                    }
-                }
+                //if (saveInboxOnly)
+                //{
+                //    foreach (var entry in _context.ChangeTracker.Entries().Where(e => e.Entity is not Inbox))
+                //    {
+                //        switch (entry.State)
+                //        {
+                //            case EntityState.Added:
+                //                entry.State = EntityState.Detached;
+                //                break;
+                //            case EntityState.Modified:
+                //            case EntityState.Deleted:
+                //                entry.State = EntityState.Unchanged;
+                //                break;
+                //        }
+                //    }
+                //}
 
                 await _context.SaveChangesAsync();
 

@@ -321,6 +321,10 @@ namespace HMS.Controllers
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
                 }
+                if (inbox.SrStatus == SrStatus.Approved)
+                {
+                    //invoke approvalendpoint + approvalpayload
+                }
                 return Ok(response);
             }
             catch (Exception ex)

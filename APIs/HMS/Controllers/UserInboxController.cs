@@ -324,6 +324,10 @@ namespace HMS.Controllers
                 if (inbox.SrStatus == SrStatus.Approved)
                 {
                     //invoke approvalendpoint + approvalpayload
+                    if (!string.IsNullOrWhiteSpace(inbox.ApprovalEndpoint))
+                    {
+                        response.responseBody.InboxData = new List<Inbox> { inbox };
+                    }
                 }
                 return Ok(response);
             }

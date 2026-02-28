@@ -120,24 +120,40 @@ namespace HMS.Controllers
         [MenuAuthorize(AuthorisationConstants.ResetPassword)]
         public async Task<ActionResult> UpdatePassword(UpdateUser request)
         {
+            HmsResponse response = new HmsResponse();
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
             if (user == null)
             {
-                return NotFound("User not found.");
+                response.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "User not found."
+                };
+                return NotFound(response);
             }
 
             // Verify old password
             bool isOldPasswordValid = BCrypt.Net.BCrypt.Verify(request.OldPassword, user.Password);
             if (!isOldPasswordValid)
             {
-                return BadRequest("Old password is incorrect.");
+                response.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "Old password is incorrect."
+                };
+                return BadRequest(response);
             }
 
             // Check if new password is same as old password
             bool isSamePassword = BCrypt.Net.BCrypt.Verify(request.NewPassword, user.Password);
             if (isSamePassword)
             {
-                return BadRequest("New password cannot be the same as the old password.");
+                response.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "New password cannot be the same as the old password."
+                };
+                return BadRequest(response);
             }
 
             // Hash and update new password
@@ -146,17 +162,27 @@ namespace HMS.Controllers
             user.PasswordChangedDate = DateTime.UtcNow;
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
-
-            return Ok("Password updated successfully.");
+            response.responseHeader = new HmsSResponseHeader
+            {
+                ErrorCode = CommonConstants.SUCCESS,
+                ErrorMessage = "Password updated successfully."
+            };
+            return Ok(response);
         }
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("ActivateDeactivateUser")]
         public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
         {
+            HmsResponse response = new HmsResponse();
             var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
             if (currentUser == null)
             {
-                return NotFound();
+                response.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "User not found."
+                };
+                return NotFound(response);
             }
 
             // Hash the new password securely using BCrypt
@@ -165,8 +191,13 @@ namespace HMS.Controllers
             // Update the user
             _context.Users.Update(currentUser);
             await _context.SaveChangesAsync();
+            response.responseHeader = new HmsSResponseHeader
+            {
+                ErrorCode = CommonConstants.SUCCESS,
+                ErrorMessage = $"User {(request.IsActive ? "activated" : "deactivated")} successfully."
+            };
 
-            return AcceptedAtAction(request.IsActive ? "UserActivated" : "UserDeActivated", new { id = currentUser.UserId }, currentUser);
+            return Ok(response);
         }
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("LockUnlockUser")]

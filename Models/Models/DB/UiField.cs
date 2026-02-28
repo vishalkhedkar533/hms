@@ -17,7 +17,6 @@ namespace Models.DB
         [Required]
         [Column("cntrl_name")]
         public string CntrlName { get; set; } = string.Empty;
-
         // Navigation Property for the foreign key
         [ForeignKey("ComponentId")]
         public virtual UiComponent? Component { get; set; }

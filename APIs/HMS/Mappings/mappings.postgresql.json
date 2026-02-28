@@ -41,6 +41,10 @@
       "get_geo_children": {
         "Function": "hmsmaster.get_geo_children",
         "Script": "SELECT hmsmaster.get_geo_children(@p_branch_id, @p_orgid)"
+      },
+      "update_field": {
+        "Function": "hmsmaster.update_field",
+        "Script": "update @ObjectName set @ObjectField = @p_NewValue where agent_id = @p_AgentId"
       }
     },
     "Dashboard": {

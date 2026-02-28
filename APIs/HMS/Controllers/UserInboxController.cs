@@ -12,6 +12,10 @@ using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
 using System.Linq;
+using System.Net.Http.Json;
+using Newtonsoft.Json.Linq;
+using System.Reflection;
+using System.Security.AccessControl;
 using System.Security.Claims;
 
 namespace HMS.Controllers
@@ -27,11 +31,12 @@ namespace HMS.Controllers
         private readonly ILogger<UserInboxController> _logger;
         private readonly DatabaseService _db;
         private readonly IMapper _mapper;
+        private readonly IHttpClientFactory _httpClientFactory;
         private int orgId;
 
         public UserInboxController(HMSContext context, GenericCacheService cacheService, IConfiguration configuration
                     , IAuthClaimService authClaimService, FileService fileService, ILogger<UserInboxController> logger,
-                    DatabaseService db, IMapper mapper)
+                    DatabaseService db, IMapper mapper, IHttpClientFactory httpClientFactory)
         {
             _cacheService = cacheService;
             _configuration = configuration;
@@ -42,6 +47,7 @@ namespace HMS.Controllers
             _logger = logger;
             _db = db;
             _mapper = mapper;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpPost("CreateSr")]
@@ -224,6 +230,7 @@ namespace HMS.Controllers
             }
         }
 
+
         [HttpPost("UpdateSrDecision")]
         [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
         public async Task<IActionResult> UpdateSrDecision([FromBody] SrApproverDto  srApproverDto)
@@ -328,8 +335,14 @@ namespace HMS.Controllers
                             inbox.SrStatus = SrStatus.PendingDecision; // Rejected
                             break;
                     }
+                    await _context.SaveChangesAsync();
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
+                }
+                if (inbox.SrStatus == SrStatus.Approved)
+                {
+                    //invoke approvalendpoint + approvalpayload
+                    await InvokeApprovalEndpointAsync(inbox);
                 }
                 return Ok(response);
             }
@@ -339,6 +352,171 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "An error occurred while updating the Service Request decision.";
                 return BadRequest(response);
+            }
+        }
+
+        private async Task InvokeApprovalEndpointAsync(Inbox inbox)
+        {
+            if (string.IsNullOrWhiteSpace(inbox.ApprovalEndpoint) || string.IsNullOrWhiteSpace(inbox.ApprovalPayload))
+            {
+                return;
+            }
+
+            if (!TryParseApprovalEndpoint(inbox.ApprovalEndpoint, out var agentId, out var sectionName))
+            {
+                _logger.LogWarning("Approval endpoint format not recognized: {Endpoint}", inbox.ApprovalEndpoint);
+                return;
+            }
+
+            var agentDto = BuildAgentDtoFromPayload(inbox.ApprovalPayload);
+            if (agentDto == null)
+            {
+                _logger.LogWarning("Approval payload could not be parsed for SR {SrNo}", inbox.SrNo);
+                return;
+            }
+
+            var client = _httpClientFactory.CreateClient();
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var targetUrl = new Uri(new Uri(baseUrl), $"/api/Agent/UpdateAgentAfterApproval/{agentId}/{sectionName}");
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+            {
+                Content = JsonContent.Create(agentDto)
+            };
+
+            if (Request.Headers.TryGetValue("Authorization", out var authHeader))
+            {
+                request.Headers.TryAddWithoutValidation("Authorization", (string)authHeader);
+            }
+
+            var response = await client.SendAsync(request);
+            inbox.ApprovalApiResponse = await response.Content.ReadAsStringAsync();
+            await _context.SaveChangesAsync();
+        }
+
+        private static bool TryParseApprovalEndpoint(string endpoint, out int agentId, out string sectionName)
+        {
+            agentId = 0;
+            sectionName = string.Empty;
+
+            var segments = endpoint.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var index = Array.FindIndex(segments, s => s.Equals("UpdateAgentAfterApproval", StringComparison.OrdinalIgnoreCase));
+            if (index < 0 || segments.Length <= index + 2)
+            {
+                return false;
+            }
+
+            if (!int.TryParse(segments[index + 1], out agentId))
+            {
+                return false;
+            }
+
+            sectionName = segments[index + 2];
+            return !string.IsNullOrWhiteSpace(sectionName);
+        }
+
+        private static AgentDto? BuildAgentDtoFromPayload(string payloadJson)
+        {
+            JObject? root;
+            try
+            {
+                root = JObject.Parse(payloadJson);
+            }
+            catch
+            {
+                return null;
+            }
+
+            var payloadToken = root["payload"] as JObject;
+            if (payloadToken == null)
+            {
+                return null;
+            }
+
+            var agentDto = new AgentDto();
+            var properties = typeof(AgentDto)
+                .GetProperties(BindingFlags.Instance | BindingFlags.Public)
+                .ToDictionary(p => p.Name, p => p, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var prop in payloadToken.Properties())
+            {
+                if (!properties.TryGetValue(prop.Name, out var propInfo))
+                {
+                    continue;
+                }
+
+                var rawValue = prop.Value.Type == JTokenType.Null ? null : prop.Value.ToString();
+                var converted = ConvertToType(rawValue, propInfo.PropertyType);
+                if (converted != null || Nullable.GetUnderlyingType(propInfo.PropertyType) != null || propInfo.PropertyType == typeof(string))
+                {
+                    propInfo.SetValue(agentDto, converted);
+                }
+            }
+
+            return agentDto;
+        }
+
+        private static object? ConvertToType(string? value, Type targetType)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var underlyingType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+
+            if (underlyingType == typeof(string))
+            {
+                return value;
+            }
+
+            if (underlyingType == typeof(int))
+            {
+                return int.TryParse(value, out var parsed) ? parsed : null;
+            }
+
+            if (underlyingType == typeof(long))
+            {
+                return long.TryParse(value, out var parsed) ? parsed : null;
+            }
+
+            if (underlyingType == typeof(bool))
+            {
+                if (bool.TryParse(value, out var parsed))
+                {
+                    return parsed;
+                }
+
+                if (int.TryParse(value, out var intValue))
+                {
+                    return intValue != 0;
+                }
+
+                return null;
+            }
+
+            if (underlyingType == typeof(DateTime))
+            {
+                return DateTime.TryParse(value, out var parsed) ? parsed : null;
+            }
+
+            if (underlyingType == typeof(decimal))
+            {
+                return decimal.TryParse(value, out var parsed) ? parsed : null;
+            }
+
+            if (underlyingType == typeof(double))
+            {
+                return double.TryParse(value, out var parsed) ? parsed : null;
+            }
+
+            try
+            {
+                return Convert.ChangeType(value, underlyingType);
+            }
+            catch
+            {
+                return null;
             }
         }
 

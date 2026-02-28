@@ -65,7 +65,7 @@
     "Inbox": {
       "GetPendingInbox": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT i.srno AS SrNo, i.orgid AS OrgId, i.cntrl_id AS ControlId FROM hms.inbox i WHERE i.srstatus = 1 AND i.orgid = @orgId AND NOT EXISTS (SELECT 1 FROM hms.sr_approver sa WHERE sa.srno = i.srno AND sa.orgid = i.orgid)"
+        "Script": "SELECT i.srno AS SrNo, i.orgid AS OrgId, i.cntrl_id AS ControlId, i.created_by AS CreatedBy, i.approvalendpoint AS ApprovalEndpoint, i.approvalpayload AS ApprovalPayload FROM hms.inbox i WHERE i.srstatus = 1 AND i.orgid = @orgId AND NOT EXISTS (SELECT 1 FROM hms.sr_approver sa WHERE sa.srno = i.srno AND sa.orgid = i.orgid)"
       },
       "GetFieldConfig": {
         "ConnectionStringKey": "CommissionDB",

@@ -92,7 +92,7 @@ namespace Models.DB
         [Required(ErrorMessage = "SubChannel is required")]
         public long? SubChannelId { get; set; } // Changed to long?
 
-        [Required(ErrorMessage = "PartnerBranchCode ABC is required")]
+        [Required(ErrorMessage = "PartnerBranchCode is required")]
         public string? PartnerBranchCode { get; set; }
 
         [Required(ErrorMessage = "PartnerBranch is required")]
@@ -100,7 +100,6 @@ namespace Models.DB
 
         [Required(ErrorMessage = "PartnerAddress is required")]
         public string? PartnerAddress { get; set; }
-
         public string? PartnerMail { get; set; }
         public string? PartnerPhone { get; set; }
         public string? HierarchyPath { get; set; }
@@ -136,9 +135,6 @@ namespace Models.DB
                 .ForMember(dest => dest.ModifiedByUser, opt => opt.Ignore())
                 .ForMember(dest => dest.RelationshipManager, opt => opt.Ignore())
                 .ForMember(dest => dest.OrgId, opt => opt.Ignore())
-                .ForMember(dest => dest.PartnerBranch, opt => opt.Ignore())
-                .ForMember(dest => dest.PartnerAddress, opt => opt.Ignore())
-                .ForMember(dest => dest.PartnerBranchCode, opt => opt.Ignore())
 
                 // Apply the 'Partial Update' logic: 
                 // Only map properties that are provided (not null) in the DTO

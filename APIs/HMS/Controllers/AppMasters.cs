@@ -1196,7 +1196,7 @@ namespace HMS.Controllers
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "Partner Branch Saved Successfully";
-                // Ensure you define the response body structure clearly
+                hmsResponse.responseBody.PartnerBranchHierarchies  = new List<PartnerBranchHeirarchy> { entity };
                 return Ok(hmsResponse);
             }
             catch (Exception ex)

@@ -578,3 +578,6 @@ alter table hms.sr_approver drop column approvalendpoint;
 alter table hms.inbox add column approvalendpoint varchar(2000);
 alter table hms.inbox add column approvalpayload text null;
 alter table hms.inbox add column approvalapiresponse text null;
+
+alter table hms.inbox add column object_name varchar(100) null;
+alter table hms.inbox add column object_new_value text null;

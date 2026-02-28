@@ -65,6 +65,11 @@ namespace Models.DB
         [Required]
         [Column("approvalapiresponse")]
         public string? ApprovalApiResponse { get; set; }
+        //object_name
+        [Column("object_name")]
+        public string? ObjectName { get; set; }
+        [Column("object_new_value")]
+        public string? ObjectNewValue { get; set; }
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -99,20 +104,19 @@ namespace Models.DB
     public class InboxDto
     {
         public int? SrNo { get; set; }
-
         [Required]
         [StringLength(1000)]
         public string? RequestDets { get; set; }
-
         [Required]
         [StringLength(3000)]
         public string? RequestorNote { get; set; }
-
         [Required]
         public SrStatus SrStatus { get; set; }
         [Required]
         public int? ControlId { get; set; }
         public int? AllocatedToRole { get; set; }
+        public string? ObjectName { get; set; }
+        public string? ObjectNewValue { get; set; }
     }
     public class SrApproverDto
     {

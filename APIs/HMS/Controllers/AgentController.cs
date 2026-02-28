@@ -1758,7 +1758,9 @@ namespace HMS.Controllers
                                     RequestDets = $"{f.FieldName} updated",
                                     RequestorNote = $"Old Value: {ResolveDisplayValue(f.FieldName, f.OldValue)} | New Value: {ResolveDisplayValue(f.FieldName, f.NewValue)}",
                                     ControlId = cntrlId,
-                                    AllocatedToRole = allocatedRole
+                                    AllocatedToRole = allocatedRole,
+                                    ObjectName =$"Agent",
+                                    ObjectNewValue = f.NewValue
                                 };
                             })
                             .ToList();

@@ -1239,9 +1239,9 @@ namespace HMS.Controllers
                    d => d?.HierarchyPath?.ToString(),
                     d => new PartnerBranchNode
                     {
-                        PartnerBranchHierarchyId = d.PartnerBranchHierarchyId,
-                        PartnerBranch = d.PartnerBranch,
-                        PartnerBranchCode = d.PartnerBranchCode
+                        Id = d.PartnerBranchHierarchyId,
+                        Name = d.PartnerBranch,
+                        Code = d.PartnerBranchCode
                     });
 
                 List<PartnerBranchNode> rootNodes = new();

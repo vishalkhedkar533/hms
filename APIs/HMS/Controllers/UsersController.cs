@@ -1,9 +1,14 @@
-﻿using HMS.Data;
+﻿using AutoMapper;
+using CommonLibrary;
+using HMS.Data;
+using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
+using Models.HMSConsts;
+using System.Security.Claims;
 namespace HMS.Controllers
 {
     [Route("api/[controller]")]
@@ -12,46 +17,106 @@ namespace HMS.Controllers
     {
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
-        public UsersController(HMSContext context, IConfiguration config)
+        private readonly IMapper _mapper;
+        private readonly IAuthClaimService _authClaimService;
+        private int orgId;
+        public UsersController(HMSContext context, IConfiguration config, IMapper mapper, IAuthClaimService authClaimService)
         {
             _context = context;
             _config = config;
+            _mapper = mapper;
+            _authClaimService = authClaimService;
         }
         //[Authorize]
         //[Authorize(Roles = "Admin")]
         [HttpPost("CreateUser")]
-        public async Task<ActionResult<User>> CreateUser(User user)
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        public async Task<ActionResult<User>> CreateUser(UserCreateDto userDto)
         {
-            if (await _context.Users.AnyAsync(u => u.Username == user.Username))
+            HmsResponse response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            // 1. Check for existing users using the DTO properties
+            if (await _context.Users.AnyAsync(u => u.Username == userDto.Username && u.OrgId == orgId))
             {
-                return Conflict("Username already exists.");
+                response.responseHeader = new HmsSResponseHeader();
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Username already exists.";
+                return Conflict(response);
             }
 
-            if (await _context.Users.AnyAsync(u => u.EmailId == user.EmailId))
+            if (await _context.Users.AnyAsync(u => u.EmailId == userDto.EmailId && u.OrgId == orgId))
             {
-                return Conflict("Email already exists.");
+                response.responseHeader = new HmsSResponseHeader();
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Email ID already exists.";
+                return Conflict(response);
             }
 
-            // Hash the password using BCrypt
-            user.Password = BCrypt.Net.BCrypt.HashPassword(user.Password);
+            // 2. Map DTO to Entity
+            // Using AutoMapper, the mapping configuration handles defaults (IsActive=true, etc.)
+            var user = _mapper.Map<User>(userDto);
+            user.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
+            user.OrgId = orgId;
 
-            // Set default values
-            user.IsActive = true;
-            user.IsLocked = false;
-            user.CreatedDate = DateTime.UtcNow;
-            user.ModifiedDate = null;
-            user.RowVersion = 1;
-            user.PasswordChangedDate = DateTime.UtcNow;
-            user.failedloginattempts = 0;
-            user.lockoutendtime = null;
+            // 3. Handle Password Hashing (Logic usually stays in Service or Controller)
+            user.Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password);
 
+            // 4. Persistence
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
+            response.responseHeader = new HmsSResponseHeader();
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = "User created successfully";
 
-            return Ok(new { message = "User created successfully", user.UserId });
+            return Ok(response);
         }
-        [Authorize]
+        [HttpPost("UpdateUser")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        public async Task<ActionResult> UpdateUser(int id, UserOtherDetails userDto)
+        {
+            HmsResponse response = new HmsResponse();
+            int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int currentUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            // 1. Fetch the existing user, ensuring they belong to the current Org
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.UserId == id && u.OrgId == orgId);
+
+            if (existingUser == null)
+            {
+                response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.FAILED, ErrorMessage = "User not found." };
+                return NotFound(response);
+            }
+
+            // 2. Check for conflicts (Username/Email) excluding the current user being updated
+            if (await _context.Users.AnyAsync(u => u.Username == userDto.Username && u.OrgId == orgId && u.UserId != id))
+            {
+                response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.FAILED, ErrorMessage = "Username already exists." };
+                return Conflict(response);
+            }
+
+            if (await _context.Users.AnyAsync(u => u.EmailId == userDto.EmailId && u.OrgId == orgId && u.UserId != id))
+            {
+                response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.FAILED, ErrorMessage = "Email ID already exists." };
+                return Conflict(response);
+            }
+
+            // 3. Map updated values from DTO to the existing Entity
+            // AutoMapper will use the Condition(s) we set up previously to only update non-null fields
+            _mapper.Map(userDto, existingUser);
+
+            // 4. Update audit fields
+            existingUser.ModifiedBy = currentUserId; // Or handle as int if your Model requires it
+            existingUser.ModifiedDate = DateTime.UtcNow;
+
+            // 5. Save changes
+            await _context.SaveChangesAsync();
+
+            response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.SUCCESS, ErrorMessage = "User updated successfully" };
+            return Ok(response);
+        }
         [HttpPost("UpdatePassword")]
+        [MenuAuthorize(AuthorisationConstants.ResetPassword)]
         public async Task<ActionResult> UpdatePassword(UpdateUser request)
         {
             var user = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
@@ -83,7 +148,7 @@ namespace HMS.Controllers
 
             return Ok("Password updated successfully.");
         }
-        [Authorize(Roles = "Admin")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("ActivateDeactivateUser")]
         public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
         {
@@ -102,7 +167,7 @@ namespace HMS.Controllers
 
             return AcceptedAtAction(request.IsActive ? "UserActivated" : "UserDeActivated", new { id = currentUser.UserId }, currentUser);
         }
-        [Authorize(Roles = "Admin")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("LockUnlockUser")]
         public async Task<ActionResult<User>> LockUnlockUser(UpdateUser request)
         {
@@ -121,9 +186,9 @@ namespace HMS.Controllers
 
             return AcceptedAtAction(request.IsLocked ? "UserLocked" : "UserUnlocked", new { id = currentUser.UserId }, currentUser);
         }
-        [Authorize(Roles = "Admin")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("GetUserDetails")]
-        public async Task<ActionResult<User>> GetUserDetails([FromBody] User SearchUser)
+        public async Task<ActionResult<User>> GetUserDetails([FromBody] UserOtherDetails SearchUser)
         {
             if (string.IsNullOrWhiteSpace(SearchUser.Username) &&
                 string.IsNullOrWhiteSpace(SearchUser.EmailId) &&
@@ -132,7 +197,7 @@ namespace HMS.Controllers
                 return BadRequest("Please provide at least one of: username, emailId, or mobileNumber.");
             }
 
-            var user = await _context.Users
+            var user = await _context.Users.AsNoTracking()
                 .Where(u =>
                     (SearchUser.Username != null && u.Username == SearchUser.Username) ||
                     (SearchUser.EmailId != null && u.EmailId == SearchUser.EmailId) ||

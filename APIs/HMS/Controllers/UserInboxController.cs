@@ -146,9 +146,23 @@ namespace HMS.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var srStatusEntries = await _db.ExecuteQueryAsync<KeyValueEntry>(
+                "Master",
+                "getKeyValueEntries",
+                new
+                {
+                    orgid = orgId,
+                    EntryCategory = "SR_STATUS"
+                });
+
+            // materialize and prepare lookup for descriptions
+            var srStatusList = srStatusEntries.ToList();
+            var srStatusIds = srStatusList.Select(e => e.EntryIdentity).ToList();
+            var srStatusDict = srStatusList.ToDictionary(e => e.EntryIdentity, e => e.EntryDesc);
+
             try
             {
-                // 1. Build the base query (IQueryable)
+                // 1. Build the base query (IQueryable) — do not join to the in-memory collection
                 var query = from i in _context.Inbox.AsNoTracking()
                             join sra in _context.SrApprovers
                                 on new { i.SrNo, i.OrgId } equals new { sra.SrNo, sra.OrgId }
@@ -156,6 +170,7 @@ namespace HMS.Controllers
                                 on new { UserId = i.CreatedBy, i.OrgId } equals new { u.UserId, OrgId = u.OrgId ?? 0 }
                             where i.OrgId == orgId && // Ensure tenant isolation
                                   (int)i.SrStatus == 2 &&
+                                  srStatusIds.Contains((int)i.SrStatus) &&
                                   _context.UserRoleMappings.AsNoTracking().Any(urm =>
                                       urm.RoleId == sra.AllocatedRoleId &&
                                       urm.UserId == userId)
@@ -174,21 +189,21 @@ namespace HMS.Controllers
                 // 3. Get Total Count for Pagination Metadata (Before Skip/Take)
                 int totalRecords = await query.CountAsync();
 
-
                 // 4. Apply Pagination
                 int pageNo = searchInboxDto.PageNo ?? 1;
                 int pageSize = searchInboxDto.PageSize ?? 10;
 
-                var pagedData = await query.AsNoTracking()
+                var pagedData = await query
                     .OrderByDescending(x => x.i.CreatedDate) // Always order before paging
                     .Skip((pageNo - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                // 5. Map to Model and include Username
+                // 5. Map to Model and include Username and SrStatusDesc
                 var result = pagedData.Select(x =>
                 {
                     x.i.CreatedByUsername = x.Username;
+                    x.i.SrStatusDesc = srStatusDict.TryGetValue((int)x.i.SrStatus, out var desc) ? desc : null;
                     return x.i;
                 }).ToList();
 
@@ -198,8 +213,6 @@ namespace HMS.Controllers
                     "No Service Requests found" : $"{totalRecords} Service Request(s) found");
 
                 response.responseBody.InboxData = result;
-                // Optional: If your responseBody has space for metadata:
-                // response.responseBody.TotalCount = totalRecords; 
 
                 return Ok(response);
             }

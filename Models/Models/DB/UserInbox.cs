@@ -38,6 +38,8 @@ namespace Models.DB
         [Required]
         [Column("srstatus")]
         public SrStatus SrStatus { get; set; }
+        [NotMapped]
+        public string? SrStatusDesc { get; set; } 
 
         [Column("statusupdated_by")]
         public int? StatusUpdatedBy { get; set; }
@@ -53,16 +55,12 @@ namespace Models.DB
         [NotMapped]
         public string? CreatedByUsername { get; set; }
 
-        [Required]
         [StringLength(2000)]
         [Column("approvalendpoint")]
         public string? ApprovalEndpoint { get; set; }
 
-        [Required]
         [Column("approvalpayload")]
         public string? ApprovalPayload { get; set; }
-
-        [Required]
         [Column("approvalapiresponse")]
         public string? ApprovalApiResponse { get; set; }
         //object_name
@@ -145,6 +143,7 @@ namespace Models.DB
                 .ForMember(dest => dest.ApprovalEndpoint, opt => opt.Ignore())
                 .ForMember(dest => dest.ApprovalPayload, opt => opt.Ignore())
                 .ForMember(dest => dest.ApprovalApiResponse, opt => opt.Ignore())
+                .ForMember(dest => dest.SrStatusDesc, opt => opt.Ignore())
                 ;
         }
     }

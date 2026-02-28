@@ -162,9 +162,9 @@ namespace Models.DB
     }
     public class PartnerBranchNode
     {
-        public int? PartnerBranchHierarchyId { get; set; }
-        public string? PartnerBranch { get; set; }
-        public string? PartnerBranchCode { get; set; }
+        public int? Id { get; set; }
+        public string? Name { get; set; }
+        public string? Code { get; set; }
         public List<PartnerBranchNode>? ReportingBranches { get; set; } = new();
     }
 }

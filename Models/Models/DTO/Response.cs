@@ -57,7 +57,7 @@ namespace Models.DTO
         public List<BranchNode>? branchHierarchy { get; set; } = null;
         public List<PartnerBranchNode>? partnerBranchNode { get; set; } = null;
         public List<Inbox>? InboxData { get; set; } = null;
-        public List<PartnerBranchHierarchy>? PartnerBranchHierarchies { get; set; } = null;
+        public List<PartnerBranchHeirarchy>? PartnerBranchHierarchies { get; set; } = null;
         public List<UserOtherDetails>? UserOtherDetails { get; set; } = null;
 
     }

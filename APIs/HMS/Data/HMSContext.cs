@@ -55,7 +55,7 @@ namespace HMS.Data
         public DbSet<ChannelBranchHeirarchy> ChannelBranchHeirarchies => Set<ChannelBranchHeirarchy>();
         public DbSet<Inbox> Inbox { get; set; }
         public DbSet<SrApprover> SrApprovers { get; set; }
-        public DbSet<PartnerBranchHierarchy> PartnerBranchHierarchies { get; set; }
+        public DbSet<PartnerBranchHeirarchy> PartnerBranchHierarchies { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -157,7 +157,7 @@ namespace HMS.Data
                 // Optional: Map to the specific schema if not using [Table] attribute
                 entity.ToTable("location_master", "hmsmaster");
             });
-            modelBuilder.Entity<PartnerBranchHierarchy>()
+            modelBuilder.Entity<PartnerBranchHeirarchy>()
                 .Property(e => e.HierarchyPath)
                 .HasColumnType("ltree");
 

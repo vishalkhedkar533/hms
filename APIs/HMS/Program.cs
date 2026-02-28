@@ -111,6 +111,7 @@ builder.Services.AddScoped<NpgsqlConnection>(sp =>
 // ----------------------------
 // Services
 // ----------------------------
+builder.Services.AddHttpClient();
 builder.Services.AddScoped<GenericCacheService>();
 builder.Services.AddScoped<DatabaseService>(); // ✅ new consolidated service
 builder.Services.AddScoped<IAuthClaimService, AuthClaimService>();

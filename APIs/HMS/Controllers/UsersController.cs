@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
@@ -188,13 +189,19 @@ namespace HMS.Controllers
         }
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("GetUserDetails")]
-        public async Task<ActionResult<User>> GetUserDetails([FromBody] UserOtherDetails SearchUser)
+        public async Task<ActionResult<User>> GetUserDetails([FromBody] SearchUser SearchUser)
         {
+            HmsResponse hmsResponse = new HmsResponse();
             if (string.IsNullOrWhiteSpace(SearchUser.Username) &&
                 string.IsNullOrWhiteSpace(SearchUser.EmailId) &&
                 string.IsNullOrWhiteSpace(SearchUser.MobileNumber))
             {
-                return BadRequest("Please provide at least one of: username, emailId, or mobileNumber.");
+                hmsResponse.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "Please provide at least one of: username, emailId, or mobileNumber."
+                };
+                return BadRequest(hmsResponse);
             }
 
             var user = await _context.Users.AsNoTracking()
@@ -202,30 +209,26 @@ namespace HMS.Controllers
                     (SearchUser.Username != null && u.Username == SearchUser.Username) ||
                     (SearchUser.EmailId != null && u.EmailId == SearchUser.EmailId) ||
                     (SearchUser.MobileNumber != null && u.MobileNumber == SearchUser.MobileNumber))
+                .ProjectTo<UserOtherDetails>(_mapper.ConfigurationProvider)
                 .FirstOrDefaultAsync();
 
             if (user == null)
             {
-                return NotFound("User not found.");
+                hmsResponse.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "User not found."
+                };
+                return Conflict(hmsResponse);
             }
 
-            // Optional: Avoid returning sensitive data (like password)
-            var result = new
+            hmsResponse.responseHeader = new HmsSResponseHeader
             {
-                user.UserId,
-                user.Username,
-                user.EmailId,
-                user.MobileNumber,
-                user.IsActive,
-                user.IsLocked,
-                user.LastLoginDate,
-                user.CreatedDate,
-                user.ModifiedDate,
-                user.failedloginattempts,
-                user.lockoutendtime
+                ErrorCode = CommonConstants.SUCCESS,
+                ErrorMessage = "User details retrieved successfully."
             };
-
-            return Ok(result);
+            hmsResponse.responseBody.UserOtherDetails = new List<UserOtherDetails> { user };
+            return Ok(hmsResponse);
         }
         private bool UserExists(int id)
         {

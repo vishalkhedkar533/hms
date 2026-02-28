@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.QueryableExtensions;
 using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -93,10 +94,51 @@ namespace Models.DB
 
     public class UserOtherDetails
     {
-        public string? Username { get; set; } = null!;
-        public string? EmailId { get; set; } = null!;
+        [StringLength(100)]
+        public string Username { get; set; } = null!;
+
+        [StringLength(150)]
+        public string EmailId { get; set; } = null!;
+
+        [StringLength(20)]
         public string? MobileNumber { get; set; }
+
+        public bool IsActive { get; set; }
+
+        public bool IsLocked { get; set; }
+
+        public DateTime? LastLoginDate { get; set; }
+
+        public int CreatedBy { get; set; }
+
+        public DateTime CreatedDate { get; set; }
+
+        public int? ModifiedBy { get; set; }
+
+        public DateTime? ModifiedDate { get; set; }
+
+        public int? RowVersion { get; set; }
+
+        public DateTime? PasswordChangedDate { get; set; }
+
+        public HMSDashboard? HmsDashboard { get; set; }
+
+        public int FailedLoginAttempts { get; set; } = 0;
+
+        public DateTime? LockoutEndTime { get; set; }
+
+        public int? OrgId { get; set; }
+
         public int? ReportingMgr { get; set; }
+
+        public string? OrgName { get; set; }
+
+        public int? SubscriberId { get; set; }
+
+        public string? SubscriberName { get; set; }
+
+        // Navigation property
+        public UserOtherDetails? Manager { get; set; }
     }
     public class UserProfile : Profile
     {
@@ -104,52 +146,46 @@ namespace Models.DB
         {
             // 1. Mapping for User creation
             CreateMap<UserCreateDto, User>()
-                // Default values
+                .ForMember(dest => dest.Username, opt => opt.MapFrom(src => src.Username))
+                .ForMember(dest => dest.EmailId, opt => opt.MapFrom(src => src.EmailId))
+                .ForMember(dest => dest.Password, opt => opt.MapFrom(src => src.Password))
+                .ForMember(dest => dest.MobileNumber, opt => opt.MapFrom(src => src.MobileNumber))
+                .ForMember(dest => dest.ReportingMgr, opt => opt.MapFrom(src => src.ReportingMgr))
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
                 .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => false))
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.failedloginattempts, opt => opt.MapFrom(src => 0))
-
-                // Explicitly ignore ALL unmapped destination members to stop the errors
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ForMember(dest => dest.LastLoginDate, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore()) // Set in service/controller
-                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
-                .ForMember(dest => dest.RowVersion, opt => opt.Ignore())
-                .ForMember(dest => dest.PasswordChangedDate, opt => opt.Ignore())
-                .ForMember(dest => dest.lockoutendtime, opt => opt.Ignore())
-                .ForMember(dest => dest.HmsDashboard, opt => opt.Ignore())
-                .ForMember(dest => dest.OrgId, opt => opt.Ignore()) // Set in service/controller
-                .ForMember(dest => dest.OrgName, opt => opt.Ignore())
-                .ForMember(dest => dest.SubscriberId, opt => opt.Ignore())
-                .ForMember(dest => dest.SubscriberName, opt => opt.Ignore())
-                .ForMember(dest => dest.Manager, opt => opt.Ignore());
+                .ForAllMembers(opt => opt.Ignore());
 
             // 2. Mapping for UserOtherDetails (Updates)
-            CreateMap<UserOtherDetails, User>()
-                // Ignore everything not in the DTO
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ForMember(dest => dest.Password, opt => opt.Ignore())
-                .ForMember(dest => dest.IsActive, opt => opt.Ignore())
-                .ForMember(dest => dest.IsLocked, opt => opt.Ignore())
-                .ForMember(dest => dest.LastLoginDate, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
-                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
-                .ForMember(dest => dest.RowVersion, opt => opt.Ignore())
-                .ForMember(dest => dest.PasswordChangedDate, opt => opt.Ignore())
-                .ForMember(dest => dest.HmsDashboard, opt => opt.Ignore())
-                .ForMember(dest => dest.failedloginattempts, opt => opt.Ignore())
-                .ForMember(dest => dest.lockoutendtime, opt => opt.Ignore())
-                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
-                .ForMember(dest => dest.OrgName, opt => opt.Ignore())
-                .ForMember(dest => dest.SubscriberId, opt => opt.Ignore())
-                .ForMember(dest => dest.SubscriberName, opt => opt.Ignore())
-                .ForMember(dest => dest.Manager, opt => opt.Ignore())
-                // Apply condition to only map non-null values
-                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<UserOtherDetails, User>()                
+                .ForMember(dest => dest.Username, opt => {
+                    opt.MapFrom(src => src.Username);
+                    opt.Condition(src => src.Username != null);
+                })
+                .ForMember(dest => dest.EmailId, opt => {
+                    opt.MapFrom(src => src.EmailId);
+                    opt.Condition(src => src.EmailId != null);
+                })
+                .ForMember(dest => dest.MobileNumber, opt => {
+                    opt.MapFrom(src => src.MobileNumber);
+                    opt.Condition(src => src.MobileNumber != null);
+                })
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+                .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => src.IsLocked))
+                .ForMember(dest => dest.ReportingMgr, opt => opt.MapFrom(src => src.ReportingMgr))
+                .ForMember(dest => dest.OrgId, opt => opt.MapFrom(src => src.OrgId))
+                .ForAllMembers(opt => opt.Ignore());
+            // 3. Mapping for reading User (Entity -> DTO)
+            // No .Ignore() here! We want the properties to map automatically.
+            CreateMap<User, UserOtherDetails>();
         }
     }
+    public class SearchUser 
+    {
+        public string? Username { get; set; } = null!;
+        public string? EmailId { get; set; } = null!;
+        public string? MobileNumber { get; set; }
+    }
+
 }

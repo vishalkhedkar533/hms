@@ -64,10 +64,17 @@ namespace HMS.Controllers
 
             // 4. Persistence
             _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
             response.responseHeader = new HmsSResponseHeader();
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-            response.responseHeader.ErrorMessage = "User created successfully";
+            response.responseHeader.ErrorMessage = $"User {userDto.Username} created successfully";
 
             return Ok(response);
         }

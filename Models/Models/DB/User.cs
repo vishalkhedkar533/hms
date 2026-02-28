@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -107,17 +108,7 @@ namespace Models.DB
 
         public bool IsLocked { get; set; }
 
-        public DateTime? LastLoginDate { get; set; }
-
-        public int CreatedBy { get; set; }
-
-        public DateTime CreatedDate { get; set; }
-
-        public int? ModifiedBy { get; set; }
-
-        public DateTime? ModifiedDate { get; set; }
-
-        public int? RowVersion { get; set; }
+        public DateTime? LastLoggedInOn { get; set; }
 
         public DateTime? PasswordChangedDate { get; set; }
 
@@ -126,8 +117,6 @@ namespace Models.DB
         public int FailedLoginAttempts { get; set; } = 0;
 
         public DateTime? LockoutEndTime { get; set; }
-
-        public int? OrgId { get; set; }
 
         public int? ReportingMgr { get; set; }
 
@@ -155,33 +144,75 @@ namespace Models.DB
                 .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => false))
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
                 .ForMember(dest => dest.failedloginattempts, opt => opt.MapFrom(src => 0))
-                .ForAllMembers(opt => opt.Ignore());
+                .ForMember(dest => dest.LastLoginDate, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.RowVersion, opt => opt.Ignore())
+                .ForMember(dest => dest.PasswordChangedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.HmsDashboard, opt => opt.Ignore())
+                .ForMember(dest => dest.lockoutendtime, opt => opt.Ignore())
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+                .ForMember(dest => dest.OrgName, opt => opt.Ignore())
+                .ForMember(dest => dest.SubscriberId, opt => opt.Ignore())
+                .ForMember(dest => dest.SubscriberName, opt => opt.Ignore())
+                .ForMember(dest => dest.Manager, opt => opt.Ignore())
+                .ForMember(dest => dest.UserId, opt => opt.Ignore());
 
             // 2. Mapping for UserOtherDetails (Updates)
-            CreateMap<UserOtherDetails, User>()                
-                .ForMember(dest => dest.Username, opt => {
+            CreateMap<UserOtherDetails, User>()
+                .ForMember(dest => dest.Username, opt =>
+                {
                     opt.MapFrom(src => src.Username);
                     opt.Condition(src => src.Username != null);
                 })
-                .ForMember(dest => dest.EmailId, opt => {
+                .ForMember(dest => dest.EmailId, opt =>
+                {
                     opt.MapFrom(src => src.EmailId);
                     opt.Condition(src => src.EmailId != null);
                 })
-                .ForMember(dest => dest.MobileNumber, opt => {
+                .ForMember(dest => dest.MobileNumber, opt =>
+                {
                     opt.MapFrom(src => src.MobileNumber);
                     opt.Condition(src => src.MobileNumber != null);
                 })
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
                 .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => src.IsLocked))
                 .ForMember(dest => dest.ReportingMgr, opt => opt.MapFrom(src => src.ReportingMgr))
-                .ForMember(dest => dest.OrgId, opt => opt.MapFrom(src => src.OrgId))
-                .ForAllMembers(opt => opt.Ignore());
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ForMember(dest => dest.Password, opt => opt.Ignore())
+                .ForMember(dest => dest.LastLoginDate, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.RowVersion, opt => opt.Ignore());
             // 3. Mapping for reading User (Entity -> DTO)
-            // No .Ignore() here! We want the properties to map automatically.
-            CreateMap<User, UserOtherDetails>();
+            CreateMap<User, UserOtherDetails>()
+                .ForMember(dest => dest.LastLoggedInOn, opt => opt.Ignore());
         }
+        /*
+         * ==========================================
+UserOtherDetails -> User (Destination member list)
+Models.DB.UserOtherDetails -> Models.DB.User (Destination member list)
+
+Unmapped properties:
+LastLoginDate
+CreatedBy
+CreatedDate
+ModifiedBy
+ModifiedDate
+RowVersion
+=============================================
+User -> UserOtherDetails (Destination member list)
+Models.DB.User -> Models.DB.UserOtherDetails (Destination member list)
+
+Unmapped properties:
+LastLoggedInOn
+         */
     }
-    public class SearchUser 
+    public class SearchUser
     {
         public string? Username { get; set; } = null!;
         public string? EmailId { get; set; } = null!;

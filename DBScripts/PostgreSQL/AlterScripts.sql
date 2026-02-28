@@ -588,12 +588,12 @@ alter table hmsmaster.ui_fields drop column object_field varchar(100) null;
 update hmsmaster.ui_fields set object_name = 'hms.agent';
 
 -- 2. Alter the columns with an explicit type cast and add the foreign key
-ALTER TABLE hmsmaster.location_master 
+ALTER TABLE hms."user"
     ALTER COLUMN created_by TYPE int4 USING (created_by::int4),
     ALTER COLUMN modified_by TYPE int4 USING (modified_by::int4);
 
 -- 3. Add the Foreign Key constraints
-ALTER TABLE hmsmaster.location_master 
+ALTER TABLE hms."user"
     ADD CONSTRAINT fk_location_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id),
     ADD CONSTRAINT fk_location_modified_by FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id);
 

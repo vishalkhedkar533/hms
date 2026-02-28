@@ -93,8 +93,8 @@ namespace Models.DB
 
     public class UserOtherDetails
     {
-        public string Username { get; set; } = null!;
-        public string EmailId { get; set; } = null!;
+        public string? Username { get; set; } = null!;
+        public string? EmailId { get; set; } = null!;
         public string? MobileNumber { get; set; }
         public int? ReportingMgr { get; set; }
     }

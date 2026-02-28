@@ -188,7 +188,7 @@ namespace HMS.Controllers
         }
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("GetUserDetails")]
-        public async Task<ActionResult<User>> GetUserDetails([FromBody] User SearchUser)
+        public async Task<ActionResult<User>> GetUserDetails([FromBody] UserOtherDetails SearchUser)
         {
             if (string.IsNullOrWhiteSpace(SearchUser.Username) &&
                 string.IsNullOrWhiteSpace(SearchUser.EmailId) &&

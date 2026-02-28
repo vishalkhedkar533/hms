@@ -7,6 +7,7 @@
         public string NewPassword { get; set; } = null!;
         public bool IsActive { get; set; }
         public bool IsLocked { get; set; }
+        public int? ReportingMgr { get; set; }
     }
     public class FetchUserDashboard
     {

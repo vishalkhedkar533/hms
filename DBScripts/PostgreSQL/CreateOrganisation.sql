@@ -96,12 +96,6 @@ VALUES
 (:p_orgid, 'TRAINING_GROUP', 4, 'Technical',        0, true);
 
 
---execute this at end, to grant administrator access to the new menu items
-insert into hms.role_menu_mapping (role_id,menu_id,is_visible,is_enabled,created_by,created_date,orgid)
-select 1, mm.menu_id,true,true ,'System', now(), :p_orgid
-from hms.menu_master mm
-where not exists (select 1 from hms.role_menu_mapping rmm  where mm.menu_id  = rmm.menu_id and rmm.role_id  = 1);
-
 INSERT INTO hmsmaster.keyvalueentries 
     (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
 VALUES 
@@ -160,6 +154,12 @@ VALUES (:p_orgid, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory
 
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
 VALUES (:p_orgid, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');
+
+--execute this at end, to grant administrator access to the new menu items
+insert into hms.role_menu_mapping (role_id,menu_id,is_visible,is_enabled,created_by,created_date,orgid)
+select 1, mm.menu_id,true,true ,'System', now(), :p_orgid
+from hms.menu_master mm
+where not exists (select 1 from hms.role_menu_mapping rmm  where mm.menu_id  = rmm.menu_id and rmm.role_id  = 1);
 
 
 /*

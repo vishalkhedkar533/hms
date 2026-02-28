@@ -28,6 +28,8 @@
         public const Int32 ApproveRejectAgentUpdateSR = 1022;
         public const Int32 FetchSRs = 1023;
         public const Int32 UpdateSRDecision = 1024;
+        public const Int32 ManagerUser = 1026;
+        public const Int32 ResetPassword = 1027;
 
     }
 }

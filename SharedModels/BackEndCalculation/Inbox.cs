@@ -5,6 +5,9 @@
         public int SrNo { get; set; }
         public int OrgId { get; set; }
         public int? ControlId { get; set; }
+        public int CreatedBy { get; set; }
+        public string? ApprovalEndpoint { get; set; }
+        public string? ApprovalPayload { get; set; }
     }
 
     public  class InboxFieldConfig

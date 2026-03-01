@@ -78,7 +78,7 @@
       },
       "UpdateChildBranchesByBranchId": {
         "Function": "na",
-        "Script": "UPDATE hmsmaster.channel_branch_heirarchy SET hierarchy_path = REPLACE(hierarchy_path::text,@p_oldParentPath,@p_newParentPath) ::ltree, modified_date = NOW(), modified_by = @p_modifiedBy WHERE hierarchy_path ~ CAST('*.' || @p_branchId || '.*' AS lquery OR branch_id  = @p_branchId )"
+        "Script": "UPDATE hmsmaster.channel_branch_heirarchy SET hierarchy_path = REPLACE(coalesce(hierarchy_path::text,@p_branchIdText),@p_oldParentPath,@p_newParentPath) ::ltree, modified_date = NOW(), modified_by = @p_modifiedBy WHERE hierarchy_path = @p_oldParentPath::ltree OR hierarchy_path < @p_oldParentPath::ltree or branch_id = @p_branchId"
       }
     },
     "Commission": {

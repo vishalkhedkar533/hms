@@ -600,3 +600,14 @@ ALTER TABLE hms."user"
 alter table hmsmaster.channel_branch_heirarchy add branch_id int8 references hmsmaster.branch_master(branch_id);
 
 CREATE UNIQUE INDEX idx_unique_ch_br_hier ON  hmsmaster.channel_branch_heirarchy(orgId,channel_id,sub_channel_id,branch_id );
+
+
+-- 2. Alter the columns with an explicit type cast and add the foreign key
+ALTER TABLE hmsmaster.channel_branch_heirarchy
+    ALTER COLUMN created_by TYPE int4 USING (created_by::int4),
+    ALTER COLUMN modified_by TYPE int4 USING (modified_by::int4);
+
+-- 3. Add the Foreign Key constraints
+ALTER TABLE hmsmaster.channel_branch_heirarchy
+    ADD CONSTRAINT fk_location_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id),
+    ADD CONSTRAINT fk_location_modified_by FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id);

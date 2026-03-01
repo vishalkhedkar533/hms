@@ -886,8 +886,7 @@ namespace HMS.Controllers
         {
             var response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-            var loggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0";
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            var loggedInUserId = int.Parse( _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
 
             try
             {
@@ -925,14 +924,14 @@ namespace HMS.Controllers
                 {
                     branch = _mapper.Map<BranchMaster>(branchMasterDto);
                     branch.OrgId = orgId;
-                    branch.CreatedBy = int.Parse(loggedInUserId);
+                    branch.CreatedBy = loggedInUserId;
                     branch.CreatedDate = DateTime.UtcNow;
                     _context.BranchMaster.Add(branch);
                 }
                 else
                 {
                     _mapper.Map(branchMasterDto, branch);
-                    branch.ModifiedBy = int.Parse(loggedInUserId);
+                    branch.ModifiedBy = loggedInUserId;
                     branch.ModifiedDate = DateTime.UtcNow;
                     branch.CreatedDate = DateTime.SpecifyKind(branch.CreatedDate, DateTimeKind.Utc);
                     _context.BranchMaster.Update(branch);
@@ -962,32 +961,35 @@ namespace HMS.Controllers
                         p_subChannelId = SubChannelId
                     });
 
-                if (existingHierarchy == null)
+                if (existingHierarchy == null || existingHierarchy.Count() == 0)
                 {
-                    var newHierarchy = new ChannelBranchHeirarchy
+                    var newHierarchyDto = new ChannelBranchHierarchyDto
                     {
                         OrgId = orgId,
                         ChannelId = ChannelId,
                         SubChannelId = SubChannelId,
-                        CreatedBy = loggedInUserId,
-                        CreatedDate = DateTime.UtcNow,
-                        EffectiveFromDate = DateTime.UtcNow.Date,
-                        HierarchyPath = null
+                        BranchId = branch.BranchId,
+                        EffectiveFromDate = DateTime.UtcNow.Date
+                        // HierarchyPath is null, so we don't set it (AutoMapper will ignore it or set default)
                     };
+                    var newHierarchy = _mapper.Map<ChannelBranchHeirarchy>(newHierarchyDto);
+                    newHierarchy.CreatedBy = loggedInUserId;
+                    newHierarchy.CreatedDate = DateTime.UtcNow;
                     _context.ChannelBranchHeirarchies.Add(newHierarchy);
                     await _context.SaveChangesAsync();
                 }
+
                 await _db.ExecuteQueryAsync<int>(
                     "Master",
                     "UpdateChildBranchesByBranchId",
                     new
                     {
                         p_oldParentPath = $"{existingHierarchy.FirstOrDefault()?.HierarchyPath ?? string.Empty}",
-                        p_newParentPath = $"{parentResult.FirstOrDefault()?.HierarchyPath ?? string.Empty}.{branch.BranchId}",
+                        p_newParentPath = string.IsNullOrEmpty(parentResult.FirstOrDefault()?.HierarchyPath) ? branch.BranchId.ToString() : $"{parentResult.FirstOrDefault()?.HierarchyPath ?? string.Empty}.{branch.BranchId}",
                         p_branchId = branch.BranchId,
+                        p_branchIdText = branch.BranchId.ToString(),
                         p_modifiedBy = loggedInUserId
                     });
-                await transaction.CommitAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "Branch and Hierarchy saved successfully.";
@@ -1001,7 +1003,6 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error during Branch and Hierarchy save.");
                 return StatusCode(500, ex.Message);
             }

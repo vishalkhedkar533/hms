@@ -37,7 +37,7 @@ namespace HMS.Controllers
             HmsResponse response = new HmsResponse();
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             // 1. Check for existing users using the DTO properties
-            if (await _context.Users.AnyAsync(u => u.Username == userDto.Username && u.OrgId == orgId))
+            if (await _context.Users.AsNoTracking().AnyAsync(u => u.Username == userDto.Username && u.OrgId == orgId))
             {
                 response.responseHeader = new HmsSResponseHeader();
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -45,11 +45,21 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
 
-            if (await _context.Users.AnyAsync(u => u.EmailId == userDto.EmailId && u.OrgId == orgId))
+            if (await _context.Users.AsNoTracking().AnyAsync(u => u.EmailId == userDto.EmailId && u.OrgId == orgId))
             {
                 response.responseHeader = new HmsSResponseHeader();
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Email ID already exists.";
+                return Conflict(response);
+            }
+
+            var reportingManager = await _context.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
+            if (reportingManager == null)
+            {
+                response.responseHeader = new HmsSResponseHeader();
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
                 return Conflict(response);
             }
 
@@ -58,6 +68,7 @@ namespace HMS.Controllers
             var user = _mapper.Map<User>(userDto);
             user.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
             user.OrgId = orgId;
+            user.ReportingMgr = reportingManager.UserId;
 
             // 3. Handle Password Hashing (Logic usually stays in Service or Controller)
             user.Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password);
@@ -109,9 +120,20 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
 
+            var reportingManager = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
+            if (reportingManager == null)
+            {
+                response.responseHeader = new HmsSResponseHeader();
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
+                return Conflict(response);
+            }
             // 3. Map updated values from DTO to the existing Entity
             // AutoMapper will use the Condition(s) we set up previously to only update non-null fields
             _mapper.Map(userDto, existingUser);
+            
+            // Update Reporting Manager
+            existingUser.ReportingMgr = reportingManager.UserId;
 
             // 4. Update audit fields
             existingUser.ModifiedBy = currentUserId; // Or handle as int if your Model requires it

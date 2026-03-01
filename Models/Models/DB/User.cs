@@ -90,7 +90,8 @@ namespace Models.DB
         public string EmailId { get; set; } = null!;
         public string Password { get; set; } = null!;
         public string? MobileNumber { get; set; }
-        public int? ReportingMgr { get; set; }
+        public string? ReportingMgrName { get; set; }
+        public string? ReportingMgrId { get; set; }
     }
 
     public class UserOtherDetails
@@ -118,7 +119,8 @@ namespace Models.DB
 
         public DateTime? LockoutEndTime { get; set; }
 
-        public int? ReportingMgr { get; set; }
+        public int? ReportingMgrId { get; set; }
+        public string? ReportingMgrName { get; set; }
 
         public string? OrgName { get; set; }
 
@@ -139,7 +141,7 @@ namespace Models.DB
                 .ForMember(dest => dest.EmailId, opt => opt.MapFrom(src => src.EmailId))
                 .ForMember(dest => dest.Password, opt => opt.MapFrom(src => src.Password))
                 .ForMember(dest => dest.MobileNumber, opt => opt.MapFrom(src => src.MobileNumber))
-                .ForMember(dest => dest.ReportingMgr, opt => opt.MapFrom(src => src.ReportingMgr))
+                .ForMember(dest => dest.ReportingMgr, opt => opt.MapFrom(src => src.ReportingMgrId))
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
                 .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => false))
                 .ForMember(dest => dest.CreatedDate, opt => opt.MapFrom(src => DateTime.UtcNow))
@@ -157,7 +159,7 @@ namespace Models.DB
                 .ForMember(dest => dest.SubscriberId, opt => opt.Ignore())
                 .ForMember(dest => dest.SubscriberName, opt => opt.Ignore())
                 .ForMember(dest => dest.Manager, opt => opt.Ignore())
-                .ForMember(dest => dest.UserId, opt => opt.Ignore());
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())                ;
 
             // 2. Mapping for UserOtherDetails (Updates)
             CreateMap<UserOtherDetails, User>()
@@ -178,7 +180,7 @@ namespace Models.DB
                 })
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
                 .ForMember(dest => dest.IsLocked, opt => opt.MapFrom(src => src.IsLocked))
-                .ForMember(dest => dest.ReportingMgr, opt => opt.MapFrom(src => src.ReportingMgr))
+                .ForMember(dest => dest.ReportingMgr, opt => opt.MapFrom(src => src.ReportingMgrId))
                 .ForMember(dest => dest.OrgId, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
                 .ForMember(dest => dest.Password, opt => opt.Ignore())
@@ -190,7 +192,10 @@ namespace Models.DB
                 .ForMember(dest => dest.RowVersion, opt => opt.Ignore());
             // 3. Mapping for reading User (Entity -> DTO)
             CreateMap<User, UserOtherDetails>()
-                .ForMember(dest => dest.LastLoggedInOn, opt => opt.Ignore());
+                .ForMember(dest => dest.LastLoggedInOn, opt => opt.Ignore())
+                .ForMember(dest => dest.ReportingMgrId, opt => opt.MapFrom(src =>  src.ReportingMgr))
+                .ForMember(dest => dest.ReportingMgrName, opt => opt.Ignore())
+                ;
         }
         /*
          * ==========================================

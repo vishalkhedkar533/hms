@@ -9,7 +9,11 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using SharedModels.BackEndCalculation;
 using System.Security.Claims;
+using ChannelMaster = Models.DB.ChannelMaster;
+using DesignationMaster = Models.DB.DesignationMaster;
+using MasterTable = Models.DTO.MasterTable;
 
 namespace HMS.Controllers
 {
@@ -187,9 +191,9 @@ namespace HMS.Controllers
             try
             {
                 // Use provided OrgId from DTO. If you want to pull from claims, adapt here.
-                var channelMaster = _context.ChannelMaster.AsNoTracking().Where(x => x.OrgId == orgId && 
-                x.ChannelId == ( dto.ChannelId == null ? x.ChannelId : dto.ChannelId) &&
-                x.ChannelCode == (dto.ChannelCode ==  null ? x.ChannelCode : dto.ChannelCode)).ToList();
+                var channelMaster = _context.ChannelMaster.AsNoTracking().Where(x => x.OrgId == orgId &&
+                x.ChannelId == (dto.ChannelId == null ? x.ChannelId : dto.ChannelId) &&
+                x.ChannelCode == (dto.ChannelCode == null ? x.ChannelCode : dto.ChannelCode)).ToList();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "Fetched Channel List";
                 response.responseBody.channels = channelMaster;
@@ -213,7 +217,7 @@ namespace HMS.Controllers
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-            if (_context.ChannelMaster.Any(x=>x.OrgId == orgId && x.ChannelCode == dto.ChannelCode))
+            if (_context.ChannelMaster.Any(x => x.OrgId == orgId && x.ChannelCode == dto.ChannelCode))
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "A channel with the same code already exists.";
@@ -333,7 +337,7 @@ namespace HMS.Controllers
             try
             {
                 orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-                var IsChannelValid = _context.ChannelMaster.AsNoTracking().Any(x => x.ChannelId == SubChannelMaster.ChannelId 
+                var IsChannelValid = _context.ChannelMaster.AsNoTracking().Any(x => x.ChannelId == SubChannelMaster.ChannelId
                 && x.OrgId == orgId);
 
                 if (!IsChannelValid)
@@ -341,16 +345,16 @@ namespace HMS.Controllers
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "No Channel Found";
                     return NotFound(response);
-                }         
+                }
 
                 var subChannels = _context.SubchannelMaster.AsNoTracking().
                     Where(x => x.ChannelId == SubChannelMaster.ChannelId && x.OrgId == orgId
-                    && x.SubChannelId == (SubChannelMaster.SubChannelId == null ? x.SubChannelId :  SubChannelMaster.SubChannelId)
-                    && x.SubChannelCode == (SubChannelMaster.SubChannelCode == null ? x.SubChannelCode :  SubChannelMaster.SubChannelCode)
+                    && x.SubChannelId == (SubChannelMaster.SubChannelId == null ? x.SubChannelId : SubChannelMaster.SubChannelId)
+                    && x.SubChannelCode == (SubChannelMaster.SubChannelCode == null ? x.SubChannelCode : SubChannelMaster.SubChannelCode)
                     ).
                     ToList();
 
-                if (subChannels == null || subChannels.Count  ==0 )
+                if (subChannels == null || subChannels.Count == 0)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
                     response.responseHeader.ErrorMessage = "No SubChannel Found";
@@ -393,7 +397,7 @@ namespace HMS.Controllers
 
                 var Channel = await _context.ChannelMaster.AsNoTracking().
                     FirstOrDefaultAsync(x => x.ChannelId == ChannelId && x.OrgId == orgId);
-                
+
                 if (Channel == null)
                 {
                     response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -852,12 +856,12 @@ namespace HMS.Controllers
             }
 
             var locationList = _context.LocationMasters.AsNoTracking().Where(x =>
-                x.OrgId == orgId 
-                && x.ChannelId == locationMaster.ChannelId 
-                && x.SubChannelId == locationMaster.SubChannelId 
-                && x.LocationCode == (string.IsNullOrEmpty(locationMaster.LocationCode)? x.LocationCode : locationMaster.LocationCode)
+                x.OrgId == orgId
+                && x.ChannelId == locationMaster.ChannelId
+                && x.SubChannelId == locationMaster.SubChannelId
+                && x.LocationCode == (string.IsNullOrEmpty(locationMaster.LocationCode) ? x.LocationCode : locationMaster.LocationCode)
                 && x.LocationMasterId == (locationMaster.LocationMasterId ?? x.LocationMasterId)
-                ).OrderByDescending( y =>  y.LocationCode).ThenBy(y => y.LocationDesc);
+                ).OrderByDescending(y => y.LocationCode).ThenBy(y => y.LocationDesc);
 
             if (locationList != null)
             {
@@ -954,7 +958,7 @@ namespace HMS.Controllers
                         ChannelId = ChannelId,
                         SubChannelId = SubChannelId,
                         CreatedBy = loggedInUserId,
-                        CreatedDate = DateTime.UtcNow, 
+                        CreatedDate = DateTime.UtcNow,
                         EffectiveFromDate = DateTime.UtcNow.Date,
                         HierarchyPath = null
                     };
@@ -1196,7 +1200,7 @@ namespace HMS.Controllers
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "Partner Branch Saved Successfully";
-                hmsResponse.responseBody.PartnerBranchHierarchies  = new List<PartnerBranchHeirarchy> { entity };
+                hmsResponse.responseBody.PartnerBranchHierarchies = new List<PartnerBranchHeirarchy> { entity };
                 return Ok(hmsResponse);
             }
             catch (Exception ex)
@@ -1275,6 +1279,69 @@ namespace HMS.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+        [HttpPost("{ChannelId}/{SubChannelId}/GetAgents")]
+        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        public async Task<IActionResult> GetAgents([FromRoute] long ChannelId,
+            [FromRoute] long SubChannelId, [FromBody] SearchAgent searchAgent)
+        {
+            var response = new HmsResponse();
+            var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+            try
+            {
+                if (!await _context.ChannelMaster.AsNoTracking()
+                    .AnyAsync(x => x.ChannelId == ChannelId && x.OrgId == orgId))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid Channel ID";
+                    return Conflict(response);
+                }
 
+                if (!await _context.SubchannelMaster.AsNoTracking()
+                    .AnyAsync(x => x.ChannelId == ChannelId && x.SubChannelId == SubChannelId && x.OrgId == orgId))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid SubChannel ID";
+                    return Conflict(response);
+                }
+
+                var agentsQuery = _context.agent.AsQueryable();
+
+                if (!string.IsNullOrEmpty(searchAgent.SearchCondition))
+                    agentsQuery = agentsQuery.Where(x => x.Channel == ChannelId && x.SubChannel == SubChannelId && x.OrgId == orgId
+                    && (x.IrdaLicenseNumber == searchAgent.SearchCondition
+                    || x.PanNumber == searchAgent.SearchCondition
+                    || x.AgentCode == searchAgent.SearchCondition
+                    || x.AgentName.Contains(searchAgent.SearchCondition)
+                    || x.MobileNo == searchAgent.SearchCondition
+                    || x.Email == searchAgent.SearchCondition
+                    || x.GstNumber == searchAgent.SearchCondition));
+
+                var agents = await agentsQuery.ToListAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Agents fetched successfully.";
+                response.responseBody.agents = new List<AgentDto>();
+                foreach (var agent in agents)
+                {
+                    response.responseBody.agents.Add(new AgentDto
+                    {
+                        AgentId = agent.AgentId,
+                        AgentCode = agent.AgentCode,
+                        AgentName = agent.AgentName,
+                        IrdaLicenseNumber = agent.IrdaLicenseNumber,
+                        MobileNo = agent.MobileNo,
+                        Email = agent.Email,
+                        GstNumber = agent.GstNumber
+                    });
+                }
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+
+        }
     }
 }

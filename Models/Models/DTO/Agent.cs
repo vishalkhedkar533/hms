@@ -1,4 +1,5 @@
 ﻿using Models.DB;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DTO
 {
@@ -190,6 +191,8 @@ namespace Models.DTO
         public string? SortColumn { get; set; }
         public string? SortDirection { get; set; }
         public bool FetchHierarchy { get; set; } = false;
+        public int? ChannelId { get; set; }
+        public int? SubChannelId { get; set; }
     }
     public class AgentDtoResponse
     {

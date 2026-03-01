@@ -161,6 +161,10 @@ namespace HMS.Data
                 .Property(e => e.HierarchyPath)
                 .HasColumnType("ltree");
 
+            modelBuilder.Entity<ChannelBranchHeirarchy>()
+                .Property(e => e.HierarchyPath)
+                .HasColumnType("ltree");
+
             modelBuilder.HasDefaultSchema("hms");
         }
     }

@@ -1,4 +1,4 @@
-﻿using System;
+﻿using AutoMapper;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -8,10 +8,8 @@ namespace Models.DB
     public class ChannelBranchHeirarchy
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("channel_location_heirarchy_id")]
         public long ChannelLocationHeirarchyId { get; set; }
-
         [Column("orgid")]
         public int? OrgId { get; set; }
 
@@ -22,22 +20,20 @@ namespace Models.DB
         [Column("sub_channel_id")]
         public long? SubChannelId { get; set; }
 
-        // Note: ltree is treated as a string in C# but mapped to ltree type in Postgres
-        [Column("hierarchy_path", TypeName = "ltree")]
+        // ltree is typically mapped to string in C#
+        [Column("hierarchy_path")]
         public string? HierarchyPath { get; set; }
 
         [Required]
-        [MaxLength(100)]
         [Column("created_by")]
-        public string CreatedBy { get; set; } = string.Empty;
+        public int CreatedBy { get; set; }
 
         [Required]
         [Column("created_date")]
         public DateTime CreatedDate { get; set; }
 
-        [MaxLength(100)]
         [Column("modified_by")]
-        public string? ModifiedBy { get; set; }
+        public int? ModifiedBy { get; set; }
 
         [Column("modified_date")]
         public DateTime? ModifiedDate { get; set; }
@@ -49,11 +45,48 @@ namespace Models.DB
         [Column("effective_to_date")]
         public DateTime? EffectiveToDate { get; set; }
 
-        // Navigation Properties
-        [ForeignKey("ChannelId")]
-        public virtual ChannelMaster? Channel { get; set; }
+        [Column("branch_id")]
+        public long? BranchId { get; set; }
+    }
+    public class ChannelBranchHierarchyDto
+    {
+        public long? ChannelLocationHierarchyId { get; set; }
 
-        [ForeignKey("SubChannelId")]
-        public virtual SubChannelMaster? SubChannel { get; set; }
+        public int? OrgId { get; set; }
+
+        public long? ChannelId { get; set; }
+
+        public long? SubChannelId { get; set; }
+
+        public string? HierarchyPath { get; set; }
+
+        public DateTime? EffectiveFromDate { get; set; }
+
+        public DateTime? EffectiveToDate { get; set; }
+
+        public long? BranchId { get; set; }
+    }
+    public class ChannelBranchHierarchyProfile : Profile
+    {
+        public ChannelBranchHierarchyProfile()
+        {
+            // CreateMap<Source, Destination>
+            CreateMap<ChannelBranchHeirarchy, ChannelBranchHierarchyDto>()
+                // The fields below exist in the Entity but not in the DTO, so we ignore them.
+                .ForMember(dest => dest.ChannelLocationHierarchyId, opt => opt.MapFrom(src => src.ChannelLocationHeirarchyId))
+                .ForMember(dest => dest.OrgId, opt => opt.MapFrom(src => src.OrgId))
+                .ForMember(dest => dest.ChannelId, opt => opt.MapFrom(src => src.ChannelId))
+                .ForMember(dest => dest.SubChannelId, opt => opt.MapFrom(src => src.SubChannelId))
+                .ForMember(dest => dest.HierarchyPath, opt => opt.MapFrom(src => src.HierarchyPath))
+                .ForMember(dest => dest.EffectiveFromDate, opt => opt.MapFrom(src => src.EffectiveFromDate))
+                .ForMember(dest => dest.EffectiveToDate, opt => opt.MapFrom(src => src.EffectiveToDate))
+                .ForMember(dest => dest.BranchId, opt => opt.MapFrom(src => src.BranchId))
+                // Explicitly ignoring fields that don't exist in the DTO if you do a ReverseMap
+                .ReverseMap()
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore());
+        }
     }
 }

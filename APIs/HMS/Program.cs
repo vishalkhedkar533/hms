@@ -55,6 +55,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<SrApproverProfile>();
     cfg.AddProfile<PartnerBranchHierarchyProfile>();
     cfg.AddProfile<UserProfile>();
+    cfg.AddProfile<ChannelBranchHierarchyProfile>();
 });
 
 // ----------------------------

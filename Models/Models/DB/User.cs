@@ -96,6 +96,7 @@ namespace Models.DB
 
     public class UserOtherDetails
     {
+        public int? UserId { get; set; }
         [StringLength(100)]
         public string Username { get; set; } = null!;
 

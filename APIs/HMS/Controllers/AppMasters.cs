@@ -891,17 +891,34 @@ namespace HMS.Controllers
 
             try
             {
-                //var location = await _context.LocationMasters.AsNoTracking().FirstOrDefaultAsync(x =>
-                //    x.OrgId == orgId && x.LocationMasterId == LocationId);
+                if (!(await _context.ChannelMaster.AsNoTracking().AnyAsync(x =>
+                x.ChannelId == ChannelId && x.OrgId == orgId)))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid ChannelId for the given Organisation.";
+                    return Conflict(response);
+                }
 
-                //if (location == null || location.ChannelId != ChannelId || location.SubChannelId != SubChannelId)
-                //{
-                //    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                //    response.responseHeader.ErrorMessage = "Verify the channel, subchannel, and location mapping.";
-                //    return Conflict(response);
-                //}
+                if (!(await _context.SubchannelMaster.AsNoTracking().AnyAsync(x =>
+                x.ChannelId == ChannelId && x.SubChannelId == SubChannelId && x.OrgId == orgId)))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid SubChannelId for the given Organisation.";
+                    return Conflict(response);
+                }
+
+                if (!(await _context.LocationMasters.AsNoTracking().AnyAsync(x =>
+                x.ChannelId == ChannelId && x.SubChannelId == SubChannelId && x.OrgId == orgId
+                && x.LocationMasterId == branchMasterDto.LocationMasterId)))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid LocationMasterId for the given Channel and SubChannel.";
+                    return Conflict(response);
+                }
                 var branch = await _context.BranchMaster.FirstOrDefaultAsync(x =>
-                    x.BranchId == branchMasterDto.BranchId && x.OrgId == orgId);
+                    x.BranchCode == branchMasterDto.BranchCode
+                    && x.LocationMasterId == branchMasterDto.LocationMasterId
+                    && x.OrgId == orgId);
 
                 bool isNewBranch = branch == null;
                 if (isNewBranch)
@@ -934,10 +951,7 @@ namespace HMS.Controllers
                         p_subChannelId = SubChannelId
                     });
 
-                string parentPath = parentResult.FirstOrDefault()?.HierarchyPath ?? string.Empty;
-                string newPath = string.IsNullOrEmpty(parentPath) ? branch.BranchId.ToString() : $"{parentPath}.{branch.BranchId}";
-
-                var existingHierResult = await _db.ExecuteQueryAsync<ChannelBranchHeirarchy>(
+                var existingHierarchy = await _db.ExecuteQueryAsync<ChannelBranchHeirarchy>(
                     "Master",
                     "GetBranchHierarchyByBranchId",
                     new
@@ -947,8 +961,6 @@ namespace HMS.Controllers
                         p_channelId = ChannelId,
                         p_subChannelId = SubChannelId
                     });
-
-                var existingHierarchy = existingHierResult.FirstOrDefault();
 
                 if (existingHierarchy == null)
                 {
@@ -964,29 +976,17 @@ namespace HMS.Controllers
                     };
                     _context.ChannelBranchHeirarchies.Add(newHierarchy);
                     await _context.SaveChangesAsync();
-
-                    await _db.ExecuteQueryAsync<int>(
-                        "Master",
-                        "UpdateChannelBranchHierarchyPath",
-                        new
-                        {
-                            p_path = newPath,
-                            p_id = newHierarchy.ChannelLocationHeirarchyId,
-                            p_modifiedBy = loggedInUserId
-                        });
                 }
-                else
-                {
-                    await _db.ExecuteQueryAsync<int>(
-                        "Master",
-                        "UpdateChannelBranchHierarchyPath",
-                        new
-                        {
-                            p_path = newPath,
-                            p_id = existingHierarchy.ChannelLocationHeirarchyId,
-                            p_modifiedBy = loggedInUserId
-                        });
-                }
+                await _db.ExecuteQueryAsync<int>(
+                    "Master",
+                    "UpdateChildBranchesByBranchId",
+                    new
+                    {
+                        p_oldParentPath = $"{existingHierarchy.FirstOrDefault()?.HierarchyPath ?? string.Empty}",
+                        p_newParentPath = $"{parentResult.FirstOrDefault()?.HierarchyPath ?? string.Empty}.{branch.BranchId}",
+                        p_branchId = branch.BranchId,
+                        p_modifiedBy = loggedInUserId
+                    });
                 await transaction.CommitAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;

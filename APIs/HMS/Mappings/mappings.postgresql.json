@@ -74,11 +74,11 @@
       },
       "GetBranchHierarchyByBranchId": {
         "Function": "na",
-        "Script": "SELECT channel_location_heirarchy_id ChannelLocationHeirarchyId, hierarchy_path HierarchyPath,channel_id ChannelId, sub_channel_id SubChannelId FROM hmsmaster.channel_branch_heirarchy WHERE hierarchy_path ~ CAST('*.' || @p_branchId AS lquery) AND orgid = @p_orgId AND channel_id = @p_channelId AND sub_channel_id = @p_subChannelId"
+        "Script": "SELECT channel_location_heirarchy_id ChannelLocationHeirarchyId, hierarchy_path HierarchyPath,channel_id ChannelId, sub_channel_id SubChannelId FROM hmsmaster.channel_branch_heirarchy WHERE branch_id = @p_branchId AND orgid = @p_orgId AND channel_id = @p_channelId AND sub_channel_id = @p_subChannelId"
       },
-      "UpdateChannelBranchHierarchyPath": {
+      "UpdateChildBranchesByBranchId": {
         "Function": "na",
-        "Script": "UPDATE hmsmaster.channel_branch_heirarchy SET hierarchy_path = @p_path::ltree, modified_date = NOW(), modified_by = @p_modifiedBy WHERE channel_location_heirarchy_id = @p_id"
+        "Script": "UPDATE hmsmaster.channel_branch_heirarchy SET hierarchy_path = REPLACE(hierarchy_path::text,@p_oldParentPath,@p_newParentPath) ::ltree, modified_date = NOW(), modified_by = @p_modifiedBy WHERE hierarchy_path ~ CAST('*.' || @p_branchId || '.*' AS lquery OR branch_id  = @p_branchId )"
       }
     },
     "Commission": {

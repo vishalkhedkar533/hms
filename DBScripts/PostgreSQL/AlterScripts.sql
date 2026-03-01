@@ -597,5 +597,6 @@ ALTER TABLE hms."user"
     ADD CONSTRAINT fk_location_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id),
     ADD CONSTRAINT fk_location_modified_by FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id);
 
+alter table hmsmaster.channel_branch_heirarchy add branch_id int8 references hmsmaster.branch_master(branch_id);
 
-approvalendpoint + approvalpayload
+CREATE UNIQUE INDEX idx_unique_ch_br_hier ON  hmsmaster.channel_branch_heirarchy(orgId,channel_id,sub_channel_id,branch_id );

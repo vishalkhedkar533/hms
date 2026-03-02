@@ -264,12 +264,37 @@ namespace HMS.Controllers
                 return BadRequest(hmsResponse);
             }
 
-            var user = await _context.Users.AsNoTracking()
+            var user = await _context.Users
+                .AsNoTracking()
                 .Where(u =>
                     (SearchUser.Username != null && u.Username == SearchUser.Username) ||
                     (SearchUser.EmailId != null && u.EmailId == SearchUser.EmailId) ||
                     (SearchUser.MobileNumber != null && u.MobileNumber == SearchUser.MobileNumber))
-                .ProjectTo<UserOtherDetails>(_mapper.ConfigurationProvider)
+                // Manual Join to enforce the 'orgid = 2' condition
+                .GroupJoin(_context.Users.Where(r => r.OrgId == 2),
+                    u => u.ReportingMgr,
+                    r => r.UserId,
+                    (u, managers) => new { u, managers })
+                .SelectMany(x => x.managers.DefaultIfEmpty(), (x, manager) => new { x.u, manager })
+                .Select(combined => new UserOtherDetails
+                {
+                    UserId = combined.u.UserId,
+                    Username = combined.u.Username,
+                    EmailId = combined.u.EmailId,
+                    MobileNumber = combined.u.MobileNumber,
+                    IsActive = combined.u.IsActive,
+                    IsLocked = combined.u.IsLocked,
+                    LastLoggedInOn = combined.u.LastLoginDate,
+                    PasswordChangedDate = combined.u.PasswordChangedDate,
+                    FailedLoginAttempts = combined.u.failedloginattempts,
+                    LockoutEndTime = combined.u.lockoutendtime,
+                    ReportingMgrId = combined.u.ReportingMgr,
+                    // The join result:
+                    ReportingMgrName = combined.manager != null ? combined.manager.Username : null,
+                    OrgName = combined.u.OrgName,
+                    SubscriberId = combined.u.SubscriberId,
+                    SubscriberName = combined.u.SubscriberName
+                })
                 .FirstOrDefaultAsync();
 
             if (user == null)
@@ -287,6 +312,7 @@ namespace HMS.Controllers
                 ErrorCode = CommonConstants.SUCCESS,
                 ErrorMessage = "User details retrieved successfully."
             };
+            user.ReportingMgrName = await _context.Users.AsNoTracking().Where(u => u.UserId == user.ReportingMgrId).Select(u => u.Username).FirstOrDefaultAsync();
             hmsResponse.responseBody.UserOtherDetails = new List<UserOtherDetails> { user };
             return Ok(hmsResponse);
         }

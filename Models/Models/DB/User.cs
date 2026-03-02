@@ -192,31 +192,15 @@ namespace Models.DB
                 .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.RowVersion, opt => opt.Ignore());
             // 3. Mapping for reading User (Entity -> DTO)
+            // Update your existing mapping
             CreateMap<User, UserOtherDetails>()
-                .ForMember(dest => dest.LastLoggedInOn, opt => opt.Ignore())
-                .ForMember(dest => dest.ReportingMgrId, opt => opt.MapFrom(src =>  src.ReportingMgr))
-                .ForMember(dest => dest.ReportingMgrName, opt => opt.Ignore())
-                ;
+                .ForMember(dest => dest.LastLoggedInOn, opt => opt.MapFrom(src => src.LastLoginDate))
+                .ForMember(dest => dest.ReportingMgrId, opt => opt.MapFrom(src => src.ReportingMgr))
+                .ForMember(dest => dest.ReportingMgrName, opt => opt.Ignore()) // Ignored because we handle it in the join
+                .ForMember(dest => dest.FailedLoginAttempts, opt => opt.MapFrom(src => src.failedloginattempts))
+                .ForMember(dest => dest.LockoutEndTime, opt => opt.MapFrom(src => src.lockoutendtime));
         }
-        /*
-         * ==========================================
-UserOtherDetails -> User (Destination member list)
-Models.DB.UserOtherDetails -> Models.DB.User (Destination member list)
 
-Unmapped properties:
-LastLoginDate
-CreatedBy
-CreatedDate
-ModifiedBy
-ModifiedDate
-RowVersion
-=============================================
-User -> UserOtherDetails (Destination member list)
-Models.DB.User -> Models.DB.UserOtherDetails (Destination member list)
-
-Unmapped properties:
-LastLoggedInOn
-         */
     }
     public class SearchUser
     {

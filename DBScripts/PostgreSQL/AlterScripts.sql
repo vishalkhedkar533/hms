@@ -614,3 +614,18 @@ ALTER TABLE hmsmaster.channel_branch_heirarchy
 
 
 alter table hms.sr_approver add column decision_comment varchar(4000);
+
+ALTER TABLE hms.inbox 
+DROP CONSTRAINT IF EXISTS inbox_cntrl_id_fkey;
+
+ALTER TABLE hms.inbox 
+DROP COLUMN IF EXISTS cntrl_id;
+
+ALTER TABLE hms.inbox 
+ADD COLUMN component_id INT4 
+REFERENCES hmsmaster.ui_components(component_id);
+
+UPDATE hms.inbox SET component_id = 135;
+
+ALTER TABLE hms.inbox 
+ALTER COLUMN component_id SET NOT NULL;

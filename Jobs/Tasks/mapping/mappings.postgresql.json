@@ -71,6 +71,10 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT uc.component_id AS ComponentId, uc.\"label\" AS Label, uc.elementtype AS ElementType, uf.cntrl_id AS ControlId, uf.cntrl_name AS ControlName, ufs.role_id AS RoleId, ufs.usedefaultapprover AS UseDefaultApprover, ufs.approveroneid AS ApproverOneId, ufs.approvertwoid AS ApproverTwoId, ufs.approverthreeid AS ApproverThreeId FROM hmsmaster.ui_components uc INNER JOIN hmsmaster.ui_fields uf ON uc.component_id = uf.component_id INNER JOIN hmsmaster.ui_fields_setting ufs ON ufs.orgid = @orgId AND uf.cntrl_id = ufs.cntrl_id WHERE uf.cntrl_id = @cntrlId"
       },
+      "GetManagerHierarchyRoles": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT u.reporting_mgr AS RoleId, 1 AS Level\nFROM hms.\"user\" u\nWHERE u.user_id = @userId\n  AND u.orgid = @orgId\n  AND u.reporting_mgr IS NOT NULL"
+      },
       "InsertSrApprover": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId)"

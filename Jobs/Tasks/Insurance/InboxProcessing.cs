@@ -70,8 +70,8 @@ namespace Tasks.Insurance
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/InsertSrApprover not found.");
             var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/UpdateInboxStatus not found.");
-            //var managerRolesSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
-            //    ?? throw new InvalidOperationException("Operation mapping for Inbox/GetManagerHierarchyRoles not found.");
+            var managerRolesSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
+                ?? throw new InvalidOperationException("Operation mapping for Inbox/GetManagerHierarchyRoles not found.");
 
             var token = CancellationToken.None;
             foreach (var entry in entries)
@@ -100,7 +100,7 @@ namespace Tasks.Insurance
                 }
 
                 var approverRoles = config.UseDefaultApprover.Value
-                    ? await ResolveManagerHierarchyRolesAsync(conn, updateInboxSql, entry)
+                    ? await ResolveManagerHierarchyRolesAsync(conn, managerRolesSql, entry)
                     : ResolveCustomApproverRoles(config);
 
                 if (approverRoles.Count == 0)
@@ -281,15 +281,19 @@ namespace Tasks.Insurance
                 return new List<int>();
             }
 
-            var roles = await conn.QueryAsync<ManagerHierarchyRole>(
+            var managerId = (await conn.QueryAsync<ManagerHierarchyRole>(
                 managerRolesSql,
-                new { orgId = entry.OrgId, userId = entry.CreatedBy });
-
-            return roles
+                new { orgId = entry.OrgId, userId = entry.CreatedBy }))
                 .OrderBy(r => r.Level)
                 .Select(r => r.RoleId)
-                .Distinct()
-                .ToList();
+                .FirstOrDefault();
+
+            if (managerId == 0)
+            {
+                return new List<int>();
+            }
+
+            return new List<int> { managerId, managerId, managerId };
         }
 
         private static List<int> ResolveCustomApproverRoles(InboxFieldConfig config)

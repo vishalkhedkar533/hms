@@ -76,20 +76,20 @@ namespace Tasks.Insurance
             var token = CancellationToken.None;
             foreach (var entry in entries)
             {
-                if (entry.ControlId == null)
+                if (entry.ComponentId == null)
                 {
-                    _logger.LogWarning("Inbox entry SrNo={SrNo} missing ControlId; skipping.", entry.SrNo);
+                    _logger.LogWarning("Inbox entry SrNo={SrNo} missing ComponentId; skipping.", entry.SrNo);
                     continue;
                 }
 
                 var config = (await conn.QueryAsync<InboxFieldConfig>(
                     configSql,
-                    new { orgId = entry.OrgId, cntrlId = entry.ControlId },
+                    new { orgId = entry.OrgId, componentId = entry.ComponentId },
                     commandType: System.Data.CommandType.Text)).FirstOrDefault();
 
                 if (config == null)
                 {
-                    _logger.LogWarning("No field configuration found for OrgId={OrgId}, ControlId={ControlId}.", entry.OrgId, entry.ControlId);
+                    _logger.LogWarning("No field configuration found for OrgId={OrgId}, ComponentId={ComponentId}.", entry.OrgId, entry.ComponentId);
                     continue;
                 }
 
@@ -105,7 +105,7 @@ namespace Tasks.Insurance
 
                 if (approverRoles.Count == 0)
                 {
-                    _logger.LogWarning("No approver roles resolved for OrgId={OrgId}, ControlId={ControlId}, SrNo={SrNo}.", entry.OrgId, entry.ControlId, entry.SrNo);
+                    _logger.LogWarning("No approver roles resolved for OrgId={OrgId}, ComponentId={ComponentId}, SrNo={SrNo}.", entry.OrgId, entry.ComponentId, entry.SrNo);
                     continue;
                 }
 

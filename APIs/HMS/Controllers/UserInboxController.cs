@@ -112,6 +112,24 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
 
+            if (inboxDto.ComponentId == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Component Id is required.";
+                return BadRequest(response);
+            }
+
+            var isValidComponentId = await _context.uiComponent
+                .AsNoTracking()
+                .AnyAsync(component => component.ComponentId == inboxDto.ComponentId);
+
+            if (!isValidComponentId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Invalid Component Id.";
+                return BadRequest(response);
+            }
+
             try
             {
                 var inboxEntry = _mapper.Map<Inbox>(inboxDto);

@@ -1769,7 +1769,7 @@ namespace HMS.Controllers
                                         SrStatus = SrStatus.Created,
                                         RequestDets = $"{f.FieldName} updated",
                                         RequestorNote = $"Old Value: {ResolveDisplayValue(f.FieldName, f.OldValue)} | New Value: {ResolveDisplayValue(f.FieldName, f.NewValue)}",
-                                        ControlId = cntrlId,
+                                        ComponentId = cntrlId,
                                         AllocatedToRole = allocatedRole,
                                         ObjectName = $"Agent",
                                         ApprovalPayload = JsonConvert.SerializeObject(new

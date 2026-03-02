@@ -611,3 +611,6 @@ ALTER TABLE hmsmaster.channel_branch_heirarchy
 ALTER TABLE hmsmaster.channel_branch_heirarchy
     ADD CONSTRAINT fk_location_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id),
     ADD CONSTRAINT fk_location_modified_by FOREIGN KEY (modified_by) REFERENCES hms."user"(user_id);
+
+
+alter table hms.sr_approver add column decision_comment varchar(4000);

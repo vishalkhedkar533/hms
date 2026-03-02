@@ -2506,11 +2506,7 @@ create table hms.partner_branch_heirarchy
 
 
 
--- hmsmaster.ui_fields_setting definition
-
--- Drop table
-
--- DROP TABLE hmsmaster.ui_fields_setting;
+-- DROP TABLE hmsmaster.ui_approval_setting;
 
 CREATE TABLE hmsmaster.ui_approval_setting (
 	id serial4 NOT NULL,
@@ -2538,16 +2534,13 @@ CREATE TABLE hmsmaster.ui_approval_setting (
 );
 
 
--- hmsmaster.ui_fields_setting definition
+-- DROP TABLE hmsmaster.approval_setting;
 
--- Drop table
-
--- DROP TABLE hmsmaster.ui_fields_setting;
 
 CREATE TABLE hmsmaster.approval_setting (
 	id serial4 NOT NULL,
 	orgid int4 NOT NULL,
-	cntrl_id int4 NULL,
+	component_id int4 NULL,
 	approveroneid int4 NULL,
 	approvertwoid int4 NULL,
 	approverthreeid int4 NULL,
@@ -2561,7 +2554,7 @@ CREATE TABLE hmsmaster.approval_setting (
 	CONSTRAINT fk_approver_one FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),
 	CONSTRAINT fk_approver_three FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),
 	CONSTRAINT fk_approver_two FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),
-	CONSTRAINT fk_approval_setting_ctrl FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id),
+	CONSTRAINT fk_approval_setting_ctrl FOREIGN KEY (component_id) REFERENCES hmsmaster.ui_components(component_id),
 	CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE,
 	CONSTRAINT fk_modified_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE
 );

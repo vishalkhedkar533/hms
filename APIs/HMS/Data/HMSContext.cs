@@ -56,6 +56,7 @@ namespace HMS.Data
         public DbSet<Inbox> Inbox { get; set; }
         public DbSet<SrApprover> SrApprovers { get; set; }
         public DbSet<PartnerBranchHeirarchy> PartnerBranchHierarchies { get; set; }
+        public DbSet<ApprovalSetting> ApprovalSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

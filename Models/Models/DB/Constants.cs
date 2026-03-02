@@ -30,6 +30,7 @@
         public const Int32 UpdateSRDecision = 1024;
         public const Int32 ManagerUser = 1026;
         public const Int32 ResetPassword = 1027;
+        public const Int32 ManageOrganisationSetting = 1029;
 
     }
 }

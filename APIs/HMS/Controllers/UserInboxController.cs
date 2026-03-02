@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using CommonLibrary;
 using HMS.Caching;
 using HMS.Data;
@@ -11,15 +10,14 @@ using Models.DB;
 using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
-using System.Linq;
-using System.Net.Http.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
-using System.Security.AccessControl;
 using System.Security.Claims;
 
 namespace HMS.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     public class UserInboxController : Controller
     {
         private const string SrStatusEntryCategory = "SR_STATUS";
@@ -229,7 +227,6 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
-
 
         [HttpPost("UpdateSrDecision")]
         [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
@@ -519,6 +516,46 @@ namespace HMS.Controllers
                 return null;
             }
         }
+        [HttpPost("ApprovalSettings/Save")]
+        [MenuAuthorize(AuthorisationConstants.ManageOrganisationSetting)]
+        public async Task<IActionResult> SaveApprovalSetting([FromBody] ApprovalSettingDto dto)
+        {
+            // 1. Get User/Org Context from Claims (Replace with your actual Auth logic)
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
 
+            if (dto.Id.HasValue && dto.Id > 0)
+            {
+                // --- UPDATE LOGIC ---
+                var existingEntity = await _context.ApprovalSettings
+                    .FirstOrDefaultAsync(x => x.Id == dto.Id && x.OrgId == orgId);
+
+                if (existingEntity == null) return NotFound("Setting not found.");
+
+                // Map updated fields from DTO to Entity
+                _mapper.Map(dto, existingEntity);
+
+                // Audit fields
+                existingEntity.ModifiedBy = userId;
+                existingEntity.ModifiedDate = DateTime.UtcNow;
+
+                _context.ApprovalSettings.Update(existingEntity);
+            }
+            else
+            {
+                // --- CREATE LOGIC ---
+                var newEntity = _mapper.Map<ApprovalSetting>(dto);
+
+                // Set required fields that aren't in the DTO
+                newEntity.OrgId = orgId;
+                newEntity.CreatedBy = userId;
+                newEntity.CreatedDate = DateTime.UtcNow;
+
+                _context.ApprovalSettings.Add(newEntity);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok(new { message = "Approval setting saved successfully." });
+        }
     }
 }

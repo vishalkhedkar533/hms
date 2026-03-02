@@ -73,14 +73,11 @@ namespace Models.DB
         public long? BranchId { get; set; }
         public string? BranchCode { get; set; }
         public string? BranchName { get; set; }
-
         public string? Address { get; set; }
         public int? State { get; set; }
         public string? PhoneNumber { get; set; }
-
         [EmailAddress]
         public string? EmailId { get; set; }
-
         public bool IsActive { get; set; } = true;
         public long? LocationMasterId { get; set; }
         public long? ParentBranchId { get; set; } 

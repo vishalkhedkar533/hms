@@ -1,4 +1,5 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
+﻿using AutoMapper;
+using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -77,7 +78,27 @@ namespace Models.DB
         public string? CodeFormat { get; set; }
         public long? SubChannelId { get; set; }
     }
-
+    public class DesignationMasterProfile : Profile
+    {
+        public DesignationMasterProfile()
+        {
+            CreateMap<DesignationMaster, DesignationMasterDto>()
+                // Map Entity -> DTO
+                .ForMember(dest => dest.ParentDesignationId, opt => opt.Ignore()) // Requires custom logic
+                .ReverseMap()
+                // Map DTO -> Entity (Ignore System/Audit fields)
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.Rowversion, opt => opt.Ignore())
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+                .ForMember(dest => dest.HierarchyPath, opt => opt.Ignore())
+                // Ignore the property that doesn't exist on the entity
+                .ForMember(dest => dest.GetType().GetProperty("ParentDesignationId") == null ? null : (object)null, opt => opt.Ignore());
+            // Note: Use .ForPath if needed, or simply let it ignore if it's not on the entity
+        }
+    }
     public class DesignationNode
     {
         public long Id { get; set; }

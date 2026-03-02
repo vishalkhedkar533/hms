@@ -70,7 +70,7 @@
       },
       "UpdateDesignation": {
         "Function": "na",
-        "Script": "update hmsmaster.designation_master set hierarchy_path = @p_hierarchy_path ::ltree where orgid = @p_orgId and channel_id = @p_channelID and sub_channel_id = @p_subChannelId and designation_id = @p_designation"
+        "Script": "update hmsmaster.designation_master set hierarchy_path = REPLACE(coalesce(hierarchy_path::text,@p_designationIdText),@p_oldParentPath,@p_newParentPath)::ltree where orgid = @p_orgId and channel_id = @p_channelID and sub_channel_id = @p_subChannelId and (hierarchy_path = @p_oldParentPath::ltree OR hierarchy_path < @p_oldParentPath::ltree or designation_id = @p_designationId)"
       },
       "GetBranchHierarchyByBranchId": {
         "Function": "na",

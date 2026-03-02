@@ -9,11 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
-using SharedModels.BackEndCalculation;
 using System.Security.Claims;
-using ChannelMaster = Models.DB.ChannelMaster;
-using DesignationMaster = Models.DB.DesignationMaster;
-using MasterTable = Models.DTO.MasterTable;
 
 namespace HMS.Controllers
 {
@@ -511,8 +507,7 @@ namespace HMS.Controllers
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         [HttpPost("upsert/{ChannelId}/{SubChannelId}")]
         public async Task<IActionResult> UpsertDesignation([FromRoute] long ChannelId,
-    [FromRoute] long SubChannelId,
-    [FromBody] DesignationMasterDto designationMaster)
+            [FromRoute] long SubChannelId, [FromBody] DesignationMasterDto designationMaster)
         {
             var response = new HmsResponse();
             int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
@@ -536,7 +531,7 @@ namespace HMS.Controllers
             }
 
             _mapper.Map(designationMaster, designation);
-            var oldDesignationPath = string.Empty;
+            
             // 4. Manually apply fields the Profile Ignored or that are System-Specific
             if (isNew)
             {
@@ -545,13 +540,11 @@ namespace HMS.Controllers
             }
             else
             {
-                oldDesignationPath = designation.HierarchyPath ?? string.Empty;
                 designation.ModifiedBy = loggedInUserId;
                 designation.ModifiedDate = DateTime.UtcNow;
             }
 
             designation.OrgId = orgId;
-            designation.HierarchyPath = null; // Stored proc will handle this
 
             // 5. Save Changes
             if (isNew) _context.DesignationMaster.Add(designation);
@@ -560,24 +553,29 @@ namespace HMS.Controllers
             try
             {
                 await _context.SaveChangesAsync();
-
+                var oldDesignationPath = await _context.DesignationMaster.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.DesignationId == (designation.DesignationId)
+                    && x.ChannelId == designation.ChannelId
+                    && x.SubChannelId == designation.SubChannelId
+                    && x.OrgId == orgId);
                 // 6. Handle Hierarchy Logic (Calculated after getting the generated ID)
-
                 var parentDesignation = await _context.DesignationMaster.AsNoTracking()
                     .FirstOrDefaultAsync(x => x.DesignationId == (designationMaster.ParentDesignationId ?? -1000)
-                                           && x.OrgId == orgId);
+                    && x.ChannelId == designation.ChannelId
+                    && x.SubChannelId == designation.SubChannelId
+                    && x.OrgId == orgId);
                 // Call your Stored Procedure
                 await _db.ExecuteQueryAsync<string>("Master", "UpdateDesignation", new
                 {
+                    p_designationIdText = designation.DesignationId.ToString(),
+                    p_oldParentPath = oldDesignationPath.HierarchyPath,
+                    p_newParentPath = string.IsNullOrEmpty(parentDesignation?.HierarchyPath) ?
+                    designation.DesignationId.ToString() :
+                    $"{parentDesignation.HierarchyPath ?? string.Empty}.{designation.DesignationId}",
                     p_orgId = orgId,
                     p_channelID = designation.ChannelId,
                     p_subChannelId = designation.SubChannelId,
                     p_designationId = designation.DesignationId,
-                    p_designationIdText = designation.DesignationId.ToString(),
-                    p_oldParentPath = oldDesignationPath,
-                    p_newParentPath = string.IsNullOrEmpty(parentDesignation?.HierarchyPath) ? 
-                    designation.DesignationId.ToString() :
-                    $"{parentDesignation.HierarchyPath ?? string.Empty}.{designation.DesignationId}",
                 });
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;

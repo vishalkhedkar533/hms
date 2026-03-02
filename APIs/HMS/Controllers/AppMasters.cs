@@ -9,11 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
-using SharedModels.BackEndCalculation;
 using System.Security.Claims;
-using ChannelMaster = Models.DB.ChannelMaster;
-using DesignationMaster = Models.DB.DesignationMaster;
-using MasterTable = Models.DTO.MasterTable;
 
 namespace HMS.Controllers
 {
@@ -509,137 +505,88 @@ namespace HMS.Controllers
         }
         [HttpPost("{ChannelId}/{SubChannelId}/Designation/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        [HttpPost("upsert/{ChannelId}/{SubChannelId}")]
         public async Task<IActionResult> UpsertDesignation([FromRoute] long ChannelId,
-            [FromRoute] long SubChannelId,
-            [FromBody] DesignationMasterDto designationMaster)
+            [FromRoute] long SubChannelId, [FromBody] DesignationMasterDto designationMaster)
         {
-            HmsResponse response = new HmsResponse();
+            var response = new HmsResponse();
+            int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
 
-            if (designationMaster == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Request body is required.";
-                return Conflict(response);
-            }
+            // 1. Validation (Keep your existing validation logic)
+            if (designationMaster == null) return Conflict(new { error = "Body required" });
 
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-            var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
-
-            var channel = await _context.ChannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId
-                && x.OrgId == orgId);
-
-            var subChannel = await _context.SubchannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId
-                && x.OrgId == orgId
-                && x.ChannelId == designationMaster.ChannelId);
-
-            if (channel == null ||
-                subChannel == null ||
-                ChannelId != designationMaster.ChannelId ||
-                SubChannelId != designationMaster.SubChannelId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Verify the channel and subchannel belong to the organisation.";
-                return Conflict(response);
-            }
-
-            // 1. Try to find existing record
+            // 2. Try to find existing record
             var designation = await _context.DesignationMaster
                 .FirstOrDefaultAsync(x => x.DesignationCode == designationMaster.DesignationCode
-                && x.OrgId == orgId
-                && x.ChannelId == designationMaster.ChannelId
-                && x.SubChannelId == designationMaster.SubChannelId
-                );
-            bool isNew = designation == null;
+                                       && x.OrgId == orgId
+                                       && x.ChannelId == designationMaster.ChannelId
+                                       && x.SubChannelId == designationMaster.SubChannelId);
 
-            var parentDesignation = await _context.DesignationMaster.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.DesignationId == (designationMaster.ParentDesignationId ?? -1000)
-                && x.OrgId == orgId
-                && x.ChannelId == designationMaster.ChannelId
-                && x.SubChannelId == designationMaster.SubChannelId);
+            bool isNew = (designation == null);
 
             if (isNew)
             {
-                // Create new instance if not found
-                designation = new DesignationMaster
-                {
-                    CreatedBy = LoggedInUserId, // Usually taken from User.Identity in production
-                    CreatedDate = DateTime.UtcNow
-                };
+                designation = new DesignationMaster(); // Create new instance
+            }
+
+            _mapper.Map(designationMaster, designation);
+            
+            // 4. Manually apply fields the Profile Ignored or that are System-Specific
+            if (isNew)
+            {
+                designation.CreatedBy = loggedInUserId;
+                designation.CreatedDate = DateTime.UtcNow;
             }
             else
             {
-                designation.ModifiedBy = LoggedInUserId;
-                designation.ModifiedDate = DateTime.UtcNow; // Already UTC
-
-                // Safety check: If the existing CreatedDate was loaded as 'Unspecified', 
-                // force it to UTC so SaveChanges doesn't complain about it.
-                if (designation.CreatedDate.Kind == DateTimeKind.Unspecified)
-                {
-                    designation.CreatedDate = DateTime.SpecifyKind(designation.CreatedDate, DateTimeKind.Utc);
-                }
+                designation.ModifiedBy = loggedInUserId;
+                designation.ModifiedDate = DateTime.UtcNow;
             }
 
-            // 2. Map fields from DTO to Model
-            designation.DesignationCode = designationMaster.DesignationCode;
-            designation.DesignationName = designationMaster.DesignationName;
-            designation.DesignationLevel = designationMaster.DesignationLevel;
-            designation.IsActive = designationMaster.IsActive;
-            designation.ChannelId = designationMaster.ChannelId;
             designation.OrgId = orgId;
-            //ltree is not supported in EF Core, so we will handle HierarchyPath manually via a stored procedure after saving the record to get the generated DesignationId
-            designation.HierarchyPath = null;
-            designation.CodeFormat = designationMaster.CodeFormat;
-            designation.SubChannelId = designationMaster.SubChannelId;
 
-            if (isNew)
-            {
-                _context.DesignationMaster.Add(designation);
-            }
-            else
-            {
-                _context.DesignationMaster.Update(designation);
-            }
+            // 5. Save Changes
+            if (isNew) _context.DesignationMaster.Add(designation);
+            else _context.DesignationMaster.Update(designation);
 
             try
             {
                 await _context.SaveChangesAsync();
+                var oldDesignationPath = await _context.DesignationMaster.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.DesignationId == (designation.DesignationId)
+                    && x.ChannelId == designation.ChannelId
+                    && x.SubChannelId == designation.SubChannelId
+                    && x.OrgId == orgId);
+                // 6. Handle Hierarchy Logic (Calculated after getting the generated ID)
+                var parentDesignation = await _context.DesignationMaster.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.DesignationId == (designationMaster.ParentDesignationId ?? -1000)
+                    && x.ChannelId == designation.ChannelId
+                    && x.SubChannelId == designation.SubChannelId
+                    && x.OrgId == orgId);
+                // Call your Stored Procedure
+                await _db.ExecuteQueryAsync<string>("Master", "UpdateDesignation", new
+                {
+                    p_designationIdText = designation.DesignationId.ToString(),
+                    p_oldParentPath = oldDesignationPath.HierarchyPath,
+                    p_newParentPath = string.IsNullOrEmpty(parentDesignation?.HierarchyPath) ?
+                    designation.DesignationId.ToString() :
+                    $"{parentDesignation.HierarchyPath ?? string.Empty}.{designation.DesignationId}",
+                    p_orgId = orgId,
+                    p_channelID = designation.ChannelId,
+                    p_subChannelId = designation.SubChannelId,
+                    p_designationId = designation.DesignationId,
+                });
 
-                // SAFELY build hierarchy path as a string.
-                // Avoid using Enumerable.Concat which produces an iterator type when called on a non-string enumerable.
-                var parentPathStr = parentDesignation?.HierarchyPath?.ToString() ?? string.Empty;
-                // If parentPathStr is empty, the hierarchy path is just the current designation id.
-                string heirarchyPath = string.IsNullOrEmpty(parentPathStr)
-                    ? designation.DesignationId.ToString()
-                    : parentPathStr + "." + designation.DesignationId.ToString();
-
-                await _db.ExecuteQueryAsync<string>(
-                            "Master",
-                            "UpdateDesignation",
-                            new
-                            {
-                                p_hierarchy_path = heirarchyPath,
-                                p_orgId = orgId,
-                                p_channelID = designation.ChannelId,
-                                p_subChannelId = designation.SubChannelId,
-                                p_designation = designation.DesignationId
-                            });
-
-                // Update DTO with the generated ID if it was a new record
-                designationMaster.DesignationId = designation.DesignationId;
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = isNew ? "Designation created successfully." : "Designation updated successfully.";
-                response.responseBody.designations = new List<DesignationMaster>();
-                response.responseBody.designations.Add(designation);
+                response.responseBody.designations = new List<DesignationMaster> { designation };
                 return Ok(response);
             }
             catch (DbUpdateException ex)
             {
-                // Handle Unique Constraint violations (DesignationCode, etc.)
-                _logger.LogError(ex, $"Error updating DesignationMaster OrgID {orgId} ChannelID {designationMaster.ChannelId} SubChannelID {designationMaster.SubChannelId} DesignationCode {designationMaster.DesignationCode}");
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Database error: Possible duplicate code or constraint violation.";
+                response.responseHeader.ErrorMessage = "Database error occurred while saving the designation.";
+                _logger.LogError(ex, "Designation Upsert Error");
                 return Conflict(response);
             }
         }

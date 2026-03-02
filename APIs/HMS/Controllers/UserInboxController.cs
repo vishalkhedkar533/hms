@@ -68,24 +68,6 @@ namespace HMS.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (inboxDto.ControlId == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Control Id is required.";
-                return BadRequest(response);
-            }
-
-            var isValidControlId = await _context.uiFieldsSettings
-                .AsNoTracking()
-                .AnyAsync(setting => setting.OrgId == orgId && setting.CntrlId == inboxDto.ControlId);
-
-            if (!isValidControlId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Invalid Control Id for this organisation.";
-                return BadRequest(response);
-            }
-
             if (!Enum.IsDefined(typeof(SrStatus), inboxDto.SrStatus))
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;

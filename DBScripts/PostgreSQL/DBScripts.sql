@@ -2536,3 +2536,32 @@ CREATE TABLE hmsmaster.ui_approval_setting (
 	CONSTRAINT ui_fields_setting_orgid_fkey FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid) ON DELETE CASCADE,
 	CONSTRAINT ui_fields_setting_role_id_fkey FOREIGN KEY (role_id) REFERENCES hms.roles(role_id)
 );
+
+
+-- hmsmaster.ui_fields_setting definition
+
+-- Drop table
+
+-- DROP TABLE hmsmaster.ui_fields_setting;
+
+CREATE TABLE hmsmaster.approval_setting (
+	id serial4 NOT NULL,
+	orgid int4 NOT NULL,
+	cntrl_id int4 NULL,
+	approveroneid int4 NULL,
+	approvertwoid int4 NULL,
+	approverthreeid int4 NULL,
+	usedefaultapprover bool DEFAULT true NULL,
+	created_by int4 NOT NULL,
+	created_date timestamp NOT NULL,
+	modified_by int4 NULL,
+	modified_date timestamp NULL,	
+	CONSTRAINT approval_setting_pkey PRIMARY KEY (id),
+	CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+	CONSTRAINT fk_approver_one FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),
+	CONSTRAINT fk_approver_three FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),
+	CONSTRAINT fk_approver_two FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),
+	CONSTRAINT fk_approval_setting_ctrl FOREIGN KEY (cntrl_id) REFERENCES hmsmaster.ui_fields(cntrl_id),
+	CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE,
+	CONSTRAINT fk_modified_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE
+);

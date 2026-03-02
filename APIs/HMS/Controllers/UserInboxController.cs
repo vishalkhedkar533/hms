@@ -533,6 +533,23 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
 
+            if (((dto.ApproverOneId ?? 0) != 0)
+                || ((dto.ApproverTwoId ?? 0) != 0)
+                || ((dto.ApproverThreeId ?? 0) != 0)
+                )
+            {
+                if (!(await _context.Roles.AsNoTracking().AnyAsync(
+                    x => new int[] { (dto.ApproverOneId ?? 0),
+                        (dto.ApproverTwoId ?? 0),
+                        (dto.ApproverThreeId ?? 0) }
+                    .Contains(x.RoleId) && x.OrgId == orgId)))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid Role ApproverOneId/ApproverTwoId/ApproverThreeId";
+                    return Conflict(response);
+                }
+            }
+
             var existingEntity = await _context.ApprovalSettings
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.OrgId == orgId && x.ComponentId == dto.ComponentId);

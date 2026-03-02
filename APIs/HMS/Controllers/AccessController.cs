@@ -647,22 +647,7 @@ namespace HMS.Controllers
                     return Conflict(hMSResponse);
                 }
 
-                if (((uiFieldsSetting.ApproverOneId ?? 0) != 0 )
-                    || ((uiFieldsSetting.ApproverTwoId ?? 0) != 0 )
-                    || ((uiFieldsSetting.ApproverThreeId ?? 0) != 0 )
-                    )
-                {
-                    if (!(await _context.Roles.AsNoTracking().AnyAsync(
-                        x => new int[] { (uiFieldsSetting.ApproverOneId ?? 0), 
-                            (uiFieldsSetting.ApproverTwoId ?? 0), 
-                            (uiFieldsSetting.ApproverThreeId ?? 0) }
-                        .Contains(x.RoleId) && x.OrgId == orgId)))
-                    {
-                        hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                        hMSResponse.responseHeader.ErrorMessage = "Invalid Role ApproverOneId/ApproverTwoId/ApproverThreeId";
-                        return Conflict(hMSResponse);
-                    }
-                }
+
 
                 // Safely check existence of the control in uiField.
                 // Some deployments may have different DB column names; guard against column-not-found errors.

@@ -1744,12 +1744,12 @@ namespace HMS.Controllers
                             var allocationLookup = await _context.uiFieldsSettings
                                 .AsNoTracking()
                                 .Where(s => s.OrgId == orgIdValue && s.CntrlId.HasValue && controlIds.Contains(s.CntrlId.Value))
-                                .Select(s => new { s.CntrlId, s.ApproverOneId, s.RoleId })
+                                .Select(s => new { s.CntrlId, s.RoleId })
                                 .ToListAsync();
 
                             var allocatedRoleMap = allocationLookup
                                 .GroupBy(x => x.CntrlId!.Value)
-                                .ToDictionary(g => g.Key, g => g.Select(x => x.ApproverOneId ?? x.RoleId).FirstOrDefault());
+                                .ToDictionary(g => g.Key, g => g.Select(x => x.RoleId).FirstOrDefault());
 
                             var payload = updatedFields
                                 .Where(f => !string.IsNullOrWhiteSpace(f.FieldName))

@@ -764,27 +764,16 @@ namespace HMS.Controllers
             if (!validChannelSubChannel)
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Invalid channel and subchannel.";
+                response.responseHeader.ErrorMessage = "Invalid channel/subchannel.";
                 return Conflict(response);
             }
 
-            var isDuplicate = await _context.LocationMasters.AsNoTracking().AnyAsync(x =>
-                x.LocationMasterId != locationMaster.LocationMasterId && // Don't check against itself during update
+            var existingLocation = await _context.LocationMasters.FirstOrDefaultAsync(x =>
                 x.OrgId == orgId &&
                 x.ChannelId == locationMaster.ChannelId &&
                 x.SubChannelId == locationMaster.SubChannelId &&
                 x.LocationCode == locationMaster.LocationCode);
 
-            if (isDuplicate)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "A location with the same code already exists for this channel and subchannel.";
-                return Conflict(response);
-            }
-
-            // 2. FIND EXISTING OR CREATE NEW
-            var existingLocation = await _context.LocationMasters
-                .FirstOrDefaultAsync(x => x.LocationMasterId == locationMaster.LocationMasterId);
             try
             {
 
@@ -827,7 +816,7 @@ namespace HMS.Controllers
                 _logger.LogError(ex, $"Unexpected error while upserting LocationMaster OrgID {orgId} ChannelID {locationMaster.ChannelId} SubChannelID {locationMaster.SubChannelId} LocationCode {locationMaster.LocationCode}");
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "An unexpected error occurred while saving the location.";
-                return StatusCode(500, response);
+                return BadRequest(response);
             }
             return Ok(response);
         }

@@ -48,8 +48,8 @@ namespace Models.DB
         public DateTime? StatusModifiedOn { get; set; }
 
         [Required]
-        [Column ("cntrl_id")]
-        public int? ControlId { get; set; }
+        [Column("component_id")]
+        public int? ComponentId { get; set; }
         [Column("allocated_to_role")]
         public int? AllocatedToRole { get; set; }
         [NotMapped]
@@ -109,7 +109,7 @@ namespace Models.DB
         [Required]
         public SrStatus SrStatus { get; set; }
         [Required]
-        public int? ControlId { get; set; }
+        public int? ComponentId { get; set; }
         public int? AllocatedToRole { get; set; }
         public string? ObjectName { get; set; }
     }

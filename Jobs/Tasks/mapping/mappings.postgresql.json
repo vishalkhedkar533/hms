@@ -65,11 +65,11 @@
     "Inbox": {
       "GetPendingInbox": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT i.srno AS SrNo, i.orgid AS OrgId, i.cntrl_id AS ControlId, i.created_by AS CreatedBy, i.approvalendpoint AS ApprovalEndpoint, i.approvalpayload AS ApprovalPayload FROM hms.inbox i WHERE i.srstatus = 1 AND i.orgid = @orgId AND NOT EXISTS (SELECT 1 FROM hms.sr_approver sa WHERE sa.srno = i.srno AND sa.orgid = i.orgid)"
+        "Script": "SELECT i.srno AS SrNo, i.orgid AS OrgId, i.component_id AS ComponentId, i.created_by AS CreatedBy, i.approvalendpoint AS ApprovalEndpoint, i.approvalpayload AS ApprovalPayload FROM hms.inbox i WHERE i.srstatus = 1 AND i.orgid = @orgId AND NOT EXISTS (SELECT 1 FROM hms.sr_approver sa WHERE sa.srno = i.srno AND sa.orgid = i.orgid)"
       },
       "GetFieldConfig": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT uc.component_id AS ComponentId, uc.\"label\" AS Label, uc.elementtype AS ElementType, uf.cntrl_id AS ControlId, uf.cntrl_name AS ControlName, ufs.role_id AS RoleId, ufs.usedefaultapprover AS UseDefaultApprover, ufs.approveroneid AS ApproverOneId, ufs.approvertwoid AS ApproverTwoId, ufs.approverthreeid AS ApproverThreeId FROM hmsmaster.ui_components uc INNER JOIN hmsmaster.ui_fields uf ON uc.component_id = uf.component_id INNER JOIN hmsmaster.ui_fields_setting ufs ON ufs.orgid = @orgId AND uf.cntrl_id = ufs.cntrl_id WHERE uf.cntrl_id = @cntrlId"
+        "Script": "SELECT uc.component_id AS ComponentId, uc.\"label\" AS Label, uc.elementtype AS ElementType, uc.component_id AS ControlId, uc.\"label\" AS ControlName, NULL AS RoleId, ast.usedefaultapprover AS UseDefaultApprover, ast.approveroneid AS ApproverOneId, ast.approvertwoid AS ApproverTwoId, ast.approverthreeid AS ApproverThreeId FROM hmsmaster.ui_components uc LEFT JOIN hmsmaster.approval_setting ast ON uc.component_id = ast.component_id AND ast.orgid = @orgId WHERE uc.component_id = @componentId"
       },
       "GetManagerHierarchyRoles": {
         "ConnectionStringKey": "CommissionDB",

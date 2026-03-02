@@ -64,24 +64,6 @@ namespace HMS.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (inboxDto.ControlId == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Control Id is required.";
-                return BadRequest(response);
-            }
-
-            var isValidControlId = await _context.uiFieldsSettings
-                .AsNoTracking()
-                .AnyAsync(setting => setting.OrgId == orgId && setting.CntrlId == inboxDto.ControlId);
-
-            if (!isValidControlId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Invalid Control Id for this organisation.";
-                return BadRequest(response);
-            }
-
             if (!Enum.IsDefined(typeof(SrStatus), inboxDto.SrStatus))
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
@@ -105,6 +87,24 @@ namespace HMS.Controllers
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Service Request status is not valid for this organisation.";
+                return BadRequest(response);
+            }
+
+            if (inboxDto.ComponentId == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Component Id is required.";
+                return BadRequest(response);
+            }
+
+            var isValidComponentId = await _context.uiComponent
+                .AsNoTracking()
+                .AnyAsync(component => component.ComponentId == inboxDto.ComponentId);
+
+            if (!isValidComponentId)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Invalid Component Id.";
                 return BadRequest(response);
             }
 

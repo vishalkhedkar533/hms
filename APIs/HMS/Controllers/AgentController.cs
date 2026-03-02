@@ -1747,6 +1747,16 @@ namespace HMS.Controllers
                                 .Select(s => new { s.CntrlId, s.ApproverOneId, s.RoleId })
                                 .ToListAsync();
 
+                            var componentLookup = await _context.uiField
+                                .AsNoTracking()
+                                .Where(f => controlIds.Contains(f.CntrlId))
+                                .Select(f => new { f.CntrlId, f.ComponentId })
+                                .ToListAsync();
+
+                            var componentIdMap = componentLookup
+                                .Where(x => x.ComponentId.HasValue)
+                                .ToDictionary(x => x.CntrlId, x => x.ComponentId!.Value);
+
                             var allocatedRoleMap = allocationLookup
                                 .GroupBy(x => x.CntrlId!.Value)
                                 .ToDictionary(g => g.Key, g => g.Select(x => x.ApproverOneId ?? x.RoleId).FirstOrDefault());
@@ -1756,10 +1766,14 @@ namespace HMS.Controllers
                                 .ToDictionary(f => f.FieldName, f => (object?)f.NewValue, StringComparer.OrdinalIgnoreCase);
 
                             inboxEntries = updatedFields
-                                .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId) && cntrlId != 0)
+                                .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId)
+                                            && cntrlId != 0
+                                            && componentIdMap.TryGetValue(cntrlId, out var componentId)
+                                            && componentId != 0)
                                 .Select(f =>
                                 {
                                     var cntrlId = controlIdMap[f.FieldName];
+                                    var componentId = componentIdMap[cntrlId];
                                     allocatedRoleMap.TryGetValue(cntrlId, out var allocatedRole);
                                     return new Inbox
                                     {
@@ -1768,8 +1782,13 @@ namespace HMS.Controllers
                                         CreatedDate = DateTime.UtcNow,
                                         SrStatus = SrStatus.Created,
                                         RequestDets = $"{f.FieldName} updated",
-                                        RequestorNote = $"Old Value: {ResolveDisplayValue(f.FieldName, f.OldValue)} | New Value: {ResolveDisplayValue(f.FieldName, f.NewValue)}",
-                                        ControlId = cntrlId,
+                                        RequestorNote = JsonConvert.SerializeObject(new
+                                        {
+                                            field = f.FieldName,
+                                            oldValue = ResolveDisplayValue(f.FieldName, f.OldValue),
+                                            newValue = ResolveDisplayValue(f.FieldName, f.NewValue)
+                                        }, Formatting.None),
+                                        ComponentId = componentId,
                                         AllocatedToRole = allocatedRole,
                                         ObjectName = $"Agent",
                                         ApprovalPayload = JsonConvert.SerializeObject(new

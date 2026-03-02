@@ -114,8 +114,6 @@ namespace Models.DB
 
         public DateTime? PasswordChangedDate { get; set; }
 
-        public HMSDashboard? HmsDashboard { get; set; }
-
         public int FailedLoginAttempts { get; set; } = 0;
 
         public DateTime? LockoutEndTime { get; set; }
@@ -131,6 +129,8 @@ namespace Models.DB
 
         // Navigation property
         public UserOtherDetails? Manager { get; set; }
+        public HMSDashboard? HmsDashboard { get; set; }
+
     }
     public class UserProfile : Profile
     {

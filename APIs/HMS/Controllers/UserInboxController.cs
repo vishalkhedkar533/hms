@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using CommonLibrary;
 using HMS.Caching;
 using HMS.Data;
@@ -11,11 +10,8 @@ using Models.DB;
 using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
-using System.Linq;
-using System.Net.Http.Json;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
-using System.Security.AccessControl;
 using System.Security.Claims;
 
 namespace HMS.Controllers

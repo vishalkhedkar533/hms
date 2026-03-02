@@ -11,6 +11,7 @@ using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json.Linq;
+using System.Data.Common;
 using System.Reflection;
 using System.Security.Claims;
 
@@ -520,42 +521,56 @@ namespace HMS.Controllers
         [MenuAuthorize(AuthorisationConstants.ManageOrganisationSetting)]
         public async Task<IActionResult> SaveApprovalSetting([FromBody] ApprovalSettingDto dto)
         {
+            HmsResponse response = new HmsResponse();
             // 1. Get User/Org Context from Claims (Replace with your actual Auth logic)
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
 
-            if (dto.Id.HasValue && dto.Id > 0)
+            if (!await _context.uiComponent.AsNoTracking().AnyAsync(x=> x.ComponentId == dto.ComponentId))
             {
-                // --- UPDATE LOGIC ---
-                var existingEntity = await _context.ApprovalSettings
-                    .FirstOrDefaultAsync(x => x.Id == dto.Id && x.OrgId == orgId);
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Check the Component ID";
+                return Conflict(response);
+            }
 
-                if (existingEntity == null) return NotFound("Setting not found.");
+            var existingEntity = await _context.ApprovalSettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.OrgId == orgId && x.ComponentId == dto.ComponentId);
 
+            if (existingEntity != null)
+            {
                 // Map updated fields from DTO to Entity
                 _mapper.Map(dto, existingEntity);
-
                 // Audit fields
                 existingEntity.ModifiedBy = userId;
                 existingEntity.ModifiedDate = DateTime.UtcNow;
-
                 _context.ApprovalSettings.Update(existingEntity);
             }
             else
             {
                 // --- CREATE LOGIC ---
                 var newEntity = _mapper.Map<ApprovalSetting>(dto);
-
                 // Set required fields that aren't in the DTO
                 newEntity.OrgId = orgId;
                 newEntity.CreatedBy = userId;
                 newEntity.CreatedDate = DateTime.UtcNow;
-
                 _context.ApprovalSettings.Add(newEntity);
             }
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbException dbEx)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while saving the ApprovalSettings";
+                _logger.LogError(dbEx, "An error occurred while saving the ApprovalSettings");
+                return BadRequest(response);
+            }
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = "Approval setting saved successfully.";
 
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Approval setting saved successfully." });
+            return Ok(response);
         }
     }
 }

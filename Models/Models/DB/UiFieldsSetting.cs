@@ -40,18 +40,6 @@ namespace Models.DB
         [Column("role_id")]
         public int? RoleId { get; set; }
 
-        [Column("approveroneid")]
-        public int? ApproverOneId { get; set; }
-
-        [Column("approvertwoid")]
-        public int? ApproverTwoId { get; set; }
-
-        [Column("approverthreeid")]
-        public int? ApproverThreeId { get; set; }
-
-        [Column("usedefaultapprover")]
-        public bool? UseDefaultApprover { get; set; } = true;
-
         // --- Navigation Properties ---
 
         [ForeignKey("CntrlId")]
@@ -82,11 +70,6 @@ namespace Models.DB
         //public int SortOrder { get; set; } = 0;
         // Permissions and Approvers
         public int? RoleId { get; set; }
-        public int? ApproverOneId { get; set; }
-        public int? ApproverTwoId { get; set; }
-        public int? ApproverThreeId { get; set; }
-        public bool? UseDefaultApprover { get; set; } = null;
-
     }
     public class UiFieldsMappingProfile : Profile
     {
@@ -95,8 +78,7 @@ namespace Models.DB
             // --- Entity to DTO ---
             CreateMap<UiFieldsSetting, UiFieldsSettingDto>()
                 .ForMember(dest => dest.Render, opt => opt.MapFrom(src => src.Render ?? true))
-                .ForMember(dest => dest.AllowEdit, opt => opt.MapFrom(src => src.AllowEdit ?? false))
-                .ForMember(dest => dest.UseDefaultApprover, opt => opt.MapFrom(src => src.UseDefaultApprover ?? true));
+                .ForMember(dest => dest.AllowEdit, opt => opt.MapFrom(src => src.AllowEdit ?? false));
             // Note: Navigation Properties are automatically ignored because 
             // the DTO has no matching "UiField" or "GrantedByUser" object properties.
 
@@ -120,18 +102,7 @@ namespace Models.DB
 
                 // 3. Map the Foreign Key IDs (the actual database columns)
                 .ForMember(dest => dest.CntrlId, opt => opt.MapFrom(src => src.CntrlId))
-                .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => src.RoleId))
-                .ForMember(dest => dest.ApproverOneId, opt => opt.MapFrom(src => src.ApproverOneId))
-                .ForMember(dest => dest.ApproverTwoId, opt => opt.MapFrom(src => src.ApproverTwoId))
-                .ForMember(dest => dest.ApproverThreeId, opt => opt.MapFrom(src => src.ApproverThreeId));
+                .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => src.RoleId));
         }
     }
 }
-
-/*
- * UiField
-GrantedByUser
-ApproverOne
-ApproverTwo
-ApproverThree
- */

@@ -1,16 +1,18 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
     [Table("approval_setting", Schema = "hmsmaster")]
+    [Index(nameof(OrgId), nameof(ComponentId), IsUnique = true, Name = "uq_org_comp")]
     public class ApprovalSetting
     {
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Column("id")]
-        public int Id { get; set; }
+        public int settingId { get; set; }
 
         [Required]
         [Column("orgid")]
@@ -59,7 +61,7 @@ namespace Models.DB
     {
         // For updates, the ID is required. 
         // For "Create" operations, you might omit this or leave it nullable.
-        public int? Id { get; set; }
+        public int? settingId { get; set; }
         public int? ComponentId { get; set; }
 
         public int? ApproverOneId { get; set; }

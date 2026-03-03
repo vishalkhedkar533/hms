@@ -567,10 +567,9 @@ namespace HMS.Controllers
                 await _db.ExecuteQueryAsync<string>("Master", "UpdateDesignation", new
                 {
                     p_designationIdText = designation.DesignationId.ToString(),
-                    p_oldParentPath = oldDesignationPath.HierarchyPath,
+                    p_oldParentPath = (oldDesignationPath?.HierarchyPath ?? designation.DesignationId.ToString()),
                     p_newParentPath = string.IsNullOrEmpty(parentDesignation?.HierarchyPath) ?
-                    designation.DesignationId.ToString() :
-                    $"{parentDesignation.HierarchyPath ?? string.Empty}.{designation.DesignationId}",
+                    designation.DesignationId.ToString() : $"{parentDesignation.HierarchyPath ?? string.Empty}.{designation.DesignationId}",
                     p_orgId = orgId,
                     p_channelID = designation.ChannelId,
                     p_subChannelId = designation.SubChannelId,

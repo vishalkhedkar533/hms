@@ -505,7 +505,6 @@ namespace HMS.Controllers
         }
         [HttpPost("{ChannelId}/{SubChannelId}/Designation/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
-        [HttpPost("upsert/{ChannelId}/{SubChannelId}")]
         public async Task<IActionResult> UpsertDesignation([FromRoute] long ChannelId,
             [FromRoute] long SubChannelId, [FromBody] DesignationMasterDto designationMaster)
         {

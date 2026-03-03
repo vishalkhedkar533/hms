@@ -920,7 +920,7 @@ namespace HMS.Controllers
                     "UpdateChildBranchesByBranchId",
                     new
                     {
-                        p_oldParentPath = $"{existingHierarchy.FirstOrDefault()?.HierarchyPath ?? string.Empty}",
+                        p_oldParentPath = $"{existingHierarchy.FirstOrDefault()?.HierarchyPath ?? branch.BranchId.ToString()}",
                         p_newParentPath = string.IsNullOrEmpty(parentResult.FirstOrDefault()?.HierarchyPath) ? branch.BranchId.ToString() : $"{parentResult.FirstOrDefault()?.HierarchyPath ?? string.Empty}.{branch.BranchId}",
                         p_branchId = branch.BranchId,
                         p_branchIdText = branch.BranchId.ToString(),

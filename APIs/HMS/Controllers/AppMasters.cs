@@ -730,6 +730,7 @@ namespace HMS.Controllers
                     var newLocation = _mapper.Map<LocationMaster>(locationMaster);
                     newLocation.CreatedDate = DateTime.UtcNow;
                     newLocation.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
+                    newLocation.OrgId = orgId;
                     _context.LocationMasters.Add(newLocation);
                     await _context.SaveChangesAsync();
 

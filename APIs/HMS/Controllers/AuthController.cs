@@ -1,17 +1,21 @@
-﻿using CommonLibrary;
+﻿using Azure;
+using CommonLibrary;
 using Communication;
 using HMS.Data;
+using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
+using Newtonsoft.Json.Linq;
+using NuGet.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Mail;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace HMS.Controllers
@@ -32,7 +36,6 @@ namespace HMS.Controllers
         }
         [HttpPost("login")]
         [AllowAnonymous]
-        //[EnableCors("AllowLocalhost3000")]
         public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
             HmsResponse response = new HmsResponse();
@@ -43,7 +46,7 @@ namespace HMS.Controllers
 
             if (user == null)
             {
-                errorMsg = await _context.errorMaster
+                errorMsg = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == LoginConstants.INVALID_CREDENTIALS && x.Area == "LoginConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -55,7 +58,7 @@ namespace HMS.Controllers
             // Check if account is locked
             if (user.lockoutendtime.HasValue && user.lockoutendtime > DateTime.UtcNow)
             {
-                errorMsg = await _context.errorMaster.
+                errorMsg = await _context.errorMaster.AsNoTracking().
                     Where(x => x.ErrorId == LoginConstants.ACCOUNT_LOCKED && x.Area == "LoginConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -71,12 +74,10 @@ namespace HMS.Controllers
 
                 var allowedAttemptsConfig = await _context.apiConfig
                     .Where(u => u.ConfigKey == ApiConstants.wrong_attempts_allowed)
-                    .Select(u => u.ConfigValue)
-                    .FirstOrDefaultAsync();
+                    .Select(u => u.ConfigValue).FirstOrDefaultAsync();
 
                 int allowedAttempts = int.TryParse(allowedAttemptsConfig, out var val)
-                    ? val
-                    : int.Parse(_config["DefaultValues:LoginAttempt"] ?? "3");
+                    ? val : int.Parse(_config["DefaultValues:LoginAttempt"] ?? "3");
 
                 if (user.failedloginattempts >= allowedAttempts)
                 {
@@ -91,7 +92,7 @@ namespace HMS.Controllers
                 }
 
                 await _context.SaveChangesAsync();
-                errorMsg = await _context.errorMaster
+                errorMsg = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == LoginConstants.INVALID_CREDENTIALS && x.Area == "LoginConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -105,46 +106,53 @@ namespace HMS.Controllers
             user.lockoutendtime = null;
             user.IsLocked = false;
 
-            var roleNames = await _context.UserRoleMappings
-                .Where(urm => urm.UserId == user.UserId
-                              && urm.IsActive
+            var roleNames = await _context.UserRoleMappings.AsNoTracking()
+                .Where(urm => urm.UserId == user.UserId && urm.IsActive
                               && (urm.EffectiveTo == null || urm.EffectiveTo >= DateTime.Today)
                               && urm.EffectiveFrom <= DateTime.Today)
                 .Select(urm => urm.Role != null ? urm.Role.RoleName : null)
                 .Where(roleName => roleName != null)
-                .Distinct()
-                .ToListAsync();
+                .Distinct().ToListAsync();
 
             if (roleNames == null || !roleNames.Any())
             {
-                errorMsg = await _context.errorMaster
+                errorMsg = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == LoginConstants.NO_ACTIVE_PRIMARY_ROLE && x.Area == "LoginConstants")
-                    .Select(x => x.ErrorMsg)
-                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                    .Select(x => x.ErrorMsg).FirstOrDefaultAsync() ?? "Undefined Error Message";
                 response.responseHeader.ErrorCode = LoginConstants.NO_ACTIVE_PRIMARY_ROLE;
                 response.responseHeader.ErrorMessage = errorMsg;
                 return Unauthorized(response);
             }
 
             var token = GenerateJwtToken(user, roleNames);
+            var refreshToken = GenerateRefreshToken();
+            user.RefreshToken = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddHours(1);
             user.LastLoginDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true, // Must be true for HTTPS
+                SameSite = SameSiteMode.Strict,
+                Expires = DateTime.UtcNow.AddDays(7)
+            });
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-            response.responseHeader.ErrorMessage = await _context.errorMaster
+            response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                 .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
-                .Select(x => x.ErrorMsg)
-                .FirstOrDefaultAsync() ?? "Undefined Message";
+                .Select(x => x.ErrorMsg).FirstOrDefaultAsync() ?? "Undefined Message";
             var jwtToken = handler.ReadJwtToken(token);
             var expClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "exp")?.Value;
             if (expClaim != null)
             {
                 expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)).UtcDateTime;
             }
-            bool Encrypt_Api_Calls = (await _context.apiConfig
-                    .Where(u => u.ConfigKey == ApiConstants.encrypt_api_calls)
-                    .Select(u => u.ConfigValue)
-                    .FirstOrDefaultAsync() ?? "1").Equals("1") ;
+
+            bool Encrypt_Api_Calls = (((await _context.apiConfig.AsNoTracking()
+                    .FirstOrDefaultAsync(u => u.ConfigKey == ApiConstants.encrypt_api_calls))
+                    .ConfigValue) ?? "1") == "1";
+            
             response.responseBody.loginResponse = new LoginResponse
             {
                 Token = token,
@@ -226,8 +234,6 @@ namespace HMS.Controllers
                 {
                     return BadRequest("Old password is incorrect.");
                 }
-                //if (user.failedloginattempts >= 5 || user.IsLocked)
-                //{
 
                 Random rnd = new Random();
                 string otp = rnd.Next(1000, 9999).ToString();
@@ -251,13 +257,6 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "No matching user record was found in the system.";
             }
-
-
-            //response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-            //response.responseHeader.ErrorMessage = await _context.errorMaster
-            //    .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
-            //    .Select(x => x.ErrorMsg)
-            //    .FirstOrDefaultAsync() ?? "Undefined Message";
             return Ok(response);
         }
 
@@ -298,6 +297,90 @@ namespace HMS.Controllers
             }
             return Ok(response);
         }
+        [HttpPost("refresh")]
+        public async Task<ActionResult> Refresh()
+        {
+            HmsResponse response = new HmsResponse();
+            DateTimeOffset expTime = DateTimeOffset.UtcNow;
+            var handler = new JwtSecurityTokenHandler();
+            if (!Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
+                return Unauthorized("Refresh token missing.");
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+
+            if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
+                return Unauthorized("Invalid or expired session.");
+
+            var roleNames = await _context.UserRoleMappings.AsNoTracking()
+                .Where(urm => urm.UserId == user.UserId
+                && urm.IsActive
+                && (urm.EffectiveTo == null || urm.EffectiveTo >= DateTime.Today)
+                && urm.EffectiveFrom <= DateTime.Today)
+                .Select(urm => urm.Role != null ? urm.Role.RoleName : null)
+                .Where(roleName => roleName != null)
+                .Distinct()
+                .ToListAsync();
+
+            if (roleNames == null || !roleNames.Any())
+            {
+                response.responseHeader.ErrorCode = LoginConstants.NO_ACTIVE_PRIMARY_ROLE;
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
+                    .Where(x => x.ErrorId == LoginConstants.NO_ACTIVE_PRIMARY_ROLE && x.Area == "LoginConstants")
+                    .Select(x => x.ErrorMsg)
+                    .FirstOrDefaultAsync() ?? "Undefined Error Message";
+                return Unauthorized(response);
+            }
+            // Generate new set
+            var newAccessToken = GenerateJwtToken(user, roleNames);
+            var newRefreshToken = GenerateRefreshToken();
+
+            // Rotate token (security best practice)
+            user.RefreshToken = BCrypt.Net.BCrypt.HashPassword(newRefreshToken);
+            user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+            await _context.SaveChangesAsync();
+            bool Encrypt_Api_Calls = (((await _context.apiConfig.AsNoTracking()
+                   .FirstOrDefaultAsync(u => u.ConfigKey == ApiConstants.encrypt_api_calls))
+                   .ConfigValue) ?? "1") == "1";
+            var jwtToken = handler.ReadJwtToken(newAccessToken);
+            var expClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "exp")?.Value;
+            if (expClaim != null)
+            {
+                expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)).UtcDateTime;
+            }
+            Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
+            response.responseBody.loginResponse = new LoginResponse
+            {
+                Token = newAccessToken,
+                Expiration = expTime.LocalDateTime,
+                UserId = user.UserId,
+                Username = user.Username,
+                Encrypt_Api_Calls = Encrypt_Api_Calls
+            };
+            return Ok(response);
+        }
+        [HttpPost("logout")]
+        [MenuAuthorize(AuthorisationConstants.AuthenticationService)]
+        public async Task<IActionResult> Logout()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+            // Find the user whose stored hash matches the cookie token
+            var usersWithTokens = await _context.Users.Where(u => u.RefreshToken != null).ToListAsync();
+            var user = usersWithTokens.FirstOrDefault(u => BCrypt.Net.BCrypt.Verify(refreshToken, u.RefreshToken));
+            if (user != null)
+            {
+                user.RefreshToken = null;
+                user.RefreshTokenExpiryTime = null;
+                await _context.SaveChangesAsync();
+            }
+            Response.Cookies.Delete("refreshToken");
+            return Ok("Logged out.");
+        }
+        private string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[64];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(randomNumber);
+            return Convert.ToBase64String(randomNumber);
+        }
     }
 }
-//Dummy change by NVK 2025-11-17

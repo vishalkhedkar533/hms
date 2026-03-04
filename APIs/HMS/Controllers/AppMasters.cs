@@ -63,7 +63,7 @@ namespace HMS.Controllers
             if (!IsValidSchema(masterTableConfigs?.SchemaName ?? string.Empty))
             {
                 hMSResponse.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -82,7 +82,7 @@ namespace HMS.Controllers
                 if (result == null)
                 {
                     hMSResponse.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -293,7 +293,7 @@ namespace HMS.Controllers
                 if (channel == null)
                 {
                     response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -304,7 +304,7 @@ namespace HMS.Controllers
                 channel.ChannelName = ChannelMaster.ChannelName;
                 await _context.SaveChangesAsync();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await _context.errorMaster
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message"; ;
@@ -357,7 +357,7 @@ namespace HMS.Controllers
                     return NotFound(response);
                 }
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await _context.errorMaster
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -470,7 +470,7 @@ namespace HMS.Controllers
                 if (channel == null)
                 {
                     response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -489,7 +489,7 @@ namespace HMS.Controllers
                 subChannel.RowVersion = (subChannel.RowVersion ?? 0) + 1;
                 await _context.SaveChangesAsync();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await _context.errorMaster
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message"; ;

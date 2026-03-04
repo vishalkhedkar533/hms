@@ -1,6 +1,4 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -83,6 +81,11 @@ namespace Models.DB
         public string? SubscriberName { get; set; } = null;
         [ForeignKey("ReportingMgr")]
         public virtual User? Manager { get; set; }
+        [Column("refreshtoken")]
+        [StringLength(500)]
+        public string? RefreshToken { get; set; }
+        [Column("refreshtokenexpirytime")]
+        public DateTime? RefreshTokenExpiryTime { get; set; }
     }
     public class UserCreateDto
     {
@@ -160,7 +163,9 @@ namespace Models.DB
                 .ForMember(dest => dest.SubscriberId, opt => opt.Ignore())
                 .ForMember(dest => dest.SubscriberName, opt => opt.Ignore())
                 .ForMember(dest => dest.Manager, opt => opt.Ignore())
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())                ;
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ForMember(dest => dest.RefreshToken, opt => opt.Ignore())
+                .ForMember(dest => dest.RefreshTokenExpiryTime, opt => opt.Ignore());
 
             // 2. Mapping for UserOtherDetails (Updates)
             CreateMap<UserOtherDetails, User>()
@@ -190,7 +195,10 @@ namespace Models.DB
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())
-                .ForMember(dest => dest.RowVersion, opt => opt.Ignore());
+                .ForMember(dest => dest.RowVersion, opt => opt.Ignore())
+                .ForMember(dest => dest.RefreshToken, opt =>  opt.Ignore())
+                .ForMember(dest => dest.RefreshTokenExpiryTime, opt =>  opt.Ignore())
+                ;
             // 3. Mapping for reading User (Entity -> DTO)
             // Update your existing mapping
             CreateMap<User, UserOtherDetails>()

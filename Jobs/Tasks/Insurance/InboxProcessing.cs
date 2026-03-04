@@ -8,6 +8,7 @@ using System.Data.Common;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Configuration.UserSecrets;
 
 namespace Tasks.Insurance
 {
@@ -122,7 +123,9 @@ namespace Tasks.Insurance
                                 orgId = entry.OrgId,
                                 srNo = entry.SrNo,
                                 approverLevel = level,
-                                allocatedRoleId = roleId
+                                allocatedRoleId = roleId,
+                                decisionBy = entry.CreatedBy,
+                                decisionOn = (DateTime?)null,
                             },
                             transaction: tx);
                         level++;
@@ -135,7 +138,7 @@ namespace Tasks.Insurance
                             orgId = entry.OrgId,
                             srNo = entry.SrNo,
                             srStatus = 2,
-                            allocatedRoleId = approverRoles[0]
+                            //allocatedRoleId = approverRoles[0]
                         },
                         transaction: tx);
 
@@ -288,7 +291,7 @@ namespace Tasks.Insurance
                 .Select(r => r.RoleId)
                 .FirstOrDefault();
 
-            if (managerId == 0)
+            if (managerId <= 0)
             {
                 return new List<int>();
             }
@@ -300,15 +303,15 @@ namespace Tasks.Insurance
         {
             var roles = new List<int>();
 
-            if (config.ApproverOneId.HasValue)
+            if (config.ApproverOneId.HasValue && config.ApproverOneId.Value > 0)
             {
                 roles.Add(config.ApproverOneId.Value);
             }
-            if (config.ApproverTwoId.HasValue)
+            if (config.ApproverTwoId.HasValue && config.ApproverTwoId.Value > 0)
             {
                 roles.Add(config.ApproverTwoId.Value);
             }
-            if (config.ApproverThreeId.HasValue)
+            if (config.ApproverThreeId.HasValue && config.ApproverThreeId.Value > 0)
             {
                 roles.Add(config.ApproverThreeId.Value);
             }

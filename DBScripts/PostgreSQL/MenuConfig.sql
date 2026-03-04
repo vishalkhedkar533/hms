@@ -107,5 +107,11 @@ INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1027, 'Reset Password', 1025, null, 1, true, true, 'navin', '2026-02-28', null, null, 0);
 
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1028, 'Authentication', null, null, 1, true, true, 'navin', '2026-02-28', null, null, 0);
 
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1029, 'Authentication Service', 1028, null, 1, true, true, 'navin', '2026-02-28', null, null, 0);
 

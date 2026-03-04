@@ -2,6 +2,7 @@
 using CommonLibrary;
 using Communication;
 using HMS.Data;
+using HMS.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -35,7 +36,6 @@ namespace HMS.Controllers
         }
         [HttpPost("login")]
         [AllowAnonymous]
-        //[EnableCors("AllowLocalhost3000")]
         public async Task<ActionResult> Login([FromBody] LoginRequest request)
         {
             HmsResponse response = new HmsResponse();
@@ -126,7 +126,7 @@ namespace HMS.Controllers
 
             var token = GenerateJwtToken(user, roleNames);
             var refreshToken = GenerateRefreshToken();
-            user.RefreshToken = refreshToken;
+            user.RefreshToken = BCrypt.Net.BCrypt.HashPassword(refreshToken);
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddHours(1);
             user.LastLoginDate = DateTime.UtcNow;
 
@@ -298,7 +298,6 @@ namespace HMS.Controllers
             return Ok(response);
         }
         [HttpPost("refresh")]
-        [AllowAnonymous]
         public async Task<ActionResult> Refresh()
         {
             HmsResponse response = new HmsResponse();
@@ -336,7 +335,7 @@ namespace HMS.Controllers
             var newRefreshToken = GenerateRefreshToken();
 
             // Rotate token (security best practice)
-            user.RefreshToken = newRefreshToken;
+            user.RefreshToken = BCrypt.Net.BCrypt.HashPassword(newRefreshToken);
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
             await _context.SaveChangesAsync();
             bool Encrypt_Api_Calls = (((await _context.apiConfig.AsNoTracking()
@@ -360,10 +359,13 @@ namespace HMS.Controllers
             return Ok(response);
         }
         [HttpPost("logout")]
+        [MenuAuthorize(AuthorisationConstants.AuthenticationService)]
         public async Task<IActionResult> Logout()
         {
             var refreshToken = Request.Cookies["refreshToken"];
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            // Find the user whose stored hash matches the cookie token
+            var usersWithTokens = await _context.Users.Where(u => u.RefreshToken != null).ToListAsync();
+            var user = usersWithTokens.FirstOrDefault(u => BCrypt.Net.BCrypt.Verify(refreshToken, u.RefreshToken));
             if (user != null)
             {
                 user.RefreshToken = null;

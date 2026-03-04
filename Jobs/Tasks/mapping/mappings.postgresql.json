@@ -77,11 +77,11 @@
       },
       "InsertSrApprover": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId)"
+        "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid, decisionby, decisionon) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId, @decisionBy, @decisionOn)"
       },
       "UpdateInboxStatus": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "UPDATE hms.inbox SET srstatus = @srStatus, allocated_to_role = @allocatedRoleId, statusmodified_on = NOW() WHERE srno = @srNo AND orgid = @orgId"
+        "Script": "UPDATE hms.inbox SET srstatus = @srStatus, statusmodified_on = NOW() WHERE srno = @srNo AND orgid = @orgId"
       }
     },
     "ManagerUpdate": {

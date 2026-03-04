@@ -1,5 +1,4 @@
-﻿using Azure;
-using CommonLibrary;
+﻿using CommonLibrary;
 using Communication;
 using HMS.Data;
 using HMS.Security;
@@ -10,8 +9,6 @@ using Microsoft.IdentityModel.Tokens;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
-using Newtonsoft.Json.Linq;
-using NuGet.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Mail;
 using System.Security.Claims;
@@ -298,6 +295,7 @@ namespace HMS.Controllers
             return Ok(response);
         }
         [HttpPost("refresh")]
+        [AllowAnonymous]
         public async Task<ActionResult> Refresh()
         {
             HmsResponse response = new HmsResponse();

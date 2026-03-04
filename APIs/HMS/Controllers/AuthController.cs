@@ -126,7 +126,7 @@ namespace HMS.Controllers
 
             var token = GenerateJwtToken(user, roleNames);
             var refreshToken = GenerateRefreshToken();
-            user.RefreshToken = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+            user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddHours(1);
             user.LastLoginDate = DateTime.UtcNow;
 
@@ -297,24 +297,31 @@ namespace HMS.Controllers
             }
             return Ok(response);
         }
-        [HttpPost("refresh")]
+        [HttpPost("refreshtoken")]
         [AllowAnonymous]
         public async Task<ActionResult> Refresh()
         {
             HmsResponse response = new HmsResponse();
             DateTimeOffset expTime = DateTimeOffset.UtcNow;
             var handler = new JwtSecurityTokenHandler();
-            if (!Request.Cookies.TryGetValue("refreshToken", out string? refreshToken))
-                return Unauthorized("Refresh token missing.");
+            if (!Request.Cookies.TryGetValue("refreshToken", out string? refreshToken)) 
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Refresh token missing.";
+                return Unauthorized(response);
+            }            
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
-                return Unauthorized("Invalid or expired session.");
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Invalid or expired session.";
+                return Unauthorized(response);
+            }
 
             var roleNames = await _context.UserRoleMappings.AsNoTracking()
-                .Where(urm => urm.UserId == user.UserId
-                && urm.IsActive
+                .Where(urm => urm.UserId == user.UserId && urm.IsActive
                 && (urm.EffectiveTo == null || urm.EffectiveTo >= DateTime.Today)
                 && urm.EffectiveFrom <= DateTime.Today)
                 .Select(urm => urm.Role != null ? urm.Role.RoleName : null)
@@ -336,7 +343,7 @@ namespace HMS.Controllers
             var newRefreshToken = GenerateRefreshToken();
 
             // Rotate token (security best practice)
-            user.RefreshToken = BCrypt.Net.BCrypt.HashPassword(newRefreshToken);
+            user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
             await _context.SaveChangesAsync();
             bool Encrypt_Api_Calls = (((await _context.apiConfig.AsNoTracking()
@@ -348,7 +355,13 @@ namespace HMS.Controllers
             {
                 expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)).UtcDateTime;
             }
-            Response.Cookies.Append("refreshToken", newRefreshToken, new CookieOptions { HttpOnly = true, Secure = true, SameSite = SameSiteMode.Strict });
+            Response.Cookies.Append("refreshToken", newRefreshToken, 
+                new CookieOptions 
+                { 
+                    HttpOnly = true, 
+                    Secure = true, 
+                    SameSite = SameSiteMode.Strict 
+                });
             response.responseBody.loginResponse = new LoginResponse
             {
                 Token = newAccessToken,
@@ -367,7 +380,7 @@ namespace HMS.Controllers
             orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             // Find the user whose stored hash matches the cookie token
             var usersWithTokens = await _context.Users.Where(u => u.RefreshToken != null && u.OrgId == orgId).ToListAsync();
-            var user = usersWithTokens.FirstOrDefault(u => BCrypt.Net.BCrypt.Verify(refreshToken, u.RefreshToken));
+            var user = usersWithTokens.FirstOrDefault(u => u.RefreshToken == refreshToken);
             if (user != null)
             {
                 user.RefreshToken = null;

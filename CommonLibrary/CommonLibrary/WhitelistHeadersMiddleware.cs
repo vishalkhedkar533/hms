@@ -9,7 +9,8 @@ namespace CommonLibrary
     {
         "Authorization",
         "Content-Type",
-        "Accept" // optional, if you need it
+        "Accept",
+        "Cookie" // optional, if you need it
     };
 
         public WhitelistHeadersMiddleware(RequestDelegate next)

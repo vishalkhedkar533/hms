@@ -25,11 +25,14 @@ namespace HMS.Controllers
         private readonly HMSContext _context;
         private readonly IConfiguration _config;
         private readonly FileService _fileService;
-        public AuthController(HMSContext context, IConfiguration config, FileService fileService)
+        private readonly IAuthClaimService _authClaimService;
+        private int orgId;
+        public AuthController(HMSContext context, IConfiguration config, FileService fileService, IAuthClaimService authClaimService)
         {
             _context = context;
             _config = config;
             _fileService = fileService;
+            _authClaimService = authClaimService;
         }
         [HttpPost("login")]
         [AllowAnonymous]
@@ -361,8 +364,9 @@ namespace HMS.Controllers
         public async Task<IActionResult> Logout()
         {
             var refreshToken = Request.Cookies["refreshToken"];
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             // Find the user whose stored hash matches the cookie token
-            var usersWithTokens = await _context.Users.Where(u => u.RefreshToken != null).ToListAsync();
+            var usersWithTokens = await _context.Users.Where(u => u.RefreshToken != null && u.OrgId == orgId).ToListAsync();
             var user = usersWithTokens.FirstOrDefault(u => BCrypt.Net.BCrypt.Verify(refreshToken, u.RefreshToken));
             if (user != null)
             {

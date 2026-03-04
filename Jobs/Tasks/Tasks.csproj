@@ -21,7 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="mapping\FinalizeAgent.sql" />
+    <Content Include="mapping\FinalizeAgent.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

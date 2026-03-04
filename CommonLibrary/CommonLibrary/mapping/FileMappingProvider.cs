@@ -83,7 +83,7 @@ namespace CommonLibrary.mapping
 
         private string LoadSqlFromFile(string sqlFile)
         {
-            var filePath = Path.Combine(AppContext.BaseDirectory, "Mappings", sqlFile);
+            var filePath = Path.Combine(AppContext.BaseDirectory, "mapping", sqlFile);
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"SQL file not found: {filePath}");
             return File.ReadAllText(filePath);

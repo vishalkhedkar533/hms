@@ -491,7 +491,7 @@ namespace HMS.Controllers
                 else
                 {
                     response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
                                  && x.Area == "CommissionConstants")
                         .Select(x => x.ErrorMsg)

@@ -138,7 +138,7 @@ namespace HMS.Controllers
                 }
 
                 response.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                response.responseHeader.ErrorMessage = await _context.errorMaster
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";

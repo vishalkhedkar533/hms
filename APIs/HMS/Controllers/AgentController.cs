@@ -343,7 +343,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -420,7 +420,7 @@ namespace HMS.Controllers
             if (searchAgent.AgentId == null)
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -580,7 +580,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -611,7 +611,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -638,7 +638,7 @@ namespace HMS.Controllers
             if (string.IsNullOrEmpty(agentDto.AgentCode))
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -689,7 +689,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -755,7 +755,7 @@ namespace HMS.Controllers
                 if (agent == null)
                 {
                     hmsResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                    hmsResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    hmsResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";

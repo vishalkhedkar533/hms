@@ -629,3 +629,7 @@ UPDATE hms.inbox SET component_id = 135;
 
 ALTER TABLE hms.inbox 
 ALTER COLUMN component_id SET NOT NULL;
+
+alter table hms."user" add refreshtoken varchar(500);
+alter table hms."user" add refreshtokenexpirytime timestamp;
+create unique index uq_usr_org_reftkn on hms."user"(orgid, refreshtoken);

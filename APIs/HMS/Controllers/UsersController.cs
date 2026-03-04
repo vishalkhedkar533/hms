@@ -97,40 +97,25 @@ namespace HMS.Controllers
             int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             int currentUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
 
-            // 1. Fetch the existing user, ensuring they belong to the current Org
-            var existingUser = await _context.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Username == userDto.Username && u.OrgId == orgId);
-
-            if (existingUser == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader = new HmsSResponseHeader 
-                { 
-                    ErrorCode = CommonConstants.FAILED,
-                    ErrorMessage = "User not found."
-                };
-                return Conflict(response);
-            }
-
             // 2. Check for conflicts (Username/Email) excluding the current user being updated
-            if (await _context.Users.AsNoTracking().AnyAsync(u => u.Username == userDto.Username 
+            if (await _context.Users.AsNoTracking().AnyAsync(u => u.Username == userDto.Username
             && u.OrgId == orgId && u.Username != userDto.Username))
             {
-                response.responseHeader = new HmsSResponseHeader 
+                response.responseHeader = new HmsSResponseHeader
                 {
                     ErrorCode = CommonConstants.FAILED,
-                    ErrorMessage = "Username already exists." 
+                    ErrorMessage = "Username already exists."
                 };
                 return Conflict(response);
             }
 
-            if (await _context.Users.AsNoTracking().AnyAsync(u => u.EmailId == userDto.EmailId 
+            if (await _context.Users.AsNoTracking().AnyAsync(u => u.EmailId == userDto.EmailId
             && u.OrgId == orgId && u.Username != userDto.Username))
             {
-                response.responseHeader = new HmsSResponseHeader 
-                { 
-                    ErrorCode = CommonConstants.FAILED, 
-                    ErrorMessage = "Email ID already exists." 
+                response.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "Email ID already exists."
                 };
                 return Conflict(response);
             }
@@ -149,7 +134,22 @@ namespace HMS.Controllers
                     return Conflict(response);
                 }
             }
-            
+
+            // 1. Fetch the existing user, ensuring they belong to the current Org
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == userDto.Username && u.OrgId == orgId);
+
+            if (existingUser == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader = new HmsSResponseHeader 
+                { 
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "User not found."
+                };
+                return Conflict(response);
+            }
+
             // 3. Map updated values from DTO to the existing Entity
             // AutoMapper will use the Condition(s) we set up previously to only update non-null fields
             _mapper.Map(userDto, existingUser);

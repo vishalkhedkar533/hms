@@ -134,7 +134,7 @@ namespace HMS.Controllers
             Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true, // Must be true for HTTPS
+                Secure = bool.Parse(_config["DefaultValues:isHttps"]), // Must be true for HTTPS
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTime.UtcNow.AddDays(7)
             });
@@ -359,7 +359,7 @@ namespace HMS.Controllers
                 new CookieOptions 
                 { 
                     HttpOnly = true, 
-                    Secure = true, 
+                    Secure = bool.Parse(_config["DefaultValues:isHttps"]), 
                     SameSite = SameSiteMode.Strict 
                 });
             response.responseBody.loginResponse = new LoginResponse

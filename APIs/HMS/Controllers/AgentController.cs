@@ -1436,7 +1436,7 @@ namespace HMS.Controllers
                                     {
                                         RefKey = agent.AgentId,
                                         RefType = ReferenceType.Agent,
-                                        AccountHolderName = b.AccountHolderName ?? $"{agent.FirstName} {agent.LastName}".Trim(),
+                                        AccountHolderName = b.AccountHolderName ?? (agent.FirstName + " " + agent.LastName)?.Trim(),
                                         AccountNumber = b.AccountNumber ?? string.Empty,
                                         IFSC = b.IFSC ?? string.Empty,
                                         MICR = b.MICR,
@@ -1765,29 +1765,36 @@ namespace HMS.Controllers
                                 .Where(f => !string.IsNullOrWhiteSpace(f.FieldName))
                                 .ToDictionary(f => f.FieldName, f => (object?)f.NewValue, StringComparer.OrdinalIgnoreCase);
 
-                            inboxEntries = updatedFields
+                            var inboxFields = updatedFields
                                 .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId)
                                             && cntrlId != 0
                                             && componentIdMap.TryGetValue(cntrlId, out var componentId)
                                             && componentId != 0)
-                                .Select(f =>
+                                .ToList();
+
+                            var primaryField = inboxFields.FirstOrDefault();
+                            if (primaryField != null)
+                            {
+                                var cntrlId = controlIdMap[primaryField.FieldName];
+                                var componentId = componentIdMap[cntrlId];
+                                allocatedRoleMap.TryGetValue(cntrlId, out var allocatedRole);
+                                inboxEntries = new List<Inbox>
                                 {
-                                    var cntrlId = controlIdMap[f.FieldName];
-                                    var componentId = componentIdMap[cntrlId];
-                                    allocatedRoleMap.TryGetValue(cntrlId, out var allocatedRole);
-                                    return new Inbox
+                                    new Inbox
                                     {
                                         OrgId = orgIdValue,
                                         CreatedBy = createdBy,
                                         CreatedDate = DateTime.UtcNow,
                                         SrStatus = SrStatus.Created,
-                                        RequestDets = $"{f.FieldName} updated",
-                                        RequestorNote = JsonConvert.SerializeObject(new
-                                        {
-                                            field = f.FieldName,
-                                            oldValue = ResolveDisplayValue(f.FieldName, f.OldValue),
-                                            newValue = ResolveDisplayValue(f.FieldName, f.NewValue)
-                                        }, Formatting.None),
+                                        RequestDets = $"{sectionName} Updated",
+                                        RequestorNote = JsonConvert.SerializeObject(
+                                            inboxFields.Select(f => new
+                                            {
+                                                FieldName = f.FieldName,
+                                                OldValue = ResolveDisplayValue(f.FieldName, f.OldValue),
+                                                NewValue = ResolveDisplayValue(f.FieldName, f.NewValue)
+                                            }),
+                                            Formatting.None),
                                         ComponentId = componentId,
                                         AllocatedToRole = allocatedRole,
                                         ObjectName = $"Agent",
@@ -1796,13 +1803,9 @@ namespace HMS.Controllers
                                             payload
                                         }, Formatting.None).ToString(),
                                         ApprovalEndpoint = $"/api/Agent/UpdateAgentAfterApproval/{id}/{sectionName}"
-                                        //save the new enpoint into ApprovalEndpoint and ApprovalPayload
-                                    };
-                                })
-                                .ToList();
+                                    }
+                                };
 
-                            if (inboxEntries.Any())
-                            {
                                 await _context.Inbox.AddRangeAsync(inboxEntries);
                             }
                         }

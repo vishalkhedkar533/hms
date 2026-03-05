@@ -82,7 +82,7 @@
       },
       "UpdatePartnerBranch": {
         "Function": "na",
-        "Script": "UPDATE hms.partner_branch_heirarchy SET hierarchy_path = REPLACE(COALESCE(hierarchy_path::text, :p_PartnerBranchHeirarchyIdText), :p_oldParentPath, :p_newParentPath)::ltree, modified_by = :p_ModifiedBy, modified_date = NOW() WHERE orgid = :p_orgId AND channel_id = :p_channelID AND sub_channel_id = :p_subChannelId AND (hierarchy_path = :p_oldParentPath::ltree OR hierarchy_path <@ :p_oldParentPath::ltree OR PartnerBranchHeirarchyId = :p_PartnerBranchHeirarchyId)"
+        "Script": "UPDATE hms.partner_branch_heirarchy SET hierarchy_path = REPLACE(COALESCE(hierarchy_path::text, :p_PartnerBranchHeirarchyIdText), :p_oldParentPath, :p_newParentPath)::ltree, modified_by = :p_ModifiedBy, modified_date = NOW() WHERE orgid = :p_orgId AND channel_id = :p_channelID AND sub_channel_id = :p_subChannelId AND (hierarchy_path = :p_oldParentPath::ltree OR hierarchy_path <@ :p_oldParentPath::ltree OR partner_branch_heirarchy_id = :p_PartnerBranchHeirarchyId)"
       }
     },
     "Commission": {

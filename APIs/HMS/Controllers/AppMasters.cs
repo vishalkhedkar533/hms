@@ -1118,6 +1118,9 @@ namespace HMS.Controllers
                         p_newParentPath = string.IsNullOrEmpty(parentResult?.HierarchyPath) ? entity.PartnerBranchHeirarchyId.ToString() : $"{parentResult?.HierarchyPath ?? string.Empty}.{entity.PartnerBranchHeirarchyId}",
                         p_PartnerBranchHeirarchyId = entity.PartnerBranchHeirarchyId,
                         p_PartnerBranchHeirarchyIdText = entity.PartnerBranchHeirarchyId.ToString(),
+                        p_orgId = orgId,
+                        p_channelID = ChannelId,
+                        p_subChannelID = SubChannelId,
                         p_ModifiedBy = loggedInUserId
                     });
 

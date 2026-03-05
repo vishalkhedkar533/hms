@@ -72,7 +72,7 @@ namespace Tasks.Insurance
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/InsertSrApprover not found.");
             var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/UpdateInboxStatus not found.");
-            var managerRolesSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
+            var reportingMgrSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/GetManagerHierarchyRoles not found.");
 
             var token = CancellationToken.None;
@@ -101,9 +101,56 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                var approverRoles = config.UseDefaultApprover.Value
-                    ? await ResolveManagerHierarchyRolesAsync(conn, managerRolesSql, entry)
-                    : ResolveCustomApproverRoles(config);
+                if (config.UseDefaultApprover.Value)
+                {
+                    var reportingMgrId = await ResolveReportingManagerIdAsync(conn, reportingMgrSql, entry);
+                    if (!reportingMgrId.HasValue)
+                    {
+                        _logger.LogWarning("No reporting manager resolved for OrgId={OrgId}, SrNo={SrNo}.", entry.OrgId, entry.SrNo);
+                        continue;
+                    }
+
+                    await using var defaultTx = await conn.BeginTransactionAsync(token);
+                    try
+                    {
+                        await conn.ExecuteAsync(
+                            insertSql,
+                            new
+                            {
+                                orgId = entry.OrgId,
+                                srNo = entry.SrNo,
+                                approverLevel = 1,
+                                allocatedRoleId = (int?)null,
+                                reportingMgr = reportingMgrId.Value,
+                                decisionBy = entry.CreatedBy,
+                                decisionOn = (DateTime?)null,
+                                approverDecision = 1,
+                            },
+                            transaction: defaultTx);
+
+                        await conn.ExecuteAsync(
+                            updateInboxSql,
+                            new
+                            {
+                                orgId = entry.OrgId,
+                                srNo = entry.SrNo,
+                                srStatus = 2,
+                            },
+                            transaction: defaultTx);
+
+                        await defaultTx.CommitAsync(token);
+                        _logger.LogInformation("Processed inbox entry SrNo={SrNo} with reporting manager.", entry.SrNo);
+                    }
+                    catch (Exception ex)
+                    {
+                        await defaultTx.RollbackAsync(token);
+                        _logger.LogError(ex, "Failed to process inbox entry SrNo={SrNo}.", entry.SrNo);
+                    }
+
+                    continue;
+                }
+
+                var approverRoles = ResolveCustomApproverRoles(config);
 
                 if (approverRoles.Count == 0)
                 {
@@ -111,7 +158,7 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                await using var tx = await conn.BeginTransactionAsync(token);
+                await using var customTx = await conn.BeginTransactionAsync(token);
                 try
                 {
                     var level = 1;
@@ -125,10 +172,12 @@ namespace Tasks.Insurance
                                 srNo = entry.SrNo,
                                 approverLevel = level,
                                 allocatedRoleId = roleId,
+                                reportingMgr = (int?)null,
                                 decisionBy = entry.CreatedBy,
                                 decisionOn = (DateTime?)null,
+                                approverDecision = 1,
                             },
-                            transaction: tx);
+                            transaction: customTx);
                         level++;
                     }
 
@@ -139,16 +188,15 @@ namespace Tasks.Insurance
                             orgId = entry.OrgId,
                             srNo = entry.SrNo,
                             srStatus = 2,
-                            //allocatedRoleId = approverRoles[0]
                         },
-                        transaction: tx);
+                        transaction: customTx);
 
-                    await tx.CommitAsync(token);
+                    await customTx.CommitAsync(token);
                     _logger.LogInformation("Processed inbox entry SrNo={SrNo} with {Count} approvers.", entry.SrNo, approverRoles.Count);
                 }
                 catch (Exception ex)
                 {
-                    await tx.RollbackAsync(token);
+                    await customTx.RollbackAsync(token);
                     _logger.LogError(ex, "Failed to process inbox entry SrNo={SrNo}.", entry.SrNo);
                 }
             }
@@ -178,6 +226,7 @@ namespace Tasks.Insurance
                             srNo = entry.SrNo,
                             approverLevel = 1,
                             allocatedRoleId = allocatedRoleId.Value,
+                            reportingMgr = (int?)null,
                             decisionBy = entry.CreatedBy,
                             decisionOn = DateTime.UtcNow,
                             approverDecision = 2
@@ -361,27 +410,24 @@ namespace Tasks.Insurance
             }
             return null;
         }
-        private async Task<List<int>> ResolveManagerHierarchyRolesAsync(DbConnection conn, string managerRolesSql, InboxEntry entry)
+        private async Task<int?> ResolveReportingManagerIdAsync(DbConnection conn, string reportingMgrSql, InboxEntry entry)
         {
             if (entry.CreatedBy == 0)
             {
-                _logger.LogWarning("Inbox entry SrNo={SrNo} missing CreatedBy; cannot resolve manager hierarchy.", entry.SrNo);
-                return new List<int>();
+                _logger.LogWarning("Inbox entry SrNo={SrNo} missing CreatedBy; cannot resolve reporting manager.", entry.SrNo);
+                return null;
             }
 
-            var managerId = (await conn.QueryAsync<ManagerHierarchyRole>(
-                managerRolesSql,
-                new { orgId = entry.OrgId, userId = entry.CreatedBy }))
-                .OrderBy(r => r.Level)
-                .Select(r => r.RoleId)
-                .FirstOrDefault();
+            var reportingMgrId = await conn.QuerySingleOrDefaultAsync<int?>(
+                reportingMgrSql,
+                new { orgId = entry.OrgId, userId = entry.CreatedBy });
 
-            if (managerId <= 0)
+            if (!reportingMgrId.HasValue || reportingMgrId.Value <= 0)
             {
-                return new List<int>();
+                return null;
             }
 
-            return new List<int> { managerId, managerId, managerId };
+            return reportingMgrId.Value;
         }
         private static List<int> ResolveCustomApproverRoles(InboxFieldConfig config)
         {

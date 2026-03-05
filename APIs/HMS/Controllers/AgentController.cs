@@ -15,6 +15,7 @@ using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Security.Claims;
+using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -31,6 +32,7 @@ namespace HMS.Controllers
         private int refreshInterval = 15;
         private readonly IConfiguration _configuration;
         private readonly ILogger<Agent> _logger;
+        private int orgId;
         public AgentController(HMSContext context, IConfiguration config, IMapper mapper, IConfiguration configuration
             , DatabaseService db, IAuthClaimService authClaimService, GenericCacheService cacheService, ILogger<Agent> logger)
         {
@@ -2023,6 +2025,51 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
+        [HttpPost("{ChannelId}/{SubChannelId}/Agent/Search")]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
+        public async Task<IActionResult> GetAgentBySubChannel([FromRoute] int ChannelId, [FromRoute] int SubChannelId, [FromBody]SearchAgent agentDto)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
+            if (string.IsNullOrEmpty(agentDto.SearchCondition))
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = $"Please specify a search criteria, you can search on AgentCode/MobileNo/Email/PanNumber";
+                return Conflict(hMSResponse);
+            }
+            if (! _context.SubchannelMaster.AsNoTracking().Any(x=> x.OrgId == orgId 
+            && x.ChannelId == ChannelId 
+            && x.SubChannelId == SubChannelId))
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = $"Please verify the Channel and SubChannel";
+                return Conflict(hMSResponse);
+            }
+
+            var Agents = _context.Agents.AsNoTracking()
+                .Where(u => u.OrgId == orgId && u.Channel == ChannelId && u.SubChannel == SubChannelId 
+                && (u.AgentCode.ToUpper() == agentDto.SearchCondition
+                || u.MobileNo == agentDto.SearchCondition
+                || u.Email == agentDto.SearchCondition
+                || u.PanNumber == agentDto.SearchCondition))
+                .Select(x => new AgentDto { AgentId = x.AgentId
+                , AgentCode = x.AgentCode
+                , AgentName =x.AgentName}).ToList();
+
+            if (Agents == null)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = $"No Agent located for the criteria. please verify the channel and subchannel";
+                return Conflict(hMSResponse);
+            }
+
+            hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            hMSResponse.responseHeader.ErrorMessage = $"{Agents.Count()} Agent(s) found";
+            hMSResponse.responseBody.agents = Agents;
+            return Ok(hMSResponse);
+        }
     }
 }

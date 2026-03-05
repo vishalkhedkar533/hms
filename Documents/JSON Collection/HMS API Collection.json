@@ -80,7 +80,7 @@
       ]
     },
     {
-      "name": "Masters",
+      "name": "AppMasters",
       "item": [
         {
           "name": "BranchSave",
@@ -326,6 +326,108 @@
                 "UpdateUser"
               ]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "PartnerBranchHierarchySave",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMiIsIm5hbWVpZCI6IjEyIiwidW5pcXVlX25hbWUiOiJuYXZpbmsiLCJqdGkiOiI5YzFmOTk5OS1hY2JkLTQ4YjQtOGFkNi1hZTgyYTJiNzg2ZmEiLCJPcmdhbmlzYXRpb25JZCI6IjIiLCJPcmdhbmlzYXRpb25OYW1lIjoiRXp5VGVrIDIiLCJTdWJzY3JpYmVySWQiOiIxIiwiU3Vic2NyaWJlck5hbWUiOiJFenlUZWsgQ29uc3VsdGluZyIsInJvbGUiOlsiQWRtaW4iLCJGaW5hbmNlIl0sIm5iZiI6MTc3MjY5NzM3OCwiZXhwIjoxNzcyNjk3OTc4LCJpYXQiOjE3NzI2OTczNzgsImlzcyI6IkhNU19Jc3N1ZXIiLCJhdWQiOiJITVNfQXVkaWVuY2UifQ.8opS80i6_fgrpQ9i-Za5221MRxCje6TqVxLA1iOaiN4",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "accept",
+                "value": "*/*"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"partnerBranchHierarchyId\": null,\r\n    \"parentBranchHierarchyId\": 1,\r\n    \"partnerBranch\": \"Gaurav\",\r\n    \"partnerBranchCode\": \"101\",\r\n    \"channelId\": 1,\r\n    \"subChannelId\": 1,\r\n    \"partnerAddress\": \"Delhi\",\r\n    \"partnerMail\": \"rathore@15\",\r\n    \"partnerPhone\": \"8383028778\",\r\n    \"hierarchyPath\": null,\r\n    \"relationMgr\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{HMSAPI}}/api/AppMasters/1/1/PartnerBranchHierarchy/Save",
+              "host": [
+                "{{HMSAPI}}"
+              ],
+              "path": [
+                "api",
+                "AppMasters",
+                "1",
+                "1",
+                "PartnerBranchHierarchy",
+                "Save"
+              ]
+            },
+            "description": "Generated from cURL: curl -X 'POST' \\\r\n  'http://localhost:5234/api/AppMasters/1/1/PartnerBranchHierarchy/Save' \\\r\n  -H 'accept: */*' \\\r\n  -H 'Content-Type: application/json' \\\r\n  -d '{\r\n  \"partnerBranchHierarchyId\": 0,\r\n  \"parentBranchHierarchyId\": 0,\r\n  \"channelId\": 0,\r\n  \"subChannelId\": 0,\r\n  \"partnerBranchCode\": \"string\",\r\n  \"partnerBranch\": \"string\",\r\n  \"partnerAddress\": \"string\",\r\n  \"partnerMail\": \"string\",\r\n  \"partnerPhone\": \"string\",\r\n  \"hierarchyPath\": \"string\",\r\n  \"relationMgr\": 0,\r\n  \"relationMgrName\": 0\r\n}'"
+          },
+          "response": []
+        },
+        {
+          "name": "PartnerBranchHierarchyFetch",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMiIsIm5hbWVpZCI6IjEyIiwidW5pcXVlX25hbWUiOiJuYXZpbmsiLCJqdGkiOiI3MjZiNzMxNi0wMDdjLTQ0YjAtYWUyOC04YTcwOGYwMmEyMGQiLCJPcmdhbmlzYXRpb25JZCI6IjIiLCJPcmdhbmlzYXRpb25OYW1lIjoiRXp5VGVrIDIiLCJTdWJzY3JpYmVySWQiOiIxIiwiU3Vic2NyaWJlck5hbWUiOiJFenlUZWsgQ29uc3VsdGluZyIsInJvbGUiOlsiQWRtaW4iLCJGaW5hbmNlIl0sIm5iZiI6MTc3MjY5ODYzOSwiZXhwIjoxNzcyNjk5MjM5LCJpYXQiOjE3NzI2OTg2MzksImlzcyI6IkhNU19Jc3N1ZXIiLCJhdWQiOiJITVNfQXVkaWVuY2UifQ.FD6eo7id2Q2lL1DUIMIybD7ZdLMXgLnwX-R2VpqauRM",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "accept",
+                "value": "*/*"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"channelId\": 0,\r\n  \"subChannelId\": 0,\r\n  \"partnerBranchCode\": \"string\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{HMSAPI}}/api/AppMasters/1/1/PartnerBranchHierarchy/Fetch",
+              "host": [
+                "{{HMSAPI}}"
+              ],
+              "path": [
+                "api",
+                "AppMasters",
+                "1",
+                "1",
+                "PartnerBranchHierarchy",
+                "Fetch"
+              ]
+            },
+            "description": "Generated from cURL: curl -X 'POST' \\\r\n  'http://localhost:5234/api/AppMasters/1/1/PartnerBranchHierarchy/Fetch' \\\r\n  -H 'accept: */*' \\\r\n  -H 'Content-Type: application/json' \\\r\n  -d '{\r\n  \"channelId\": 0,\r\n  \"subChannelId\": 0,\r\n  \"partnerBranchCode\": \"string\"\r\n}'"
           },
           "response": []
         }

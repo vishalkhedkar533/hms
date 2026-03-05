@@ -574,6 +574,7 @@ namespace HMS.Controllers
                     p_channelID = designation.ChannelId,
                     p_subChannelId = designation.SubChannelId,
                     p_designationId = designation.DesignationId,
+                    p_ModifiedBy =  loggedInUserId
                 });
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
@@ -1063,11 +1064,10 @@ namespace HMS.Controllers
 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 1. Validation: Relation Manager
-                bool agentExists = await _context.agent.AnyAsync(x => x.OrgId == orgId
+                bool agentExists = await _context.agent.AsNoTracking().AnyAsync(x => x.OrgId == orgId
                                             && x.AgentId == dto.RelationMgr
                                             && x.Channel == ChannelId
                                             && x.SubChannel == SubChannelId);
@@ -1080,39 +1080,22 @@ namespace HMS.Controllers
                 }
 
                 // 2. Fetch Parent Path
-                string? parentPath = null;
+                PartnerBranchHeirarchy? parentResult = null;
                 if (dto.ParentBranchHierarchyId.HasValue)
                 {
-                    parentPath = await _context.PartnerBranchHierarchies
-                        .Where(x => x.PartnerBranchHeirarchyId == dto.ParentBranchHierarchyId)
-                        .Select(x => x.HierarchyPath)
-                        .FirstOrDefaultAsync();
+                    parentResult = await _context.PartnerBranchHierarchies.AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.PartnerBranchHeirarchyId == dto.ParentBranchHierarchyId);
                 }
 
                 // Determine if Update
-                bool isUpdate = dto.PartnerBranchHierarchyId.HasValue && dto.PartnerBranchHierarchyId > 0;
-                PartnerBranchHeirarchy? entity = null;
+                PartnerBranchHeirarchy entity = await _context.PartnerBranchHierarchies
+                        .FirstOrDefaultAsync(x => x.OrgId == orgId && x.PartnerBranchCode == (dto.PartnerBranchCode ?? string.Empty));
 
-                if (isUpdate)
+                if (entity!= null)
                 {
-                    entity = await _context.PartnerBranchHierarchies
-                        .FirstOrDefaultAsync(x => x.PartnerBranchHeirarchyId == dto.PartnerBranchHierarchyId);
-
-                    if (entity == null)
-                    {
-                        hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                        hmsResponse.responseHeader.ErrorMessage = "Partner Branch Hierarchy not found.";
-                        return NotFound(hmsResponse);
-                    }
-
                     _mapper.Map(dto, entity);
                     entity.ModifiedBy = loggedInUserId;
                     entity.ModifiedDate = DateTime.UtcNow;
-
-                    // Only update path if we have a parent
-                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
-                        ? entity.PartnerBranchHeirarchyId.ToString()
-                        : $"{parentPath}.{entity.PartnerBranchHeirarchyId}";
                 }
                 else
                 {
@@ -1122,17 +1105,21 @@ namespace HMS.Controllers
                     entity.SubChannelId = SubChannelId;
                     entity.CreatedBy = loggedInUserId;
                     entity.CreatedDate = DateTime.UtcNow;
-
                     await _context.PartnerBranchHierarchies.AddAsync(entity);
-                    await _context.SaveChangesAsync(); // First save to generate Serial ID
-
-                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
-                        ? entity.PartnerBranchHeirarchyId.ToString()
-                        : $"{parentPath}.{entity.PartnerBranchHeirarchyId}";
                 }
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                await _db.ExecuteQueryAsync<int>(
+                    "Master",
+                    "UpdatePartnerBranch",
+                    new
+                    {
+                        p_oldParentPath = $"{entity?.HierarchyPath ?? entity.PartnerBranchHeirarchyId.ToString()}",
+                        p_newParentPath = string.IsNullOrEmpty(parentResult?.HierarchyPath) ? entity.PartnerBranchHeirarchyId.ToString() : $"{parentResult?.HierarchyPath ?? string.Empty}.{entity.PartnerBranchHeirarchyId}",
+                        p_PartnerBranchHeirarchyId = entity.PartnerBranchHeirarchyId,
+                        p_PartnerBranchHeirarchyIdText = entity.PartnerBranchHeirarchyId.ToString(),
+                        p_ModifiedBy = loggedInUserId
+                    });
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "Partner Branch Saved Successfully";

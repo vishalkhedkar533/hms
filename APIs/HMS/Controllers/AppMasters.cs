@@ -1159,7 +1159,7 @@ namespace HMS.Controllers
             try
             {
                 // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
-                var flatList = await _context.PartnerBranchHierarchies.AsNoTracking()
+                var flatList = await _context.PartnerBranchHierarchies.AsNoTracking().Include(x => x.RelationshipManager)
                             .Where(d => d.OrgId == orgId
                                      && d.ChannelId == ChannelId
                                      && d.SubChannelId == SubChannelId)
@@ -1179,7 +1179,8 @@ namespace HMS.Controllers
                         PartnerAddress = d.PartnerAddress,
                         PartnerMail = d.PartnerMail,
                         PartnerPhone = d.PartnerPhone,
-                        RelationMgr = d.RelationMgr
+                        RelationMgr = d.RelationMgr,
+                        RelationshipManagerName = d.RelationshipManager != null ? d.RelationshipManager.AgentName : null,
                     });
 
                 List<PartnerBranchNode> rootNodes = new();
@@ -1206,7 +1207,7 @@ namespace HMS.Controllers
                     }
                 }
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Updated Successfully";
+                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Fetched Successfully";
                 hmsResponse.responseBody.partnerBranchNode = rootNodes;
                 return Ok(hmsResponse);
             }

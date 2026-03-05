@@ -157,6 +157,7 @@ namespace Models.DB
         public string? PartnerMail { get; set; }
         public string? PartnerPhone { get; set; }
         public int? RelationMgr { get; set; }
+        public string? RelationshipManagerName { get; set; }
         public List<PartnerBranchNode>? ReportingBranches { get; set; } = new();
     }
 }

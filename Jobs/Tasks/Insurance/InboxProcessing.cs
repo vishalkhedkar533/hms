@@ -3,17 +3,18 @@ using Dapper;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
-using Tasks.Models;
 using System.Data.Common;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
-using Microsoft.Extensions.Configuration.UserSecrets;
+using Tasks.Models;
 
 namespace Tasks.Insurance
 {
     public class InboxProcessing
     {
+        private const string BackgroundJobUserNameCategory = "BackgroundJobUserName";
+        private const string BackgroundJobUserPasswordCategory = "BackgroundJobUserPassword";
         private readonly IMappingProvider _mappingProvider;
         private readonly IConfiguration _configuration;
         private readonly ILogger<InboxProcessing> _logger;
@@ -71,7 +72,7 @@ namespace Tasks.Insurance
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/InsertSrApprover not found.");
             var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/UpdateInboxStatus not found.");
-            var managerRolesSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
+            var reportingMgrSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
                 ?? throw new InvalidOperationException("Operation mapping for Inbox/GetManagerHierarchyRoles not found.");
 
             var token = CancellationToken.None;
@@ -96,13 +97,60 @@ namespace Tasks.Insurance
 
                 if (config.UseDefaultApprover is null)
                 {
-                    await HandleAutoApprovalAsync(conn, updateInboxSql, entry, token);
+                    await HandleAutoApprovalAsync(conn, insertSql, updateInboxSql, entry, config, token);
                     continue;
                 }
 
-                var approverRoles = config.UseDefaultApprover.Value
-                    ? await ResolveManagerHierarchyRolesAsync(conn, managerRolesSql, entry)
-                    : ResolveCustomApproverRoles(config);
+                if (config.UseDefaultApprover.Value)
+                {
+                    var reportingMgrId = await ResolveReportingManagerIdAsync(conn, reportingMgrSql, entry);
+                    if (!reportingMgrId.HasValue)
+                    {
+                        _logger.LogWarning("No reporting manager resolved for OrgId={OrgId}, SrNo={SrNo}.", entry.OrgId, entry.SrNo);
+                        continue;
+                    }
+
+                    await using var defaultTx = await conn.BeginTransactionAsync(token);
+                    try
+                    {
+                        await conn.ExecuteAsync(
+                            insertSql,
+                            new
+                            {
+                                orgId = entry.OrgId,
+                                srNo = entry.SrNo,
+                                approverLevel = 1,
+                                allocatedRoleId = (int?)null,
+                                reportingMgr = reportingMgrId.Value,
+                                decisionBy = entry.CreatedBy,
+                                decisionOn = (DateTime?)null,
+                                approverDecision = 1,
+                            },
+                            transaction: defaultTx);
+
+                        await conn.ExecuteAsync(
+                            updateInboxSql,
+                            new
+                            {
+                                orgId = entry.OrgId,
+                                srNo = entry.SrNo,
+                                srStatus = 2,
+                            },
+                            transaction: defaultTx);
+
+                        await defaultTx.CommitAsync(token);
+                        _logger.LogInformation("Processed inbox entry SrNo={SrNo} with reporting manager.", entry.SrNo);
+                    }
+                    catch (Exception ex)
+                    {
+                        await defaultTx.RollbackAsync(token);
+                        _logger.LogError(ex, "Failed to process inbox entry SrNo={SrNo}.", entry.SrNo);
+                    }
+
+                    continue;
+                }
+
+                var approverRoles = ResolveCustomApproverRoles(config);
 
                 if (approverRoles.Count == 0)
                 {
@@ -110,7 +158,7 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                await using var tx = await conn.BeginTransactionAsync(token);
+                await using var customTx = await conn.BeginTransactionAsync(token);
                 try
                 {
                     var level = 1;
@@ -124,10 +172,12 @@ namespace Tasks.Insurance
                                 srNo = entry.SrNo,
                                 approverLevel = level,
                                 allocatedRoleId = roleId,
+                                reportingMgr = (int?)null,
                                 decisionBy = entry.CreatedBy,
                                 decisionOn = (DateTime?)null,
+                                approverDecision = 1,
                             },
-                            transaction: tx);
+                            transaction: customTx);
                         level++;
                     }
 
@@ -138,26 +188,24 @@ namespace Tasks.Insurance
                             orgId = entry.OrgId,
                             srNo = entry.SrNo,
                             srStatus = 2,
-                            //allocatedRoleId = approverRoles[0]
                         },
-                        transaction: tx);
+                        transaction: customTx);
 
-                    await tx.CommitAsync(token);
+                    await customTx.CommitAsync(token);
                     _logger.LogInformation("Processed inbox entry SrNo={SrNo} with {Count} approvers.", entry.SrNo, approverRoles.Count);
                 }
                 catch (Exception ex)
                 {
-                    await tx.RollbackAsync(token);
+                    await customTx.RollbackAsync(token);
                     _logger.LogError(ex, "Failed to process inbox entry SrNo={SrNo}.", entry.SrNo);
                 }
             }
 
             _logger.LogInformation("InboxProcessing job finished for OrgId={OrgId}", _orgId);
         }
-
-        private async Task HandleAutoApprovalAsync(DbConnection conn, string updateInboxSql, InboxEntry entry, CancellationToken token)
+        private async Task HandleAutoApprovalAsync(DbConnection conn, string insertSql, string updateInboxSql, InboxEntry entry, InboxFieldConfig config, CancellationToken token)
         {
-            var applied = await TryInvokeApprovalEndpointAsync(entry, token);
+            var applied = await TryInvokeApprovalEndpointAsync(conn, entry, token);
             if (!applied)
             {
                 _logger.LogWarning("Auto-approval skipped for SrNo={SrNo} because approval call failed.", entry.SrNo);
@@ -167,6 +215,29 @@ namespace Tasks.Insurance
             await using var tx = await conn.BeginTransactionAsync(token);
             try
             {
+                var allocatedRoleId = ResolveAutoApprovalRoleId(entry);
+                if (allocatedRoleId.HasValue)
+                {
+                    await conn.ExecuteAsync(
+                        insertSql,
+                        new
+                        {
+                            orgId = entry.OrgId,
+                            srNo = entry.SrNo,
+                            approverLevel = 1,
+                            allocatedRoleId = allocatedRoleId.Value,
+                            reportingMgr = (int?)null,
+                            decisionBy = entry.CreatedBy,
+                            decisionOn = DateTime.UtcNow,
+                            approverDecision = 2
+                        },
+                        transaction: tx);
+                }
+                else
+                {
+                    _logger.LogWarning("Auto-approval entry SrNo={SrNo} has no role id configured; skipping sr_approver insert.", entry.SrNo);
+                }
+
                 await conn.ExecuteAsync(
                     updateInboxSql,
                     new
@@ -187,8 +258,7 @@ namespace Tasks.Insurance
                 _logger.LogError(ex, "Failed to update auto-approved inbox entry SrNo={SrNo}.", entry.SrNo);
             }
         }
-
-        private async Task<bool> TryInvokeApprovalEndpointAsync(InboxEntry entry, CancellationToken token)
+        private async Task<bool> TryInvokeApprovalEndpointAsync(DbConnection conn, InboxEntry entry, CancellationToken token)
         {
             var baseUrl = _configuration.GetValue<string>("ApiSettings:BaseUrl");
             if (string.IsNullOrWhiteSpace(baseUrl))
@@ -216,7 +286,7 @@ namespace Tasks.Insurance
             }
 
             var client = _httpClientFactory.CreateClient();
-            var tokenValue = _configuration.GetValue<string>("ApiSettings:AuthToken");
+            var tokenValue = await GetBackgroundJobAuthTokenAsync(conn, token);
             if (!string.IsNullOrWhiteSpace(tokenValue))
             {
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenValue);
@@ -232,24 +302,81 @@ namespace Tasks.Insurance
 
             return true;
         }
-
-        private static bool TryBuildApprovalUri(string baseUrl, string approvalEndpoint, out Uri requestUri)
+        private async Task<string?> GetBackgroundJobAuthTokenAsync(DbConnection conn, CancellationToken token)
         {
-            requestUri = null!;
-            if (Uri.TryCreate(approvalEndpoint, UriKind.Absolute, out var absolute))
+            var masterSql = _mappingProvider.GetScriptForOperation("Master", "KeyValueEntries")?.Script
+                ?? throw new InvalidOperationException("Operation mapping for Master/KeyValueEntries not found.");
+
+            var sql = masterSql.Replace("{{FilterCriteria}}", "AND k.entrycategory = ANY(@entryCategories) AND (k.activestatus IS NULL OR k.activestatus = true)");
+            var entries = (await conn.QueryAsync<KeyValueEntry>(sql, new
             {
-                requestUri = absolute;
-                return true;
+                OrgId = _orgId,
+                entryCategories = new[] { BackgroundJobUserNameCategory, BackgroundJobUserPasswordCategory }
+            })).ToList();
+
+            var username = entries.FirstOrDefault(e => e.EntryCategory == BackgroundJobUserNameCategory)?.EntryDesc;
+            var password = entries.FirstOrDefault(e => e.EntryCategory == BackgroundJobUserPasswordCategory)?.EntryDesc;
+
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                _logger.LogWarning("Background job credentials missing in keyvalueentries for OrgId={OrgId}.", _orgId);
+                return null;
             }
 
-            if (!Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri))
+            var baseUrl = _configuration.GetValue<string>("ApiSettings:BaseUrl");
+            if (string.IsNullOrWhiteSpace(baseUrl))
+            {
+                _logger.LogWarning("ApiSettings:BaseUrl is not configured. Cannot obtain auth token.");
+                return null;
+            }
+
+            var loginUri = new Uri(new Uri(baseUrl), "api/Auth/login");
+            var client = _httpClientFactory.CreateClient();
+
+            var payload = JsonSerializer.Serialize(new { Username = username, Password = password });
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync(loginUri, content, token);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(token);
+                _logger.LogWarning("Auth login failed for background job. Status={Status}. Response={Response}", response.StatusCode, errorBody);
+                return null;
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(token);
+            using var document = await JsonDocument.ParseAsync(stream, cancellationToken: token);
+            if (document.RootElement.TryGetProperty("responseBody", out var responseBody)
+                && responseBody.TryGetProperty("loginResponse", out var loginResponse)
+                && loginResponse.TryGetProperty("token", out var tokenElement))
+            {
+                return tokenElement.GetString();
+            }
+
+            _logger.LogWarning("Auth token not found in login response for background job.");
+            return null;
+        }
+        private static bool TryBuildApprovalUri(string baseUrl, string endpoint, out Uri requestUri)
+        {
+            requestUri = null!;
+            if (string.IsNullOrWhiteSpace(baseUrl) || string.IsNullOrWhiteSpace(endpoint))
             {
                 return false;
             }
 
-            return Uri.TryCreate(baseUri, approvalEndpoint.TrimStart('/'), out requestUri);
+            try
+            {
+                // Ensure baseUrl ends with '/' and endpoint does not start with '/'
+                var normalizedBaseUrl = baseUrl.EndsWith("/") ? baseUrl : baseUrl + "/";
+                var normalizedEndpoint = endpoint.StartsWith("/") ? endpoint.Substring(1) : endpoint;
+                requestUri = new Uri(new Uri(normalizedBaseUrl), normalizedEndpoint);
+                return true;
+            }
+            catch
+            {
+                requestUri = null!;
+                return false;
+            }
         }
-
         private static bool TryExtractPayload(string payloadJson, out string normalizedPayload)
         {
             normalizedPayload = string.Empty;
@@ -275,30 +402,33 @@ namespace Tasks.Insurance
                 return false;
             }
         }
-
-        private async Task<List<int>> ResolveManagerHierarchyRolesAsync(DbConnection conn, string managerRolesSql, InboxEntry entry)
+        private static int? ResolveAutoApprovalRoleId(InboxEntry entry)
+        {
+            if (entry.AllocatedToRole.HasValue)
+            {
+                return entry.AllocatedToRole.Value;
+            }
+            return null;
+        }
+        private async Task<int?> ResolveReportingManagerIdAsync(DbConnection conn, string reportingMgrSql, InboxEntry entry)
         {
             if (entry.CreatedBy == 0)
             {
-                _logger.LogWarning("Inbox entry SrNo={SrNo} missing CreatedBy; cannot resolve manager hierarchy.", entry.SrNo);
-                return new List<int>();
+                _logger.LogWarning("Inbox entry SrNo={SrNo} missing CreatedBy; cannot resolve reporting manager.", entry.SrNo);
+                return null;
             }
 
-            var managerId = (await conn.QueryAsync<ManagerHierarchyRole>(
-                managerRolesSql,
-                new { orgId = entry.OrgId, userId = entry.CreatedBy }))
-                .OrderBy(r => r.Level)
-                .Select(r => r.RoleId)
-                .FirstOrDefault();
+            var reportingMgrId = await conn.QuerySingleOrDefaultAsync<int?>(
+                reportingMgrSql,
+                new { orgId = entry.OrgId, userId = entry.CreatedBy });
 
-            if (managerId <= 0)
+            if (!reportingMgrId.HasValue || reportingMgrId.Value <= 0)
             {
-                return new List<int>();
+                return null;
             }
 
-            return new List<int> { managerId, managerId, managerId };
+            return reportingMgrId.Value;
         }
-
         private static List<int> ResolveCustomApproverRoles(InboxFieldConfig config)
         {
             var roles = new List<int>();
@@ -317,12 +447,6 @@ namespace Tasks.Insurance
             }
 
             return roles;
-        }
-
-        private sealed class ManagerHierarchyRole
-        {
-            public int RoleId { get; set; }
-            public int Level { get; set; }
         }
     }
 }

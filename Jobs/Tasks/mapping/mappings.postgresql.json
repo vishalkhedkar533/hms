@@ -65,7 +65,7 @@
     "Inbox": {
       "GetPendingInbox": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT i.srno AS SrNo, i.orgid AS OrgId, i.component_id AS ComponentId, i.created_by AS CreatedBy, i.approvalendpoint AS ApprovalEndpoint, i.approvalpayload AS ApprovalPayload FROM hms.inbox i WHERE i.srstatus = 1 AND i.orgid = @orgId AND NOT EXISTS (SELECT 1 FROM hms.sr_approver sa WHERE sa.srno = i.srno AND sa.orgid = i.orgid)"
+        "Script": "SELECT i.srno AS SrNo, i.orgid AS OrgId, i.component_id AS ComponentId, i.created_by AS CreatedBy, i.approvalendpoint AS ApprovalEndpoint, i.approvalpayload AS ApprovalPayload, i.allocated_to_role AS AllocatedToRole FROM hms.inbox i WHERE i.srstatus = 1 AND i.orgid = @orgId AND NOT EXISTS (SELECT 1 FROM hms.sr_approver sa WHERE sa.srno = i.srno AND sa.orgid = i.orgid)"
       },
       "GetFieldConfig": {
         "ConnectionStringKey": "CommissionDB",
@@ -77,7 +77,7 @@
       },
       "InsertSrApprover": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid, decisionby, decisionon) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId, @decisionBy, @decisionOn)"
+        "Script": "INSERT INTO hms.sr_approver (orgid, srno, approverlevel, allocatedroleid, reporting_mgr, decisionby, decisionon, approver_decision) VALUES (@orgId, @srNo, @approverLevel, @allocatedRoleId, @reportingMgr, @decisionBy, @decisionOn, @approverDecision)"
       },
       "UpdateInboxStatus": {
         "ConnectionStringKey": "CommissionDB",

@@ -1128,7 +1128,6 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }

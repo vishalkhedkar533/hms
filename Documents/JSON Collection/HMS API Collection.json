@@ -337,7 +337,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMiIsIm5hbWVpZCI6IjEyIiwidW5pcXVlX25hbWUiOiJuYXZpbmsiLCJqdGkiOiI5YzFmOTk5OS1hY2JkLTQ4YjQtOGFkNi1hZTgyYTJiNzg2ZmEiLCJPcmdhbmlzYXRpb25JZCI6IjIiLCJPcmdhbmlzYXRpb25OYW1lIjoiRXp5VGVrIDIiLCJTdWJzY3JpYmVySWQiOiIxIiwiU3Vic2NyaWJlck5hbWUiOiJFenlUZWsgQ29uc3VsdGluZyIsInJvbGUiOlsiQWRtaW4iLCJGaW5hbmNlIl0sIm5iZiI6MTc3MjY5NzM3OCwiZXhwIjoxNzcyNjk3OTc4LCJpYXQiOjE3NzI2OTczNzgsImlzcyI6IkhNU19Jc3N1ZXIiLCJhdWQiOiJITVNfQXVkaWVuY2UifQ.8opS80i6_fgrpQ9i-Za5221MRxCje6TqVxLA1iOaiN4",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMiIsIm5hbWVpZCI6IjEyIiwidW5pcXVlX25hbWUiOiJuYXZpbmsiLCJqdGkiOiI1OTFmZTliNC0xOTQ1LTQwYzAtOTQ3My1hZDcwNGNiZmYzYmQiLCJPcmdhbmlzYXRpb25JZCI6IjIiLCJPcmdhbmlzYXRpb25OYW1lIjoiRXp5VGVrIDIiLCJTdWJzY3JpYmVySWQiOiIxIiwiU3Vic2NyaWJlck5hbWUiOiJFenlUZWsgQ29uc3VsdGluZyIsInJvbGUiOlsiQWRtaW4iLCJGaW5hbmNlIl0sIm5iZiI6MTc3MjcyMjE1NiwiZXhwIjoxNzcyNzIyNzU2LCJpYXQiOjE3NzI3MjIxNTYsImlzcyI6IkhNU19Jc3N1ZXIiLCJhdWQiOiJITVNfQXVkaWVuY2UifQ.diTzOTE_z76VpCus4wEm2tn6So31elx5o4cl59YIGSE",
                   "type": "string"
                 }
               ]
@@ -355,7 +355,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"partnerBranchHierarchyId\": null,\r\n    \"parentBranchHierarchyId\": 1,\r\n    \"partnerBranch\": \"Gaurav\",\r\n    \"partnerBranchCode\": \"101\",\r\n    \"channelId\": 1,\r\n    \"subChannelId\": 1,\r\n    \"partnerAddress\": \"Delhi\",\r\n    \"partnerMail\": \"rathore@15\",\r\n    \"partnerPhone\": \"8383028778\",\r\n    \"hierarchyPath\": null,\r\n    \"relationMgr\": 1\r\n}",
+              "raw": "{\r\n    \"partnerBranchHierarchyId\": null,\r\n    \"parentBranchHierarchyId\": 15,\r\n    \"partnerBranch\": \"delhi\",\r\n    \"partnerBranchCode\": \"DEL002\",\r\n    \"channelId\": 1,\r\n    \"subChannelId\": 13,\r\n    \"partnerAddress\": \"Delhi\",\r\n    \"partnerMail\": \"rathore@15\",\r\n    \"partnerPhone\": \"8383028778\",\r\n    \"hierarchyPath\": null,\r\n    \"relationMgr\": 464\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -363,7 +363,7 @@
               }
             },
             "url": {
-              "raw": "{{HMSAPI}}/api/AppMasters/1/1/PartnerBranchHierarchy/Save",
+              "raw": "{{HMSAPI}}/api/AppMasters/1/13/PartnerBranchHierarchy/Save",
               "host": [
                 "{{HMSAPI}}"
               ],
@@ -371,7 +371,7 @@
                 "api",
                 "AppMasters",
                 "1",
-                "1",
+                "13",
                 "PartnerBranchHierarchy",
                 "Save"
               ]
@@ -388,7 +388,7 @@
               "bearer": [
                 {
                   "key": "token",
-                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMiIsIm5hbWVpZCI6IjEyIiwidW5pcXVlX25hbWUiOiJuYXZpbmsiLCJqdGkiOiI3MjZiNzMxNi0wMDdjLTQ0YjAtYWUyOC04YTcwOGYwMmEyMGQiLCJPcmdhbmlzYXRpb25JZCI6IjIiLCJPcmdhbmlzYXRpb25OYW1lIjoiRXp5VGVrIDIiLCJTdWJzY3JpYmVySWQiOiIxIiwiU3Vic2NyaWJlck5hbWUiOiJFenlUZWsgQ29uc3VsdGluZyIsInJvbGUiOlsiQWRtaW4iLCJGaW5hbmNlIl0sIm5iZiI6MTc3MjY5ODYzOSwiZXhwIjoxNzcyNjk5MjM5LCJpYXQiOjE3NzI2OTg2MzksImlzcyI6IkhNU19Jc3N1ZXIiLCJhdWQiOiJITVNfQXVkaWVuY2UifQ.FD6eo7id2Q2lL1DUIMIybD7ZdLMXgLnwX-R2VpqauRM",
+                  "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMiIsIm5hbWVpZCI6IjEyIiwidW5pcXVlX25hbWUiOiJuYXZpbmsiLCJqdGkiOiJiN2M3ZTQzMy1kNjk4LTQwMjUtYTFmZi1jMTgyYjU3YmU5MTUiLCJPcmdhbmlzYXRpb25JZCI6IjIiLCJPcmdhbmlzYXRpb25OYW1lIjoiRXp5VGVrIDIiLCJTdWJzY3JpYmVySWQiOiIxIiwiU3Vic2NyaWJlck5hbWUiOiJFenlUZWsgQ29uc3VsdGluZyIsInJvbGUiOlsiQWRtaW4iLCJGaW5hbmNlIl0sIm5iZiI6MTc3MjcyMTQzMSwiZXhwIjoxNzcyNzIyMDMxLCJpYXQiOjE3NzI3MjE0MzEsImlzcyI6IkhNU19Jc3N1ZXIiLCJhdWQiOiJITVNfQXVkaWVuY2UifQ.Ro15wi5RUySH6Py2_PCxfAfjHdOJ5rav3F11V5Fejfs",
                   "type": "string"
                 }
               ]
@@ -406,7 +406,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"channelId\": 0,\r\n  \"subChannelId\": 0,\r\n  \"partnerBranchCode\": \"string\"\r\n}",
+              "raw": "{\r\n  \"channelId\": 1,\r\n  \"subChannelId\": 13,\r\n  \"partnerBranchCode\": \"string\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -414,7 +414,7 @@
               }
             },
             "url": {
-              "raw": "{{HMSAPI}}/api/AppMasters/1/1/PartnerBranchHierarchy/Fetch",
+              "raw": "{{HMSAPI}}/api/AppMasters/1/13/PartnerBranchHierarchy/Fetch",
               "host": [
                 "{{HMSAPI}}"
               ],
@@ -422,12 +422,60 @@
                 "api",
                 "AppMasters",
                 "1",
-                "1",
+                "13",
                 "PartnerBranchHierarchy",
                 "Fetch"
               ]
             },
             "description": "Generated from cURL: curl -X 'POST' \\\r\n  'http://localhost:5234/api/AppMasters/1/1/PartnerBranchHierarchy/Fetch' \\\r\n  -H 'accept: */*' \\\r\n  -H 'Content-Type: application/json' \\\r\n  -d '{\r\n  \"channelId\": 0,\r\n  \"subChannelId\": 0,\r\n  \"partnerBranchCode\": \"string\"\r\n}'"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent",
+      "item": [
+        {
+          "name": "AgentSearchBySubChannel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "accept",
+                "value": "*/*"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"searchCondition\": \"string\",\r\n  \"zone\": \"string\",\r\n  \"agentId\": 0,\r\n  \"agentCode\": \"string\",\r\n  \"pageNo\": 0,\r\n  \"pageSize\": 0,\r\n  \"sortColumn\": \"string\",\r\n  \"sortDirection\": \"string\",\r\n  \"fetchHierarchy\": true,\r\n  \"channelId\": 0,\r\n  \"subChannelId\": 0\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:5234/api/Agent/1/13/Agent/Search",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "5234",
+              "path": [
+                "api",
+                "Agent",
+                "1",
+                "13",
+                "Agent",
+                "Search"
+              ]
+            },
+            "description": "Generated from cURL: curl -X 'POST' \\\r\n  'http://localhost:5234/api/Agent/1/13/Agent/Search' \\\r\n  -H 'accept: */*' \\\r\n  -H 'Content-Type: application/json' \\\r\n  -d '{\r\n  \"searchCondition\": \"string\",\r\n  \"zone\": \"string\",\r\n  \"agentId\": 0,\r\n  \"agentCode\": \"string\",\r\n  \"pageNo\": 0,\r\n  \"pageSize\": 0,\r\n  \"sortColumn\": \"string\",\r\n  \"sortDirection\": \"string\",\r\n  \"fetchHierarchy\": true,\r\n  \"channelId\": 0,\r\n  \"subChannelId\": 0\r\n}'"
           },
           "response": []
         }

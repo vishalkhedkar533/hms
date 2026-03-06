@@ -127,3 +127,7 @@ VALUES(1031, 'Masters', null, null, 1, true, true, 'navin', '2026-02-28', null, 
 INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1032, 'Manage Masters', 1031, null, 1, true, true, 'navin', '2026-02-28', null, null, 0);
+
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1033, 'Read Masters', 1031, null, 1, true, true, 'navin', '2026-03-06', null, null, 0);

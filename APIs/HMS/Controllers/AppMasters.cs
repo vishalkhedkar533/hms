@@ -162,7 +162,7 @@ namespace HMS.Controllers
 
         // POST: api/hms/channelmaster
         [HttpPost("Channel/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> ChannelFetch([FromBody] ChannelMasterDto dto)
         {
             var response = new HmsResponse();
@@ -306,7 +306,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("{ChannelId}/SubChannel/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> SubChannelFetch([FromRoute] int ChannelId, [FromBody] SubChannelMasterDto SubChannelMaster)
         {
             var response = new HmsResponse();
@@ -579,7 +579,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("{ChannelId}/{SubChannelId}/Designation/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> FetchDesignation([FromRoute] long ChannelId,
            [FromRoute] long SubChannelId,
            [FromBody] DesignationMasterDto designationMaster)
@@ -757,8 +757,8 @@ namespace HMS.Controllers
             return Ok(response);
         }
         [HttpPost("{ChannelId}/{SubChannelId}/Location/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
-        public async Task<IActionResult> FetcLocation([FromRoute] long ChannelId,
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
+        public async Task<IActionResult> FetchLocation([FromRoute] long ChannelId,
         [FromRoute] long SubChannelId, [FromBody] LocationMasterDto locationMaster)
         {
             HmsResponse response = new HmsResponse();
@@ -934,7 +934,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("{ChannelId}/{SubChannelId}/Branch/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> FetchBranch([FromRoute] long ChannelId,
             [FromRoute] long SubChannelId, [FromBody] BranchMasterDto branchMaster)
         {
@@ -1124,7 +1124,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("{ChannelId}/{SubChannelId}/PartnerBranchHierarchy/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> FetchPartnerBranchHierarchy([FromRoute] long ChannelId,
             [FromRoute] long SubChannelId, [FromBody] PartnerBranchHierarchySearchDto partnerBranchHierarchyDto)
         {
@@ -1195,7 +1195,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("{ChannelId}/{SubChannelId}/GetAgents")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> GetAgents([FromRoute] long ChannelId,
             [FromRoute] long SubChannelId, [FromBody] SearchAgent searchAgent)
         {

@@ -242,20 +242,23 @@ namespace HMS.Controllers
                 var menuAccessList = await (from mm in _context.MenuMasters.AsNoTracking()
                                             join parent in _context.MenuMasters.AsNoTracking()
                                                 on mm.ParentMenuId equals parent.MenuId
+                                            // Perform a Left Join on RoleMenuMapping
                                             join mapping in _context.RoleMenuMapping.AsNoTracking()
-                                                on mm.MenuId equals mapping.MenuId
-                                            where mapping.RoleId == roleId && mapping.OrgId == orgId
+                                                .Where(m => m.RoleId == roleId && m.OrgId == orgId)
+                                                on mm.MenuId equals mapping.MenuId into mappingGroup
+                                            from mapping in mappingGroup.DefaultIfEmpty()
                                             select new MenuAccessDto
                                             {
                                                 MenuId = mm.MenuId,
                                                 MenuName = mm.MenuName,
                                                 ParentMenuId = parent.MenuId,
                                                 ParentMenuName = parent.MenuName,
-                                                HasAccess = true // Since it's an inner join, access must exist to be here
+                                                // Check if mapping is null to determine access
+                                                HasAccess = mapping != null
                                             })
-                            .OrderBy(a => a.ParentMenuName)
-                            .ThenBy(a => a.MenuName)
-                            .ToListAsync();
+                                            .OrderBy(a => a.ParentMenuName)
+                                            .ThenBy(a => a.MenuName)
+                                            .ToListAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";

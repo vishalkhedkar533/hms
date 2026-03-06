@@ -286,7 +286,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Search")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> Search([FromBody] SearchAgent agentDto)
         {
             /*
@@ -353,7 +353,7 @@ namespace HMS.Controllers
             return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
         [HttpPost("Create")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
         public async Task<IActionResult> CreateAgent([FromBody] AgentDto agentDto)
         {
             if (!ModelState.IsValid)
@@ -391,7 +391,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("AgentById")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
             HmsResponse hMSResponse = new HmsResponse();

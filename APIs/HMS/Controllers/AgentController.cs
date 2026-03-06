@@ -1804,7 +1804,8 @@ namespace HMS.Controllers
                                         {
                                             payload
                                         }, Formatting.None).ToString(),
-                                        ApprovalEndpoint = $"/api/Agent/UpdateAgentAfterApproval/{id}/{sectionName}"
+                                        ApprovalEndpoint = $"/api/Agent/UpdateAgentAfterApproval/{id}/{sectionName}",
+                                        ObjectReference = id
                                     }
                                 };
 

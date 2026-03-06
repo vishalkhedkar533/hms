@@ -45,95 +45,95 @@ namespace HMS.Controllers
             _mapper = mapper;
             _httpClientFactory = httpClientFactory;
         }
+        #region Create Sr
+        //[HttpPost("CreateSr")]
+        //[MenuAuthorize(AuthorisationConstants.CreateAgentUpdateSR)]
+        //public async Task<IActionResult> CreateServiceRequest([FromBody] InboxDto inboxDto)
+        //{
+        //    var response = new HmsResponse();
 
-        [HttpPost("CreateSr")]
-        [MenuAuthorize(AuthorisationConstants.CreateAgentUpdateSR)]
-        public async Task<IActionResult> CreateServiceRequest([FromBody] InboxDto inboxDto)
-        {
-            var response = new HmsResponse();
+        //    orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+        //    int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
 
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+        //    if (inboxDto == null)
+        //    {
+        //        response.responseHeader.ErrorCode = CommonConstants.FAILED;
+        //        response.responseHeader.ErrorMessage = "Inbox Details Needed.";
+        //        return BadRequest(response);
+        //    }
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
 
-            if (inboxDto == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Inbox Details Needed.";
-                return BadRequest(response);
-            }
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        //    if (!Enum.IsDefined(typeof(SrStatus), inboxDto.SrStatus))
+        //    {
+        //        response.responseHeader.ErrorCode = CommonConstants.FAILED;
+        //        response.responseHeader.ErrorMessage = "Invalid Service Request status.";
+        //        return BadRequest(response);
+        //    }
 
-            if (!Enum.IsDefined(typeof(SrStatus), inboxDto.SrStatus))
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Invalid Service Request status.";
-                return BadRequest(response);
-            }
+        //    var srStatusEntries = await _db.ExecuteQueryAsync<KeyValueEntry>(
+        //        "Master",
+        //        "getKeyValueEntries",
+        //        new
+        //        {
+        //            orgid = orgId,
+        //            EntryCategory = SrStatusEntryCategory
+        //        });
 
-            var srStatusEntries = await _db.ExecuteQueryAsync<KeyValueEntry>(
-                "Master",
-                "getKeyValueEntries",
-                new
-                {
-                    orgid = orgId,
-                    EntryCategory = SrStatusEntryCategory
-                });
+        //    var isValidSrStatus = srStatusEntries.Any(entry =>
+        //        entry.EntryIdentity == (int)inboxDto.SrStatus && (entry.ActiveStatus ?? true));
 
-            var isValidSrStatus = srStatusEntries.Any(entry =>
-                entry.EntryIdentity == (int)inboxDto.SrStatus && (entry.ActiveStatus ?? true));
+        //    if (!isValidSrStatus)
+        //    {
+        //        response.responseHeader.ErrorCode = CommonConstants.FAILED;
+        //        response.responseHeader.ErrorMessage = "Service Request status is not valid for this organisation.";
+        //        return BadRequest(response);
+        //    }
 
-            if (!isValidSrStatus)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Service Request status is not valid for this organisation.";
-                return BadRequest(response);
-            }
+        //    if (inboxDto.ComponentId == null)
+        //    {
+        //        response.responseHeader.ErrorCode = CommonConstants.FAILED;
+        //        response.responseHeader.ErrorMessage = "Component Id is required.";
+        //        return BadRequest(response);
+        //    }
 
-            if (inboxDto.ComponentId == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Component Id is required.";
-                return BadRequest(response);
-            }
+        //    var isValidComponentId = await _context.uiComponent
+        //        .AsNoTracking()
+        //        .AnyAsync(component => component.ComponentId == inboxDto.ComponentId);
 
-            var isValidComponentId = await _context.uiComponent
-                .AsNoTracking()
-                .AnyAsync(component => component.ComponentId == inboxDto.ComponentId);
+        //    if (!isValidComponentId)
+        //    {
+        //        response.responseHeader.ErrorCode = CommonConstants.FAILED;
+        //        response.responseHeader.ErrorMessage = "Invalid Component Id.";
+        //        return BadRequest(response);
+        //    }
 
-            if (!isValidComponentId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Invalid Component Id.";
-                return BadRequest(response);
-            }
+        //    try
+        //    {
+        //        var inboxEntry = _mapper.Map<Inbox>(inboxDto);
 
-            try
-            {
-                var inboxEntry = _mapper.Map<Inbox>(inboxDto);
+        //        // Manually set fields ignored by AutoMapper (Security/Audit fields)
+        //        inboxEntry.OrgId = orgId;
+        //        inboxEntry.CreatedBy = userId;
+        //        inboxEntry.CreatedDate = DateTime.UtcNow;
+        //        // StatusUpdatedBy and StatusModifiedOn stay null for a new record
 
-                // Manually set fields ignored by AutoMapper (Security/Audit fields)
-                inboxEntry.OrgId = orgId;
-                inboxEntry.CreatedBy = userId;
-                inboxEntry.CreatedDate = DateTime.UtcNow;
-                // StatusUpdatedBy and StatusModifiedOn stay null for a new record
+        //        await _context.Inbox.AddAsync(inboxEntry);
+        //        await _context.SaveChangesAsync();
 
-                await _context.Inbox.AddAsync(inboxEntry);
-                await _context.SaveChangesAsync();
+        //        response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+        //        response.responseHeader.ErrorMessage = "Service Request created successfully.";
+        //        response.responseBody.InboxData = new List<Inbox> { inboxEntry };
 
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "Service Request created successfully.";
-                response.responseBody.InboxData = new List<Inbox> { inboxEntry };
-
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while creating the Service Request");
-                return StatusCode(500, "Internal Server Error");
-            }
-        }
-
+        //        return Ok(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "An error occurred while creating the Service Request");
+        //        return StatusCode(500, "Internal Server Error");
+        //    }
+        //}
+        #endregion
         [HttpPost("FetchSr")]
         [MenuAuthorize(AuthorisationConstants.FetchSRs)]
         public async Task<IActionResult> FetchServiceRequest([FromBody] SearchInboxDto searchInboxDto)
@@ -164,17 +164,12 @@ namespace HMS.Controllers
             try
             {
                 // 1. Build the base query (IQueryable) — do not join to the in-memory collection
-                var query = from i in _context.Inbox.AsNoTracking()
-                            join sra in _context.SrApprovers
-                                on new { i.SrNo, i.OrgId } equals new { sra.SrNo, sra.OrgId }
-                            join u in _context.Users.AsNoTracking()
+                var query = from i in _context.Inbox.AsQueryable()
+                            join u in _context.Users.AsQueryable()
                                 on new { UserId = i.CreatedBy, i.OrgId } equals new { u.UserId, OrgId = u.OrgId ?? 0 }
-                            where i.OrgId == orgId && // Ensure tenant isolation
-                                  (int)i.SrStatus == 2 &&
-                                  srStatusIds.Contains((int)i.SrStatus) &&
-                                  _context.UserRoleMappings.AsNoTracking().Any(urm =>
-                                      urm.RoleId == sra.AllocatedRoleId &&
-                                      urm.UserId == userId)
+                            where i.OrgId == orgId
+                            && (searchInboxDto.SrStatus == null || i.SrStatus == searchInboxDto.SrStatus.Value)
+                            && srStatusIds.Contains((int)i.SrStatus)
                             select new { i, u.Username };
 
                 // 2. Apply Dynamic Filters from SearchInboxDto
@@ -187,6 +182,16 @@ namespace HMS.Controllers
                 if (searchInboxDto.CreatedDateTo.HasValue)
                     query = query.Where(x => x.i.CreatedDate <= searchInboxDto.CreatedDateTo.Value);
 
+                if (!string.IsNullOrWhiteSpace(searchInboxDto.AgentCode))
+                    query = query.Where(x => _context.Agents.AsQueryable().Any(a => a.AgentId == x.i.ObjectReference
+                        && a.AgentCode == searchInboxDto.AgentCode));
+
+                if(searchInboxDto.AllocateToRole.HasValue)
+                    query = query.Where(x => x.i.AllocatedToRole == searchInboxDto.AllocateToRole.Value);
+                else
+                {
+                    _context.UserRoleMappings.AsQueryable().Any(urm => urm.UserId == userId);
+                }
                 // 3. Get Total Count for Pagination Metadata (Before Skip/Take)
                 int totalRecords = await query.CountAsync();
 
@@ -195,7 +200,7 @@ namespace HMS.Controllers
                 int pageSize = searchInboxDto.PageSize ?? 10;
 
                 var pagedData = await query
-                    .OrderByDescending(x => x.i.CreatedDate) // Always order before paging
+                    .OrderByDescending(x => x.i.CreatedDate) 
                     .Skip((pageNo - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
@@ -210,11 +215,8 @@ namespace HMS.Controllers
 
                 // 6. Finalize Response
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = (result.Count == 0 ?
-                    "No Service Requests found" : $"{totalRecords} Service Request(s) found");
-
+                response.responseHeader.ErrorMessage = (result.Count == 0 ? "No Service Requests found" : $"{totalRecords} Service Request(s) found");
                 response.responseBody.InboxData = result;
-
                 return Ok(response);
             }
             catch (Exception ex)
@@ -225,8 +227,6 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
-
-
         [HttpPost("UpdateSrDecision")]
         [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
         public async Task<IActionResult> UpdateSrDecision([FromBody] SrApproverDto  srApproverDto)

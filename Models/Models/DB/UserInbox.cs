@@ -66,6 +66,9 @@ namespace Models.DB
         //object_name
         [Column("object_name")]
         public string? ObjectName { get; set; }
+
+        [Column("object_ref")]
+        public int? ObjectReference { get; set; }
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -112,6 +115,7 @@ namespace Models.DB
         public int? ComponentId { get; set; }
         public int? AllocatedToRole { get; set; }
         public string? ObjectName { get; set; }
+        public int? ObjectReference { get; set; }
     }
     public class SrApproverDto
     {
@@ -169,8 +173,10 @@ namespace Models.DB
         public SrStatus? SrStatus { get; set; }
         public DateTime? CreatedDateFrom { get; set; }
         public DateTime? CreatedDateTo { get; set; }
-        public int? UserId { get; set; }
         public int? PageNo { get; set; } = 1;
         public int? PageSize { get; set; } = 10;
+        public string? AgentCode { get; set; }
+        public int? AllocateToRole { get; set; }    
+
     }
 }

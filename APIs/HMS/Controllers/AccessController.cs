@@ -592,8 +592,7 @@ namespace HMS.Controllers
                 {
                     hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
                     hMSResponse.responseHeader.ErrorMessage = "FAILED";
-
-                    return BadRequest(hMSResponse);
+                    return Conflict(hMSResponse);
                 }
 
                 var menu = _context.MenuMasters.FirstOrDefault(x => x.MenuId == roleMenuDTO.MenuId);
@@ -603,22 +602,22 @@ namespace HMS.Controllers
                     hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
                     hMSResponse.responseHeader.ErrorMessage = "FAILED";
 
-                    return BadRequest(hMSResponse);
+                    return Conflict(hMSResponse);
                 }
 
                 // 1. Check for existing mapping
-                var newMenuRoleMapping = _context.RoleMenuMapping.Where(
+                var newMenuRoleMapping = _context.RoleMenuMapping.FirstOrDefault(
                     urm => urm.RoleId == roleMenuDTO.RoleId
                     && urm.OrgId == orgId
                     && urm.MenuId == roleMenuDTO.MenuId);
 
                 if (newMenuRoleMapping == null)
                 {
-                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
-                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
-                    return BadRequest(hMSResponse);
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hMSResponse.responseHeader.ErrorMessage = $"Role Does not have access to - {menu.MenuName}";
+                    return Conflict(hMSResponse);
                 }
-                newMenuRoleMapping.ExecuteDeleteAsync();
+                await _context.RoleMenuMapping.Where(x=> x.MappingId == newMenuRoleMapping.MappingId).ExecuteDeleteAsync();
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
 

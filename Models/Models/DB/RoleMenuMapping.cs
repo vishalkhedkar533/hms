@@ -27,7 +27,7 @@ namespace Models.DB
     public class RoleMenuMapping
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.None)] // Based on your SQL 'NOT NULL' without Identity
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // Based on your SQL 'NOT NULL' without Identity
         [Column("mapping_id")]
         public int MappingId { get; set; }
 

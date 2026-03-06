@@ -772,7 +772,80 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
-        [HttpPost("UI/Control/ApprovalSetting")]
+        [HttpPost("ApprovalSettings/Save")]
+        [MenuAuthorize(AuthorisationConstants.ManageOrganisationSetting)]
+        public async Task<IActionResult> SaveApprovalSetting([FromBody] ApprovalSettingDto dto)
+        {
+            HmsResponse response = new HmsResponse();
+            // 1. Get User/Org Context from Claims (Replace with your actual Auth logic)
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!await _context.uiComponent.AsNoTracking().AnyAsync(x => x.ComponentId == dto.ComponentId))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Check the Component ID";
+                return Conflict(response);
+            }
+
+            if (((dto.ApproverOneId ?? 0) != 0)
+                || ((dto.ApproverTwoId ?? 0) != 0)
+                || ((dto.ApproverThreeId ?? 0) != 0)
+                )
+            {
+                if (!(await _context.Roles.AsNoTracking().AnyAsync(
+                    x => new int[] { (dto.ApproverOneId ?? 0),
+                        (dto.ApproverTwoId ?? 0),
+                        (dto.ApproverThreeId ?? 0) }
+                    .Contains(x.RoleId) && x.OrgId == orgId)))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid Role ApproverOneId/ApproverTwoId/ApproverThreeId";
+                    return Conflict(response);
+                }
+            }
+
+            var existingEntity = await _context.ApprovalSettings
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.OrgId == orgId && x.ComponentId == dto.ComponentId);
+
+            if (existingEntity != null)
+            {
+                // Map updated fields from DTO to Entity
+                _mapper.Map(dto, existingEntity);
+                // Audit fields
+                existingEntity.ModifiedBy = userId;
+                existingEntity.ModifiedDate = DateTime.UtcNow;
+                _context.ApprovalSettings.Update(existingEntity);
+            }
+            else
+            {
+                // --- CREATE LOGIC ---
+                var newEntity = _mapper.Map<ApprovalSetting>(dto);
+                // Set required fields that aren't in the DTO
+                newEntity.OrgId = orgId;
+                newEntity.CreatedBy = userId;
+                newEntity.CreatedDate = DateTime.UtcNow;
+                _context.ApprovalSettings.Add(newEntity);
+            }
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbException dbEx)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while saving the ApprovalSettings";
+                _logger.LogError(dbEx, "An error occurred while saving the ApprovalSettings");
+                return BadRequest(response);
+            }
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = "Approval setting saved successfully.";
+
+            return Ok(response);
+        }
+
+        [HttpPost("UI/Control/GetApprovalSetting")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
         public async Task<IActionResult> GetApprovalSetting([FromBody] SearchMenu searchMenu)
         {

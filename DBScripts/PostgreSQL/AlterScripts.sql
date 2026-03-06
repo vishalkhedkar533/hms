@@ -641,3 +641,11 @@ update hmsmaster.keyvalueentries k set entrydesc = 'backgroundjob' where k.entry
 update hmsmaster.keyvalueentries k set entrydesc = 'backgroundjob#123' where k.entrycategory ='BackgroundJobUserPassword'
 
 ALTER TABLE hms.sr_approver ALTER COLUMN allocatedroleid DROP NOT NULL;
+
+alter table hms.inbox  add column object_ref int4;
+
+update hms.inbox  set object_ref = 108
+
+ALTER TABLE hms.inbox ALTER COLUMN object_ref SET NOT NULL;
+
+alter table hms.inbox add column comments varchar(2000)

@@ -13,6 +13,7 @@ using Models.HMSConsts;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace HMS.Controllers
 {
@@ -27,12 +28,12 @@ namespace HMS.Controllers
         private readonly ILogger<UserInboxController> _logger;
         private readonly DatabaseService _db;
         private readonly IMapper _mapper;
-        private readonly IHttpClientFactory _httpClientFactory;
+        private readonly AgentController _agentController;
         private int orgId;
 
         public UserInboxController(HMSContext context, GenericCacheService cacheService, IConfiguration configuration
                     , IAuthClaimService authClaimService, FileService fileService, ILogger<UserInboxController> logger,
-                    DatabaseService db, IMapper mapper, IHttpClientFactory httpClientFactory)
+                    DatabaseService db, IMapper mapper, AgentController agentController)
         {
             _cacheService = cacheService;
             _configuration = configuration;
@@ -43,7 +44,7 @@ namespace HMS.Controllers
             _logger = logger;
             _db = db;
             _mapper = mapper;
-            _httpClientFactory = httpClientFactory;
+            _agentController = agentController;
         }
         #region Create Sr
         //[HttpPost("CreateSr")]
@@ -134,6 +135,7 @@ namespace HMS.Controllers
         //    }
         //}
         #endregion
+
         [HttpPost("FetchSr")]
         [MenuAuthorize(AuthorisationConstants.FetchSRs)]
         public async Task<IActionResult> FetchServiceRequest([FromBody] SearchInboxDto searchInboxDto)
@@ -309,6 +311,7 @@ namespace HMS.Controllers
                             //no more approver, mark as completed
 
                         }
+                        inbox.Comments = srApproverDto.Comments;
                         await _context.SaveChangesAsync();
 
                         response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
@@ -331,6 +334,7 @@ namespace HMS.Controllers
                             inbox.SrStatus = SrStatus.PendingDecision; // Rejected
                             break;
                     }
+                    inbox.Comments = srApproverDto.Comments;
                     await _context.SaveChangesAsync();
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "Service Request decision updated successfully.";
@@ -350,7 +354,6 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
-
         private async Task InvokeApprovalEndpointAsync(Inbox inbox)
         {
             if (string.IsNullOrWhiteSpace(inbox.ApprovalEndpoint) || string.IsNullOrWhiteSpace(inbox.ApprovalPayload))
@@ -371,25 +374,20 @@ namespace HMS.Controllers
                 return;
             }
 
-            var client = _httpClientFactory.CreateClient();
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var targetUrl = new Uri(new Uri(baseUrl), $"/api/Agent/UpdateAgentAfterApproval/{agentId}/{sectionName}");
+            _agentController.ControllerContext = new ControllerContext { HttpContext = HttpContext };
+            var actionResult = await _agentController.UpdateAgentAfterApproval(agentId, sectionName, agentDto);
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, targetUrl)
+            inbox.ApprovalApiResponse = actionResult switch
             {
-                Content = JsonContent.Create(agentDto)
+                ObjectResult obj => JsonSerializer.Serialize(obj.Value),
+                JsonResult json => JsonSerializer.Serialize(json.Value),
+                ContentResult content => content.Content,
+                StatusCodeResult status => status.StatusCode.ToString(),
+                _ => actionResult.ToString()
             };
 
-            if (Request.Headers.TryGetValue("Authorization", out var authHeader))
-            {
-                request.Headers.TryAddWithoutValidation("Authorization", (string)authHeader);
-            }
-
-            var response = await client.SendAsync(request);
-            inbox.ApprovalApiResponse = await response.Content.ReadAsStringAsync();
             await _context.SaveChangesAsync();
         }
-
         private static bool TryParseApprovalEndpoint(string endpoint, out int agentId, out string sectionName)
         {
             agentId = 0;
@@ -410,7 +408,6 @@ namespace HMS.Controllers
             sectionName = segments[index + 2];
             return !string.IsNullOrWhiteSpace(sectionName);
         }
-
         private static AgentDto? BuildAgentDtoFromPayload(string payloadJson)
         {
             JObject? root;
@@ -451,7 +448,6 @@ namespace HMS.Controllers
 
             return agentDto;
         }
-
         private static object? ConvertToType(string? value, Type targetType)
         {
             if (string.IsNullOrWhiteSpace(value))

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { createLazyFileRoute } from '@tanstack/react-router'
 import CustomTabs from '@/components/CustomTabs'
 import { HMSService } from '@/services/hmsService'
@@ -21,7 +21,6 @@ import { Plus, Pencil, Save } from 'lucide-react'
 import { MdCancel } from 'react-icons/md'
 import { Pagination } from '@/components/table/Pagination'
 import Button from '@/components/ui/button'
-
 export const Route = createLazyFileRoute('/_auth/channel-management/')({
     component: RouteComponent,
 })
@@ -47,10 +46,14 @@ function RouteComponent() {
     const [loadingChannels, setLoadingChannels] = useState(false)
     const [subChannels, setSubChannels] = useState<SubChannel[]>([])
     const [loadingSubChannels, setLoadingSubChannels] = useState(false)
+    const [ShowAgents, SetShowAgents] = useState(false)
+    const [searching, setSearching] = useState(false)
     const [selectedChannel, setSelectedChannel] = useState<number | null>(null)
     const [selectedSubChannel, setSelectedSubChannel] = useState<SubChannel | null>(null)
     const [showParent, setShowParent] = useState(false);
+    const [agents, setAgents] = useState<any[]>([])
     const [isEditingDesignation, setIsEditingDesignation] = useState(false)
+    const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null)
     const [activeTab, setActiveTab] = useState<
         'designation' | 'location' | 'branch' | 'partner'
     >('designation')
@@ -75,6 +78,7 @@ function RouteComponent() {
     const [designationFields, setDesignationFields] = useState<any[]>([])
     const [loadingDesignation, setLoadingDesignation] = useState(false)
     const [selectedParentId, setSelectedParentId] = useState<number | null>(null)
+    const [selectedPartnerParentId, setSelectedPartnerParentId] = useState<number | null>(null)
     const [selectedDesignation, setSelectedDesignation] = useState<{
         id: number
         name: string
@@ -142,6 +146,7 @@ function RouteComponent() {
     const [newPartnerMail, setNewPartnerMail] = useState('')
     const [newPartnerPhone, setNewPartnerPhone] = useState('')
     const [newRelationMgr, setNewRelationMgr] = useState('')
+    const [searchCondition, setSearchCondition] = useState('')
     const locationColumns = [
 
         {
@@ -176,6 +181,35 @@ function RouteComponent() {
         },
     ]
 
+    const agentColumns = [
+        {
+            header: "",
+            accessor: (row: any) => (
+                <input
+                    type="radio"
+                    name="relationMgr"
+                    checked={selectedAgentId === row.agentId}
+                    onChange={() => setSelectedAgentId(row.agentId)}
+                />
+            ),
+            width: "60px",
+        },
+        {
+            header: "Agent Code",
+            accessor: "agentCode",
+            width: "30%",
+        },
+        {
+            header: "Agent Name",
+            accessor: "agentName",
+            width: "40%",
+        },
+        {
+            header: "Status Date",
+            accessor: (row: any) => formatDate(row.statusDate),
+            width: "30%",
+        },
+    ]
     useEffect(() => {
         fetchChannels()
     }, [])
@@ -294,6 +328,29 @@ function RouteComponent() {
             setLoadingLocations(false)
         }
     }
+
+
+    const partnerParentOptions = useMemo(() => {
+        const flatten = (data: any[]): any[] => {
+            let result: any[] = []
+
+            data.forEach((item) => {
+                result.push({
+                    id: item.id,
+                    name: item.name
+                })
+
+                if (item.children?.length) {
+                    result = result.concat(flatten(item.children))
+                }
+            })
+
+            return result
+        }
+
+        return flatten(partnerTreeData)
+    }, [partnerTreeData])
+
     const totalPages = Math.ceil(locations.length / pageSize)
 
     const paginatedMenu = locations.slice(
@@ -732,7 +789,7 @@ function RouteComponent() {
 
             const payload = {
                 partnerBranchHierarchyId: selectedPartner.id ?? 0,
-                parentBranchHierarchyId: 0,
+                parentBranchHierarchyId: selectedPartnerParentId ?? 0,
                 orgId: 0,
                 partnerBranch: selectedPartner.name ?? "",
                 partnerBranchCode: selectedPartner.code ?? "",
@@ -915,30 +972,19 @@ function RouteComponent() {
         try {
             setAddingPartner(true)
 
-            // await HMSService.savePartner({
-            //     partnerBranchHierarchyId: selectedPartner.id ?? 0,
-            //     parentBranchHierarchyId: 0,
-            //     orgId: 0,
-            //     partnerBranch: selectedPartner.name ?? "",
-            //     partnerBranchCode: selectedPartner.code ?? "",
-            //     channelId: selectedChannel,
-            //     subChannelId: selectedSubChannel.subChannelId,
-            //     partnerAddress: selectedPartner.address,
-            //     partnerMail: selectedPartner.mail,
-            //     partnerPhone: selectedPartner.phone,
-            //     hierarchyPath: null,
-            //     relationMgr: selectedPartner.relationMgr,
-            //     isActive: true,
-
-
-            //     name: newPartnerName,
-            //     partnerBranchCode: newPartnerCode,
-            //     partnerAddress: newPartnerAddress,
-            //     partnerMail: newPartnerMail,
-            //     partnerPhone: newPartnerPhone,
-            //     relationMgr: Number(newRelationMgr),
-            //     parentId: selectedPartner?.id || null,
-            // })
+            await HMSService.savePartner({
+                partnerBranchHierarchyId: null,
+                parentBranchHierarchyId: selectedPartnerParentId ?? 0,
+                partnerBranch: newPartnerName,
+                partnerBranchCode: newPartnerCode,
+                channelId: selectedChannel,
+                subChannelId: selectedSubChannel.subChannelId,
+                partnerAddress: newPartnerAddress,
+                partnerMail: newPartnerMail,
+                partnerPhone: newPartnerPhone,
+                hierarchyPath: null,
+                relationMgr: selectedAgentId,
+            })
 
             showToast(NOTIFICATION_CONSTANTS.SUCCESS, "Partner added successfully")
 
@@ -949,6 +995,30 @@ function RouteComponent() {
             console.error(error)
         } finally {
             setAddingPartner(false)
+        }
+    }
+    const formatDate = (date: string) => {
+        if (!date) return ""
+        return new Date(date).toLocaleDateString("en-US")
+    }
+
+    const handleSearch = async () => {
+        const payload = {
+            searchCondition: searchCondition,
+            zone: "All Zone",
+            channelId: selectedChannel,
+            subChannelId: selectedSubChannel.subChannelId,
+        }
+
+        try {
+            setSearching(true)
+            const response = await HMSService.search(payload)
+            SetShowAgents(true)
+            setAgents(response.responseBody.agents)
+        } catch (error) {
+            console.error(error)
+        } finally {
+            setSearching(false)
         }
     }
 
@@ -966,86 +1036,175 @@ function RouteComponent() {
                         setNewPartnerMail('')
                         setNewPartnerPhone('')
                         setNewRelationMgr('')
+                        setSelectedPartnerParentId(null)
+                        setSelectedAgentId(null)
+                        SetShowAgents(false)
+                        setSearchCondition('')
                     }
                 }}
             >
-                <AlertDialogContent>
+                <AlertDialogContent className="sm:max-w-md rounded-xl max-h-[80vh] overflow-y-auto">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Add Partner</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            Add New Partner
+                        </AlertDialogTitle>
                     </AlertDialogHeader>
 
-                    <div className="space-y-3 mt-3">
-                        <input
-                            placeholder="Partner Name"
-                            value={newPartnerName}
-                            onChange={(e) => setNewPartnerName(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
+                    <div className="space-y-4 mt-4">
 
-                        <input
-                            placeholder="Partner Code"
-                            value={newPartnerCode}
-                            onChange={(e) => setNewPartnerCode(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Parent Partner
+                            </label>
 
-                        <input
-                            placeholder="Partner Address"
-                            value={newPartnerAddress}
-                            onChange={(e) => setNewPartnerAddress(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
+                            <select
+                                value={selectedPartnerParentId ?? ""}
+                                onChange={(e) =>
+                                    setSelectedPartnerParentId(
+                                        e.target.value ? Number(e.target.value) : null
+                                    )
+                                }
+                                className="w-full border rounded-md px-3 py-2 text-sm"
+                            >
+                                <option value="">Select Parent Partner</option>
 
-                        <input
-                            placeholder="Partner Mail"
-                            value={newPartnerMail}
-                            onChange={(e) => setNewPartnerMail(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
+                                {partnerParentOptions.map((item) => (
+                                    <option key={item.id} value={item.id}>
+                                        {item.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                        <input
-                            placeholder="Partner Phone"
-                            value={newPartnerPhone}
-                            onChange={(e) => setNewPartnerPhone(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Partner Name
+                            </label>
+                            <input
+                                type="text"
+                                value={newPartnerName}
+                                onChange={(e) => setNewPartnerName(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 text-sm"
+                            />
+                        </div>
 
-                        <input
-                            placeholder="Relation Manager ID"
-                            value={newRelationMgr}
-                            onChange={(e) => setNewRelationMgr(e.target.value)}
-                            className="w-full border rounded-md px-3 py-2 text-sm"
-                        />
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Partner Code
+                            </label>
+                            <input
+                                type="text"
+                                value={newPartnerCode}
+                                onChange={(e) => setNewPartnerCode(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Partner Address
+                            </label>
+                            <input
+                                type="text"
+                                value={newPartnerAddress}
+                                onChange={(e) => setNewPartnerAddress(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Partner Mail
+                            </label>
+                            <input
+                                type="text"
+                                value={newPartnerMail}
+                                onChange={(e) => setNewPartnerMail(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Partner Phone
+                            </label>
+                            <input
+                                type="text"
+                                value={newPartnerPhone}
+                                onChange={(e) => setNewPartnerPhone(e.target.value)}
+                                className="w-full border rounded-md px-3 py-2 text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">
+                                Agent Code
+                            </label>
+
+                            <div className="relative w-full">
+                                <input
+                                    value={searchCondition}
+                                    onChange={(e) => setSearchCondition(e.target.value)}
+                                    className="w-full border rounded-md px-3 py-2 pr-24 text-sm"
+                                />
+
+                                <Button
+                                    variant="blue"
+                                    size="sm"
+                                    onClick={() => handleSearch()}
+                                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8"
+                                >
+                                    {searching ? "Searching..." : "Search"}
+
+                                </Button>
+                            </div>
+                        </div>
+
+                        {agents.length > 0 && ShowAgents && (
+                            <div className="mt-3">
+                                <DataTable
+                                    columns={agentColumns}
+                                    data={agents}
+                                    noDataMessage="No Agents Found"
+                                />
+                            </div>
+                        )}
 
                     </div>
 
-                    <AlertDialogFooter className="mt-4">
-                        <AlertDialogCancel asChild>
+                    <AlertDialogFooter className="mt-6">
+
+                        <AlertDialogCancel
+                            onClick={() => {
+                                setNewPartnerName('')
+                                setNewPartnerCode('')
+                                setNewPartnerAddress('')
+                                setNewPartnerMail('')
+                                setNewPartnerPhone('')
+                                setNewRelationMgr('')
+                                setSelectedPartnerParentId(null)
+                                setSelectedAgentId(null)
+                                SetShowAgents(false)
+                                setSearchCondition('')
+                            }}
+                        >
                             <Button
                                 variant="default"
                                 size="sm"
-                                onClick={() => {
-                                    setNewPartnerName('')
-                                    setNewPartnerCode('')
-                                    setNewPartnerAddress('')
-                                    setNewPartnerMail('')
-                                    setNewPartnerPhone('')
-                                    setNewRelationMgr('')
-                                }}
                             >
                                 Cancel
                             </Button>
                         </AlertDialogCancel>
 
                         <Button
-                            variant="blue"
-                            size="sm"
                             onClick={handleAddPartner}
                             disabled={addingPartner}
-                            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md flex items-center gap-1 hover:bg-blue-700 disabled:opacity-50"
+                            variant="blue"
+                            size="sm"
                         >
                             {addingPartner ? "Saving..." : "Save"}
                         </Button>
+
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
@@ -1194,7 +1353,7 @@ function RouteComponent() {
                                 variant="default"
                                 size="sm"
                             >
-                               Cancel
+                                Cancel
                             </Button>
                         </AlertDialogCancel>
 
@@ -2149,10 +2308,10 @@ function RouteComponent() {
                                                 </span>
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-12 gap-4 h-[500px]">
+                                            <div className="grid grid-cols-12 gap-4 h-[464px] min-h-0">
 
                                                 {/* LEFT → TREE */}
-                                                <div className="col-span-3 h-full overflow-y-auto pr-2">
+                                                <div className="col-span-4 h-full overflow-y-auto pr-2">
                                                     <FieldTreeView
                                                         data={partnerTreeData}
                                                         onSelect={(node) => {
@@ -2173,7 +2332,7 @@ function RouteComponent() {
                                                 </div>
 
                                                 {/* RIGHT → DETAILS */}
-                                                <div className="col-span-9 bg-white border rounded-xl p-6 h-full">
+                                                <div className="col-span-7 bg-white border rounded-xl p-6 h-full flex flex-col min-h-0">
 
                                                     {!selectedPartner ? (
                                                         <div className="flex items-center justify-center h-full text-gray-400">
@@ -2181,7 +2340,7 @@ function RouteComponent() {
                                                         </div>
                                                     ) : (
                                                         <>
-                                                            <div className="max-w-xl">
+                                                            <div className="max-w-xl flex flex-col h-full min-h-0">
 
                                                                 <div className="flex items-center justify-between mb-6">
 
@@ -2248,138 +2407,171 @@ function RouteComponent() {
 
                                                                     </div>
                                                                 </div>
+                                                                <div className="flex-1 overflow-y-auto pr-2">
+                                                                    <div className="space-y-4">
 
-                                                                <div className="space-y-4">
-
-                                                                    {/* ID */}
-                                                                    <div className="flex justify-between items-center border-b pb-3">
-                                                                        <span className="text-sm font-medium text-gray-500">
-                                                                            Partner ID
-                                                                        </span>
-                                                                        <span className="text-sm font-semibold text-gray-800">
-                                                                            {selectedPartner.id}
-                                                                        </span>
-                                                                    </div>
-
-                                                                    {/* NAME */}
-                                                                    <div className="flex justify-between items-center border-b pb-3">
-                                                                        <span className="text-sm font-medium text-gray-500">
-                                                                            Partner Name
-                                                                        </span>
-
-                                                                        {isEditingPartner ? (
-                                                                            <input
-                                                                                type="text"
-                                                                                value={selectedPartner.name}
-                                                                                onChange={(e) =>
-                                                                                    setSelectedPartner((prev) =>
-                                                                                        prev ? { ...prev, name: e.target.value } : null
-                                                                                    )
-                                                                                }
-                                                                                className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
-                                                                            />
-                                                                        ) : (
-                                                                            <span className="text-sm font-semibold text-gray-800">
-                                                                                {selectedPartner.name}
+                                                                        {/* ID */}
+                                                                        <div className="flex justify-between items-center border-b pb-3">
+                                                                            <span className="text-sm font-medium text-gray-500">
+                                                                                Partner ID
                                                                             </span>
-                                                                        )}
-                                                                    </div>
-
-                                                                    {/* CODE */}
-                                                                    <div className="flex justify-between items-center border-b pb-3">
-                                                                        <span className="text-sm font-medium text-gray-500">
-                                                                            Partner Code
-                                                                        </span>
-
-                                                                        {isEditingPartner ? (
-                                                                            <input
-                                                                                type="text"
-                                                                                value={selectedPartner.code}
-                                                                                onChange={(e) =>
-                                                                                    setSelectedPartner((prev) =>
-                                                                                        prev ? { ...prev, code: e.target.value } : null
-                                                                                    )
-                                                                                }
-                                                                                className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
-                                                                            />
-                                                                        ) : (
                                                                             <span className="text-sm font-semibold text-gray-800">
-                                                                                {selectedPartner.code}
+                                                                                {selectedPartner.id}
                                                                             </span>
-                                                                        )}
-                                                                    </div>
-                                                                    {/* CODE */}
-                                                                    <div className="flex justify-between items-center border-b pb-3">
-                                                                        <span className="text-sm font-medium text-gray-500">
-                                                                            Partner Address
-                                                                        </span>
+                                                                        </div>
 
-                                                                        {isEditingPartner ? (
-                                                                            <input
-                                                                                type="text"
-                                                                                value={selectedPartner.address}
-                                                                                onChange={(e) =>
-                                                                                    setSelectedPartner((prev) =>
-                                                                                        prev ? { ...prev, code: e.target.value } : null
-                                                                                    )
-                                                                                }
-                                                                                className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
-                                                                            />
-                                                                        ) : (
-                                                                            <span className="text-sm font-semibold text-gray-800">
-                                                                                {selectedPartner.address}
+                                                                        <div className="flex justify-between items-center border-b pb-3">
+                                                                            <span className="text-sm font-medium text-gray-500">
+                                                                                Parent Partner
                                                                             </span>
-                                                                        )}
-                                                                    </div>
 
-                                                                    {/* CODE */}
-                                                                    <div className="flex justify-between items-center border-b pb-3">
-                                                                        <span className="text-sm font-medium text-gray-500">
-                                                                            Partner Mail
-                                                                        </span>
+                                                                            {isEditingPartner ? (
+                                                                                <select
+                                                                                    value={selectedPartnerParentId ?? ""}
+                                                                                    onChange={(e) =>
+                                                                                        setSelectedPartnerParentId(
+                                                                                            e.target.value ? Number(e.target.value) : null
+                                                                                        )
+                                                                                    }
+                                                                                    className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
+                                                                                >
+                                                                                    <option value="">Select Parent Partner</option>
 
-                                                                        {isEditingPartner ? (
-                                                                            <input
-                                                                                type="text"
-                                                                                value={selectedPartner.mail}
-                                                                                onChange={(e) =>
-                                                                                    setSelectedPartner((prev) =>
-                                                                                        prev ? { ...prev, code: e.target.value } : null
-                                                                                    )
-                                                                                }
-                                                                                className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
-                                                                            />
-                                                                        ) : (
-                                                                            <span className="text-sm font-semibold text-gray-800">
-                                                                                {selectedPartner.mail}
+                                                                                    {partnerParentOptions.map((item) => (
+                                                                                        <option key={item.id} value={item.id}>
+                                                                                            {item.name}
+                                                                                        </option>
+                                                                                    ))}
+                                                                                </select>
+                                                                            ) : (
+                                                                                <span className="text-sm font-semibold text-gray-800">
+                                                                                    {selectedPartner.name}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* NAME */}
+                                                                        <div className="flex justify-between items-center border-b pb-3">
+                                                                            <span className="text-sm font-medium text-gray-500">
+                                                                                Partner Name
                                                                             </span>
-                                                                        )}
-                                                                    </div>
 
-                                                                    {/* CODE */}
-                                                                    <div className="flex justify-between items-center border-b pb-3">
-                                                                        <span className="text-sm font-medium text-gray-500">
-                                                                            Partner Phone
-                                                                        </span>
+                                                                            {isEditingPartner ? (
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={selectedPartner.name}
+                                                                                    onChange={(e) =>
+                                                                                        setSelectedPartner((prev) =>
+                                                                                            prev ? { ...prev, name: e.target.value } : null
+                                                                                        )
+                                                                                    }
+                                                                                    className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="text-sm font-semibold text-gray-800">
+                                                                                    {selectedPartner.name}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
 
-                                                                        {isEditingPartner ? (
-                                                                            <input
-                                                                                type="text"
-                                                                                value={selectedPartner.phone}
-                                                                                onChange={(e) =>
-                                                                                    setSelectedPartner((prev) =>
-                                                                                        prev ? { ...prev, code: e.target.value } : null
-                                                                                    )
-                                                                                }
-                                                                                className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
-                                                                            />
-                                                                        ) : (
-                                                                            <span className="text-sm font-semibold text-gray-800">
-                                                                                {selectedPartner.phone}
+                                                                        {/* CODE */}
+                                                                        <div className="flex justify-between items-center border-b pb-3">
+                                                                            <span className="text-sm font-medium text-gray-500">
+                                                                                Partner Code
                                                                             </span>
-                                                                        )}
+
+                                                                            {isEditingPartner ? (
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={selectedPartner.code}
+                                                                                    onChange={(e) =>
+                                                                                        setSelectedPartner((prev) =>
+                                                                                            prev ? { ...prev, code: e.target.value } : null
+                                                                                        )
+                                                                                    }
+                                                                                    className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="text-sm font-semibold text-gray-800">
+                                                                                    {selectedPartner.code}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                        {/* CODE */}
+                                                                        <div className="flex justify-between items-center border-b pb-3">
+                                                                            <span className="text-sm font-medium text-gray-500">
+                                                                                Partner Address
+                                                                            </span>
+
+                                                                            {isEditingPartner ? (
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={selectedPartner.address}
+                                                                                    onChange={(e) =>
+                                                                                        setSelectedPartner((prev) =>
+                                                                                            prev ? { ...prev, code: e.target.value } : null
+                                                                                        )
+                                                                                    }
+                                                                                    className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="text-sm font-semibold text-gray-800">
+                                                                                    {selectedPartner.address}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* CODE */}
+                                                                        <div className="flex justify-between items-center border-b pb-3">
+                                                                            <span className="text-sm font-medium text-gray-500">
+                                                                                Partner Mail
+                                                                            </span>
+
+                                                                            {isEditingPartner ? (
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={selectedPartner.mail}
+                                                                                    onChange={(e) =>
+                                                                                        setSelectedPartner((prev) =>
+                                                                                            prev ? { ...prev, code: e.target.value } : null
+                                                                                        )
+                                                                                    }
+                                                                                    className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="text-sm font-semibold text-gray-800">
+                                                                                    {selectedPartner.mail}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+
+                                                                        {/* CODE */}
+                                                                        <div className="flex justify-between items-center border-b pb-3">
+                                                                            <span className="text-sm font-medium text-gray-500">
+                                                                                Partner Phone
+                                                                            </span>
+
+                                                                            {isEditingPartner ? (
+                                                                                <input
+                                                                                    type="text"
+                                                                                    value={selectedPartner.phone}
+                                                                                    onChange={(e) =>
+                                                                                        setSelectedPartner((prev) =>
+                                                                                            prev ? { ...prev, code: e.target.value } : null
+                                                                                        )
+                                                                                    }
+                                                                                    className="border rounded-md px-3 py-1 text-sm w-52 focus:ring-2 focus:ring-blue-500"
+                                                                                />
+                                                                            ) : (
+                                                                                <span className="text-sm font-semibold text-gray-800">
+                                                                                    {selectedPartner.phone}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
+
+
                                                             </div>
                                                         </>
                                                     )}

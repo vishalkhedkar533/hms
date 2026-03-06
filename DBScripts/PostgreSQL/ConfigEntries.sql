@@ -6,12 +6,10 @@ insert into hms.errorMaster (error_id,area,error_msg) values (1002, 'LoginConsta
 insert into hms.errorMaster (error_id,area,error_msg) values (1003, 'LoginConstants', 'User has no active primary role.' );
 insert into hms.errorMaster (error_id,area,error_msg) values (1101, 'Common', 'Success' );
 
-
 INSERT INTO applogs.applog_filter_policy (minimum_level, excluded_categories)
 VALUES ('Information', ARRAY['Microsoft', 'System.Net.Http', 'Microsoft.EntityFrameworkCore.Database.Command']);
 
 insert into hms.errorMaster (error_id,area,error_msg) values (1201, 'AgentConstants', 'Agent Not Found.' );
-
 
 insert into hms."api_config"(config_key,config_value) values ('agent_create_chunk_size', '5');
 
@@ -20,9 +18,6 @@ insert into hms.errorMaster (error_id,area,error_msg) values (1201, 'MasterConst
 insert into hms.errorMaster (error_id,area,error_msg) values (1401, 'CommissionConstants', 'Commission Config Not Found.' );
 
 insert into hms.errorMaster (error_id,area,error_msg) values (1501, 'JobConstants', 'Job Not Found.' );
-
-select * from hmsmaster.keyvalueentries k where k.entrycategory  in('CHANNEL_NAME', 'SUB_CHANNEL','DESIGNATION')
-
 
 update hmsmaster.mastertables 
 set columnalias = filtercriteria 
@@ -178,4 +173,3 @@ INSERT INTO hmsmaster.ui_fields (cntrl_id, component_id, cntrl_name) VALUES
 (1098,139,'HR DOJ'),
 (1099,139,'Last Working Date'),
 (1100,139,'Last Promotion Date');
-

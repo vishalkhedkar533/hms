@@ -6,12 +6,11 @@ namespace CommonLibrary
     {
         private readonly RequestDelegate _next;
         private readonly HashSet<string> _allowedHeaders = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Authorization",
-        "Content-Type",
-        "Accept",
-        "Cookie" // optional, if you need it
-    };
+        {
+            "Authorization",
+            "Content-Type",
+            "Accept"// optional, if you need it
+        };
 
         public WhitelistHeadersMiddleware(RequestDelegate next)
         {

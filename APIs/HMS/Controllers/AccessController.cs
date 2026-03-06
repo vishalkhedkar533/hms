@@ -845,7 +845,7 @@ namespace HMS.Controllers
             return Ok(response);
         }
 
-        [HttpPost("UI/Control/GetApprovalSetting")]
+        [HttpPost("ApprovalSettings/Fetch")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
         public async Task<IActionResult> GetApprovalSetting([FromBody] SearchMenu searchMenu)
         {

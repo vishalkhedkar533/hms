@@ -53,7 +53,7 @@ namespace HMS.Controllers
                 _logger.LogError(ex, "Failed to fetch roles");
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Internal server error.";
-                return StatusCode(500, response);
+                return BadRequest(response);
             }
         }
         [HttpPost("Role/Create")]

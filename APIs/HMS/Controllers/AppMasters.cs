@@ -46,7 +46,7 @@ namespace HMS.Controllers
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
         // POST api/cache/get/hms/customer
         [HttpPost("get/{EntryCategory}")]
-        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> GetRecords([FromRoute] string EntryCategory)
         {
             HmsResponse hMSResponse = new HmsResponse();

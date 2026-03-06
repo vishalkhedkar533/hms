@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Models.DTO
+﻿namespace Models.DTO
 {
 
     public class UIMenuResponse

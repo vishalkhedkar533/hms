@@ -772,5 +772,55 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
+        [HttpPost("UI/Control/ApprovalSetting")]
+        [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        public async Task<IActionResult> GetApprovalSetting()
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            try
+            {
+                IEnumerable<string> stringResponse = Enumerable.Empty<string>();
+                stringResponse = await _db.ExecuteQueryAsync<string>(
+                    "Master",
+                    "get_ui_heirarchy_org",
+                    new
+                    {
+                        p_orgId = orgId
+                    });
+
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+                {
+                    var uiMenuResponse = JsonConvert.DeserializeObject<UIMenuResponse>(
+                        stringResponse.FirstOrDefault(),
+                        new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
+
+                    // If a root itself should be hidden if RenderControl is false:
+                    //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
+
+                    hMSResponse.responseHeader.ErrorCode = 1101;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.uiMenuResponse = uiMenuResponse;
+                    return Ok(hMSResponse);
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                    hMSResponse.responseHeader.ErrorMessage = "Approval Settings Fetched.";
+                    return NotFound(hMSResponse);
+                }
+            }
+            catch (Exception ex)
+            {
+                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
+                hMSResponse.responseHeader.ErrorMessage = "Failed to Fetch Approval Settings";
+                _logger.LogError(ex, "Error Occurred In fetching approval settings");
+                return BadRequest(hMSResponse);
+            }
+        }
     }
 }

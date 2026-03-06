@@ -68,6 +68,11 @@
         "Function": "hms.get_ui_heirarchy_role",
         "Script": ""
       },
+      "get_ui_heirarchy_org": {
+        "SQLFile": "get_ui_heirarchy_org.sql",
+        "Function": "hms.get_ui_heirarchy_org",
+        "Script": ""
+      },
       "UpdateDesignation": {
         "Function": "na",
         "Script": "update hmsmaster.designation_master set hierarchy_path = @p_hierarchy_path ::ltree where orgid = @p_orgId and channel_id = @p_channelID and sub_channel_id = @p_subChannelId and designation_id = @p_designation"

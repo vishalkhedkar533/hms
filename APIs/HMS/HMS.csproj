@@ -54,6 +54,9 @@
     <None Update="Mappings\get_ui_heirarchy_role.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Mappings\get_ui_heirarchy_org.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Mappings\get_ui_heirarchy_user.sql">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

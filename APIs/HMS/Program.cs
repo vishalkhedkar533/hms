@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using CommonLibrary;
 using HMS.Caching;
+using HMS.Controllers;
 using HMS.Data;
 using HMS.Logging;
 using HMS.MapperProfiles;
@@ -139,6 +140,7 @@ builder.Services.AddHostedService<CacheRefreshBackgroundService>();
 // Controllers
 // ----------------------------
 builder.Services.AddControllers();
+builder.Services.AddScoped<AgentController>();
 
 // Configure CORS policy
 builder.Services.AddCors(options =>

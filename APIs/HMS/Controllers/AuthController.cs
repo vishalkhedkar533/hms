@@ -131,13 +131,13 @@ namespace HMS.Controllers
             user.LastLoginDate = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = bool.Parse(_config["DefaultValues:isHttps"]), // Must be true for HTTPS
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTime.UtcNow.AddDays(7)
-            });
+            //Response.Cookies.Append("refreshToken", refreshToken, new CookieOptions
+            //{
+            //    HttpOnly = true,
+            //    Secure = bool.Parse(_config["DefaultValues:isHttps"]), // Must be true for HTTPS
+            //    SameSite = SameSiteMode.Strict,
+            //    Expires = DateTime.UtcNow.AddDays(7)
+            //});
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
             response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                 .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
@@ -159,7 +159,8 @@ namespace HMS.Controllers
                 Expiration = expTime.LocalDateTime,
                 UserId = user.UserId,
                 Username = user.Username,
-                Encrypt_Api_Calls = Encrypt_Api_Calls
+                Encrypt_Api_Calls = Encrypt_Api_Calls,
+                refreshToken = refreshToken,
             };
             return Ok(response);
         }
@@ -299,19 +300,19 @@ namespace HMS.Controllers
         }
         [HttpPost("refreshtoken")]
         [AllowAnonymous]
-        public async Task<ActionResult> Refresh()
+        public async Task<ActionResult> Refresh([FromBody] LoginResponse request)
         {
             HmsResponse response = new HmsResponse();
             DateTimeOffset expTime = DateTimeOffset.UtcNow;
             var handler = new JwtSecurityTokenHandler();
-            if (!Request.Cookies.TryGetValue("refreshToken", out string? refreshToken)) 
+            if (string.IsNullOrEmpty(request.refreshToken))
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Refresh token missing.";
                 return Unauthorized(response);
             }            
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == request.refreshToken);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
@@ -355,20 +356,21 @@ namespace HMS.Controllers
             {
                 expTime = DateTimeOffset.FromUnixTimeSeconds(long.Parse(expClaim)).UtcDateTime;
             }
-            Response.Cookies.Append("refreshToken", newRefreshToken, 
-                new CookieOptions 
-                { 
-                    HttpOnly = true, 
-                    Secure = bool.Parse(_config["DefaultValues:isHttps"]), 
-                    SameSite = SameSiteMode.Strict 
-                });
+            //Response.Cookies.Append("refreshToken", newRefreshToken, 
+            //    new CookieOptions 
+            //    { 
+            //        HttpOnly = true, 
+            //        Secure = bool.Parse(_config["DefaultValues:isHttps"]), 
+            //        SameSite = SameSiteMode.Strict 
+            //    });
             response.responseBody.loginResponse = new LoginResponse
             {
                 Token = newAccessToken,
                 Expiration = expTime.LocalDateTime,
                 UserId = user.UserId,
                 Username = user.Username,
-                Encrypt_Api_Calls = Encrypt_Api_Calls
+                Encrypt_Api_Calls = Encrypt_Api_Calls,
+                refreshToken = newRefreshToken
             };
             return Ok(response);
         }

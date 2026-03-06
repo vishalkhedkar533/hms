@@ -46,7 +46,7 @@ namespace HMS.Controllers
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
         // POST api/cache/get/hms/customer
         [HttpPost("get/{EntryCategory}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
         public async Task<IActionResult> GetRecords([FromRoute] string EntryCategory)
         {
             HmsResponse hMSResponse = new HmsResponse();
@@ -101,6 +101,7 @@ namespace HMS.Controllers
         // 🔹 Refresh table (dynamic)
         // POST api/cache/refresh/hms/customer
         [HttpPost("refresh/{EntryCategory}")]
+        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
         public async Task<IActionResult> Refresh([FromRoute] string EntryCategory)
         {
 
@@ -126,6 +127,7 @@ namespace HMS.Controllers
         // 🔹 Evict table
         // POST api/cache/evict/hms/customer
         [HttpPost("evict/{EntryCategory}")]
+        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
         public IActionResult Evict([FromRoute] string EntryCategory)
         {
 
@@ -148,9 +150,7 @@ namespace HMS.Controllers
 
             return Ok($"Cache for {masterTableConfigs?.SchemaName}.{masterTableConfigs?.TableName} evicted.");
         }
-
-        // 🔹 Evict entire schema
-        // POST api/cache/evict/schema/hms
+        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
         [HttpPost("evict/schema/{schema}")]
         public IActionResult EvictSchema(string schema)
         {
@@ -158,17 +158,6 @@ namespace HMS.Controllers
             _cacheService.EvictSchema(schema);
             return Ok($"All cache entries for schema {schema} evicted.");
         }
-
-        // 🔹 Refresh entire schema
-        // POST api/cache/refresh/schema/{schema}
-        //[HttpPost("refresh/schema/{schema}")]
-        //public async Task<IActionResult> RefreshSchema(string schema)
-        //{
-        //    if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
-        //    await _cacheService.RefreshSchemaAsync(schema);
-        //    return Ok($"Schema {schema} refreshed.");
-        //}
-
         private bool IsValidSchema(string schema) => string.Equals(schema, "hmsmaster", StringComparison.OrdinalIgnoreCase);
 
         // POST: api/hms/channelmaster

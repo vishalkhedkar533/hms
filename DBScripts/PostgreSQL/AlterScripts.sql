@@ -640,3 +640,4 @@ update hmsmaster.keyvalueentries k set entrydesc = 'backgroundjob' where k.entry
 
 update hmsmaster.keyvalueentries k set entrydesc = 'backgroundjob#123' where k.entrycategory ='BackgroundJobUserPassword'
 
+ALTER TABLE hms.sr_approver ALTER COLUMN allocatedroleid DROP NOT NULL;

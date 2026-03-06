@@ -53,7 +53,7 @@ namespace HMS.Controllers
                 _logger.LogError(ex, "Failed to fetch roles");
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "Internal server error.";
-                return StatusCode(500, response);
+                return BadRequest(response);
             }
         }
         [HttpPost("Role/Create")]
@@ -242,20 +242,23 @@ namespace HMS.Controllers
                 var menuAccessList = await (from mm in _context.MenuMasters.AsNoTracking()
                                             join parent in _context.MenuMasters.AsNoTracking()
                                                 on mm.ParentMenuId equals parent.MenuId
+                                            // Perform a Left Join on RoleMenuMapping
                                             join mapping in _context.RoleMenuMapping.AsNoTracking()
-                                                on mm.MenuId equals mapping.MenuId
-                                            where mapping.RoleId == roleId && mapping.OrgId == orgId
+                                                .Where(m => m.RoleId == roleId && m.OrgId == orgId)
+                                                on mm.MenuId equals mapping.MenuId into mappingGroup
+                                            from mapping in mappingGroup.DefaultIfEmpty()
                                             select new MenuAccessDto
                                             {
                                                 MenuId = mm.MenuId,
                                                 MenuName = mm.MenuName,
                                                 ParentMenuId = parent.MenuId,
                                                 ParentMenuName = parent.MenuName,
-                                                HasAccess = true // Since it's an inner join, access must exist to be here
+                                                // Check if mapping is null to determine access
+                                                HasAccess = mapping != null
                                             })
-                            .OrderBy(a => a.ParentMenuName)
-                            .ThenBy(a => a.MenuName)
-                            .ToListAsync();
+                                            .OrderBy(a => a.ParentMenuName)
+                                            .ThenBy(a => a.MenuName)
+                                            .ToListAsync();
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "SUCCESS";
@@ -589,8 +592,7 @@ namespace HMS.Controllers
                 {
                     hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
                     hMSResponse.responseHeader.ErrorMessage = "FAILED";
-
-                    return BadRequest(hMSResponse);
+                    return Conflict(hMSResponse);
                 }
 
                 var menu = _context.MenuMasters.FirstOrDefault(x => x.MenuId == roleMenuDTO.MenuId);
@@ -600,22 +602,22 @@ namespace HMS.Controllers
                     hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
                     hMSResponse.responseHeader.ErrorMessage = "FAILED";
 
-                    return BadRequest(hMSResponse);
+                    return Conflict(hMSResponse);
                 }
 
                 // 1. Check for existing mapping
-                var newMenuRoleMapping = _context.RoleMenuMapping.Where(
+                var newMenuRoleMapping = _context.RoleMenuMapping.FirstOrDefault(
                     urm => urm.RoleId == roleMenuDTO.RoleId
                     && urm.OrgId == orgId
                     && urm.MenuId == roleMenuDTO.MenuId);
 
                 if (newMenuRoleMapping == null)
                 {
-                    hMSResponse.responseHeader.ErrorCode = AccessConstants.MENU_ROLE_MAPPING_NOT_AVAILABLE;
-                    hMSResponse.responseHeader.ErrorMessage = "FAILED";
-                    return BadRequest(hMSResponse);
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hMSResponse.responseHeader.ErrorMessage = $"Role Does not have access to - {menu.MenuName}";
+                    return Conflict(hMSResponse);
                 }
-                newMenuRoleMapping.ExecuteDeleteAsync();
+                await _context.RoleMenuMapping.Where(x=> x.MappingId == newMenuRoleMapping.MappingId).ExecuteDeleteAsync();
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
 
@@ -646,8 +648,6 @@ namespace HMS.Controllers
                     hMSResponse.responseHeader.ErrorMessage = "Invalid Role verify RoleId";
                     return Conflict(hMSResponse);
                 }
-
-
 
                 // Safely check existence of the control in uiField.
                 // Some deployments may have different DB column names; guard against column-not-found errors.
@@ -774,7 +774,7 @@ namespace HMS.Controllers
         }
         [HttpPost("UI/Control/ApprovalSetting")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetApprovalSetting()
+        public async Task<IActionResult> GetApprovalSetting([FromBody] SearchMenu searchMenu)
         {
             HmsResponse hMSResponse = new HmsResponse();
             orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
@@ -799,9 +799,6 @@ namespace HMS.Controllers
                             ContractResolver = new CamelCasePropertyNamesContractResolver()
                         });
 
-                    // If a root itself should be hidden if RenderControl is false:
-                    //var finalMenu = uiMenuHeirarchy.Where(m => m.RenderControl).ToList();
-
                     hMSResponse.responseHeader.ErrorCode = 1101;
                     hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
                     hMSResponse.responseBody.uiMenuResponse = uiMenuResponse;
@@ -809,17 +806,15 @@ namespace HMS.Controllers
                 }
                 else
                 {
-                    hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = "Approval Settings Fetched.";
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hMSResponse.responseHeader.ErrorMessage = "Approval settings not found for this selection.";
                     return NotFound(hMSResponse);
                 }
             }
             catch (Exception ex)
             {
-                hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = "Failed to Fetch Approval Settings";
-                _logger.LogError(ex, "Error Occurred In fetching approval settings");
-                return BadRequest(hMSResponse);
+                _logger.LogError(ex, "Error Occurred In GeoHierarchy");
+                return StatusCode(500, "Internal Server Error");
             }
         }
     }

@@ -18,7 +18,11 @@ flat_data AS (
             jsonb_agg(
                 jsonb_build_object(
                     'componentId', f.component_id,
-                    'componentName', c."label"
+                    'componentName', c."label",
+                    'approverOneRoleId', approveroneid
+                    'approverTwoRoleId', approvertwoid
+                    'approverThreeRoleId', approverthreeid
+                    'useDefaultApprover', usedefaultapprover                    
                 ) ORDER BY f.component_id
             ) FILTER (WHERE f.component_id IS NOT NULL), 
             '[]'::jsonb

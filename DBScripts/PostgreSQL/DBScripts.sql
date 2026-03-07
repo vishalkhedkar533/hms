@@ -2536,7 +2536,6 @@ CREATE TABLE hmsmaster.ui_approval_setting (
 
 -- DROP TABLE hmsmaster.approval_setting;
 
-
 CREATE TABLE hmsmaster.approval_setting (
 	id serial4 NOT NULL,
 	orgid int4 NOT NULL,
@@ -2550,6 +2549,7 @@ CREATE TABLE hmsmaster.approval_setting (
 	modified_by int4 NULL,
 	modified_date timestamp NULL,	
 	CONSTRAINT approval_setting_pkey PRIMARY KEY (id),
+	constraint uq_org_comp UNIQUE (orgid, component_id),
 	CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
 	CONSTRAINT fk_approver_one FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),
 	CONSTRAINT fk_approver_three FOREIGN KEY (approveroneid) REFERENCES hms.roles(role_id),

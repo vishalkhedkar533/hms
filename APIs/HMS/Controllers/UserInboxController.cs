@@ -11,12 +11,15 @@ using Models.DTO;
 using Models.Enums;
 using Models.HMSConsts;
 using Newtonsoft.Json.Linq;
+using System.Data.Common;
 using System.Reflection;
 using System.Security.Claims;
 using System.Text.Json;
 
 namespace HMS.Controllers
 {
+    [Route("api/[controller]")]
+    [ApiController]
     public class UserInboxController : Controller
     {
         private const string SrStatusEntryCategory = "SR_STATUS";
@@ -229,6 +232,7 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
+
         [HttpPost("UpdateSrDecision")]
         [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
         public async Task<IActionResult> UpdateSrDecision([FromBody] SrApproverDto  srApproverDto)
@@ -511,6 +515,5 @@ namespace HMS.Controllers
                 return null;
             }
         }
-
     }
 }

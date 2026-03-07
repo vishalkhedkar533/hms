@@ -68,6 +68,11 @@
         "Function": "hms.get_ui_heirarchy_role",
         "Script": ""
       },
+      "get_ui_heirarchy_org": {
+        "SQLFile": "get_ui_heirarchy_org.sql",
+        "Function": "hms.get_ui_heirarchy_org",
+        "Script": ""
+      },
       "UpdateDesignation": {
         "Function": "na",
         "Script": "UPDATE hmsmaster.designation_master SET hierarchy_path = REPLACE(COALESCE(hierarchy_path::text, :p_designationIdText), :p_oldParentPath, :p_newParentPath)::ltree, modified_by = :p_ModifiedBy, modified_date = NOW() WHERE orgid = :p_orgId AND channel_id = :p_channelID AND sub_channel_id = :p_subChannelId AND (hierarchy_path = :p_oldParentPath::ltree OR hierarchy_path <@ :p_oldParentPath::ltree OR designation_id = :p_designationId)"

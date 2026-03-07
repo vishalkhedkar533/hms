@@ -649,23 +649,6 @@ namespace HMS.Controllers
                     return Conflict(hMSResponse);
                 }
 
-                if (((uiFieldsSetting.ApproverOneId ?? 0) != 0 )
-                    || ((uiFieldsSetting.ApproverTwoId ?? 0) != 0 )
-                    || ((uiFieldsSetting.ApproverThreeId ?? 0) != 0 )
-                    )
-                {
-                    if (!(await _context.Roles.AsNoTracking().AnyAsync(
-                        x => new int[] { (uiFieldsSetting.ApproverOneId ?? 0), 
-                            (uiFieldsSetting.ApproverTwoId ?? 0), 
-                            (uiFieldsSetting.ApproverThreeId ?? 0) }
-                        .Contains(x.RoleId) && x.OrgId == orgId)))
-                    {
-                        hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                        hMSResponse.responseHeader.ErrorMessage = "Invalid Role ApproverOneId/ApproverTwoId/ApproverThreeId";
-                        return Conflict(hMSResponse);
-                    }
-                }
-
                 // Safely check existence of the control in uiField.
                 // Some deployments may have different DB column names; guard against column-not-found errors.
                 var uiField = await _context.uiField.AsNoTracking()
@@ -679,33 +662,33 @@ namespace HMS.Controllers
                 }
 
                 var existingSetting = await _context.uiFieldsSettings.FirstOrDefaultAsync(
-                    s => s.OrgId == orgId
-                         && s.RoleId == uiFieldsSetting.RoleId
-                         && s.CntrlId == uiFieldsSetting.CntrlId);
+                    s => s.OrgId == orgId && s.RoleId == uiFieldsSetting.RoleId
+                    && s.CntrlId == uiFieldsSetting.CntrlId);
 
                 hMSResponse.responseBody.uiFieldsSettings = new List<UiFieldsSetting>();
                 if (existingSetting == null)
                 {
-                    var newRecord = _mapper.Map<UiFieldsSetting>(uiFieldsSetting);
-                    newRecord.OrgId = orgId;
-                    newRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
-                    newRecord.AccessGrantedOn = DateTime.UtcNow;
-                    _context.uiFieldsSettings.Add(newRecord);
-                    hMSResponse.responseBody.uiFieldsSettings.Add(newRecord);
+                    existingSetting = _mapper.Map<UiFieldsSetting>(uiFieldsSetting);
+                    existingSetting.OrgId = orgId;
+                    existingSetting.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+                    existingSetting.AccessGrantedOn = DateTime.UtcNow;
+                    _context.uiFieldsSettings.Add(existingSetting);
+                    hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
                 }
                 else
                 {
                     _mapper.Map(uiFieldsSetting, existingSetting);
+                    existingSetting.OrgId = orgId;
                     existingSetting.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
                     existingSetting.AccessGrantedOn = DateTime.UtcNow;
-                    hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
-                    //_context.uiFieldsSettings.Update(existingSetting);
+                    //hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
+                    _context.uiFieldsSettings.Update(existingSetting);
                 }
 
                 await _context.SaveChangesAsync();
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "Access updated successfully";
-
+                hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
                 return Ok(hMSResponse);
             }
             catch (DbException dbEx)
@@ -780,6 +763,125 @@ namespace HMS.Controllers
                 {
                     hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_GEOHEIRARCHY_NOTFOUND;
                     hMSResponse.responseHeader.ErrorMessage = "Geo Hierarchy not found for this selection.";
+                    return NotFound(hMSResponse);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error Occurred In GeoHierarchy");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+        [HttpPost("ApprovalSettings/Save")]
+        [MenuAuthorize(AuthorisationConstants.ManageOrganisationSetting)]
+        public async Task<IActionResult> SaveApprovalSetting([FromBody] ApprovalSettingDto dto)
+        {
+            HmsResponse response = new HmsResponse();
+            // 1. Get User/Org Context from Claims (Replace with your actual Auth logic)
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            int userId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (!await _context.uiComponent.AsNoTracking().AnyAsync(x => x.ComponentId == dto.ComponentId))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Check the Component ID";
+                return Conflict(response);
+            }
+
+            if (((dto.ApproverOneId ?? 0) != 0)
+                || ((dto.ApproverTwoId ?? 0) != 0)
+                || ((dto.ApproverThreeId ?? 0) != 0)
+                )
+            {
+                if (!(await _context.Roles.AsNoTracking().AnyAsync(
+                    x => new int[] { (dto.ApproverOneId ?? 0),
+                        (dto.ApproverTwoId ?? 0),
+                        (dto.ApproverThreeId ?? 0) }
+                    .Contains(x.RoleId) && x.OrgId == orgId)))
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid Role ApproverOneId/ApproverTwoId/ApproverThreeId";
+                    return Conflict(response);
+                }
+            }
+
+            var existingEntity = await _context.ApprovalSettings
+                .FirstOrDefaultAsync(x => x.OrgId == orgId && x.ComponentId == dto.ComponentId);
+
+            if (existingEntity != null)
+            {
+                // Map updated fields from DTO to Entity
+                _mapper.Map(dto, existingEntity);
+                // Audit fields
+                existingEntity.OrgId = orgId;
+                existingEntity.ModifiedBy = userId;
+                existingEntity.ModifiedDate = DateTime.UtcNow;
+                _context.ApprovalSettings.Update(existingEntity);
+            }
+            else
+            {
+                // --- CREATE LOGIC ---
+                existingEntity = _mapper.Map<ApprovalSetting>(dto);
+                // Set required fields that aren't in the DTO
+                existingEntity.OrgId = orgId;
+                existingEntity.CreatedBy = userId;
+                existingEntity.CreatedDate = DateTime.UtcNow;
+                _context.ApprovalSettings.Add(existingEntity);
+            }
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbException dbEx)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "An error occurred while saving the ApprovalSettings";
+                _logger.LogError(dbEx, "An error occurred while saving the ApprovalSettings");
+                return BadRequest(response);
+            }
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = "Approval setting saved successfully.";
+            response.responseBody.ApprovalSettings = new List<ApprovalSetting>();
+            response.responseBody.ApprovalSettings.Add(existingEntity);
+            return Ok(response);
+        }
+
+        [HttpPost("ApprovalSettings/Fetch")]
+        [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
+        public async Task<IActionResult> GetApprovalSetting()
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            try
+            {
+                IEnumerable<string> stringResponse = Enumerable.Empty<string>();
+                stringResponse = await _db.ExecuteQueryAsync<string>(
+                    "Master",
+                    "get_ui_heirarchy_org",
+                    new
+                    {
+                        p_orgId = orgId
+                    });
+
+                if (!string.IsNullOrEmpty(stringResponse.FirstOrDefault()))
+                {
+                    var uiMenuResponse = JsonConvert.DeserializeObject<UIMenuResponse>(
+                        stringResponse.FirstOrDefault(),
+                        new JsonSerializerSettings
+                        {
+                            NullValueHandling = NullValueHandling.Ignore,
+                            ContractResolver = new CamelCasePropertyNamesContractResolver()
+                        });
+
+                    hMSResponse.responseHeader.ErrorCode = 1101;
+                    hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
+                    hMSResponse.responseBody.uiMenuResponse = uiMenuResponse;
+                    return Ok(hMSResponse);
+                }
+                else
+                {
+                    hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    hMSResponse.responseHeader.ErrorMessage = "Approval settings not found for this selection.";
                     return NotFound(hMSResponse);
                 }
             }

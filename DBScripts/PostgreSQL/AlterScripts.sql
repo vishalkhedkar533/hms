@@ -615,6 +615,7 @@ ALTER TABLE hmsmaster.channel_branch_heirarchy
 
 alter table hms.sr_approver add column decision_comment varchar(4000);
 
+alter table hms.sr_approver add reporting_mgr int4 references hms."user"(user_id);
 ALTER TABLE hms.inbox 
 DROP CONSTRAINT IF EXISTS inbox_cntrl_id_fkey;
 

@@ -1,6 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Models.DTO
+﻿namespace Models.DTO
 {
 
     public class UIMenuResponse
@@ -12,6 +10,8 @@ namespace Models.DTO
     {
         public string Type { get; set; }
         public string Section { get; set; }
+        public int? componentId { get; set; }
+        public string? componentName { get; set; }
         public List<UIComponentDto>? SubSection { get; set; }
         public List<Fieldlist>? FieldList { get; set; }
     }
@@ -25,10 +25,10 @@ namespace Models.DTO
         public string cntrlName { get; set; }
         public int? access_granted_by { get; set; }
         public DateTime? access_granted_on { get; set; }
-        public int? ApproverOneID { get; set; }
-        public int? ApproverTwoID { get; set; }
-        public int? ApproverThreeID { get; set; }
-        public bool UseDefaultApprover { get; set; } = false;
+        public int? approverOneRoleId { get; set; }
+        public int? approverTwoRoleId { get; set; }
+        public int? approverThreeRoleId { get; set; }
+        public bool useDefaultApprover { get; set; } = false;
     }
 
 

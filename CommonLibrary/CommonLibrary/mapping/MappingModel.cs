@@ -12,6 +12,7 @@ namespace CommonLibrary.mapping
     public sealed class OperationMapping
     {
         public string? ConnectionStringKey { get; set; }
+        public string? SQLFile { get; set; }
         public string? Function { get; set; }
         public string? Script { get; set; }
     }

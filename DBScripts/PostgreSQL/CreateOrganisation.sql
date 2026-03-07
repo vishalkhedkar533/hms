@@ -155,6 +155,12 @@ VALUES (:p_orgid, 'FileType', 'hmsmaster', 'keyvalueentries',' AND entrycategory
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, columnalias)
 VALUES (:p_orgid, 'Branch', 'hmsmaster', 'branch_master', 'branch_id  AS entryIdentity,  branch_name AS entryDesc, branch_code AS entryCategory, location_master_id AS entryParentId, is_active AS activeStatus, orgid');
 
+INSERT INTO hmsmaster.keyvalueentries 
+    (orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+    (:p_orgid, 'BackgroundJobUserID', 1, 'SchedulerID', NULL, true),
+    (:p_orgid, 'BackgroundJobUserPassword', 2, 'SchedulerPassword', NULL, true);
+
 --execute this at end, to grant administrator access to the new menu items
 insert into hms.role_menu_mapping (role_id,menu_id,is_visible,is_enabled,created_by,created_date,orgid)
 select 1, mm.menu_id,true,true ,'System', now(), :p_orgid

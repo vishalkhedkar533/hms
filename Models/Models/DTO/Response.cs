@@ -77,6 +77,7 @@ namespace Models.DTO
         public string? Username { get; set; }
         public string? Role { get; set; }
         public bool? Encrypt_Api_Calls { get; set; } = false;
+        public string refreshToken { get; set; } = string.Empty;
 
     }
 

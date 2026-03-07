@@ -48,8 +48,8 @@ namespace Models.DB
         public DateTime? StatusModifiedOn { get; set; }
 
         [Required]
-        [Column ("cntrl_id")]
-        public int? ControlId { get; set; }
+        [Column("component_id")]
+        public int? ComponentId { get; set; }
         [Column("allocated_to_role")]
         public int? AllocatedToRole { get; set; }
         [NotMapped]
@@ -66,6 +66,12 @@ namespace Models.DB
         //object_name
         [Column("object_name")]
         public string? ObjectName { get; set; }
+
+        [Column("object_ref")]
+        public int? ObjectReference { get; set; }
+
+        [Column("comments")]
+        public string? Comments { get; set; }
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -109,9 +115,10 @@ namespace Models.DB
         [Required]
         public SrStatus SrStatus { get; set; }
         [Required]
-        public int? ControlId { get; set; }
+        public int? ComponentId { get; set; }
         public int? AllocatedToRole { get; set; }
         public string? ObjectName { get; set; }
+        public int? ObjectReference { get; set; }
     }
     public class SrApproverDto
     {
@@ -121,6 +128,7 @@ namespace Models.DB
         public DateTime? DecisionOn { get; set; }
         public int? SrNo { get; set; }
         public ApproverDecision? ApproverDecision { get; set; }
+        public string? Comments { get; set; }
     }
     public class InboxProfile : Profile
     {
@@ -144,6 +152,8 @@ namespace Models.DB
                 .ForMember(dest => dest.ApprovalPayload, opt => opt.Ignore())
                 .ForMember(dest => dest.ApprovalApiResponse, opt => opt.Ignore())
                 .ForMember(dest => dest.SrStatusDesc, opt => opt.Ignore())
+                .ForMember(dest => dest.Comments, opt => opt.Ignore())
+
                 ;
         }
     }
@@ -152,7 +162,8 @@ namespace Models.DB
         public SrApproverProfile()
         {
             // 1. Entity to DTO (For Data Retrieval/GET)
-            CreateMap<SrApprover, SrApproverDto>();
+            CreateMap<SrApprover, SrApproverDto>()
+                .ForMember(dest => dest.Comments, opt => opt.Ignore());
 
             // 2. DTO to Entity (For Create/Update/POST/PUT)
             // We must explicitly ignore fields that exist in 'SrApprover' but not in 'SrApproverDto'
@@ -160,7 +171,6 @@ namespace Models.DB
                 .ForMember(dest => dest.OrgId, opt => opt.Ignore())
                 .ForMember(dest => dest.DecisionBy, opt => opt.Ignore())
                 .ForMember(dest => dest.SrNo, opt => opt.Ignore());
-
         }
     }
     public class SearchInboxDto
@@ -169,8 +179,10 @@ namespace Models.DB
         public SrStatus? SrStatus { get; set; }
         public DateTime? CreatedDateFrom { get; set; }
         public DateTime? CreatedDateTo { get; set; }
-        public int? UserId { get; set; }
         public int? PageNo { get; set; } = 1;
         public int? PageSize { get; set; } = 10;
+        public string? AgentCode { get; set; }
+        public int? AllocateToRole { get; set; }    
+
     }
 }

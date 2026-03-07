@@ -91,49 +91,71 @@ namespace HMS.Controllers
         }
         [HttpPost("UpdateUser")]
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
-        public async Task<ActionResult> UpdateUser(int id, UserOtherDetails userDto)
+        public async Task<ActionResult> UpdateUser(UserOtherDetails userDto)
         {
             HmsResponse response = new HmsResponse();
             int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             int currentUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
 
+            // 2. Check for conflicts (Username/Email) excluding the current user being updated
+            if (await _context.Users.AsNoTracking().AnyAsync(u => u.Username == userDto.Username
+            && u.OrgId == orgId && u.Username != userDto.Username))
+            {
+                response.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "Username already exists."
+                };
+                return Conflict(response);
+            }
+
+            if (await _context.Users.AsNoTracking().AnyAsync(u => u.EmailId == userDto.EmailId
+            && u.OrgId == orgId && u.Username != userDto.Username))
+            {
+                response.responseHeader = new HmsSResponseHeader
+                {
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "Email ID already exists."
+                };
+                return Conflict(response);
+            }
+
+            int? reportingManagerId = null;
+
+            if (!string.IsNullOrEmpty(userDto.ReportingMgrName))
+            {
+                reportingManagerId = (await _context.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId))?.UserId;
+                if (reportingManagerId == null)
+                {
+                    response.responseHeader = new HmsSResponseHeader();
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
+                    return Conflict(response);
+                }
+            }
+
             // 1. Fetch the existing user, ensuring they belong to the current Org
             var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.UserId == id && u.OrgId == orgId);
+                .FirstOrDefaultAsync(u => u.Username == userDto.Username && u.OrgId == orgId);
 
             if (existingUser == null)
             {
-                response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.FAILED, ErrorMessage = "User not found." };
-                return NotFound(response);
-            }
-
-            // 2. Check for conflicts (Username/Email) excluding the current user being updated
-            if (await _context.Users.AnyAsync(u => u.Username == userDto.Username && u.OrgId == orgId && u.UserId != id))
-            {
-                response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.FAILED, ErrorMessage = "Username already exists." };
-                return Conflict(response);
-            }
-
-            if (await _context.Users.AnyAsync(u => u.EmailId == userDto.EmailId && u.OrgId == orgId && u.UserId != id))
-            {
-                response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.FAILED, ErrorMessage = "Email ID already exists." };
-                return Conflict(response);
-            }
-
-            var reportingManager = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
-            if (reportingManager == null)
-            {
-                response.responseHeader = new HmsSResponseHeader();
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
+                response.responseHeader = new HmsSResponseHeader 
+                { 
+                    ErrorCode = CommonConstants.FAILED,
+                    ErrorMessage = "User not found."
+                };
                 return Conflict(response);
             }
+
             // 3. Map updated values from DTO to the existing Entity
             // AutoMapper will use the Condition(s) we set up previously to only update non-null fields
             _mapper.Map(userDto, existingUser);
             
             // Update Reporting Manager
-            existingUser.ReportingMgr = reportingManager.UserId;
+            existingUser.ReportingMgr = reportingManagerId;
 
             // 4. Update audit fields
             existingUser.ModifiedBy = currentUserId; // Or handle as int if your Model requires it
@@ -142,7 +164,11 @@ namespace HMS.Controllers
             // 5. Save changes
             await _context.SaveChangesAsync();
 
-            response.responseHeader = new HmsSResponseHeader { ErrorCode = CommonConstants.SUCCESS, ErrorMessage = "User updated successfully" };
+            response.responseHeader = new HmsSResponseHeader 
+            { 
+                ErrorCode = CommonConstants.SUCCESS, 
+                ErrorMessage = "User updated successfully" 
+            };
             return Ok(response);
         }
         [HttpPost("UpdatePassword")]
@@ -198,55 +224,55 @@ namespace HMS.Controllers
             };
             return Ok(response);
         }
-        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
-        [HttpPost("ActivateDeactivateUser")]
-        public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
-        {
-            HmsResponse response = new HmsResponse();
-            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
-            if (currentUser == null)
-            {
-                response.responseHeader = new HmsSResponseHeader
-                {
-                    ErrorCode = CommonConstants.FAILED,
-                    ErrorMessage = "User not found."
-                };
-                return NotFound(response);
-            }
+        //[MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        //[HttpPost("ActivateDeactivateUser")]
+        //public async Task<ActionResult<User>> DeactivateUser(UpdateUser request)
+        //{
+        //    HmsResponse response = new HmsResponse();
+        //    var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
+        //    if (currentUser == null)
+        //    {
+        //        response.responseHeader = new HmsSResponseHeader
+        //        {
+        //            ErrorCode = CommonConstants.FAILED,
+        //            ErrorMessage = "User not found."
+        //        };
+        //        return NotFound(response);
+        //    }
 
-            // Hash the new password securely using BCrypt
-            currentUser.IsActive = request.IsActive;
+        //    // Hash the new password securely using BCrypt
+        //    currentUser.IsActive = request.IsActive;
 
-            // Update the user
-            _context.Users.Update(currentUser);
-            await _context.SaveChangesAsync();
-            response.responseHeader = new HmsSResponseHeader
-            {
-                ErrorCode = CommonConstants.SUCCESS,
-                ErrorMessage = $"User {(request.IsActive ? "activated" : "deactivated")} successfully."
-            };
+        //    // Update the user
+        //    _context.Users.Update(currentUser);
+        //    await _context.SaveChangesAsync();
+        //    response.responseHeader = new HmsSResponseHeader
+        //    {
+        //        ErrorCode = CommonConstants.SUCCESS,
+        //        ErrorMessage = $"User {(request.IsActive ? "activated" : "deactivated")} successfully."
+        //    };
 
-            return Ok(response);
-        }
-        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
-        [HttpPost("LockUnlockUser")]
-        public async Task<ActionResult<User>> LockUnlockUser(UpdateUser request)
-        {
-            var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
-            if (currentUser == null)
-            {
-                return NotFound();
-            }
+        //    return Ok(response);
+        //}
+        //[MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        //[HttpPost("LockUnlockUser")]
+        //public async Task<ActionResult<User>> LockUnlockUser(UpdateUser request)
+        //{
+        //    var currentUser = await _context.Users.FirstOrDefaultAsync(x => x.Username == request.Username);
+        //    if (currentUser == null)
+        //    {
+        //        return NotFound();
+        //    }
 
-            // Hash the new password securely using BCrypt
-            currentUser.IsLocked = request.IsLocked;
+        //    // Hash the new password securely using BCrypt
+        //    currentUser.IsLocked = request.IsLocked;
 
-            // Update the user
-            _context.Users.Update(currentUser);
-            await _context.SaveChangesAsync();
+        //    // Update the user
+        //    _context.Users.Update(currentUser);
+        //    await _context.SaveChangesAsync();
 
-            return AcceptedAtAction(request.IsLocked ? "UserLocked" : "UserUnlocked", new { id = currentUser.UserId }, currentUser);
-        }
+        //    return AcceptedAtAction(request.IsLocked ? "UserLocked" : "UserUnlocked", new { id = currentUser.UserId }, currentUser);
+        //}
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
         [HttpPost("GetUserDetails")]
         public async Task<ActionResult<User>> GetUserDetails([FromBody] SearchUser SearchUser)
@@ -264,12 +290,37 @@ namespace HMS.Controllers
                 return BadRequest(hmsResponse);
             }
 
-            var user = await _context.Users.AsNoTracking()
+            var user = await _context.Users
+                .AsNoTracking()
                 .Where(u =>
                     (SearchUser.Username != null && u.Username == SearchUser.Username) ||
                     (SearchUser.EmailId != null && u.EmailId == SearchUser.EmailId) ||
                     (SearchUser.MobileNumber != null && u.MobileNumber == SearchUser.MobileNumber))
-                .ProjectTo<UserOtherDetails>(_mapper.ConfigurationProvider)
+                // Manual Join to enforce the 'orgid = 2' condition
+                .GroupJoin(_context.Users.Where(r => r.OrgId == 2),
+                    u => u.ReportingMgr,
+                    r => r.UserId,
+                    (u, managers) => new { u, managers })
+                .SelectMany(x => x.managers.DefaultIfEmpty(), (x, manager) => new { x.u, manager })
+                .Select(combined => new UserOtherDetails
+                {
+                    UserId = combined.u.UserId,
+                    Username = combined.u.Username,
+                    EmailId = combined.u.EmailId,
+                    MobileNumber = combined.u.MobileNumber,
+                    IsActive = combined.u.IsActive,
+                    IsLocked = combined.u.IsLocked,
+                    LastLoggedInOn = combined.u.LastLoginDate,
+                    PasswordChangedDate = combined.u.PasswordChangedDate,
+                    FailedLoginAttempts = combined.u.failedloginattempts,
+                    LockoutEndTime = combined.u.lockoutendtime,
+                    ReportingMgrId = combined.u.ReportingMgr,
+                    // The join result:
+                    ReportingMgrName = combined.manager != null ? combined.manager.Username : null,
+                    OrgName = combined.u.OrgName,
+                    SubscriberId = combined.u.SubscriberId,
+                    SubscriberName = combined.u.SubscriberName
+                })
                 .FirstOrDefaultAsync();
 
             if (user == null)
@@ -287,6 +338,7 @@ namespace HMS.Controllers
                 ErrorCode = CommonConstants.SUCCESS,
                 ErrorMessage = "User details retrieved successfully."
             };
+            user.ReportingMgrName = await _context.Users.AsNoTracking().Where(u => u.UserId == user.ReportingMgrId).Select(u => u.Username).FirstOrDefaultAsync();
             hmsResponse.responseBody.UserOtherDetails = new List<UserOtherDetails> { user };
             return Ok(hmsResponse);
         }

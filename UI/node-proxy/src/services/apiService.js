@@ -22,6 +22,7 @@ const login = (data) => {
   return apiClient.post(APIRoutes.LOGIN, data);
 };
 const search = (data, headers = {}) => {
+  console.log("aData", data);
   return apiClient.post(APIRoutes.AGENTSEARCH, data, { headers });
 };
 const searchbycode = (data, headers = {}) => {
@@ -336,6 +337,10 @@ const getPartnerHierarchy = async (data, headers = {}) => {
   )
 }
 
+const searchForPartner = (data, headers = {}) => {
+  return apiClient.post(APIRoutes.AGENTSEARCH, data, { headers });
+};
+
 const GetMastersBulk = async (keys, headers = {}) => {
   const promises = keys.map(async (key) => {
     try {
@@ -489,6 +494,24 @@ const fetchInboxData = (data = {}, headers = {}) => {
 const updateSrDecision = (data = {}, headers = {}) => {
   return apiClient.post(APIRoutes.UPDATESRDECISION, data, { headers });
 }
+const getUserDetails = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.GETUSERDETAILS, data, { headers });
+}
+const createUser = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.CREATEUSER, data, { headers });
+}
+const updateUser = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.UPDATEUSER, data, { headers });
+}
+const updatePassword = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.UPDATEPASSWORD, data, { headers });
+}
+const activateDeactivateUser = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.ACTIVEDEACTIVEUSER, data, { headers });
+}
+const lockUnlockUser = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.LOCKUNLOCKUSER, data, { headers });
+}
 
 module.exports = {
   login,
@@ -530,6 +553,7 @@ module.exports = {
   addUser,
   saveDesignation,
   updateStatus,
+  searchForPartner,
   searchFieldsConfig,
   editAgentDetails,
   executiveHistoryList,
@@ -547,6 +571,11 @@ module.exports = {
   downloadReport,
   allowUiAccess,
   fetchInboxData,
-  updateSrDecision
-
+  updateSrDecision,
+  getUserDetails,
+  createUser,
+  updateUser,
+  updatePassword,
+  activateDeactivateUser,
+  lockUnlockUser
 };

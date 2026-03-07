@@ -81,6 +81,13 @@ namespace CommonLibrary.mapping
 
         public IReadOnlyDictionary<string, MappingModel> GetAll() => _byToken;
 
+        private string LoadSqlFromFile(string sqlFile)
+        {
+            var filePath = Path.Combine(AppContext.BaseDirectory, "mapping", sqlFile);
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException($"SQL file not found: {filePath}");
+            return File.ReadAllText(filePath);
+        }
         public OperationMapping? GetScriptForOperation(string entityName, string operationName)
         {
             // First, search all token-based mappings (e.g. postgresql)
@@ -91,6 +98,10 @@ namespace CommonLibrary.mapping
                     entityMapping is not null &&
                     entityMapping.TryGetValue(operationName, out var opMapping))
                 {
+                    if (opMapping?.SQLFile != null) 
+                    {
+                        opMapping.Script = LoadSqlFromFile(opMapping.SQLFile);
+                    }
                     return opMapping;
                 }
             }

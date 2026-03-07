@@ -119,7 +119,7 @@ namespace HMS.Controllers
                     if (commission == null)
                     {
                         response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
-                        response.responseHeader.ErrorMessage = await _context.errorMaster
+                        response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                             .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
                                      && x.Area == "CommissionConstants")
                             .Select(x => x.ErrorMsg)
@@ -133,7 +133,7 @@ namespace HMS.Controllers
                     if (job == null)
                     {
                         response.responseHeader.ErrorCode = JobConstants.JOB_NOTFOUND;
-                        response.responseHeader.ErrorMessage = await _context.errorMaster
+                        response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                             .Where(x => x.ErrorId == JobConstants.JOB_NOTFOUND
                                      && x.Area == "JobConstants")
                             .Select(x => x.ErrorMsg)
@@ -264,7 +264,7 @@ namespace HMS.Controllers
                 if (config == null)
                 {
                     response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
                                  && x.Area == "CommissionConstants")
                         .Select(x => x.ErrorMsg)
@@ -317,7 +317,7 @@ namespace HMS.Controllers
                 if (commission == null)
                 {
                     response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
                                  && x.Area == "CommissionConstants")
                         .Select(x => x.ErrorMsg)
@@ -332,7 +332,7 @@ namespace HMS.Controllers
                 if (job == null)
                 {
                     response.responseHeader.ErrorCode = JobConstants.JOB_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == JobConstants.JOB_NOTFOUND
                                  && x.Area == "JobConstants")
                         .Select(x => x.ErrorMsg)
@@ -386,7 +386,7 @@ namespace HMS.Controllers
                 if (commission == null)
                 {
                     response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
                                  && x.Area == "CommissionConstants")
                         .Select(x => x.ErrorMsg)
@@ -400,7 +400,7 @@ namespace HMS.Controllers
                 if (job == null)
                 {
                     response.responseHeader.ErrorCode = JobConstants.JOB_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == JobConstants.JOB_NOTFOUND
                                  && x.Area == "JobConstants")
                         .Select(x => x.ErrorMsg)
@@ -602,7 +602,7 @@ namespace HMS.Controllers
                 else
                 {
                     response.responseHeader.ErrorCode = CommissionConstants.COMMISSION_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommissionConstants.COMMISSION_NOTFOUND
                                  && x.Area == "CommissionConstants")
                         .Select(x => x.ErrorMsg)

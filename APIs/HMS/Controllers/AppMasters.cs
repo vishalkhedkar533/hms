@@ -9,11 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Models.DB;
 using Models.DTO;
 using Models.HMSConsts;
-using SharedModels.BackEndCalculation;
 using System.Security.Claims;
-using ChannelMaster = Models.DB.ChannelMaster;
-using DesignationMaster = Models.DB.DesignationMaster;
-using MasterTable = Models.DTO.MasterTable;
 
 namespace HMS.Controllers
 {
@@ -50,7 +46,7 @@ namespace HMS.Controllers
         // 🔹 Fetch records (dynamic) - uses refreshInterval from appsettings.json
         // POST api/cache/get/hms/customer
         [HttpPost("get/{EntryCategory}")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> GetRecords([FromRoute] string EntryCategory)
         {
             HmsResponse hMSResponse = new HmsResponse();
@@ -67,7 +63,7 @@ namespace HMS.Controllers
             if (!IsValidSchema(masterTableConfigs?.SchemaName ?? string.Empty))
             {
                 hMSResponse.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -86,7 +82,7 @@ namespace HMS.Controllers
                 if (result == null)
                 {
                     hMSResponse.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -105,6 +101,7 @@ namespace HMS.Controllers
         // 🔹 Refresh table (dynamic)
         // POST api/cache/refresh/hms/customer
         [HttpPost("refresh/{EntryCategory}")]
+        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
         public async Task<IActionResult> Refresh([FromRoute] string EntryCategory)
         {
 
@@ -130,6 +127,7 @@ namespace HMS.Controllers
         // 🔹 Evict table
         // POST api/cache/evict/hms/customer
         [HttpPost("evict/{EntryCategory}")]
+        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
         public IActionResult Evict([FromRoute] string EntryCategory)
         {
 
@@ -152,9 +150,7 @@ namespace HMS.Controllers
 
             return Ok($"Cache for {masterTableConfigs?.SchemaName}.{masterTableConfigs?.TableName} evicted.");
         }
-
-        // 🔹 Evict entire schema
-        // POST api/cache/evict/schema/hms
+        [MenuAuthorize(AuthorisationConstants.ManageMasters)]
         [HttpPost("evict/schema/{schema}")]
         public IActionResult EvictSchema(string schema)
         {
@@ -162,22 +158,11 @@ namespace HMS.Controllers
             _cacheService.EvictSchema(schema);
             return Ok($"All cache entries for schema {schema} evicted.");
         }
-
-        // 🔹 Refresh entire schema
-        // POST api/cache/refresh/schema/{schema}
-        //[HttpPost("refresh/schema/{schema}")]
-        //public async Task<IActionResult> RefreshSchema(string schema)
-        //{
-        //    if (!IsValidSchema(schema)) return Forbid("Access denied: invalid schema." + schema);
-        //    await _cacheService.RefreshSchemaAsync(schema);
-        //    return Ok($"Schema {schema} refreshed.");
-        //}
-
         private bool IsValidSchema(string schema) => string.Equals(schema, "hmsmaster", StringComparison.OrdinalIgnoreCase);
 
         // POST: api/hms/channelmaster
         [HttpPost("Channel/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> ChannelFetch([FromBody] ChannelMasterDto dto)
         {
             var response = new HmsResponse();
@@ -297,7 +282,7 @@ namespace HMS.Controllers
                 if (channel == null)
                 {
                     response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -308,7 +293,7 @@ namespace HMS.Controllers
                 channel.ChannelName = ChannelMaster.ChannelName;
                 await _context.SaveChangesAsync();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await _context.errorMaster
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message"; ;
@@ -321,7 +306,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("{ChannelId}/SubChannel/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> SubChannelFetch([FromRoute] int ChannelId, [FromBody] SubChannelMasterDto SubChannelMaster)
         {
             var response = new HmsResponse();
@@ -361,7 +346,7 @@ namespace HMS.Controllers
                     return NotFound(response);
                 }
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await _context.errorMaster
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -474,7 +459,7 @@ namespace HMS.Controllers
                 if (channel == null)
                 {
                     response.responseHeader.ErrorCode = MastersConstants.MASTER_NOTFOUND;
-                    response.responseHeader.ErrorMessage = await _context.errorMaster
+                    response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == MastersConstants.MASTER_NOTFOUND && x.Area == "MasterConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -493,7 +478,7 @@ namespace HMS.Controllers
                 subChannel.RowVersion = (subChannel.RowVersion ?? 0) + 1;
                 await _context.SaveChangesAsync();
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = await _context.errorMaster
+                response.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == CommonConstants.SUCCESS && x.Area == "Common")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message"; ;
@@ -510,141 +495,91 @@ namespace HMS.Controllers
         [HttpPost("{ChannelId}/{SubChannelId}/Designation/Save")]
         [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
         public async Task<IActionResult> UpsertDesignation([FromRoute] long ChannelId,
-            [FromRoute] long SubChannelId,
-            [FromBody] DesignationMasterDto designationMaster)
+            [FromRoute] long SubChannelId, [FromBody] DesignationMasterDto designationMaster)
         {
-            HmsResponse response = new HmsResponse();
+            var response = new HmsResponse();
+            int orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
 
-            if (designationMaster == null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Request body is required.";
-                return Conflict(response);
-            }
+            // 1. Validation (Keep your existing validation logic)
+            if (designationMaster == null) return Conflict(new { error = "Body required" });
 
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-            var LoggedInUserId = _authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "Unknown";
-
-            var channel = await _context.ChannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.ChannelId == designationMaster.ChannelId
-                && x.OrgId == orgId);
-
-            var subChannel = await _context.SubchannelMaster.AsNoTracking().
-                FirstOrDefaultAsync(x => x.SubChannelId == designationMaster.SubChannelId
-                && x.OrgId == orgId
-                && x.ChannelId == designationMaster.ChannelId);
-
-            if (channel == null ||
-                subChannel == null ||
-                ChannelId != designationMaster.ChannelId ||
-                SubChannelId != designationMaster.SubChannelId)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Verify the channel and subchannel belong to the organisation.";
-                return Conflict(response);
-            }
-
-            // 1. Try to find existing record
+            // 2. Try to find existing record
             var designation = await _context.DesignationMaster
                 .FirstOrDefaultAsync(x => x.DesignationCode == designationMaster.DesignationCode
-                && x.OrgId == orgId
-                && x.ChannelId == designationMaster.ChannelId
-                && x.SubChannelId == designationMaster.SubChannelId
-                );
-            bool isNew = designation == null;
+                                       && x.OrgId == orgId
+                                       && x.ChannelId == designationMaster.ChannelId
+                                       && x.SubChannelId == designationMaster.SubChannelId);
 
-            var parentDesignation = await _context.DesignationMaster.AsNoTracking()
-                .FirstOrDefaultAsync(x => x.DesignationId == (designationMaster.ParentDesignationId ?? -1000)
-                && x.OrgId == orgId
-                && x.ChannelId == designationMaster.ChannelId
-                && x.SubChannelId == designationMaster.SubChannelId);
+            bool isNew = (designation == null);
 
             if (isNew)
             {
-                // Create new instance if not found
-                designation = new DesignationMaster
-                {
-                    CreatedBy = LoggedInUserId, // Usually taken from User.Identity in production
-                    CreatedDate = DateTime.UtcNow
-                };
+                designation = new DesignationMaster(); // Create new instance
+            }
+
+            _mapper.Map(designationMaster, designation);
+            
+            // 4. Manually apply fields the Profile Ignored or that are System-Specific
+            if (isNew)
+            {
+                designation.CreatedBy = loggedInUserId;
+                designation.CreatedDate = DateTime.UtcNow;
             }
             else
             {
-                designation.ModifiedBy = LoggedInUserId;
-                designation.ModifiedDate = DateTime.UtcNow; // Already UTC
-
-                // Safety check: If the existing CreatedDate was loaded as 'Unspecified', 
-                // force it to UTC so SaveChanges doesn't complain about it.
-                if (designation.CreatedDate.Kind == DateTimeKind.Unspecified)
-                {
-                    designation.CreatedDate = DateTime.SpecifyKind(designation.CreatedDate, DateTimeKind.Utc);
-                }
+                designation.ModifiedBy = loggedInUserId;
+                designation.ModifiedDate = DateTime.UtcNow;
             }
 
-            // 2. Map fields from DTO to Model
-            designation.DesignationCode = designationMaster.DesignationCode;
-            designation.DesignationName = designationMaster.DesignationName;
-            designation.DesignationLevel = designationMaster.DesignationLevel;
-            designation.IsActive = designationMaster.IsActive;
-            designation.ChannelId = designationMaster.ChannelId;
             designation.OrgId = orgId;
-            //ltree is not supported in EF Core, so we will handle HierarchyPath manually via a stored procedure after saving the record to get the generated DesignationId
-            designation.HierarchyPath = null;
-            designation.CodeFormat = designationMaster.CodeFormat;
-            designation.SubChannelId = designationMaster.SubChannelId;
 
-            if (isNew)
-            {
-                _context.DesignationMaster.Add(designation);
-            }
-            else
-            {
-                _context.DesignationMaster.Update(designation);
-            }
+            // 5. Save Changes
+            if (isNew) _context.DesignationMaster.Add(designation);
+            else _context.DesignationMaster.Update(designation);
 
             try
             {
                 await _context.SaveChangesAsync();
+                var oldDesignationPath = await _context.DesignationMaster.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.DesignationId == (designation.DesignationId)
+                    && x.ChannelId == designation.ChannelId
+                    && x.SubChannelId == designation.SubChannelId
+                    && x.OrgId == orgId);
+                // 6. Handle Hierarchy Logic (Calculated after getting the generated ID)
+                var parentDesignation = await _context.DesignationMaster.AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.DesignationId == (designationMaster.ParentDesignationId ?? -1000)
+                    && x.ChannelId == designation.ChannelId
+                    && x.SubChannelId == designation.SubChannelId
+                    && x.OrgId == orgId);
+                // Call your Stored Procedure
+                await _db.ExecuteQueryAsync<string>("Master", "UpdateDesignation", new
+                {
+                    p_designationIdText = designation.DesignationId.ToString(),
+                    p_oldParentPath = (oldDesignationPath?.HierarchyPath ?? designation.DesignationId.ToString()),
+                    p_newParentPath = string.IsNullOrEmpty(parentDesignation?.HierarchyPath) ?
+                    designation.DesignationId.ToString() : $"{parentDesignation.HierarchyPath ?? string.Empty}.{designation.DesignationId}",
+                    p_orgId = orgId,
+                    p_channelID = designation.ChannelId,
+                    p_subChannelId = designation.SubChannelId,
+                    p_designationId = designation.DesignationId,
+                    p_ModifiedBy =  loggedInUserId
+                });
 
-                // SAFELY build hierarchy path as a string.
-                // Avoid using Enumerable.Concat which produces an iterator type when called on a non-string enumerable.
-                var parentPathStr = parentDesignation?.HierarchyPath?.ToString() ?? string.Empty;
-                // If parentPathStr is empty, the hierarchy path is just the current designation id.
-                string heirarchyPath = string.IsNullOrEmpty(parentPathStr)
-                    ? designation.DesignationId.ToString()
-                    : parentPathStr + "." + designation.DesignationId.ToString();
-
-                await _db.ExecuteQueryAsync<string>(
-                            "Master",
-                            "UpdateDesignation",
-                            new
-                            {
-                                p_hierarchy_path = heirarchyPath,
-                                p_orgId = orgId,
-                                p_channelID = designation.ChannelId,
-                                p_subChannelId = designation.SubChannelId,
-                                p_designation = designation.DesignationId
-                            });
-
-                // Update DTO with the generated ID if it was a new record
-                designationMaster.DesignationId = designation.DesignationId;
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = isNew ? "Designation created successfully." : "Designation updated successfully.";
-                response.responseBody.designations = new List<DesignationMaster>();
-                response.responseBody.designations.Add(designation);
+                response.responseBody.designations = new List<DesignationMaster> { designation };
                 return Ok(response);
             }
             catch (DbUpdateException ex)
             {
-                // Handle Unique Constraint violations (DesignationCode, etc.)
-                _logger.LogError(ex, $"Error updating DesignationMaster OrgID {orgId} ChannelID {designationMaster.ChannelId} SubChannelID {designationMaster.SubChannelId} DesignationCode {designationMaster.DesignationCode}");
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Database error: Possible duplicate code or constraint violation.";
+                response.responseHeader.ErrorMessage = "Database error occurred while saving the designation.";
+                _logger.LogError(ex, "Designation Upsert Error");
                 return Conflict(response);
             }
         }
         [HttpPost("{ChannelId}/{SubChannelId}/Designation/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> FetchDesignation([FromRoute] long ChannelId,
            [FromRoute] long SubChannelId,
            [FromBody] DesignationMasterDto designationMaster)
@@ -764,27 +699,16 @@ namespace HMS.Controllers
             if (!validChannelSubChannel)
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Invalid channel and subchannel.";
+                response.responseHeader.ErrorMessage = "Invalid channel/subchannel.";
                 return Conflict(response);
             }
 
-            var isDuplicate = await _context.LocationMasters.AsNoTracking().AnyAsync(x =>
-                x.LocationMasterId != locationMaster.LocationMasterId && // Don't check against itself during update
+            var existingLocation = await _context.LocationMasters.FirstOrDefaultAsync(x =>
                 x.OrgId == orgId &&
                 x.ChannelId == locationMaster.ChannelId &&
                 x.SubChannelId == locationMaster.SubChannelId &&
                 x.LocationCode == locationMaster.LocationCode);
 
-            if (isDuplicate)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "A location with the same code already exists for this channel and subchannel.";
-                return Conflict(response);
-            }
-
-            // 2. FIND EXISTING OR CREATE NEW
-            var existingLocation = await _context.LocationMasters
-                .FirstOrDefaultAsync(x => x.LocationMasterId == locationMaster.LocationMasterId);
             try
             {
 
@@ -794,6 +718,7 @@ namespace HMS.Controllers
                     var newLocation = _mapper.Map<LocationMaster>(locationMaster);
                     newLocation.CreatedDate = DateTime.UtcNow;
                     newLocation.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
+                    newLocation.OrgId = orgId;
                     _context.LocationMasters.Add(newLocation);
                     await _context.SaveChangesAsync();
 
@@ -827,13 +752,13 @@ namespace HMS.Controllers
                 _logger.LogError(ex, $"Unexpected error while upserting LocationMaster OrgID {orgId} ChannelID {locationMaster.ChannelId} SubChannelID {locationMaster.SubChannelId} LocationCode {locationMaster.LocationCode}");
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
                 response.responseHeader.ErrorMessage = "An unexpected error occurred while saving the location.";
-                return StatusCode(500, response);
+                return BadRequest(response);
             }
             return Ok(response);
         }
         [HttpPost("{ChannelId}/{SubChannelId}/Location/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
-        public async Task<IActionResult> FetcLocation([FromRoute] long ChannelId,
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
+        public async Task<IActionResult> FetchLocation([FromRoute] long ChannelId,
         [FromRoute] long SubChannelId, [FromBody] LocationMasterDto locationMaster)
         {
             HmsResponse response = new HmsResponse();
@@ -984,7 +909,7 @@ namespace HMS.Controllers
                     "UpdateChildBranchesByBranchId",
                     new
                     {
-                        p_oldParentPath = $"{existingHierarchy.FirstOrDefault()?.HierarchyPath ?? string.Empty}",
+                        p_oldParentPath = $"{existingHierarchy.FirstOrDefault()?.HierarchyPath ?? branch.BranchId.ToString()}",
                         p_newParentPath = string.IsNullOrEmpty(parentResult.FirstOrDefault()?.HierarchyPath) ? branch.BranchId.ToString() : $"{parentResult.FirstOrDefault()?.HierarchyPath ?? string.Empty}.{branch.BranchId}",
                         p_branchId = branch.BranchId,
                         p_branchIdText = branch.BranchId.ToString(),
@@ -1009,7 +934,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("{ChannelId}/{SubChannelId}/Branch/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> FetchBranch([FromRoute] long ChannelId,
             [FromRoute] long SubChannelId, [FromBody] BranchMasterDto branchMaster)
         {
@@ -1128,11 +1053,10 @@ namespace HMS.Controllers
 
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 // 1. Validation: Relation Manager
-                bool agentExists = await _context.agent.AnyAsync(x => x.OrgId == orgId
+                bool agentExists = await _context.agent.AsNoTracking().AnyAsync(x => x.OrgId == orgId
                                             && x.AgentId == dto.RelationMgr
                                             && x.Channel == ChannelId
                                             && x.SubChannel == SubChannelId);
@@ -1145,39 +1069,22 @@ namespace HMS.Controllers
                 }
 
                 // 2. Fetch Parent Path
-                string? parentPath = null;
+                PartnerBranchHeirarchy? parentResult = null;
                 if (dto.ParentBranchHierarchyId.HasValue)
                 {
-                    parentPath = await _context.PartnerBranchHierarchies
-                        .Where(x => x.PartnerBranchHeirarchyId == dto.ParentBranchHierarchyId)
-                        .Select(x => x.HierarchyPath)
-                        .FirstOrDefaultAsync();
+                    parentResult = await _context.PartnerBranchHierarchies.AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.PartnerBranchHeirarchyId == dto.ParentBranchHierarchyId);
                 }
 
                 // Determine if Update
-                bool isUpdate = dto.PartnerBranchHierarchyId.HasValue && dto.PartnerBranchHierarchyId > 0;
-                PartnerBranchHeirarchy? entity = null;
+                PartnerBranchHeirarchy entity = await _context.PartnerBranchHierarchies
+                        .FirstOrDefaultAsync(x => x.OrgId == orgId && x.PartnerBranchCode == (dto.PartnerBranchCode ?? string.Empty));
 
-                if (isUpdate)
+                if (entity!= null)
                 {
-                    entity = await _context.PartnerBranchHierarchies
-                        .FirstOrDefaultAsync(x => x.PartnerBranchHeirarchyId == dto.PartnerBranchHierarchyId);
-
-                    if (entity == null)
-                    {
-                        hmsResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
-                        hmsResponse.responseHeader.ErrorMessage = "Partner Branch Hierarchy not found.";
-                        return NotFound(hmsResponse);
-                    }
-
                     _mapper.Map(dto, entity);
                     entity.ModifiedBy = loggedInUserId;
                     entity.ModifiedDate = DateTime.UtcNow;
-
-                    // Only update path if we have a parent
-                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
-                        ? entity.PartnerBranchHeirarchyId.ToString()
-                        : $"{parentPath}.{entity.PartnerBranchHeirarchyId}";
                 }
                 else
                 {
@@ -1187,17 +1094,24 @@ namespace HMS.Controllers
                     entity.SubChannelId = SubChannelId;
                     entity.CreatedBy = loggedInUserId;
                     entity.CreatedDate = DateTime.UtcNow;
-
                     await _context.PartnerBranchHierarchies.AddAsync(entity);
-                    await _context.SaveChangesAsync(); // First save to generate Serial ID
-
-                    entity.HierarchyPath = string.IsNullOrEmpty(parentPath)
-                        ? entity.PartnerBranchHeirarchyId.ToString()
-                        : $"{parentPath}.{entity.PartnerBranchHeirarchyId}";
                 }
 
                 await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
+                await _db.ExecuteQueryAsync<int>(
+                    "Master",
+                    "UpdatePartnerBranch",
+                    new
+                    {
+                        p_oldParentPath = $"{entity?.HierarchyPath ?? entity.PartnerBranchHeirarchyId.ToString()}",
+                        p_newParentPath = string.IsNullOrEmpty(parentResult?.HierarchyPath) ? entity.PartnerBranchHeirarchyId.ToString() : $"{parentResult?.HierarchyPath ?? string.Empty}.{entity.PartnerBranchHeirarchyId}",
+                        p_PartnerBranchHeirarchyId = entity.PartnerBranchHeirarchyId,
+                        p_PartnerBranchHeirarchyIdText = entity.PartnerBranchHeirarchyId.ToString(),
+                        p_orgId = orgId,
+                        p_channelID = ChannelId,
+                        p_subChannelID = SubChannelId,
+                        p_ModifiedBy = loggedInUserId
+                    });
 
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hmsResponse.responseHeader.ErrorMessage = "Partner Branch Saved Successfully";
@@ -1206,12 +1120,11 @@ namespace HMS.Controllers
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
         [HttpPost("{ChannelId}/{SubChannelId}/PartnerBranchHierarchy/Fetch")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> FetchPartnerBranchHierarchy([FromRoute] long ChannelId,
             [FromRoute] long SubChannelId, [FromBody] PartnerBranchHierarchySearchDto partnerBranchHierarchyDto)
         {
@@ -1224,7 +1137,7 @@ namespace HMS.Controllers
             try
             {
                 // 1. Fetch data. EF Core now knows how to handle HierarchyPath (LTree)
-                var flatList = await _context.PartnerBranchHierarchies.AsNoTracking()
+                var flatList = await _context.PartnerBranchHierarchies.AsNoTracking().Include(x => x.RelationshipManager)
                             .Where(d => d.OrgId == orgId
                                      && d.ChannelId == ChannelId
                                      && d.SubChannelId == SubChannelId)
@@ -1244,7 +1157,8 @@ namespace HMS.Controllers
                         PartnerAddress = d.PartnerAddress,
                         PartnerMail = d.PartnerMail,
                         PartnerPhone = d.PartnerPhone,
-                        RelationMgr = d.RelationMgr
+                        RelationMgr = d.RelationMgr,
+                        RelationshipManagerName = d.RelationshipManager != null ? d.RelationshipManager.AgentName : null,
                     });
 
                 List<PartnerBranchNode> rootNodes = new();
@@ -1271,7 +1185,7 @@ namespace HMS.Controllers
                     }
                 }
                 hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Updated Successfully";
+                hmsResponse.responseHeader.ErrorMessage = "Partner Branch Fetched Successfully";
                 hmsResponse.responseBody.partnerBranchNode = rootNodes;
                 return Ok(hmsResponse);
             }
@@ -1281,7 +1195,7 @@ namespace HMS.Controllers
             }
         }
         [HttpPost("{ChannelId}/{SubChannelId}/GetAgents")]
-        [MenuAuthorize(AuthorisationConstants.CreateUpdateDeleteChannel)]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> GetAgents([FromRoute] long ChannelId,
             [FromRoute] long SubChannelId, [FromBody] SearchAgent searchAgent)
         {

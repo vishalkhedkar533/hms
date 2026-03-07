@@ -16,12 +16,12 @@ interface ResourcesCardProps {
 const resources = [
   { title: "Tips", link: "/tips" },
   { title: "User Manual", link: "/manual" },
-  { title: "Review Masters", link: "/review-masters" },
   { title: "Review Structure", link: "/review-structure" },
   { title: "Review Access", link: "/review-access" },
   { title: "Roles Management", link: "/roles-management" }, 
   { title: "Channel Management", link: "/channel-management" }, 
    { title: "Inbox", link: "/inbox" },
+   { title: "User Management", link: "/user-management" },
 ];
 
 export default function ResourcesCard() {

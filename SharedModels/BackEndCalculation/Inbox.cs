@@ -4,10 +4,11 @@
     {
         public int SrNo { get; set; }
         public int OrgId { get; set; }
-        public int? ControlId { get; set; }
+        public int? ComponentId { get; set; }
         public int CreatedBy { get; set; }
         public string? ApprovalEndpoint { get; set; }
         public string? ApprovalPayload { get; set; }
+        public int? AllocatedToRole { get; set; }
     }
 
     public  class InboxFieldConfig
@@ -22,5 +23,11 @@
         public int? ApproverOneId { get; set; }
         public int? ApproverTwoId { get; set; }
         public int? ApproverThreeId { get; set; }
+    }
+
+    public class ManagerHierarchyRole
+    {
+        public int RoleId { get; set; }
+        public int Level { get; set; }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Swashbuckle.AspNetCore.Annotations;
+﻿using AutoMapper;
+using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -74,10 +75,49 @@ namespace Models.DB
         public bool IsActive { get; set; } = true;
         public long? ChannelId { get; set; }
         [SwaggerSchema("Code will will be prefixed during code generation")]
-        public string? CodeFormat { get; set; }
+        public string CodeFormat { get; set; }
         public long? SubChannelId { get; set; }
+        public string? HierarchyPath { get; set; }
     }
+    public class DesignationMasterProfile : Profile
+    {
+        public DesignationMasterProfile()
+        {
+            // 1. Entity -> DTO (Reading Data)
+            CreateMap<DesignationMaster, DesignationMasterDto>()
+                .ForMember(dest => dest.DesignationId, opt => opt.MapFrom(src => src.DesignationId))
+                .ForMember(dest => dest.DesignationCode, opt => opt.MapFrom(src => src.DesignationCode))
+                .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.DesignationName))
+                .ForMember(dest => dest.DesignationLevel, opt => opt.MapFrom(src => src.DesignationLevel))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+                .ForMember(dest => dest.ChannelId, opt => opt.MapFrom(src => src.ChannelId))
+                .ForMember(dest => dest.SubChannelId, opt => opt.MapFrom(src => src.SubChannelId))
+                .ForMember(dest => dest.CodeFormat, opt => opt.MapFrom(src => src.CodeFormat))
+                .ForMember(dest => dest.HierarchyPath, opt => opt.MapFrom(src => src.HierarchyPath))
+                // ParentDesignationId requires manual parsing of HierarchyPath or is not directly mapped
+                .ForMember(dest => dest.ParentDesignationId, opt => opt.Ignore());
 
+            // 2. DTO -> Entity (Writing/Updating Data)
+            CreateMap<DesignationMasterDto, DesignationMaster>()
+                // Map only the fields that the user is allowed to set/change
+                .ForMember(dest => dest.DesignationCode, opt => opt.MapFrom(src => src.DesignationCode))
+                .ForMember(dest => dest.DesignationName, opt => opt.MapFrom(src => src.DesignationName))
+                .ForMember(dest => dest.DesignationLevel, opt => opt.MapFrom(src => src.DesignationLevel))
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+                .ForMember(dest => dest.ChannelId, opt => opt.MapFrom(src => src.ChannelId))
+                .ForMember(dest => dest.SubChannelId, opt => opt.MapFrom(src => src.SubChannelId))
+                .ForMember(dest => dest.CodeFormat, opt => opt.MapFrom(src => src.CodeFormat))
+                // Explicitly ignore fields that must NEVER be mapped from DTO
+                .ForMember(dest => dest.HierarchyPath, opt => opt.Ignore()) // Let DB handle identity
+                .ForMember(dest => dest.DesignationId, opt => opt.Ignore()) // Let DB handle identity
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())         // Set by controller via Auth
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())     // Set by controller
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())   // Set by controller
+                .ForMember(dest => dest.ModifiedBy, opt => opt.Ignore())    // Set by controller
+                .ForMember(dest => dest.ModifiedDate, opt => opt.Ignore())  // Set by controller
+                .ForMember(dest => dest.Rowversion, opt => opt.Ignore());    // Managed by DB/EF
+        }
+    }
     public class DesignationNode
     {
         public long Id { get; set; }

@@ -15,6 +15,7 @@ using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Security.Claims;
+using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -31,6 +32,7 @@ namespace HMS.Controllers
         private int refreshInterval = 15;
         private readonly IConfiguration _configuration;
         private readonly ILogger<Agent> _logger;
+        private int orgId;
         public AgentController(HMSContext context, IConfiguration config, IMapper mapper, IConfiguration configuration
             , DatabaseService db, IAuthClaimService authClaimService, GenericCacheService cacheService, ILogger<Agent> logger)
         {
@@ -284,7 +286,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("Search")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> Search([FromBody] SearchAgent agentDto)
         {
             /*
@@ -343,7 +345,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -351,7 +353,7 @@ namespace HMS.Controllers
             return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
         [HttpPost("Create")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
         public async Task<IActionResult> CreateAgent([FromBody] AgentDto agentDto)
         {
             if (!ModelState.IsValid)
@@ -389,7 +391,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("AgentById")]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
         public async Task<IActionResult> GetAgentById(SearchAgent searchAgent)
         {
             HmsResponse hMSResponse = new HmsResponse();
@@ -420,7 +422,7 @@ namespace HMS.Controllers
             if (searchAgent.AgentId == null)
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -580,7 +582,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -611,7 +613,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -638,7 +640,7 @@ namespace HMS.Controllers
             if (string.IsNullOrEmpty(agentDto.AgentCode))
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -689,7 +691,7 @@ namespace HMS.Controllers
             else
             {
                 hMSResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                hMSResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                     .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -755,7 +757,7 @@ namespace HMS.Controllers
                 if (agent == null)
                 {
                     hmsResponse.responseHeader.ErrorCode = AgentConstants.AGENT_NOTFOUND;
-                    hmsResponse.responseHeader.ErrorMessage = await _context.errorMaster
+                    hmsResponse.responseHeader.ErrorMessage = await _context.errorMaster.AsNoTracking()
                         .Where(x => x.ErrorId == AgentConstants.AGENT_NOTFOUND && x.Area == "AgentConstants")
                         .Select(x => x.ErrorMsg)
                         .FirstOrDefaultAsync() ?? "Undefined Error Message";
@@ -1436,7 +1438,7 @@ namespace HMS.Controllers
                                     {
                                         RefKey = agent.AgentId,
                                         RefType = ReferenceType.Agent,
-                                        AccountHolderName = b.AccountHolderName ?? $"{agent.FirstName} {agent.LastName}".Trim(),
+                                        AccountHolderName = b.AccountHolderName ?? (agent.FirstName + " " + agent.LastName)?.Trim(),
                                         AccountNumber = b.AccountNumber ?? string.Empty,
                                         IFSC = b.IFSC ?? string.Empty,
                                         MICR = b.MICR,
@@ -1747,6 +1749,16 @@ namespace HMS.Controllers
                                 .Select(s => new { s.CntrlId, s.RoleId })
                                 .ToListAsync();
 
+                            var componentLookup = await _context.uiField
+                                .AsNoTracking()
+                                .Where(f => controlIds.Contains(f.CntrlId))
+                                .Select(f => new { f.CntrlId, f.ComponentId })
+                                .ToListAsync();
+
+                            var componentIdMap = componentLookup
+                                .Where(x => x.ComponentId.HasValue)
+                                .ToDictionary(x => x.CntrlId, x => x.ComponentId!.Value);
+
                             var allocatedRoleMap = allocationLookup
                                 .GroupBy(x => x.CntrlId!.Value)
                                 .ToDictionary(g => g.Key, g => g.Select(x => x.RoleId).FirstOrDefault());
@@ -1755,35 +1767,48 @@ namespace HMS.Controllers
                                 .Where(f => !string.IsNullOrWhiteSpace(f.FieldName))
                                 .ToDictionary(f => f.FieldName, f => (object?)f.NewValue, StringComparer.OrdinalIgnoreCase);
 
-                            inboxEntries = updatedFields
-                                .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId) && cntrlId != 0)
-                                .Select(f =>
+                            var inboxFields = updatedFields
+                                .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId)
+                                            && cntrlId != 0
+                                            && componentIdMap.TryGetValue(cntrlId, out var componentId)
+                                            && componentId != 0)
+                                .ToList();
+
+                            var primaryField = inboxFields.FirstOrDefault();
+                            if (primaryField != null)
+                            {
+                                var cntrlId = controlIdMap[primaryField.FieldName];
+                                var componentId = componentIdMap[cntrlId];
+                                allocatedRoleMap.TryGetValue(cntrlId, out var allocatedRole);
+                                inboxEntries = new List<Inbox>
                                 {
-                                    var cntrlId = controlIdMap[f.FieldName];
-                                    allocatedRoleMap.TryGetValue(cntrlId, out var allocatedRole);
-                                    return new Inbox
+                                    new Inbox
                                     {
                                         OrgId = orgIdValue,
                                         CreatedBy = createdBy,
                                         CreatedDate = DateTime.UtcNow,
                                         SrStatus = SrStatus.Created,
-                                        RequestDets = $"{f.FieldName} updated",
-                                        RequestorNote = $"Old Value: {ResolveDisplayValue(f.FieldName, f.OldValue)} | New Value: {ResolveDisplayValue(f.FieldName, f.NewValue)}",
-                                        ControlId = cntrlId,
+                                        RequestDets = $"{sectionName} Updated",
+                                        RequestorNote = JsonConvert.SerializeObject(
+                                            inboxFields.Select(f => new
+                                            {
+                                                FieldName = f.FieldName,
+                                                OldValue = ResolveDisplayValue(f.FieldName, f.OldValue),
+                                                NewValue = ResolveDisplayValue(f.FieldName, f.NewValue)
+                                            }),
+                                            Formatting.None),
+                                        ComponentId = componentId,
                                         AllocatedToRole = allocatedRole,
                                         ObjectName = $"Agent",
                                         ApprovalPayload = JsonConvert.SerializeObject(new
                                         {
                                             payload
                                         }, Formatting.None).ToString(),
-                                        ApprovalEndpoint = $"/api/Agent/UpdateAgentAfterApproval/{id}/{sectionName}"
-                                        //save the new enpoint into ApprovalEndpoint and ApprovalPayload
-                                    };
-                                })
-                                .ToList();
+                                        ApprovalEndpoint = $"/api/Agent/UpdateAgentAfterApproval/{id}/{sectionName}",
+                                        ObjectReference = id
+                                    }
+                                };
 
-                            if (inboxEntries.Any())
-                            {
                                 await _context.Inbox.AddRangeAsync(inboxEntries);
                             }
                         }
@@ -2001,6 +2026,51 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal Server Error");
             }
         }
+        [HttpPost("{ChannelId}/{SubChannelId}/Agent/Search")]
+        [MenuAuthorize(AuthorisationConstants.SearchAgent)]
+        public async Task<IActionResult> GetAgentBySubChannel([FromRoute] int ChannelId, [FromRoute] int SubChannelId, [FromBody]SearchAgent agentDto)
+        {
+            HmsResponse hMSResponse = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
+            if (string.IsNullOrEmpty(agentDto.SearchCondition))
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = $"Please specify a search criteria, you can search on AgentCode/MobileNo/Email/PanNumber";
+                return Conflict(hMSResponse);
+            }
+            if (! _context.SubchannelMaster.AsNoTracking().Any(x=> x.OrgId == orgId 
+            && x.ChannelId == ChannelId 
+            && x.SubChannelId == SubChannelId))
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = $"Please verify the Channel and SubChannel";
+                return Conflict(hMSResponse);
+            }
+
+            var Agents = _context.Agents.AsNoTracking()
+                .Where(u => u.OrgId == orgId && u.Channel == ChannelId && u.SubChannel == SubChannelId 
+                && (u.AgentCode.ToUpper() == agentDto.SearchCondition
+                || u.MobileNo == agentDto.SearchCondition
+                || u.Email == agentDto.SearchCondition
+                || u.PanNumber == agentDto.SearchCondition))
+                .Select(x => new AgentDto { AgentId = x.AgentId
+                , AgentCode = x.AgentCode
+                , AgentName =x.AgentName}).ToList();
+
+            if (Agents == null)
+            {
+                hMSResponse.responseHeader.ErrorCode = CommonConstants.FAILED;
+                hMSResponse.responseHeader.ErrorMessage = $"No Agent located for the criteria. please verify the channel and subchannel";
+                return Conflict(hMSResponse);
+            }
+
+            hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            hMSResponse.responseHeader.ErrorMessage = $"{Agents.Count()} Agent(s) found";
+            hMSResponse.responseBody.agents = Agents;
+            return Ok(hMSResponse);
+        }
     }
 }

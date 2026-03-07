@@ -662,33 +662,33 @@ namespace HMS.Controllers
                 }
 
                 var existingSetting = await _context.uiFieldsSettings.FirstOrDefaultAsync(
-                    s => s.OrgId == orgId
-                         && s.RoleId == uiFieldsSetting.RoleId
-                         && s.CntrlId == uiFieldsSetting.CntrlId);
+                    s => s.OrgId == orgId && s.RoleId == uiFieldsSetting.RoleId
+                    && s.CntrlId == uiFieldsSetting.CntrlId);
 
                 hMSResponse.responseBody.uiFieldsSettings = new List<UiFieldsSetting>();
                 if (existingSetting == null)
                 {
-                    var newRecord = _mapper.Map<UiFieldsSetting>(uiFieldsSetting);
-                    newRecord.OrgId = orgId;
-                    newRecord.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
-                    newRecord.AccessGrantedOn = DateTime.UtcNow;
-                    _context.uiFieldsSettings.Add(newRecord);
-                    hMSResponse.responseBody.uiFieldsSettings.Add(newRecord);
+                    existingSetting = _mapper.Map<UiFieldsSetting>(uiFieldsSetting);
+                    existingSetting.OrgId = orgId;
+                    existingSetting.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+                    existingSetting.AccessGrantedOn = DateTime.UtcNow;
+                    _context.uiFieldsSettings.Add(existingSetting);
+                    hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
                 }
                 else
                 {
                     _mapper.Map(uiFieldsSetting, existingSetting);
+                    existingSetting.OrgId = orgId;
                     existingSetting.AccessGrantedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
                     existingSetting.AccessGrantedOn = DateTime.UtcNow;
-                    hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
-                    //_context.uiFieldsSettings.Update(existingSetting);
+                    //hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
+                    _context.uiFieldsSettings.Update(existingSetting);
                 }
 
                 await _context.SaveChangesAsync();
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "Access updated successfully";
-
+                hMSResponse.responseBody.uiFieldsSettings.Add(existingSetting);
                 return Ok(hMSResponse);
             }
             catch (DbException dbEx)

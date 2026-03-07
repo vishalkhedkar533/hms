@@ -91,7 +91,8 @@ namespace Models.DB
 
                 // NOTE: Since OrgId is [Required] in your Entity but missing 
                 // from your current DTO, we must ignore it or your mapping will fail.
-                .ForMember(dest => dest.OrgId, opt => opt.Ignore());
+                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+                .ForMember(dest => dest.settingId, opt => opt.Ignore());
         }
     }
 }

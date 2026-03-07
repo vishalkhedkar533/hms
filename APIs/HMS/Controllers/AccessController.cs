@@ -806,7 +806,6 @@ namespace HMS.Controllers
             }
 
             var existingEntity = await _context.ApprovalSettings
-                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.OrgId == orgId && x.ComponentId == dto.ComponentId);
 
             if (existingEntity != null)
@@ -814,6 +813,7 @@ namespace HMS.Controllers
                 // Map updated fields from DTO to Entity
                 _mapper.Map(dto, existingEntity);
                 // Audit fields
+                existingEntity.OrgId = orgId;
                 existingEntity.ModifiedBy = userId;
                 existingEntity.ModifiedDate = DateTime.UtcNow;
                 _context.ApprovalSettings.Update(existingEntity);
@@ -821,12 +821,12 @@ namespace HMS.Controllers
             else
             {
                 // --- CREATE LOGIC ---
-                var newEntity = _mapper.Map<ApprovalSetting>(dto);
+                existingEntity = _mapper.Map<ApprovalSetting>(dto);
                 // Set required fields that aren't in the DTO
-                newEntity.OrgId = orgId;
-                newEntity.CreatedBy = userId;
-                newEntity.CreatedDate = DateTime.UtcNow;
-                _context.ApprovalSettings.Add(newEntity);
+                existingEntity.OrgId = orgId;
+                existingEntity.CreatedBy = userId;
+                existingEntity.CreatedDate = DateTime.UtcNow;
+                _context.ApprovalSettings.Add(existingEntity);
             }
             try
             {
@@ -841,7 +841,8 @@ namespace HMS.Controllers
             }
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
             response.responseHeader.ErrorMessage = "Approval setting saved successfully.";
-
+            response.responseBody.ApprovalSettings = new List<ApprovalSetting>();
+            response.responseBody.ApprovalSettings.Add(existingEntity);
             return Ok(response);
         }
 

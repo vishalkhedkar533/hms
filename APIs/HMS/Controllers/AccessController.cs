@@ -847,7 +847,7 @@ namespace HMS.Controllers
 
         [HttpPost("ApprovalSettings/Fetch")]
         [MenuAuthorize(AuthorisationConstants.UIControlAccess)]
-        public async Task<IActionResult> GetApprovalSetting([FromBody] SearchMenu searchMenu)
+        public async Task<IActionResult> GetApprovalSetting()
         {
             HmsResponse hMSResponse = new HmsResponse();
             orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");

@@ -19,10 +19,10 @@ flat_data AS (
                 jsonb_build_object(
                     'componentId', f.component_id,
                     'componentName', c."label",
-                    'approverOneRoleId', approveroneid
-                    'approverTwoRoleId', approvertwoid
-                    'approverThreeRoleId', approverthreeid
-                    'useDefaultApprover', usedefaultapprover                    
+                    'approverOneRoleId', f.approveroneid,
+                    'approverTwoRoleId', f.approvertwoid,
+                    'approverThreeRoleId', f.approverthreeid,
+                    'useDefaultApprover', f.usedefaultapprover                    
                 ) ORDER BY f.component_id
             ) FILTER (WHERE f.component_id IS NOT NULL), 
             '[]'::jsonb
@@ -37,6 +37,7 @@ level_3 AS (
         subpath(path, 0, nlevel(path) - 1) as parent_path,
         jsonb_agg(
             jsonb_strip_nulls(jsonb_build_object(
+                'componentId', component_id,
                 'Section', label,
                 'Type', elementType,
                 'FieldList', CASE WHEN jsonb_array_length(field_list) > 0 THEN field_list ELSE NULL END
@@ -52,6 +53,7 @@ level_2 AS (
         subpath(f.path, 0, nlevel(f.path) - 1) as parent_path,
         jsonb_agg(
             jsonb_strip_nulls(jsonb_build_object(
+                'componentId', component_id,
                 'Section', f.label,
                 'Type', f.elementType,
                 'SubSection', l3.children
@@ -66,6 +68,7 @@ level_2 AS (
 SELECT jsonb_build_object(
     'UIMenu', jsonb_agg(
         jsonb_strip_nulls(jsonb_build_object(
+            'componentId', f.component_id,
             'Section', f.label,
             'Type', f.elementType,
             'SubSection', l2.children

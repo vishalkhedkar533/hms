@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Routing.Constraints;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -48,14 +47,12 @@ namespace Models.DB
         [ForeignKey("AccessGrantedBy")]
         public virtual User? GrantedByUser { get; set; }
 
-        [ForeignKey("ApproverOneId")]
-        public virtual User? ApproverOne { get; set; }
-
-        [ForeignKey("ApproverTwoId")]
-        public virtual User? ApproverTwo { get; set; }
-
-        [ForeignKey("ApproverThreeId")]
-        public virtual User? ApproverThree { get; set; }
+        //[ForeignKey("ApproverOneId")]
+        //public virtual User? ApproverOne { get; set; }
+        //[ForeignKey("ApproverTwoId")]
+        //public virtual User? ApproverTwo { get; set; }
+        //[ForeignKey("ApproverThreeId")]
+        //public virtual User? ApproverThree { get; set; }
 
         [ForeignKey("RoleId")]
         public virtual Role? Role { get; set; }
@@ -95,9 +92,9 @@ namespace Models.DB
                 // or overwriting existing EF proxies with null.
                 .ForMember(dest => dest.UiField, opt => opt.Ignore())
                 .ForMember(dest => dest.GrantedByUser, opt => opt.Ignore())
-                .ForMember(dest => dest.ApproverOne, opt => opt.Ignore())
-                .ForMember(dest => dest.ApproverTwo, opt => opt.Ignore())
-                .ForMember(dest => dest.ApproverThree, opt => opt.Ignore())
+                //.ForMember(dest => dest.ApproverOne, opt => opt.Ignore())
+                //.ForMember(dest => dest.ApproverTwo, opt => opt.Ignore())
+                //.ForMember(dest => dest.ApproverThree, opt => opt.Ignore())
                 .ForMember(dest => dest.Role, opt => opt.Ignore())
 
                 // 3. Map the Foreign Key IDs (the actual database columns)

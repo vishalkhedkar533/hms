@@ -2558,3 +2558,15 @@ CREATE TABLE hmsmaster.approval_setting (
 	CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE,
 	CONSTRAINT fk_modified_by FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE CASCADE
 );
+
+
+CREATE TABLE organization_periods (
+    id SERIAL PRIMARY KEY,
+    orgid int4 NOT NULL,
+    range_type VARCHAR(30) DEFAULT 'MonthPeriod',
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT idx_unique_org_period UNIQUE (organization_id, start_date, end_date),
+    CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+);

@@ -329,7 +329,16 @@
       "GetOrgDetails": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT orgid OrgId, subscriberid SubscriberId, orgname OrgName, state State FROM app_subscription.organisation WHERE orgid = @orgId "
+      },
+      "GenerateFinancialMonths": {
+        "ConnectionStringKey": "CommissionDB",
+        "SQLFile": "generateFinancialMonths.sql"
+      },
+      "GenerateFinancialQuarters": {
+        "ConnectionStringKey": "CommissionDB",
+        "SQLFile": "generateFinancialQuarters.sql"
       }
+
     }
   }
 }

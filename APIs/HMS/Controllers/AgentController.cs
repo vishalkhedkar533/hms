@@ -1774,6 +1774,15 @@ namespace HMS.Controllers
                                             && componentId != 0)
                                 .ToList();
 
+                            var userRoleId = parsedUserId > 0
+                                ? await _context.UserRoleMappings
+                                    .AsNoTracking()
+                                    .Where(r => r.UserId == parsedUserId && r.IsActive)
+                                    .OrderByDescending(r => r.IsPrimary)
+                                    .Select(r => (int?)r.RoleId)
+                                    .FirstOrDefaultAsync()
+                                : null;
+
                             var primaryField = inboxFields.FirstOrDefault();
                             if (primaryField != null)
                             {
@@ -1798,7 +1807,7 @@ namespace HMS.Controllers
                                             }),
                                             Formatting.None),
                                         ComponentId = componentId,
-                                        AllocatedToRole = allocatedRole,
+                                        AllocatedToRole = userRoleId ?? allocatedRole,
                                         ObjectName = $"Agent",
                                         ApprovalPayload = JsonConvert.SerializeObject(new
                                         {

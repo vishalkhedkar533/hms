@@ -220,7 +220,7 @@ namespace HMS.Controllers
 
                 // 6. Finalize Response
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = (result.Count == 0 ? "No Service Requests found" : $"{totalRecords} Service Request(s) found");
+                response.responseHeader.ErrorMessage = (result.Count == 0 ? "No Service Requests found" : $"{result.Count} Service Request(s) found");
                 response.responseBody.InboxData = result;
                 return Ok(response);
             }

@@ -195,7 +195,11 @@ namespace HMS.Controllers
                     query = query.Where(x => x.i.AllocatedToRole == searchInboxDto.AllocateToRole.Value);
                 else
                 {
-                    _context.UserRoleMappings.AsQueryable().Any(urm => urm.UserId == userId);
+                    //_context.UserRoleMappings.AsQueryable().Any(urm => urm.UserId == userId);
+                    query = query.Where(x => _context.UserRoleMappings.AsQueryable().Any(urm => urm.UserId == userId
+                        && urm.RoleId == x.i.AllocatedToRole
+                        && urm.OrgId == orgId
+                        && urm.IsActive));
                 }
                 // 3. Get Total Count for Pagination Metadata (Before Skip/Take)
                 int totalRecords = await query.CountAsync();
@@ -227,16 +231,18 @@ namespace HMS.Controllers
                                                  join u in _context.Users.AsNoTracking()
                                                      on new { DecisionBy = sa.DecisionBy, OrgId = sa.OrgId }
                                                      equals new { DecisionBy = (int?)u.UserId, OrgId = u.OrgId ?? 0 }
+                                                     into userGroup
+                                                 from u in userGroup.DefaultIfEmpty()
                                                  where sa.OrgId == orgId
                                                  && srNos.Contains(sa.SrNo)
-                                                 && sa.DecisionBy != null
+                                                 && !string.IsNullOrWhiteSpace(sa.Comments)
                                                  select new
                                                  {
                                                      sa.SrNo,
                                                      sa.ApproverLevel,
                                                      sa.DecisionOn,
                                                      sa.Comments,
-                                                     ApproverName = u.Username
+                                                     ApproverName = u != null ? u.Username : null
                                                  })
                         .ToListAsync();
 

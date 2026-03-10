@@ -716,7 +716,7 @@ namespace HMS.Controllers
 
         [HttpPost("UpdateAgent/{id}/{sectionName}")]
         [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
-        public async Task<IActionResult> UpdateAgent(
+        public async Task<IActionResult> RequestAgentUpdate(
         [FromRoute] int id, 
         [FromRoute] string sectionName,
         [FromBody] AgentDto agentDto)        
@@ -727,7 +727,7 @@ namespace HMS.Controllers
             var username = HttpContext?.User?.Identity?.Name ?? "System";
             var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             var saveInboxOnly = true;
-            return await UpdateAgentNew(id, sectionName, agentDto, username, orgId, false);
+            return await ProcessAgentUpdate(id, sectionName, agentDto, username, orgId, false);
         }
 
         [HttpPost("UpdateAgentAfterApproval/{id}/{sectionName}")]
@@ -742,9 +742,9 @@ namespace HMS.Controllers
             var username = HttpContext?.User?.Identity?.Name ?? "System";
             var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
             var saveInboxOnly = true;
-            return await UpdateAgentNew(id, sectionName, agentDto, username, orgId, true);
+            return await ProcessAgentUpdate(id, sectionName, agentDto, username, orgId, true);
         }
-        private async Task<IActionResult> UpdateAgentNew(int id,string sectionName,AgentDto agentDto, string username,long orgId,bool skipInbox = false)
+        private async Task<IActionResult> ProcessAgentUpdate(int id,string sectionName,AgentDto agentDto, string username,long orgId,bool skipInbox = false)
         {
 
             HmsResponse hmsResponse = new HmsResponse();
@@ -1743,11 +1743,6 @@ namespace HMS.Controllers
                             }
 
                             var controlIds = controlIdMap.Values.Distinct().ToList();
-                            var allocationLookup = await _context.uiFieldsSettings
-                                .AsNoTracking()
-                                .Where(s => s.OrgId == orgIdValue && s.CntrlId.HasValue && controlIds.Contains(s.CntrlId.Value))
-                                .Select(s => new { s.CntrlId, s.RoleId })
-                                .ToListAsync();
 
                             var componentLookup = await _context.uiField
                                 .AsNoTracking()
@@ -1758,10 +1753,6 @@ namespace HMS.Controllers
                             var componentIdMap = componentLookup
                                 .Where(x => x.ComponentId.HasValue)
                                 .ToDictionary(x => x.CntrlId, x => x.ComponentId!.Value);
-
-                            var allocatedRoleMap = allocationLookup
-                                .GroupBy(x => x.CntrlId!.Value)
-                                .ToDictionary(g => g.Key, g => g.Select(x => x.RoleId).FirstOrDefault());
 
                             var payload = updatedFields
                                 .Where(f => !string.IsNullOrWhiteSpace(f.FieldName))
@@ -1774,21 +1765,16 @@ namespace HMS.Controllers
                                             && componentId != 0)
                                 .ToList();
 
-                            var userRoleId = parsedUserId > 0
-                                ? await _context.UserRoleMappings
-                                    .AsNoTracking()
-                                    .Where(r => r.UserId == parsedUserId && r.IsActive)
-                                    .OrderByDescending(r => r.IsPrimary)
-                                    .Select(r => (int?)r.RoleId)
-                                    .FirstOrDefaultAsync()
-                                : null;
-
                             var primaryField = inboxFields.FirstOrDefault();
                             if (primaryField != null)
                             {
                                 var cntrlId = controlIdMap[primaryField.FieldName];
                                 var componentId = componentIdMap[cntrlId];
-                                allocatedRoleMap.TryGetValue(cntrlId, out var allocatedRole);
+                                var approvalRoleId = await _context.ApprovalSettings
+                                    .AsNoTracking()
+                                    .Where(x => x.OrgId == orgIdValue && x.ComponentId == componentId)
+                                    .Select(x => x.ApproverOneId ?? x.ApproverTwoId ?? x.ApproverThreeId)
+                                    .FirstOrDefaultAsync();
                                 inboxEntries = new List<Inbox>
                                 {
                                     new Inbox
@@ -1807,7 +1793,7 @@ namespace HMS.Controllers
                                             }),
                                             Formatting.None),
                                         ComponentId = componentId,
-                                        AllocatedToRole = userRoleId ?? allocatedRole,
+                                        AllocatedToRole = approvalRoleId,
                                         ObjectName = $"Agent",
                                         ApprovalPayload = JsonConvert.SerializeObject(new
                                         {

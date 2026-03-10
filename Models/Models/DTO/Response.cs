@@ -60,6 +60,7 @@ namespace Models.DTO
         public List<PartnerBranchHeirarchy>? PartnerBranchHierarchies { get; set; } = null;
         public List<UserOtherDetails>? UserOtherDetails { get; set; } = null;
         public List<ApprovalSetting>? ApprovalSettings { get; set; } = null;
+        public GraphRevenueCommDto? GraphRevenueCommData { get; set; } = null;
     }
 
     public class UpdatedAgentField

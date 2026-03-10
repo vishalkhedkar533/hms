@@ -1,12 +1,13 @@
 ﻿using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Models.DB
 {
     [Table("revenue_comm", Schema = "hms")]
-    [Index(nameof(OrgId), nameof(StartDate), nameof(EndDate), IsUnique = true, Name = "idx_unique_revcomm_period")]
+    [Index(nameof(OrgId), nameof(PeriodId), IsUnique = true, Name = "idx_unique_revcomm_period")]
     public class RevenueComm
     {
         [Key]
@@ -19,12 +20,8 @@ namespace Models.DB
         public int OrgId { get; set; }
 
         [Required]
-        [Column("start_date", TypeName = "date")]
-        public DateTime StartDate { get; set; }
-
-        [Required]
-        [Column("end_date", TypeName = "date")]
-        public DateTime EndDate { get; set; }
+        [Column("periodid")] // Maps to int8
+        public long PeriodId { get; set; }
 
         [Required]
         [Column("revenue")]
@@ -34,54 +31,65 @@ namespace Models.DB
         [Column("commission")]
         public long Commission { get; set; } = 0;
 
-        //Navigation Property(Optional)
+        // Navigation Properties
         [ForeignKey("OrgId")]
         public virtual Organisation Organisation { get; set; }
-    }
 
+        [ForeignKey("PeriodId")]
+        public virtual OrganizationPeriod Period { get; set; }
+    }
     public record RevenueCommResponseDto
     {
         public int Id { get; init; }
-        public DateTime StartDate { get; init; }
-        public DateTime EndDate { get; init; }
+        public long PeriodId { get; init; }
         public long Revenue { get; init; }
         public long Commission { get; init; }
+        public DateTime PeriodStartDate { get; init; }
     }
 
-    public record RevenueCommCreateDto
-    {
-        [Required]
-        public DateTime StartDate { get; init; }
-
-        [Required]
-        public DateTime EndDate { get; init; }
-
-        [Range(0, long.MaxValue)]
-        public long Revenue { get; init; } = 0;
-
-        [Range(0, long.MaxValue)]
-        public long Commission { get; init; } = 0;
-    }
+    //public record RevenueCommCreateDto
+    //{
+    //    [Required]
+    //    public long PeriodId { get; init; }
+    //    [Range(0, long.MaxValue)]
+    //    public long Revenue { get; init; } = 0;
+    //    [Range(0, long.MaxValue)]
+    //    public long Commission { get; init; } = 0;
+    //}
     public class RevenueCommProfile : Profile
     {
         public RevenueCommProfile()
         {
-            // 1. Model -> Response DTO
-            // Maps automatically because property names match exactly.
+            // Model -> Response
+            // If you want to include dates from the Period table, 
+            // you would add .ForMember(d => d.StartDate, o => o.MapFrom(s => s.Period.StartDate))
             CreateMap<RevenueComm, RevenueCommResponseDto>();
 
-            // 2. Create DTO -> Model
-            // We tell AutoMapper to ignore 'Id' (DB generated) 
-            // and 'OrgId' (set manually from JWT in the service/controller).
-            CreateMap<RevenueCommCreateDto, RevenueComm>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.OrgId, opt => opt.Ignore())
-                .ForMember(dest => dest.Organisation, opt => opt.Ignore());
+            // Create DTO -> Model
+            //CreateMap<RevenueCommCreateDto, RevenueComm>()
+            //    .ForMember(dest => dest.Id, opt => opt.Ignore())
+            //    .ForMember(dest => dest.OrgId, opt => opt.Ignore())
+            //    .ForMember(dest => dest.Organisation, opt => opt.Ignore())
+            //    .ForMember(dest => dest.Period, opt => opt.Ignore());
         }
     }
     public class SearchRevenueCommDto
     {
         public DateTime? StartDate { get; init; }
         public DateTime? EndDate { get; init; }
+        public GroupDataByPeriod GroupBy { get; init; }
+    }
+
+    public class GraphRevenueCommDto
+    {
+        public string filtertype { get; set; } = "MonthlyPeriod";
+        public List<GraphDataByPeriod> Data { get; set; }
+    }
+
+    public class GraphDataByPeriod
+    {
+        public DateTime date { get; set; }
+        public long revenue { get; set; }
+        public long commission { get; set; }
     }
 }

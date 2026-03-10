@@ -310,9 +310,16 @@ namespace HMS.Controllers
                     return BadRequest(response);
                 }
 
-                if (approvalPendingWith?.Any(x=> x.ApproverDecision == null) ?? false)// pending approval
+                if (inbox.SrStatus != SrStatus.PendingDecision)
                 {
-                    var currentApprover = approvalPendingWith.FirstOrDefault(x => x.ApproverDecision == null);
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Service Request is not pending for decision.";
+                    return BadRequest(response);
+                }
+
+                if (approvalPendingWith?.Any(x=> x.ApproverDecision == ApproverDecision.Pending) ?? false)// pending approval
+                {
+                    var currentApprover = approvalPendingWith.FirstOrDefault(x => x.ApproverDecision == ApproverDecision.Pending);
                     var currentApproverLevel = currentApprover?.ApproverLevel ?? 0;
                     var nextApprover = approvalPendingWith
                         .Where(x => x.ApproverLevel > currentApproverLevel)
@@ -320,6 +327,33 @@ namespace HMS.Controllers
                         .FirstOrDefault();
                     if (currentApprover != null)
                     {
+                        var hasRoleAccess = await _context.UserRoleMappings
+                            .AsNoTracking()
+                            .AnyAsync(urm => urm.UserId == userId
+                                && urm.RoleId == currentApprover.AllocatedRoleId
+                                && urm.OrgId == orgId
+                                && urm.IsActive);
+
+                        if (!hasRoleAccess)
+                        {
+                            var approverNames = await (from urm in _context.UserRoleMappings.AsNoTracking()
+                                                       join u in _context.Users.AsNoTracking()
+                                                           on new { urm.UserId, urm.OrgId } equals new { u.UserId, OrgId = u.OrgId ?? 0 }
+                                                       where urm.RoleId == currentApprover.AllocatedRoleId
+                                                           && urm.OrgId == orgId
+                                                           && urm.IsActive
+                                                       select u.Username)
+                                .ToListAsync();
+
+                            var approverNameText = approverNames.Count > 0
+                                ? string.Join(", ", approverNames)
+                                : "the assigned approver";
+
+                            response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                            response.responseHeader.ErrorMessage = $"You are not authorized to approve this level. Approval pending with {approverNameText}.";
+                            return BadRequest(response);
+                        }
+
                         currentApprover.ApproverDecision = srApproverDto.ApproverDecision;
                         currentApprover.DecisionOn = DateTime.UtcNow;
                         currentApprover.DecisionBy = userId;

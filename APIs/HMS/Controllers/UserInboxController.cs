@@ -282,7 +282,6 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
-
         [HttpPost("UpdateSrDecision")]
         [MenuAuthorize(AuthorisationConstants.UpdateSRDecision)]
         public async Task<IActionResult> UpdateSrDecision([FromBody] SrApproverDto  srApproverDto)
@@ -367,6 +366,7 @@ namespace HMS.Controllers
 
                         }
                         inbox.Comments = srApproverDto.Comments;
+                        currentApprover.Comments = srApproverDto.Comments;
                         await _context.SaveChangesAsync();
 
                         response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
@@ -409,7 +409,6 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
-
         private async Task InvokeApprovalEndpointAsync(Inbox inbox)
         {
             if (string.IsNullOrWhiteSpace(inbox.ApprovalEndpoint) || string.IsNullOrWhiteSpace(inbox.ApprovalPayload))

@@ -69,4 +69,10 @@
         Rejected = 3,
         OnHold = 4
     }
+    public enum GroupDataByPeriod : int
+    {
+        ByNone = 1,
+        ByMonth = 2,
+        ByQuarter = 3
+    }
 }

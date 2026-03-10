@@ -57,6 +57,8 @@ namespace HMS.Data
         public DbSet<SrApprover> SrApprovers { get; set; }
         public DbSet<PartnerBranchHeirarchy> PartnerBranchHierarchies { get; set; }
         public DbSet<ApprovalSetting> ApprovalSettings { get; set; }
+        public DbSet<RevenueComm> RevenueComms { get; set; }
+        public DbSet<OrganizationPeriod> OrganizationPeriods { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

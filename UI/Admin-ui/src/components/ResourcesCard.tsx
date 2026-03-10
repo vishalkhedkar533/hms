@@ -17,7 +17,7 @@ const resources = [
   { title: "Tips", link: "/tips" },
   { title: "User Manual", link: "/manual" },
   { title: "Review Structure", link: "/review-structure" },
-  { title: "Review Access", link: "/review-access" },
+  { title: "Org Configuration", link: "/org-configuration" },
   { title: "Roles Management", link: "/roles-management" }, 
   { title: "Channel Management", link: "/channel-management" }, 
    { title: "Inbox", link: "/inbox" },
@@ -36,7 +36,7 @@ export default function ResourcesCard() {
       <CardHeader>
         <CardTitle className="text-lg font-semibold">Resources</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="flex flex-col gap-3">
         {/* Search Input */}
         <div className="relative">
           <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -51,7 +51,7 @@ export default function ResourcesCard() {
         </div>
 
         {/* Resource List */}
-        <div className="space-y-2">
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
           {filteredResources.map((item, index) => (
             <Link
               key={index}

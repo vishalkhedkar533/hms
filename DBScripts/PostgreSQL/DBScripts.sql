@@ -2560,7 +2560,7 @@ CREATE TABLE hmsmaster.approval_setting (
 );
 
 CREATE TABLE hmsmaster.organization_periods (
-    id SERIAL PRIMARY KEY,
+    periodId SERIAL PRIMARY KEY,
     orgid int4 NOT NULL,
     range_type VARCHAR(30) DEFAULT 'MonthPeriod',
     start_date DATE NOT NULL,
@@ -2568,4 +2568,16 @@ CREATE TABLE hmsmaster.organization_periods (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT idx_unique_org_period UNIQUE (orgid, start_date, end_date),
     CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid)
+);
+
+create table hms.revenue_comm	
+(
+    id SERIAL PRIMARY KEY,
+    orgid int4 NOT NULL,
+    periodId int8 not null,
+    revenue int8 not null default 0,
+    commission int8 not null default 0,    
+    CONSTRAINT idx_unique_revcomm_period UNIQUE (orgid, periodId),
+    CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+    CONSTRAINT fk_revenue_comm_period FOREIGN KEY (periodId) REFERENCES hmsmaster.organization_periods(periodId)
 );

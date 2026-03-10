@@ -35,5 +35,6 @@
         public const Int32 AuthenticationService = 1029;
         public const Int32 ManageMasters = 1032;
         public const Int32 ReadMasters = 1033;
+        public const Int32 GetCommissionData = 1035;
     }
 }

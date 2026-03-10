@@ -203,6 +203,8 @@ namespace HMS.Controllers
                 // 4. Apply Pagination
                 int pageNo = searchInboxDto.PageNo ?? 1;
                 int pageSize = searchInboxDto.PageSize ?? 10;
+                pageNo = pageNo <= 0 ? 1 : pageNo;
+                pageSize = pageSize <= 0 ? 10 : pageSize;
 
                 var pagedData = await query
                     .OrderByDescending(x => x.i.CreatedDate) 
@@ -220,8 +222,15 @@ namespace HMS.Controllers
 
                 // 6. Finalize Response
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = (result.Count == 0 ? "No Service Requests found" : $"{result.Count} Service Request(s) found");
+                response.responseHeader.ErrorMessage = (result.Count == 0 ? "No Service Requests found" : $"{result.Count} ServiceRequest(s) found");
                 response.responseBody.InboxData = result;
+                response.responseBody.pagination = new
+                {
+                    currentPage = pageNo,
+                    totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize),
+                    pageSize = pageSize,
+                    totalItems = totalRecords
+                };
                 return Ok(response);
             }
             catch (Exception ex)

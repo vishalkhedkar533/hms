@@ -59,6 +59,7 @@ builder.Services.AddAutoMapper(cfg =>
     cfg.AddProfile<ChannelBranchHierarchyProfile>();
     cfg.AddProfile<ApprovalSettingProfile>();
     cfg.AddProfile<DesignationMasterProfile>();
+    cfg.AddProfile<RevenueCommProfile>();
 });
 
 // ----------------------------

@@ -72,6 +72,9 @@ namespace Models.DB
 
         [Column("comments")]
         public string? Comments { get; set; }
+
+        [NotMapped]
+        public List<ApproverCommentDto>? ApproverComments { get; set; }
     }
     [Table("sr_approver", Schema = "hms")]
     public class SrApprover
@@ -102,6 +105,17 @@ namespace Models.DB
 
         [Column("approver_decision")] // Added missing column from SQL
         public ApproverDecision? ApproverDecision { get; set; }
+
+        [StringLength(2000)]
+        [Column("comments")]
+        public string? Comments { get; set; }
+    }
+
+    public class ApproverCommentDto
+    {
+        public string? ApproverName { get; set; }
+        public DateTime? DecisionOn { get; set; }
+        public string? Comments { get; set; }
     }
     public class InboxDto
     {
@@ -153,6 +167,7 @@ namespace Models.DB
                 .ForMember(dest => dest.ApprovalApiResponse, opt => opt.Ignore())
                 .ForMember(dest => dest.SrStatusDesc, opt => opt.Ignore())
                 .ForMember(dest => dest.Comments, opt => opt.Ignore())
+                .ForMember(dest => dest.ApproverComments, opt => opt.Ignore())
 
                 ;
         }
@@ -162,9 +177,7 @@ namespace Models.DB
         public SrApproverProfile()
         {
             // 1. Entity to DTO (For Data Retrieval/GET)
-            CreateMap<SrApprover, SrApproverDto>()
-                .ForMember(dest => dest.Comments, opt => opt.Ignore());
-
+            CreateMap<SrApprover, SrApproverDto>();
             // 2. DTO to Entity (For Create/Update/POST/PUT)
             // We must explicitly ignore fields that exist in 'SrApprover' but not in 'SrApproverDto'
             CreateMap<SrApproverDto, SrApprover>()

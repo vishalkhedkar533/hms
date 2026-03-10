@@ -220,6 +220,47 @@ namespace HMS.Controllers
                     return x.i;
                 }).ToList();
 
+                if (searchInboxDto.SrNo.HasValue && result.Count > 0)
+                {
+                    var srNos = result.Select(r => r.SrNo).Distinct().ToList();
+                    var approverHistory = await (from sa in _context.SrApprovers.AsNoTracking()
+                                                 join u in _context.Users.AsNoTracking()
+                                                     on new { DecisionBy = sa.DecisionBy, OrgId = sa.OrgId }
+                                                     equals new { DecisionBy = (int?)u.UserId, OrgId = u.OrgId ?? 0 }
+                                                 where sa.OrgId == orgId
+                                                 && srNos.Contains(sa.SrNo)
+                                                 && sa.DecisionBy != null
+                                                 select new
+                                                 {
+                                                     sa.SrNo,
+                                                     sa.ApproverLevel,
+                                                     sa.DecisionOn,
+                                                     sa.Comments,
+                                                     ApproverName = u.Username
+                                                 })
+                        .ToListAsync();
+
+                    var approverLookup = approverHistory
+                        .OrderBy(x => x.ApproverLevel)
+                        .GroupBy(x => x.SrNo)
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.Select(x => new ApproverCommentDto
+                            {
+                                ApproverName = x.ApproverName,
+                                DecisionOn = x.DecisionOn,
+                                Comments = x.Comments
+                            }).ToList());
+
+                    foreach (var inbox in result)
+                    {
+                        if (approverLookup.TryGetValue(inbox.SrNo, out var comments))
+                        {
+                            inbox.ApproverComments = comments;
+                        }
+                    }
+                }
+
                 // 6. Finalize Response
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = (result.Count == 0 ? "No Service Requests found" : $"{result.Count} ServiceRequest(s) found");
@@ -284,6 +325,7 @@ namespace HMS.Controllers
                         currentApprover.DecisionOn = DateTime.UtcNow;
                         currentApprover.DecisionBy = userId;
                         //var approverEntity = _mapper.Map<SrApprover>(currentApprover);
+                        currentApprover.Comments = srApproverDto.Comments;
                         inbox.StatusUpdatedBy = userId;
                         inbox.StatusModifiedOn = DateTime.UtcNow;
 
@@ -367,6 +409,7 @@ namespace HMS.Controllers
                 return BadRequest(response);
             }
         }
+
         private async Task InvokeApprovalEndpointAsync(Inbox inbox)
         {
             if (string.IsNullOrWhiteSpace(inbox.ApprovalEndpoint) || string.IsNullOrWhiteSpace(inbox.ApprovalPayload))

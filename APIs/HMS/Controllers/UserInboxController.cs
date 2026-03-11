@@ -197,7 +197,7 @@ namespace HMS.Controllers
                 {
                     //_context.UserRoleMappings.AsQueryable().Any(urm => urm.UserId == userId);
                     query = query.Where(x => _context.UserRoleMappings.AsQueryable().Any(urm => urm.UserId == userId
-                        && urm.RoleId == x.i.AllocatedToRole
+                        //&& urm.RoleId == x.i.AllocatedToRole
                         && urm.OrgId == orgId
                         && urm.IsActive));
                 }

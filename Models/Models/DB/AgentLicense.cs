@@ -1,4 +1,5 @@
-﻿using Models.DTO;
+﻿using Models.DB.Tasks.Models;
+using Models.DTO;
 using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

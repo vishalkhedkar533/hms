@@ -2581,3 +2581,21 @@ create table hms.revenue_comm
     CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
     CONSTRAINT fk_revenue_comm_period FOREIGN KEY (periodId) REFERENCES hmsmaster.organization_periods(periodId)
 );
+
+CREATE TABLE hms.hms_dashboard (
+	dashboard_id serial primary key,
+    orgid int8 NOT NULL,
+    channel_id int8,
+    subchannel_id int8,
+    totalentitiescount float8 NULL,
+    totalentitiesthismonth float8 NULL,
+    entitiescreatedthismonth float8 NULL,
+    entitiescreatedprevmonth float8 NULL,
+    entitiesterminatedthismonth float8 NULL,
+    entitiesterminatedprevmonth float8 NULL,
+    entitiesnetthismonth float8 NULL,
+    licenseexpiringin30months float8 NULL,
+    certificateexpiringin30months float8 NULL,
+    mbgcriterianotmet float8 NULL,
+    CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid)
+);

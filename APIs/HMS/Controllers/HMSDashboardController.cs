@@ -108,10 +108,13 @@ namespace HMS.Controllers
         [HttpPost("channel-stats")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetChannelStats()
+        public async Task<IActionResult> GetChannelStats([FromBody] PaginationRequest paginationRequest)
         {
             ChannelStatsResponse response = new ChannelStatsResponse();
             var orgId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
+
+            paginationRequest.PageNumber = paginationRequest.PageNumber <= 0 ? 1 : paginationRequest.PageNumber;
+            paginationRequest.PageSize = paginationRequest.PageSize <= 0 ? 10 : paginationRequest.PageSize;
 
             try
             {
@@ -127,12 +130,26 @@ namespace HMS.Controllers
                     var terminatedEntities = channels.Sum(x => x.TerminatedEntities ?? 0);
                     var activeEntities = totalEntities - terminatedEntities;
 
+                    var totalRecords = channels.Count;
+                    var totalPages = (int)Math.Ceiling(totalRecords / (double)paginationRequest.PageSize);
+                    var pagedChannels = channels
+                        .Skip((paginationRequest.PageNumber - 1) * paginationRequest.PageSize)
+                        .Take(paginationRequest.PageSize)
+                        .ToList();
+
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "SUCCESS";
-                    response.responseBody.channels = channels;
+                    response.responseBody.channels = pagedChannels;
                     response.responseBody.totalEntities = totalEntities;
                     response.responseBody.terminatedEntities = terminatedEntities;
                     response.responseBody.activeEntities = activeEntities;
+                    response.responseBody.pagination = new
+                    {
+                        currentPage = paginationRequest.PageNumber,
+                        totalPages = totalPages,
+                        pageSize = paginationRequest.PageSize,
+                        totalItems = totalRecords
+                    };
 
                     return Ok(response);
                 }

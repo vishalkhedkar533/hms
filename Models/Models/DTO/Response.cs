@@ -78,8 +78,8 @@ namespace Models.DTO
         public string? Username { get; set; }
         public string? Role { get; set; }
         public bool? Encrypt_Api_Calls { get; set; } = false;
-        public string refreshToken { get; set; } = string.Empty;
-
+        public string refreshToken { get; set; } = string.Empty;    
+        public string UITheme { get; set; } = "{\"themeName\":\"dark\",\"colors\":{\"primary\":\"#2563eb\",\"secondary\":\"#64748b\",\"background\":\"#020817\",\"foreground\":\"#ffffff\",\"card\":\"#020817\",\"card-foreground\":\"#ffffff\",\"border\":\"#1e293b\",\"muted\":\"#0f172a\",\"muted-foreground\":\"#94a3b8\",\"accent\":\"#1e293b\",\"accent-foreground\":\"#ffffff\",\"destructive\":\"#ef4444\"}}"; 
     }
 
     public class OtpResponse

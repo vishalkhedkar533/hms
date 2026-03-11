@@ -145,3 +145,10 @@ INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1035, 'Get Commission Data', 1034, null, 1, true, true, 'navin', '2026-03-10', null, null, 0);
 
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1036, 'Dashboards', null, null, 1, true, true, 'navin', '2026-03-10', null, null, 0);
+
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1037, 'Access HMS Dashboard', 1036, null, 1, true, true, 'navin', '2026-03-10', null, null, 0);

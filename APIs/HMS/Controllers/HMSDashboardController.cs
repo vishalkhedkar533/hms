@@ -33,7 +33,7 @@ namespace HMS.Controllers
 
         [HttpPost("GetHMSDashboard")]
         [Authorize]
-        [MenuAuthorize(1001)]
+        [MenuAuthorize(AuthorisationConstants.AccessHMSDashboard)]
         public async Task<ActionResult> GetHMSDashboard()
         {
             HmsResponse hmsResponse = new HmsResponse();

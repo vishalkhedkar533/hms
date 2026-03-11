@@ -167,7 +167,8 @@ select 1, mm.menu_id,true,true ,'System', now(), :p_orgid
 from hms.menu_master mm
 where not exists (select 1 from hms.role_menu_mapping rmm  where mm.menu_id  = rmm.menu_id and rmm.role_id  = 1);
 
-
+INSERT INTO hms.hms_dashboard (orgid, channel_id, subchannel_id, totalentitiescount, totalentitiesthismonth, entitiescreatedthismonth, entitiescreatedprevmonth, entitiesterminatedthismonth, entitiesterminatedprevmonth, entitiesnetthismonth, licenseexpiringin30months, certificateexpiringin30months, mbgcriterianotmet) 
+VALUES (2, null, null, 150.0, 12.0, 8.0, 5.0, 2.0, 1.0, 6.0, 3.0, 4.0, 1.0);
 /*
 INSERT INTO hmsmaster.location_master (channel_id, sub_channel_id, orgid, location_code, location_desc, is_active, created_by, created_date)
  VALUES 

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Models.DB.Tasks.Models;
 using Swashbuckle.AspNetCore.Annotations;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

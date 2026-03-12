@@ -6,9 +6,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
+using Models.DB.Tasks.Models;
 using Models.DTO;
 using Models.HMSConsts;
-using System.Security.Claims;
 
 namespace HMS.Controllers
 {
@@ -39,20 +39,31 @@ namespace HMS.Controllers
             HmsResponse hmsResponse = new HmsResponse();
             try
             {
-                var username = _authClaimService.GetClaim(ClaimTypes.Name);
+                long orgId = long.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-                if (username == null)
-                {
-                    return NotFound("User not found.");
-                }
+                var hmsrecord = await _context.HMSDashboard
+                    .Where(x => x.OrgId == orgId)
+                    .GroupBy(x => x.OrgId)
+                    .Select(g => new HMSDashboard
+                    {
+                        OrgId = g.Key,
+                        TotalEntitiesCount = g.Sum(x => x.TotalEntitiesCount),
+                        TotalEntitiesThisMonth = g.Sum(x => x.TotalEntitiesThisMonth),
+                        EntitiesCreatedThisMonth = g.Sum(x => x.EntitiesCreatedThisMonth),
+                        EntitiesCreatedPrevMonth = g.Sum(x => x.EntitiesCreatedPrevMonth),
+                        EntitiesTerminatedThisMonth = g.Sum(x => x.EntitiesTerminatedThisMonth),
+                        EntitiesTerminatedPrevMonth = g.Sum(x => x.EntitiesTerminatedPrevMonth),
+                        EntitiesNetThisMonth = g.Sum(x => x.EntitiesNetThisMonth),
+                        LicenseExpiringIn30Months = g.Sum(x => x.LicenseExpiringIn30Months),
+                        CertificateExpiringIn30Months = g.Sum(x => x.CertificateExpiringIn30Months),
+                        MBGCriteriaNotMet = g.Sum(x => x.MBGCriteriaNotMet)
+                    })
+                    .FirstOrDefaultAsync();
 
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
-                {
-                    return NotFound("UserId claim not found or invalid.");
-                }
-
-                var hmsrecord = await _context.HMSDashboard.FirstOrDefaultAsync(x => x.UserId == userId);
+                    hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    hmsResponse.responseHeader.ErrorMessage = "Success";
+                    hmsResponse.responseBody.hmsDashboard = hmsrecord;
+                    return Ok(hmsResponse);
 
                 #region Later Integration
                 //var today = DateTime.UtcNow;
@@ -86,21 +97,10 @@ namespace HMS.Controllers
                 //// which is: (EntitiesCreatedThisMonth - EntitiesCreatedPrevMonth)
                 //hmsrecord.TotalEntitiesThisMonth = hmsrecord.EntitiesCreatedThisMonth - hmsrecord.EntitiesCreatedPrevMonth;
                 #endregion
-                if (hmsrecord != null)
-                {
-                    hmsResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                    hmsResponse.responseHeader.ErrorMessage = "Success";
-                    hmsResponse.responseBody.hmsDashboard = hmsrecord;
-                    return Ok(hmsResponse);
-                }
-                else
-                {
-                    return NotFound("Hms Record Not Found");
-                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error fetching HMS dashboard for User");
+                _logger.LogError(ex, "Error fetching aggregated HMS dashboard for OrgId");
                 return StatusCode(500, "Internal Server Error");
             }
         }
@@ -108,10 +108,13 @@ namespace HMS.Controllers
         [HttpPost("channel-stats")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> GetChannelStats()
+        public async Task<IActionResult> GetChannelStats([FromBody] PaginationRequest paginationRequest)
         {
             ChannelStatsResponse response = new ChannelStatsResponse();
             var orgId = Convert.ToInt32(Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0"));
+
+            paginationRequest.PageNumber = paginationRequest.PageNumber <= 0 ? 1 : paginationRequest.PageNumber;
+            paginationRequest.PageSize = paginationRequest.PageSize <= 0 ? 10 : paginationRequest.PageSize;
 
             try
             {
@@ -127,12 +130,26 @@ namespace HMS.Controllers
                     var terminatedEntities = channels.Sum(x => x.TerminatedEntities ?? 0);
                     var activeEntities = totalEntities - terminatedEntities;
 
+                    var totalRecords = channels.Count;
+                    var totalPages = (int)Math.Ceiling(totalRecords / (double)paginationRequest.PageSize);
+                    var pagedChannels = channels
+                        .Skip((paginationRequest.PageNumber - 1) * paginationRequest.PageSize)
+                        .Take(paginationRequest.PageSize)
+                        .ToList();
+
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "SUCCESS";
-                    response.responseBody.channels = channels;
+                    response.responseBody.channels = pagedChannels;
                     response.responseBody.totalEntities = totalEntities;
                     response.responseBody.terminatedEntities = terminatedEntities;
                     response.responseBody.activeEntities = activeEntities;
+                    response.responseBody.pagination = new
+                    {
+                        currentPage = paginationRequest.PageNumber,
+                        totalPages = totalPages,
+                        pageSize = paginationRequest.PageSize,
+                        totalItems = totalRecords
+                    };
 
                     return Ok(response);
                 }

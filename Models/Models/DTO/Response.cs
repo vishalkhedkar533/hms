@@ -1,4 +1,5 @@
 ﻿using Models.DB;
+using Models.DB.Tasks.Models;
 using Models.DTO.CommissionMgmt;
 using Models.DTO.CommissionMgmt.Dashboard;
 using SharedModels;
@@ -114,6 +115,7 @@ namespace Models.DTO
         public long totalEntities { get; set; }
         public long activeEntities { get; set; }
         public long terminatedEntities { get; set; }
+        public object? pagination { get; set; }
     }
     public class FileUploadResponse
     {

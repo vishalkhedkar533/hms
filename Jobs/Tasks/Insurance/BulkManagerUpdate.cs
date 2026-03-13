@@ -5,6 +5,7 @@ using MiniExcelLibs;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
+using System.Text.Json;
 using Tasks.Models;
 
 namespace Tasks.Insurance
@@ -246,77 +247,46 @@ namespace Tasks.Insurance
                     var statusSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
                         ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
                     await conn.ExecuteAsync(statusSql, approvedTempRows);
+
+                   // await InsertInboxEntriesAsync(conn, task, approvedTempRows, username);
                 }
 
-                // var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
-                //     ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
-                // response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
+                var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
+                    ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
+                response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
 
                 response.UpdatedRows = 0;
 
                 response.FailedRows = response.Errors.Count;
 
-                // Execute Database Updates
-                // (handled by temp table apply)
-                //if (updatedAgents.Count > 0 || rejectedTempRows.Count > 0)
-                //{
-                //    var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
-                //    var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
-                //    var updateTempSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
-                //    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
+                Execute Database Updates
+                (handled by temp table apply)
+                if (updatedAgents.Count > 0 || rejectedTempRows.Count > 0)
+                {
+                    var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
+                    var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
+                    var updateTempSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
+                    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
 
-                //    await using var tx = await conn.BeginTransactionAsync(token);
-                //    if (updatedAgents.Count > 0)
-                //    {
-                //        await conn.ExecuteAsync(updateSql, updatedAgents, tx);
-                //        await conn.ExecuteAsync(auditSql, auditEntries, tx);
-                //        await conn.ExecuteAsync(updateTempSql, updatedTempRows, tx);
-                //    }
+                    await using var tx = await conn.BeginTransactionAsync(token);
+                    if (updatedAgents.Count > 0)
+                    {
+                        await conn.ExecuteAsync(updateSql, updatedAgents, tx);
+                        await conn.ExecuteAsync(auditSql, auditEntries, tx);
+                        await conn.ExecuteAsync(updateTempSql, updatedTempRows, tx);
+                    }
 
-                //    if (rejectedTempRows.Count > 0)
-                //    {
-                //        await conn.ExecuteAsync(reviewSql, rejectedTempRows, tx);
-                //    }
+                    if (rejectedTempRows.Count > 0)
+                    {
+                        await conn.ExecuteAsync(reviewSql, rejectedTempRows, tx);
+                    }
 
-                //    await tx.CommitAsync(token);
-                //}
-
-                // --- HANDLE SUCCESS DATA EXPORT ---
-                //string? successDataEncoded = null;
-                //if (successRowsForExport.Any())
-                //{
-                //    using var successStream = new MemoryStream();
-                //    await MiniExcel.SaveAsAsync(successStream, successRowsForExport);
-                //    successDataEncoded = Convert.ToBase64String(successStream.ToArray());
-                //}
-
-                // --- HANDLE ERROR DATA EXPORT ---
-                //if (response.Errors.Any())
-                //{
-                //    var errorExport = response.Errors.Select(e => new
-                //    {
-                //        Row_Number = e.RowNumber,
-                //        Agent_Code = e.AgentCode,
-                //        Supervisor_Code = e.SupervisorCode,
-                //        Error_Message = e.Message
-                //    });
-
-                //    var rootFolder = Path.Combine(AppContext.BaseDirectory, "RejectedFiles");
-                //    Directory.CreateDirectory(rootFolder);
-                //    var fileName = $"Rejected_Manager_Update_{orgId}_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
-                //    var filePath = Path.Combine(rootFolder, fileName);
-
-                //    await using var memoryStream = new MemoryStream();
-                //    await MiniExcel.SaveAsAsync(memoryStream, errorExport);
-                //    response.ErrorFile = memoryStream.ToArray();
-
-                //    await File.WriteAllBytesAsync(filePath, response.ErrorFile, token);
-                //    _logger.LogInformation("Rejected rows exported to Excel: {FilePath}", filePath);
-                //}
+                    await tx.CommitAsync(token);
+                }
 
                 // Final Task Table Update
                 var updateTaskSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTask")?.Script
@@ -342,6 +312,93 @@ namespace Tasks.Insurance
             }
 
             _logger.LogInformation("BulkManagerUpdate job finished");
+        }
+
+        private async Task InsertInboxEntriesAsync(
+            System.Data.Common.DbConnection conn,
+            FileProcessingTask task,
+            List<object> approvedRows,
+            string username)
+        {
+            var taskOrgId = task.OrgId ?? orgId;
+
+            var createdByUserId = 0;
+            var userIdSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetUserIdByUsername")?.Script;
+            if (!string.IsNullOrWhiteSpace(userIdSql))
+            {
+                createdByUserId = await conn.QuerySingleOrDefaultAsync<int>(userIdSql, new { username, orgId = taskOrgId });
+            }
+
+            int? componentId = null;
+            var componentSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetManagerUpdateComponentId")?.Script;
+            if (!string.IsNullOrWhiteSpace(componentSql))
+            {
+                componentId = await conn.QuerySingleOrDefaultAsync<int?>(componentSql);
+            }
+
+            int? allocatedToRole = null;
+            if (componentId.HasValue)
+            {
+                var approvalSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script;
+                if (!string.IsNullOrWhiteSpace(approvalSql))
+                {
+                    var setting = await conn.QuerySingleOrDefaultAsync<InboxFieldConfig>(approvalSql, new { componentId = componentId.Value, orgId = taskOrgId });
+                    if (setting != null)
+                    {
+                        allocatedToRole = setting.ApproverOneId ?? setting.ApproverTwoId ?? setting.ApproverThreeId;
+                    }
+                }
+            }
+
+            var insertInboxSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertInboxEntry")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/InsertInboxEntry missing");
+
+            foreach (var row in approvedRows)
+            {
+                var agentCode = row.GetType().GetProperty("AgentCode")?.GetValue(row)?.ToString() ?? string.Empty;
+                var supervisorCode = row.GetType().GetProperty("SupervisorCode")?.GetValue(row)?.ToString() ?? string.Empty;
+                var effectiveDate = row.GetType().GetProperty("EffectiveDateOfChange")?.GetValue(row);
+
+                var requestDets = $"Bulk Manager Update: Agent {agentCode} -> Supervisor {supervisorCode}";
+
+                var requestorNote = JsonSerializer.Serialize(new[]
+                {
+                    new { FieldName = "AgentCode", OldValue = string.Empty, NewValue = agentCode },
+                    new { FieldName = "SupervisorCode", OldValue = string.Empty, NewValue = supervisorCode },
+                    new { FieldName = "EffectiveDateOfChange", OldValue = string.Empty, NewValue = effectiveDate?.ToString() ?? string.Empty }
+                });
+
+                var approvalPayload = JsonSerializer.Serialize(new
+                {
+                    payload = new
+                    {
+                        AgentCode = agentCode,
+                        SupervisorCode = supervisorCode,
+                        EffectiveDateOfChange = effectiveDate,
+                        OrgId = taskOrgId,
+                        ModifiedBy = username
+                    }
+                });
+
+                var srNo = await conn.ExecuteScalarAsync<int>(insertInboxSql, new
+                {
+                    OrgId = taskOrgId,
+                    RequestDets = requestDets,
+                    RequestorNote = requestorNote,
+                    CreatedBy = createdByUserId,
+                    CreatedDate = DateTime.UtcNow,
+                    SrStatus = 1,
+                    ComponentId = componentId,
+                    AllocatedToRole = allocatedToRole,
+                    ApprovalEndpoint = (string?)null,
+                    ApprovalPayload = approvalPayload,
+                    ObjectName = "BulkManagerUpdate",
+                    ObjectReference = task.Id
+                });
+
+                _logger.LogInformation("Inbox entry created SrNo={SrNo} for Agent={AgentCode} -> Supervisor={SupervisorCode}",
+                    srNo, agentCode, supervisorCode);
+            }
         }
 
         private static void AddError(ManagerUpdateResponse resp, int row, string? agent, string? supervisor, string msg)

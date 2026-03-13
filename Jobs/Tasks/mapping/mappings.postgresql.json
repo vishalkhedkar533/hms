@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=145"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=141"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -120,6 +120,22 @@
       "ApplyTempManagerUpdate": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "WITH candidates AS (\n    SELECT t.agent_code, t.supervisor_code, t.effective_date_of_change, t.orgid, a.agent_id, s.agent_id AS supervisor_id\n    FROM hms.temp_manager_update t\n    JOIN hms.agent a ON a.agent_code = t.agent_code AND a.orgid = t.orgid\n    JOIN hms.agent s ON s.agent_code = t.supervisor_code AND s.orgid = t.orgid\n    WHERE t.orgid = @OrgId\n      AND t.comments = 'Proceed'\n      AND t.status = 'Pending'\n      AND t.effective_date_of_change = CURRENT_DATE\n), updated AS (\n    UPDATE hms.agent a\n    SET supervisor_id = c.supervisor_id, modified_by = @ModifiedBy, modified_date = NOW()\n    FROM candidates c\n    WHERE a.agent_id = c.agent_id\n    RETURNING a.agent_id\n), temp_updated AS (\n    UPDATE hms.temp_manager_update t\n    SET status = 'Updated'\n    FROM candidates c\n    WHERE t.orgid = c.orgid\n      AND t.agent_code = c.agent_code\n      AND t.supervisor_code = c.supervisor_code\n      AND t.effective_date_of_change = c.effective_date_of_change\n    RETURNING t.agent_code\n)\nSELECT COUNT(*) FROM updated;"
+      },
+      "GetUserIdByUsername": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT user_id FROM hms.\"user\" WHERE username = @username AND orgid = @orgId LIMIT 1"
+      },
+      "InsertInboxEntry": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "INSERT INTO hms.inbox (orgid, requestdets, requestornote, created_by, created_date, srstatus, component_id, allocated_to_role, approvalendpoint, approvalpayload, object_name, object_ref) VALUES (@OrgId, @RequestDets, @RequestorNote, @CreatedBy, @CreatedDate, @SrStatus, @ComponentId, @AllocatedToRole, @ApprovalEndpoint, @ApprovalPayload, @ObjectName, @ObjectReference) RETURNING srno"
+      },
+      "GetApprovalSettingForComponent": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT ast.approveroneid AS ApproverOneId, ast.approvertwoid AS ApproverTwoId, ast.approverthreeid AS ApproverThreeId FROM hmsmaster.approval_setting ast WHERE ast.component_id = @componentId AND ast.orgid = @orgId LIMIT 1"
+      },
+      "GetManagerUpdateComponentId": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE LOWER(uc.label) = 'bulk manager update' LIMIT 1"
       },
       "UpdateTask": {
         "ConnectionStringKey": "CommissionDB",

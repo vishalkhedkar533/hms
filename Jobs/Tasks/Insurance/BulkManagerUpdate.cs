@@ -253,31 +253,18 @@ namespace Tasks.Insurance
 
                 var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
                     ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
+
                 response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
 
-                response.UpdatedRows = 0;
-
-                response.FailedRows = response.Errors.Count;
-
-                Execute Database Updates
-                (handled by temp table apply)
                 if (updatedAgents.Count > 0 || rejectedTempRows.Count > 0)
                 {
-                    var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
                     var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
                         ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
-                    var updateTempSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
-                    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
 
                     await using var tx = await conn.BeginTransactionAsync(token);
                     if (updatedAgents.Count > 0)
                     {
-                        await conn.ExecuteAsync(updateSql, updatedAgents, tx);
                         await conn.ExecuteAsync(auditSql, auditEntries, tx);
-                        await conn.ExecuteAsync(updateTempSql, updatedTempRows, tx);
                     }
 
                     if (rejectedTempRows.Count > 0)

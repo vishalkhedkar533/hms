@@ -248,30 +248,17 @@ namespace Tasks.Insurance
                         ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
                     await conn.ExecuteAsync(statusSql, approvedTempRows);
 
-                   // await InsertInboxEntriesAsync(conn, task, approvedTempRows, username);
+                    await InsertInboxEntriesAsync(conn, task, approvedTempRows, username);
+                    response.UpdatedRows = approvedTempRows.Count;
                 }
 
-                var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
-                    ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
-
-                response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
-
-                if (updatedAgents.Count > 0 || rejectedTempRows.Count > 0)
+                if (rejectedTempRows.Count > 0)
                 {
-                    var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
+                    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
 
                     await using var tx = await conn.BeginTransactionAsync(token);
-                    if (updatedAgents.Count > 0)
-                    {
-                        await conn.ExecuteAsync(auditSql, auditEntries, tx);
-                    }
-
-                    if (rejectedTempRows.Count > 0)
-                    {
-                        await conn.ExecuteAsync(reviewSql, rejectedTempRows, tx);
-                    }
-
+                    await conn.ExecuteAsync(reviewSql, rejectedTempRows, tx);
                     await tx.CommitAsync(token);
                 }
 
@@ -283,16 +270,16 @@ namespace Tasks.Insurance
                     ? Convert.ToBase64String(errorFile)
                     : null;
 
-                await conn.ExecuteAsync(updateTaskSql, new
-                {
-                    Id = task.Id,
-                    RowsProcessed = response.UpdatedRows,
-                    TotalRows = response.TotalRows,
-                    RowsRejected = response.FailedRows,
-                    ErrorMessage = errorMessageEncoded,
-                    SuccessData = successDataEncoded,
-                    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
-                });
+                //await conn.ExecuteAsync(updateTaskSql, new
+                //{
+                //    Id = task.Id,
+                //    RowsProcessed = response.UpdatedRows,
+                //    TotalRows = response.TotalRows,
+                //    RowsRejected = response.FailedRows,
+                //    ErrorMessage = errorMessageEncoded,
+                //    SuccessData = successDataEncoded,
+                //    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
+                //});
 
                 _logger.LogInformation("BulkManagerUpdate completed for TaskId={TaskId}. UpdatedRows={UpdatedRows}, FailedRows={FailedRows}",
                     task.Id, response.UpdatedRows, response.FailedRows);
@@ -355,18 +342,6 @@ namespace Tasks.Insurance
                     new { FieldName = "EffectiveDateOfChange", OldValue = string.Empty, NewValue = effectiveDate?.ToString() ?? string.Empty }
                 });
 
-                var approvalPayload = JsonSerializer.Serialize(new
-                {
-                    payload = new
-                    {
-                        AgentCode = agentCode,
-                        SupervisorCode = supervisorCode,
-                        EffectiveDateOfChange = effectiveDate,
-                        OrgId = taskOrgId,
-                        ModifiedBy = username
-                    }
-                });
-
                 var srNo = await conn.ExecuteScalarAsync<int>(insertInboxSql, new
                 {
                     OrgId = taskOrgId,
@@ -378,7 +353,7 @@ namespace Tasks.Insurance
                     ComponentId = componentId,
                     AllocatedToRole = allocatedToRole,
                     ApprovalEndpoint = (string?)null,
-                    ApprovalPayload = approvalPayload,
+                    ApprovalPayload = (string?)null,
                     ObjectName = "BulkManagerUpdate",
                     ObjectReference = task.Id
                 });

@@ -53,15 +53,19 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
 
-            var reportingManager = await _context.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
-            if (reportingManager == null)
+            if (string.IsNullOrEmpty(userDto.ReportingMgrName))
             {
-                response.responseHeader = new HmsSResponseHeader();
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
-                return Conflict(response);
+                var reportingManager = await _context.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
+                if (reportingManager == null)
+                {
+                    response.responseHeader = new HmsSResponseHeader();
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
+                    return Conflict(response);
+                }
             }
+            
 
             // 2. Map DTO to Entity
             // Using AutoMapper, the mapping configuration handles defaults (IsActive=true, etc.)

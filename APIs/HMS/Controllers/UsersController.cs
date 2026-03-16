@@ -52,8 +52,10 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorMessage = "Email ID already exists.";
                 return Conflict(response);
             }
-
-            if (string.IsNullOrEmpty(userDto.ReportingMgrName))
+            // 2. Map DTO to Entity
+            // Using AutoMapper, the mapping configuration handles defaults (IsActive=true, etc.)
+            var user = _mapper.Map<User>(userDto);
+            if (!string.IsNullOrEmpty(userDto.ReportingMgrName))
             {
                 var reportingManager = await _context.Users.AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
@@ -64,15 +66,10 @@ namespace HMS.Controllers
                     response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
                     return Conflict(response);
                 }
+                user.ReportingMgr = reportingManager.UserId;
             }
-            
-
-            // 2. Map DTO to Entity
-            // Using AutoMapper, the mapping configuration handles defaults (IsActive=true, etc.)
-            var user = _mapper.Map<User>(userDto);
             user.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
             user.OrgId = orgId;
-            user.ReportingMgr = reportingManager.UserId;
 
             // 3. Handle Password Hashing (Logic usually stays in Service or Controller)
             user.Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password);

@@ -72,6 +72,15 @@ INSERT INTO hmsmaster.ui_components (component_id, path, label, elementType) VAL
 (	138	,'Agent.Training.Branch',	'Branch',	'Section'),
 (	139	,'Agent.Training.Organisation',	'Organisation',	'Section');
 
+INSERT INTO hmsmaster.ui_components
+(component_id, "path", "label", elementtype)
+values
+(140, 'Agent.PeopleHeirarchy.PeopleHeirarchyData', 'PeopleHeirarchy', 'Section'),
+(141, 'Agent.GeographicHeirarchy.GeographicHeirarchyData', 'GeographicHeirarchy', 'Section'),
+(142, 'Agent.PartnersMapped.PartnersMappedData', 'PartnersMapped', 'Section'),
+(143, 'Agent.AuditLog.AuditLogData', 'AuditLog', 'Section'),
+(144, 'Agent.Entity360.Entity360Data', 'Entity360', 'Section');
+
 INSERT INTO hmsmaster.ui_fields (cntrl_id, component_id, cntrl_name) VALUES 
 (1001,102,'Channel Name'),
 (1002,102,'Sub Channel'),

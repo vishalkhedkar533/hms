@@ -135,7 +135,7 @@
       },
       "GetManagerUpdateComponentId": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE LOWER(uc.label) = 'bulk manager update' LIMIT 1"
+        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE LOWER(uc.label) = 'PeopleHeirarchy' LIMIT 1"
       },
       "UpdateTask": {
         "ConnectionStringKey": "CommissionDB",

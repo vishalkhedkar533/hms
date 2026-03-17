@@ -89,7 +89,12 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                var username = string.IsNullOrWhiteSpace(task.CreatedBy) ? "System" : task.CreatedBy;
+                if (!int.TryParse(task.CreatedBy, out var createdByUserId) || createdByUserId <= 0)
+                {   
+                    _logger.LogError("Invalid CreatedBy in fileprocessingtasks. TaskId={TaskId}, CreatedBy={CreatedBy}", task.Id, task.CreatedBy);
+                    continue;
+                }
+
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var tempRows = new List<(string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange, int OrgId, string Comments, string Reason)>();
                 var todayRows = new List<(int RowNumber, string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange)>();
@@ -151,10 +156,17 @@ namespace Tasks.Insurance
                     await writer.CompleteAsync(token);
                 }
 
-                var rejectedTempRows = new List<object>();
-                var approvedTempRows = new List<object>();
+                var InvalidTempRows = new List<object>();
+                var CleanTempRows = new List<object>();
                 string? successDataEncoded = null;
                 byte[]? errorFile = null;
+
+                int? componentId = null;
+                var componentSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetManagerUpdateComponentId")?.Script;
+                if (!string.IsNullOrWhiteSpace(componentSql))
+                {
+                    componentId = await conn.QuerySingleOrDefaultAsync<int?>(componentSql);
+                }
 
                 if (todayRows.Count > 0)
                 {
@@ -179,7 +191,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Invalid Agent Code.";
                             AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
-                            rejectedTempRows.Add(new
+                            InvalidTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 SupervisorCode = supervisorCode,
@@ -195,7 +207,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Reporting Agent Code not found.";
                             AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
-                            rejectedTempRows.Add(new
+                            InvalidTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 SupervisorCode = supervisorCode,
@@ -211,7 +223,7 @@ namespace Tasks.Insurance
                         {
                             var reason = $"Supervisor is in channel '{supervisor.Channel}', but Agent is in '{agent.Channel}'. Channels must match.";
                             AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
-                            rejectedTempRows.Add(new
+                            InvalidTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 SupervisorCode = supervisorCode,
@@ -223,7 +235,7 @@ namespace Tasks.Insurance
                             continue;
                         }
 
-                        approvedTempRows.Add(new
+                        CleanTempRows.Add(new
                         {
                             AgentCode = agentCode,
                             SupervisorCode = supervisorCode,
@@ -235,41 +247,45 @@ namespace Tasks.Insurance
 
                 response.FailedRows = response.Errors.Count;
 
-                if (rejectedTempRows.Count > 0)
+                if (InvalidTempRows.Count > 0)
                 {
                     var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
                         ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
-                    await conn.ExecuteAsync(reviewSql, rejectedTempRows);
+                    await conn.ExecuteAsync(reviewSql, InvalidTempRows);
                 }
-
-                if (approvedTempRows.Count > 0)
-                {
-                    var statusSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
-                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
-                    await conn.ExecuteAsync(statusSql, approvedTempRows);
-
-                    await InsertInboxEntriesAsync(conn, task, approvedTempRows, username);
-                    response.UpdatedRows = approvedTempRows.Count;
-                }
-
-                if (rejectedTempRows.Count > 0)
+                if (InvalidTempRows.Count > 0)
                 {
                     var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
                         ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
 
                     await using var tx = await conn.BeginTransactionAsync(token);
-                    await conn.ExecuteAsync(reviewSql, rejectedTempRows, tx);
+                    await conn.ExecuteAsync(reviewSql, InvalidTempRows, tx);
                     await tx.CommitAsync(token);
                 }
+                if (CleanTempRows.Count > 0)
+                {
+                    var statusSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
+                    await conn.ExecuteAsync(statusSql, CleanTempRows);
+                    await InsertInboxEntriesAsync(conn, task, CleanTempRows, createdByUserId);
 
-                // Final Task Table Update
-                var updateTaskSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTask")?.Script
-                    ?? throw new Exception("SQL for ManagerUpdate/UpdateTask missing");
+                    //approve setting ask for aproval if setting is there otherwise proceed with update and insert inbox entry for approval
+                    var approvalSettingsql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script
+                        ?? throw new Exception("SQL for approvaSetting missing");
+                    var approvalsetting = (await conn.QueryAsync<InboxFieldConfig>(approvalSettingsql, new { componentId = componentId, orgId = task.OrgId ?? orgId })).ToList();
+                    var UseDefaultApprver = approvalsetting.Select(a => a.UseDefaultApprover).FirstOrDefault();
+                    //no approval require after create then move the sr to pending and direct update in agent table 
+                    if (UseDefaultApprver == null)
+                    {
+                        var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
+                    }
+                    //audit trail after final approval 
+                    //user hierarchy 
+                    //custom hierarchy 
+                }
 
-                var errorMessageEncoded = errorFile != null
-                    ? Convert.ToBase64String(errorFile)
-                    : null;
-
+                // response.UpdatedRows = CleanTempRows.Count;
                 //await conn.ExecuteAsync(updateTaskSql, new
                 //{
                 //    Id = task.Id,
@@ -292,17 +308,9 @@ namespace Tasks.Insurance
             System.Data.Common.DbConnection conn,
             FileProcessingTask task,
             List<object> approvedRows,
-            string username)
+            int createdByUserId)
         {
             var taskOrgId = task.OrgId ?? orgId;
-
-            var createdByUserId = 0;
-            var userIdSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetUserIdByUsername")?.Script;
-            if (!string.IsNullOrWhiteSpace(userIdSql))
-            {
-                createdByUserId = await conn.QuerySingleOrDefaultAsync<int>(userIdSql, new { username, orgId = taskOrgId });
-            }
-
             int? componentId = null;
             var componentSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetManagerUpdateComponentId")?.Script;
             if (!string.IsNullOrWhiteSpace(componentSql))
@@ -333,7 +341,7 @@ namespace Tasks.Insurance
                 var supervisorCode = row.GetType().GetProperty("SupervisorCode")?.GetValue(row)?.ToString() ?? string.Empty;
                 var effectiveDate = row.GetType().GetProperty("EffectiveDateOfChange")?.GetValue(row);
 
-                var requestDets = $"Bulk Manager Update: Agent {agentCode} -> Supervisor {supervisorCode}";
+                //var requestDets = $"Bulk Manager Update: Agent {agentCode} -> Supervisor {supervisorCode}";
 
                 var requestorNote = JsonSerializer.Serialize(new[]
                 {
@@ -345,7 +353,7 @@ namespace Tasks.Insurance
                 var srNo = await conn.ExecuteScalarAsync<int>(insertInboxSql, new
                 {
                     OrgId = taskOrgId,
-                    RequestDets = requestDets,
+                    RequestDets = "Bulk Manager Updated",
                     RequestorNote = requestorNote,
                     CreatedBy = createdByUserId,
                     CreatedDate = DateTime.UtcNow,

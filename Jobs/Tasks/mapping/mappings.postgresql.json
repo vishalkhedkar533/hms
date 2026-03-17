@@ -105,10 +105,10 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "COPY hms.temp_manager_update (agent_code, supervisor_code, effective_date_of_change, status, orgid, comments, reason) FROM STDIN (FORMAT BINARY)"
       },
-      "InsertTempManagerUpdate": {
-        "ConnectionStringKey": "CommissionDB",
-        "Script": "INSERT INTO hms.temp_manager_update (agent_code, supervisor_code, effective_date_of_change, status, orgid) VALUES (@AgentCode, @SupervisorCode, @EffectiveDateOfChange, @Status, @OrgId)"
-      },
+      //"InsertTempManagerUpdate": {
+      //  "ConnectionStringKey": "CommissionDB",
+      //  "Script": "INSERT INTO hms.temp_manager_update (agent_code, supervisor_code, effective_date_of_change, status, orgid) VALUES (@AgentCode, @SupervisorCode, @EffectiveDateOfChange, @Status, @OrgId)"
+      //},
       "UpdateTempManagerUpdateReview": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "UPDATE hms.temp_manager_update SET comments = @Comments, reason = @Reason WHERE orgid = @OrgId AND agent_code = @AgentCode AND supervisor_code = @SupervisorCode AND effective_date_of_change = @EffectiveDateOfChange"
@@ -131,11 +131,11 @@
       },
       "GetApprovalSettingForComponent": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT ast.approveroneid AS ApproverOneId, ast.approvertwoid AS ApproverTwoId, ast.approverthreeid AS ApproverThreeId FROM hmsmaster.approval_setting ast WHERE ast.component_id = @componentId AND ast.orgid = @orgId LIMIT 1"
+        "Script": "SELECT ast.approveroneid AS ApproverOneId, ast.approvertwoid AS ApproverTwoId, ast.approverthreeid AS ApproverThreeId,ast.usedefaultapprover As UseDefaultApprover FROM hmsmaster.approval_setting ast WHERE ast.component_id = @componentId AND ast.orgid = @orgId LIMIT 1"
       },
       "GetManagerUpdateComponentId": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE LOWER(uc.label) = 'PeopleHeirarchy' LIMIT 1"
+        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE uc.label = 'People Heirarchy' LIMIT 1"
       },
       "UpdateTask": {
         "ConnectionStringKey": "CommissionDB",

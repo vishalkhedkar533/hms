@@ -216,6 +216,7 @@ namespace Models.DB
         public string? Username { get; set; } = null!;
         public string? EmailId { get; set; } = null!;
         public string? MobileNumber { get; set; }
+        public bool? IsActive { get; set; } = null;
     }
 
 }

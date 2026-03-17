@@ -143,8 +143,8 @@ namespace HMS.Controllers
             if (existingUser == null)
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader = new HmsSResponseHeader 
-                { 
+                response.responseHeader = new HmsSResponseHeader
+                {
                     ErrorCode = CommonConstants.FAILED,
                     ErrorMessage = "User not found."
                 };
@@ -154,7 +154,7 @@ namespace HMS.Controllers
             // 3. Map updated values from DTO to the existing Entity
             // AutoMapper will use the Condition(s) we set up previously to only update non-null fields
             _mapper.Map(userDto, existingUser);
-            
+
             // Update Reporting Manager
             existingUser.ReportingMgr = reportingManagerId;
 
@@ -165,10 +165,10 @@ namespace HMS.Controllers
             // 5. Save changes
             await _context.SaveChangesAsync();
 
-            response.responseHeader = new HmsSResponseHeader 
-            { 
-                ErrorCode = CommonConstants.SUCCESS, 
-                ErrorMessage = "User updated successfully" 
+            response.responseHeader = new HmsSResponseHeader
+            {
+                ErrorCode = CommonConstants.SUCCESS,
+                ErrorMessage = "User updated successfully"
             };
             return Ok(response);
         }
@@ -353,22 +353,31 @@ namespace HMS.Controllers
         }
         // GET: api/Users
         //[Authorize]
-        [HttpGet("GetUserIds")]
+        [HttpPost("GetUserIds")]
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
-        public async Task<ActionResult<HmsResponse>> GetUserIds()
+        public async Task<ActionResult<HmsResponse>> GetActiveUserIds([FromBody] SearchUser searchUser)
         {
             HmsResponse response = new HmsResponse();
 
             var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-            var userIDs = await _context.Users
-                    .AsNoTracking()
-                    .Where(x => x.OrgId == orgId && x.IsActive)
-                    .Select(x => new KeyValuePair<int, string>(x.UserId, x.Username))
-                    .ToListAsync();
+            List<UserListDto> userList = await _context.Users
+                .AsNoTracking()
+                .Where(x => x.OrgId == orgId && 
+                x.IsActive == (searchUser.IsActive == null ? x.IsActive : searchUser.IsActive))
+                .Select(u => new UserListDto
+                {
+                    UserId = u.UserId,
+                    Username = u.Username,
+                    IsActive = u.IsActive,
+                    IsLocked = u.IsLocked,
+                    FailedLoginAttempts = u.failedloginattempts
+                })
+                .ToListAsync();
+
             response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
             response.responseHeader.ErrorMessage = "User IDs retrieved successfully.";
-            response.responseBody.ActiveUsers = userIDs;
+            response.responseBody.UserList = userList;
             return Ok(response);
         }
 

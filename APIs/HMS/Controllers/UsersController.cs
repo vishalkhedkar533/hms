@@ -52,23 +52,24 @@ namespace HMS.Controllers
                 response.responseHeader.ErrorMessage = "Email ID already exists.";
                 return Conflict(response);
             }
-
-            var reportingManager = await _context.Users.AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
-            if (reportingManager == null)
-            {
-                response.responseHeader = new HmsSResponseHeader();
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
-                return Conflict(response);
-            }
-
             // 2. Map DTO to Entity
             // Using AutoMapper, the mapping configuration handles defaults (IsActive=true, etc.)
             var user = _mapper.Map<User>(userDto);
+            if (!string.IsNullOrEmpty(userDto.ReportingMgrName))
+            {
+                var reportingManager = await _context.Users.AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Username == userDto.ReportingMgrName && u.OrgId == orgId);
+                if (reportingManager == null)
+                {
+                    response.responseHeader = new HmsSResponseHeader();
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Reporting Manager does not exist.";
+                    return Conflict(response);
+                }
+                user.ReportingMgr = reportingManager.UserId;
+            }
             user.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
             user.OrgId = orgId;
-            user.ReportingMgr = reportingManager.UserId;
 
             // 3. Handle Password Hashing (Logic usually stays in Service or Controller)
             user.Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password);
@@ -142,8 +143,8 @@ namespace HMS.Controllers
             if (existingUser == null)
             {
                 response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader = new HmsSResponseHeader 
-                { 
+                response.responseHeader = new HmsSResponseHeader
+                {
                     ErrorCode = CommonConstants.FAILED,
                     ErrorMessage = "User not found."
                 };
@@ -153,7 +154,7 @@ namespace HMS.Controllers
             // 3. Map updated values from DTO to the existing Entity
             // AutoMapper will use the Condition(s) we set up previously to only update non-null fields
             _mapper.Map(userDto, existingUser);
-            
+
             // Update Reporting Manager
             existingUser.ReportingMgr = reportingManagerId;
 
@@ -164,10 +165,10 @@ namespace HMS.Controllers
             // 5. Save changes
             await _context.SaveChangesAsync();
 
-            response.responseHeader = new HmsSResponseHeader 
-            { 
-                ErrorCode = CommonConstants.SUCCESS, 
-                ErrorMessage = "User updated successfully" 
+            response.responseHeader = new HmsSResponseHeader
+            {
+                ErrorCode = CommonConstants.SUCCESS,
+                ErrorMessage = "User updated successfully"
             };
             return Ok(response);
         }
@@ -352,11 +353,33 @@ namespace HMS.Controllers
         }
         // GET: api/Users
         //[Authorize]
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<User>>> GetUser()
-        //{
-        //    return await _context.Users.ToListAsync();
-        //}
+        [HttpPost("GetUserIds")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        public async Task<ActionResult<HmsResponse>> GetActiveUserIds([FromBody] SearchUser searchUser)
+        {
+            HmsResponse response = new HmsResponse();
+
+            var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            List<UserListDto> userList = await _context.Users
+                .AsNoTracking()
+                .Where(x => x.OrgId == orgId && 
+                x.IsActive == (searchUser.IsActive == null ? x.IsActive : searchUser.IsActive))
+                .Select(u => new UserListDto
+                {
+                    UserId = u.UserId,
+                    Username = u.Username,
+                    IsActive = u.IsActive,
+                    IsLocked = u.IsLocked,
+                    FailedLoginAttempts = u.failedloginattempts
+                })
+                .ToListAsync();
+
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = "User IDs retrieved successfully.";
+            response.responseBody.UserList = userList;
+            return Ok(response);
+        }
 
         // GET: api/Users/5
         //[Authorize]

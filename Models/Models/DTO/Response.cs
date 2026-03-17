@@ -62,6 +62,7 @@ namespace Models.DTO
         public List<UserOtherDetails>? UserOtherDetails { get; set; } = null;
         public List<ApprovalSetting>? ApprovalSettings { get; set; } = null;
         public GraphRevenueCommDto? GraphRevenueCommData { get; set; } = null;
+        public IEnumerable<KeyValuePair<int, string>>? ActiveUsers { get; set; } = null;
     }
 
     public class UpdatedAgentField

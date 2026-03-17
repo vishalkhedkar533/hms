@@ -355,15 +355,21 @@ namespace HMS.Controllers
         //[Authorize]
         [HttpGet("GetUserIds")]
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]
-        public async Task<ActionResult<IEnumerable<string>>> GetUserIds()
+        public async Task<ActionResult<HmsResponse>> GetUserIds()
         {
+            HmsResponse response = new HmsResponse();
+
             var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-            return await _context.Users
-                .AsNoTracking()
-                .Where(x => x.OrgId == orgId)
-                .Select(x => x.Username)
-                .ToArrayAsync();
+            var userIDs = await _context.Users
+                    .AsNoTracking()
+                    .Where(x => x.OrgId == orgId && x.IsActive)
+                    .Select(x => new KeyValuePair<int, string>(x.UserId, x.Username))
+                    .ToListAsync();
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = "User IDs retrieved successfully.";
+            response.responseBody.ActiveUsers = userIDs;
+            return Ok(response);
         }
 
         // GET: api/Users/5

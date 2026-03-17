@@ -353,11 +353,18 @@ namespace HMS.Controllers
         }
         // GET: api/Users
         //[Authorize]
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<User>>> GetUser()
-        //{
-        //    return await _context.Users.ToListAsync();
-        //}
+        [HttpGet("GetUserIds")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        public async Task<ActionResult<IEnumerable<string>>> GetUserIds()
+        {
+            var orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
+            return await _context.Users
+                .AsNoTracking()
+                .Where(x => x.OrgId == orgId)
+                .Select(x => x.Username)
+                .ToArrayAsync();
+        }
 
         // GET: api/Users/5
         //[Authorize]

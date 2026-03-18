@@ -117,6 +117,10 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "UPDATE hms.temp_manager_update SET status = 'PENDING APPROVAL' WHERE orgid = @OrgId AND agent_code = @AgentCode AND supervisor_code = @SupervisorCode AND effective_date_of_change = @EffectiveDateOfChange AND comments = 'Proceed'"
       },
+      "UpdateTempManagerUpdateApprovedStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_manager_update SET status = 'Approved' WHERE orgid = @OrgId AND agent_code = @AgentCode AND supervisor_code = @SupervisorCode AND status = 'PENDING APPROVAL'"
+      },
       "ApplyTempManagerUpdate": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "WITH candidates AS (\n    SELECT t.agent_code, t.supervisor_code, t.effective_date_of_change, t.orgid, a.agent_id, s.agent_id AS supervisor_id\n    FROM hms.temp_manager_update t\n    JOIN hms.agent a ON a.agent_code = t.agent_code AND a.orgid = t.orgid\n    JOIN hms.agent s ON s.agent_code = t.supervisor_code AND s.orgid = t.orgid\n    WHERE t.orgid = @OrgId\n      AND t.comments = 'Proceed'\n      AND t.status = 'Pending'\n      AND t.effective_date_of_change = CURRENT_DATE\n), updated AS (\n    UPDATE hms.agent a\n    SET supervisor_id = c.supervisor_id, modified_by = @ModifiedBy, modified_date = NOW()\n    FROM candidates c\n    WHERE a.agent_id = c.agent_id\n    RETURNING a.agent_id\n), temp_updated AS (\n    UPDATE hms.temp_manager_update t\n    SET status = 'Updated'\n    FROM candidates c\n    WHERE t.orgid = c.orgid\n      AND t.agent_code = c.agent_code\n      AND t.supervisor_code = c.supervisor_code\n      AND t.effective_date_of_change = c.effective_date_of_change\n    RETURNING t.agent_code\n)\nSELECT COUNT(*) FROM updated;"

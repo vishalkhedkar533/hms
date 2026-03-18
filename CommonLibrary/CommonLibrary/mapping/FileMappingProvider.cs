@@ -9,7 +9,12 @@ namespace CommonLibrary.mapping
         private readonly ConcurrentDictionary<string, MappingModel> _byConnectionKey = new();
 
         private readonly string _folderPath;
-        private readonly JsonSerializerOptions _jsonOptions = new() { PropertyNameCaseInsensitive = true };
+        private readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true
+        };
 
         public FileMappingProvider(string folderPath)
         {

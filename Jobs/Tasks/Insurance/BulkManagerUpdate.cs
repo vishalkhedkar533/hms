@@ -130,10 +130,13 @@ namespace Tasks.Insurance
                     var effectiveDateOnly = DateOnly.FromDateTime(effectiveDate.Value);
                     tempRows.Add((agentCode, supervisorCode, effectiveDateOnly, task.OrgId ?? orgId, "Proceed", string.Empty));
 
-                    //if (effectiveDateOnly == today)
-                    //{
-                    //    todayRows.Add((item.RowNumber, agentCode, supervisorCode, effectiveDateOnly));
-                    //}
+                    todayRows.Add((item.RowNumber, agentCode, supervisorCode, effectiveDateOnly));
+
+                    // Future (today-only processing):
+                    // if (effectiveDateOnly == today)
+                    // {
+                    //     todayRows.Add((item.RowNumber, agentCode, supervisorCode, effectiveDateOnly));
+                    // }
                 }
 
                 if (tempRows.Any())

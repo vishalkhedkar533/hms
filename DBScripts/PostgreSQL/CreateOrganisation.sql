@@ -169,7 +169,7 @@ VALUES('admin', 'administrator', true, true, null, null, null, null, 1, :p_orgid
 insert into hms.role_menu_mapping (role_id,menu_id,is_visible,is_enabled,created_by,created_date,orgid)
 select 1, mm.menu_id,true,true ,'System', now(), :p_orgid
 from hms.menu_master mm
-where not exists (select 1 from hms.role_menu_mapping rmm  where mm.menu_id  = rmm.menu_id and rmm.role_id  = 1);
+where not exists (select 1 from hms.role_menu_mapping rmm  where mm.menu_id  = rmm.menu_id and rmm.role_id  = :p_AdminRoleId);
 
 INSERT INTO hms.hms_dashboard (orgid, channel_id, subchannel_id, totalentitiescount, totalentitiesthismonth, entitiescreatedthismonth, entitiescreatedprevmonth, entitiesterminatedthismonth, entitiesterminatedprevmonth, entitiesnetthismonth, licenseexpiringin30months, certificateexpiringin30months, mbgcriterianotmet) 
 VALUES (:p_orgid, null, null, 150.0, 12.0, 8.0, 5.0, 2.0, 1.0, 6.0, 3.0, 4.0, 1.0);

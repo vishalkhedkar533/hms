@@ -5,6 +5,8 @@ using MiniExcelLibs;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
+using System.Data.Common;
+using System.Text.Json;
 using Tasks.Models;
 
 namespace Tasks.Insurance
@@ -12,7 +14,7 @@ namespace Tasks.Insurance
     public class BulkManagerUpdate
     {
         private readonly IJobExecutionContext _jobExecutionContext;
-        private int orgId = 0;      
+        private int orgId = 0;
         public JobKey jobKey;
         private readonly ILogger<BulkManagerUpdate> _logger;
         private readonly IMappingProvider _mappingProvider;
@@ -88,7 +90,12 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                var username = string.IsNullOrWhiteSpace(task.CreatedBy) ? "System" : task.CreatedBy;
+                if (!int.TryParse(task.CreatedBy, out var createdByUserId) || createdByUserId <= 0)
+                {
+                    _logger.LogError("Invalid CreatedBy in fileprocessingtasks. TaskId={TaskId}, CreatedBy={CreatedBy}", task.Id, task.CreatedBy);
+                    continue;
+                }
+
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var tempRows = new List<(string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange, int OrgId, string Comments, string Reason)>();
                 var todayRows = new List<(int RowNumber, string AgentCode, string SupervisorCode, DateOnly EffectiveDateOfChange)>();
@@ -123,10 +130,13 @@ namespace Tasks.Insurance
                     var effectiveDateOnly = DateOnly.FromDateTime(effectiveDate.Value);
                     tempRows.Add((agentCode, supervisorCode, effectiveDateOnly, task.OrgId ?? orgId, "Proceed", string.Empty));
 
-                    if (effectiveDateOnly == today)
-                    {
-                        todayRows.Add((item.RowNumber, agentCode, supervisorCode, effectiveDateOnly));
-                    }
+                    todayRows.Add((item.RowNumber, agentCode, supervisorCode, effectiveDateOnly));
+
+                    // Future (today-only processing):
+                    // if (effectiveDateOnly == today)
+                    // {
+                    //     todayRows.Add((item.RowNumber, agentCode, supervisorCode, effectiveDateOnly));
+                    // }
                 }
 
                 if (tempRows.Any())
@@ -150,10 +160,17 @@ namespace Tasks.Insurance
                     await writer.CompleteAsync(token);
                 }
 
-                var rejectedTempRows = new List<object>();
-                var approvedTempRows = new List<object>();
+                var InvalidTempRows = new List<object>();
+                var CleanTempRows = new List<object>();
                 string? successDataEncoded = null;
                 byte[]? errorFile = null;
+
+                int? componentId = null;
+                var componentSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetManagerUpdateComponentId")?.Script;
+                if (!string.IsNullOrWhiteSpace(componentSql))
+                {
+                    componentId = await conn.QuerySingleOrDefaultAsync<int?>(componentSql);
+                }
 
                 if (todayRows.Count > 0)
                 {
@@ -178,7 +195,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Invalid Agent Code.";
                             AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
-                            rejectedTempRows.Add(new
+                            InvalidTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 SupervisorCode = supervisorCode,
@@ -189,12 +206,12 @@ namespace Tasks.Insurance
                             });
                             continue;
                         }
-
+                        //check active status of agent
                         if (!agentByCode.TryGetValue(supervisorCode, out var supervisor))
                         {
                             var reason = "Reporting Agent Code not found.";
                             AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
-                            rejectedTempRows.Add(new
+                            InvalidTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 SupervisorCode = supervisorCode,
@@ -205,12 +222,12 @@ namespace Tasks.Insurance
                             });
                             continue;
                         }
-
+                        //check active status of supervisor
                         if (agent.Channel != supervisor.Channel)
                         {
                             var reason = $"Supervisor is in channel '{supervisor.Channel}', but Agent is in '{agent.Channel}'. Channels must match.";
                             AddError(response, item.RowNumber, agentCode, supervisorCode, reason);
-                            rejectedTempRows.Add(new
+                            InvalidTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 SupervisorCode = supervisorCode,
@@ -222,7 +239,7 @@ namespace Tasks.Insurance
                             continue;
                         }
 
-                        approvedTempRows.Add(new
+                        CleanTempRows.Add(new
                         {
                             AgentCode = agentCode,
                             SupervisorCode = supervisorCode,
@@ -234,108 +251,60 @@ namespace Tasks.Insurance
 
                 response.FailedRows = response.Errors.Count;
 
-                if (rejectedTempRows.Count > 0)
+                if (InvalidTempRows.Count > 0)
                 {
                     var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
                         ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
-                    await conn.ExecuteAsync(reviewSql, rejectedTempRows);
+                    await conn.ExecuteAsync(reviewSql, InvalidTempRows);
                 }
+                if (InvalidTempRows.Count > 0)
+                {
+                    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
+                        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
 
-                if (approvedTempRows.Count > 0)
+                    await using var tx = await conn.BeginTransactionAsync(token);
+                    await conn.ExecuteAsync(reviewSql, InvalidTempRows, tx);
+                    await tx.CommitAsync(token);
+                }
+                if (CleanTempRows.Count > 0)
                 {
                     var statusSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
                         ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
-                    await conn.ExecuteAsync(statusSql, approvedTempRows);
+                    await conn.ExecuteAsync(statusSql, CleanTempRows);
+                    var inboxEntries = await InsertInboxEntriesAsync(conn, task, CleanTempRows, createdByUserId);
+
+                    var approvalSettingsql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script
+                        ?? throw new Exception("SQL for approvaSetting missing");
+                    var approvalsetting = await conn.QuerySingleOrDefaultAsync<InboxFieldConfig>(approvalSettingsql, new { componentId = componentId, orgId = task.OrgId ?? orgId });
+                    var useDefaultApprover = approvalsetting?.UseDefaultApprover;
+
+                    if (useDefaultApprover is null)
+                    {
+                        await ApplyManagerUpdatesWithoutApprovalAsync(conn, inboxEntries, createdByUserId, token);
+                    }
+                    else if (useDefaultApprover.Value)
+                    {
+                        await AssignUserHierarchyApproversAsync(conn, inboxEntries, task.OrgId ?? orgId, createdByUserId, token);
+                        _logger.LogInformation("Manager update entries are pending approval using user hierarchy. TaskId={TaskId}", task.Id);
+                    }
+                    else
+                    {
+                        await AssignCustomHierarchyApproversAsync(conn, inboxEntries, task.OrgId ?? orgId, createdByUserId, approvalsetting, token);
+                        _logger.LogInformation("Manager update entries are pending approval using custom hierarchy. TaskId={TaskId}", task.Id);
+                    }
                 }
 
-                // var applySql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "ApplyTempManagerUpdate")?.Script
-                //     ?? throw new Exception("SQL for ManagerUpdate/ApplyTempManagerUpdate missing");
-                // response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
-
-                response.UpdatedRows = 0;
-
-                response.FailedRows = response.Errors.Count;
-
-                // Execute Database Updates
-                // (handled by temp table apply)
-                //if (updatedAgents.Count > 0 || rejectedTempRows.Count > 0)
+                // response.UpdatedRows = CleanTempRows.Count;
+                //await conn.ExecuteAsync(updateTaskSql, new
                 //{
-                //    var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
-                //    var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
-                //    var updateTempSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateStatus")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateStatus missing");
-                //    var reviewSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateReview")?.Script
-                //        ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateReview missing");
-
-                //    await using var tx = await conn.BeginTransactionAsync(token);
-                //    if (updatedAgents.Count > 0)
-                //    {
-                //        await conn.ExecuteAsync(updateSql, updatedAgents, tx);
-                //        await conn.ExecuteAsync(auditSql, auditEntries, tx);
-                //        await conn.ExecuteAsync(updateTempSql, updatedTempRows, tx);
-                //    }
-
-                //    if (rejectedTempRows.Count > 0)
-                //    {
-                //        await conn.ExecuteAsync(reviewSql, rejectedTempRows, tx);
-                //    }
-
-                //    await tx.CommitAsync(token);
-                //}
-
-                // --- HANDLE SUCCESS DATA EXPORT ---
-                //string? successDataEncoded = null;
-                //if (successRowsForExport.Any())
-                //{
-                //    using var successStream = new MemoryStream();
-                //    await MiniExcel.SaveAsAsync(successStream, successRowsForExport);
-                //    successDataEncoded = Convert.ToBase64String(successStream.ToArray());
-                //}
-
-                // --- HANDLE ERROR DATA EXPORT ---
-                //if (response.Errors.Any())
-                //{
-                //    var errorExport = response.Errors.Select(e => new
-                //    {
-                //        Row_Number = e.RowNumber,
-                //        Agent_Code = e.AgentCode,
-                //        Supervisor_Code = e.SupervisorCode,
-                //        Error_Message = e.Message
-                //    });
-
-                //    var rootFolder = Path.Combine(AppContext.BaseDirectory, "RejectedFiles");
-                //    Directory.CreateDirectory(rootFolder);
-                //    var fileName = $"Rejected_Manager_Update_{orgId}_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
-                //    var filePath = Path.Combine(rootFolder, fileName);
-
-                //    await using var memoryStream = new MemoryStream();
-                //    await MiniExcel.SaveAsAsync(memoryStream, errorExport);
-                //    response.ErrorFile = memoryStream.ToArray();
-
-                //    await File.WriteAllBytesAsync(filePath, response.ErrorFile, token);
-                //    _logger.LogInformation("Rejected rows exported to Excel: {FilePath}", filePath);
-                //}
-
-                // Final Task Table Update
-                var updateTaskSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTask")?.Script
-                    ?? throw new Exception("SQL for ManagerUpdate/UpdateTask missing");
-
-                var errorMessageEncoded = errorFile != null
-                    ? Convert.ToBase64String(errorFile)
-                    : null;
-
-                await conn.ExecuteAsync(updateTaskSql, new
-                {
-                    Id = task.Id,
-                    RowsProcessed = response.UpdatedRows,
-                    TotalRows = response.TotalRows,
-                    RowsRejected = response.FailedRows,
-                    ErrorMessage = errorMessageEncoded,
-                    SuccessData = successDataEncoded,
-                    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
-                });
+                //    Id = task.Id,
+                //    RowsProcessed = response.UpdatedRows,
+                //    TotalRows = response.TotalRows,
+                //    RowsRejected = response.FailedRows,
+                //    ErrorMessage = errorMessageEncoded,
+                //    SuccessData = successDataEncoded,
+                //    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
+                //});
 
                 _logger.LogInformation("BulkManagerUpdate completed for TaskId={TaskId}. UpdatedRows={UpdatedRows}, FailedRows={FailedRows}",
                     task.Id, response.UpdatedRows, response.FailedRows);
@@ -343,6 +312,322 @@ namespace Tasks.Insurance
 
             _logger.LogInformation("BulkManagerUpdate job finished");
         }
+
+        private async Task<List<ManagerUpdateInboxEntry>> InsertInboxEntriesAsync(
+            DbConnection conn,
+            FileProcessingTask task,
+            List<object> approvedRows,
+            int createdByUserId)
+        {
+            var taskOrgId = task.OrgId ?? orgId;
+            int? componentId = null;
+            var componentSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetManagerUpdateComponentId")?.Script;
+            if (!string.IsNullOrWhiteSpace(componentSql))
+            {
+                componentId = await conn.QuerySingleOrDefaultAsync<int?>(componentSql);
+            }
+
+            int? allocatedToRole = null;
+            if (componentId.HasValue)
+            {
+                var approvalSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script;
+                if (!string.IsNullOrWhiteSpace(approvalSql))
+                {
+                    var setting = await conn.QuerySingleOrDefaultAsync<InboxFieldConfig>(approvalSql, new { componentId = componentId.Value, orgId = taskOrgId });
+                    if (setting != null && setting.UseDefaultApprover == false)
+                    {
+                        allocatedToRole = setting.ApproverOneId ?? setting.ApproverTwoId ?? setting.ApproverThreeId;
+                    }
+                }
+            }
+
+            var insertInboxSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertInboxEntry")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/InsertInboxEntry missing");
+
+            var inboxEntries = new List<ManagerUpdateInboxEntry>();
+            foreach (var row in approvedRows)
+            {
+                var agentCode = row.GetType().GetProperty("AgentCode")?.GetValue(row)?.ToString() ?? string.Empty;
+                var supervisorCode = row.GetType().GetProperty("SupervisorCode")?.GetValue(row)?.ToString() ?? string.Empty;
+                var effectiveDate = row.GetType().GetProperty("EffectiveDateOfChange")?.GetValue(row);
+                //var effectiveDateValue = effectiveDate as DateTime?;
+
+                //var requestDets = $"Bulk Manager Update: Agent {agentCode} -> Supervisor {supervisorCode}";
+
+                var requestorNote = JsonSerializer.Serialize(new[]
+                {
+                    new { FieldName = "AgentCode", OldValue = string.Empty, NewValue = agentCode },
+                    new { FieldName = "SupervisorCode", OldValue = string.Empty, NewValue = supervisorCode },
+                    new { FieldName = "EffectiveDateOfChange", OldValue = string.Empty, NewValue = effectiveDate?.ToString() ?? string.Empty }
+                });
+
+                var srNo = await conn.ExecuteScalarAsync<int>(insertInboxSql, new
+                {
+                    OrgId = taskOrgId,
+                    RequestDets = "Bulk Manager Updated",
+                    RequestorNote = requestorNote,
+                    CreatedBy = createdByUserId,
+                    CreatedDate = DateTime.UtcNow,
+                    SrStatus = 1,
+                    ComponentId = componentId,
+                    AllocatedToRole = allocatedToRole,
+                    ApprovalEndpoint = (string?)null,
+                    ApprovalPayload = (string?)null,
+                    ObjectName = "BulkManagerUpdate",
+                    ObjectReference = task.Id
+                });
+
+                inboxEntries.Add(new ManagerUpdateInboxEntry(srNo, taskOrgId, agentCode, supervisorCode));
+                _logger.LogInformation("Inbox entry created SrNo={SrNo} for Agent={AgentCode} -> Supervisor={SupervisorCode}",
+                    srNo, agentCode, supervisorCode);
+            }
+
+            return inboxEntries;
+        }
+
+        private async Task ApplyManagerUpdatesWithoutApprovalAsync(
+            DbConnection conn,
+            List<ManagerUpdateInboxEntry> inboxEntries,
+            int decisionBy,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var allCodes = inboxEntries
+                .SelectMany(x => new[] { x.AgentCode, x.SupervisorCode })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var agentsSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetAgentsByCode")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/GetAgentsByCode missing");
+            var updateSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateSupervisor")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/UpdateSupervisor missing");
+            var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+            var updateTempApprovedSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "UpdateTempManagerUpdateApprovedStatus")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/UpdateTempManagerUpdateApprovedStatus missing");
+
+            var orgIdToCodes = inboxEntries
+                .GroupBy(x => x.OrgId)
+                .ToDictionary(g => g.Key, g => g.SelectMany(x => new[] { x.AgentCode, x.SupervisorCode })
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray());
+
+            var agentLookup = new Dictionary<(int OrgId, string AgentCode), Agent>();
+            foreach (var entry in orgIdToCodes)
+            {
+                var agents = await conn.QueryAsync<Agent>(agentsSql, new { orgId = entry.Key, codes = entry.Value });
+                foreach (var agent in agents.Where(a => !string.IsNullOrWhiteSpace(a.AgentCode)))
+                {
+                    agentLookup[(entry.Key, agent.AgentCode)] = agent;
+                }
+            }
+
+            foreach (var serviceRequest in inboxEntries)
+            {
+                if (!agentLookup.TryGetValue((serviceRequest.OrgId, serviceRequest.AgentCode), out var agent))
+                {
+                    _logger.LogWarning("Auto-apply skipped for SrNo={SrNo}; agent code {AgentCode} not found.", serviceRequest.SrNo, serviceRequest.AgentCode);
+                    continue;
+                }
+
+                if (!agentLookup.TryGetValue((serviceRequest.OrgId, serviceRequest.SupervisorCode), out var supervisor))
+                {
+                    _logger.LogWarning("Auto-apply skipped for SrNo={SrNo}; supervisor code {SupervisorCode} not found.", serviceRequest.SrNo, serviceRequest.SupervisorCode);
+                    continue;
+                }
+
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    await conn.ExecuteAsync(updateSql, new
+                    {
+                        AgentId = agent.AgentId,
+                        SupervisorId = supervisor.AgentId,
+                        ModifiedBy = decisionBy.ToString()
+                    }, tx);
+
+                    await conn.ExecuteAsync(auditSql, new
+                    {
+                        AgentId = agent.AgentId,
+                        FieldName = "SupervisorId",
+                        OldValue = agent.SupervisorId?.ToString() ?? string.Empty,
+                        NewValue = supervisor.AgentId.ToString(),
+                        ChangedBy = decisionBy.ToString(),
+                        ChangedDate = DateTime.UtcNow,
+                        CreatedBy = decisionBy.ToString(),
+                        CreatedDate = DateTime.UtcNow,
+                        ModifiedBy = decisionBy.ToString(),
+                        ModifiedDate = DateTime.UtcNow
+                    }, tx);
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = serviceRequest.OrgId,
+                        srNo = serviceRequest.SrNo,
+                        srStatus = 3
+                    }, tx);
+
+                    await conn.ExecuteAsync(updateTempApprovedSql, new
+                    {
+                        OrgId = serviceRequest.OrgId,
+                        AgentCode = serviceRequest.AgentCode,
+                        SupervisorCode = serviceRequest.SupervisorCode
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                }
+                catch (Exception ex)
+                {
+                    await tx.RollbackAsync(token);
+                    _logger.LogError(ex, "Failed to auto-apply manager update for SrNo={SrNo}", serviceRequest.SrNo);
+                }
+            }
+        }
+
+        private async Task AssignUserHierarchyApproversAsync(
+            DbConnection conn,
+            List<ManagerUpdateInboxEntry> inboxEntries,
+            int orgId,
+            int createdByUserId,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var insertSql = _mappingProvider.GetScriptForOperation("Inbox", "InsertSrApprover")?.Script
+                ?? throw new Exception("SQL for Inbox/InsertSrApprover missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+            var reportingMgrSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
+                ?? throw new Exception("SQL for Inbox/GetManagerHierarchyRoles missing");
+
+            var reportingMgrId = await conn.QuerySingleOrDefaultAsync<int?>(reportingMgrSql, new { orgId, userId = createdByUserId });
+            if (!reportingMgrId.HasValue || reportingMgrId.Value <= 0)
+            {
+                _logger.LogWarning("No reporting manager resolved for OrgId={OrgId}, CreatedBy={CreatedBy}", orgId, createdByUserId);
+                return;
+            }
+
+            foreach (var entry in inboxEntries)
+            {
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    await conn.ExecuteAsync(insertSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        approverLevel = 1,
+                        allocatedRoleId = (int?)null,
+                        reportingMgr = reportingMgrId.Value,
+                        decisionBy = createdByUserId,
+                        decisionOn = DateTime.UtcNow,
+                        approverDecision = 1
+                    }, tx);
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        srStatus = 2
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                }
+                catch
+                {
+                    await tx.RollbackAsync(token);
+                    throw;
+                }
+            }
+        }
+
+        private async Task AssignCustomHierarchyApproversAsync(
+            DbConnection conn,
+            List<ManagerUpdateInboxEntry> inboxEntries,
+            int orgId,
+            int createdByUserId,
+            InboxFieldConfig? approvalSetting,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var approverRoles = new List<int>();
+            if (approvalSetting?.ApproverOneId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverOneId.Value);
+            }
+            if (approvalSetting?.ApproverTwoId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverTwoId.Value);
+            }
+            if (approvalSetting?.ApproverThreeId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverThreeId.Value);
+            }
+
+            if (approverRoles.Count == 0)
+            {
+                _logger.LogWarning("No custom approver roles resolved for OrgId={OrgId}.", orgId);
+                return;
+            }
+
+            var insertSql = _mappingProvider.GetScriptForOperation("Inbox", "InsertSrApprover")?.Script
+                ?? throw new Exception("SQL for Inbox/InsertSrApprover missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+
+            foreach (var entry in inboxEntries)
+            {
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    var level = 1;
+                    foreach (var roleId in approverRoles)
+                    {
+                        await conn.ExecuteAsync(insertSql, new
+                        {
+                            orgId = entry.OrgId,
+                            srNo = entry.SrNo,
+                            approverLevel = level,
+                            allocatedRoleId = roleId,
+                            reportingMgr = (int?)null,
+                            decisionBy = createdByUserId,
+                            decisionOn = DateTime.UtcNow,
+                            approverDecision = 1
+                        }, tx);
+                        level++;
+                    }
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        srStatus = 2
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                }
+                catch
+                {
+                    await tx.RollbackAsync(token);
+                    throw;
+                }
+            }
+        }
+
+        private sealed record ManagerUpdateInboxEntry(int SrNo, int OrgId, string AgentCode, string SupervisorCode);
 
         private static void AddError(ManagerUpdateResponse resp, int row, string? agent, string? supervisor, string msg)
         {

@@ -1,4 +1,4 @@
-CREATE SCHEMA IF NOT EXISTS hms;
+	CREATE SCHEMA IF NOT EXISTS hms;
 CREATE TABLE hms.permissions (
     permission_id   VARCHAR(30) NOT NULL,
     permission_name VARCHAR(100) NOT NULL,

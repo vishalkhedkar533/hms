@@ -70,7 +70,7 @@ namespace HMS.Controllers
             }
             user.CreatedBy = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier));
             user.OrgId = orgId;
-
+            user.Username = user.Username.ToLower();
             // 3. Handle Password Hashing (Logic usually stays in Service or Controller)
             user.Password = BCrypt.Net.BCrypt.HashPassword(userDto.Password);
 

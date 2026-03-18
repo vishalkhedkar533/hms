@@ -162,118 +162,24 @@ VALUES
     (:p_orgid, 'BackgroundJobUserPassword', 2, 'SchedulerPassword', NULL, true);
 
 --execute this at end, to grant administrator access to the new menu items
+INSERT INTO hms.roles
+(role_name, description, is_system_role, is_active, created_by, created_date, modified_by, modified_date, rowversion, orgid)
+VALUES('admin', 'administrator', true, true, null, null, null, null, 1, :p_orgid);
+
 insert into hms.role_menu_mapping (role_id,menu_id,is_visible,is_enabled,created_by,created_date,orgid)
 select 1, mm.menu_id,true,true ,'System', now(), :p_orgid
 from hms.menu_master mm
 where not exists (select 1 from hms.role_menu_mapping rmm  where mm.menu_id  = rmm.menu_id and rmm.role_id  = 1);
 
 INSERT INTO hms.hms_dashboard (orgid, channel_id, subchannel_id, totalentitiescount, totalentitiesthismonth, entitiescreatedthismonth, entitiescreatedprevmonth, entitiesterminatedthismonth, entitiesterminatedprevmonth, entitiesnetthismonth, licenseexpiringin30months, certificateexpiringin30months, mbgcriterianotmet) 
-VALUES (2, null, null, 150.0, 12.0, 8.0, 5.0, 2.0, 1.0, 6.0, 3.0, 4.0, 1.0);
-/*
-INSERT INTO hmsmaster.location_master (channel_id, sub_channel_id, orgid, location_code, location_desc, is_active, created_by, created_date)
- VALUES 
-(:p_Channel, :p_SubChannel,:p_orgid, 'HO', 'Head Office', true, :p_CreatedBy, now()),
-(:p_Channel, :p_SubChannel,:p_orgid, 'RO', 'Region Office', true, :p_CreatedBy, now()),
-(:p_Channel, :p_SubChannel,:p_orgid, 'AR', 'Area Office', true, :p_CreatedBy, now()),
-(:p_Channel, :p_SubChannel,:p_orgid, 'BR', 'Branch Office', true, :p_CreatedBy, now());
+VALUES (:p_orgid, null, null, 150.0, 12.0, 8.0, 5.0, 2.0, 1.0, 6.0, 3.0, 4.0, 1.0);
 
+INSERT INTO hms."user"
+(username, email_id, mobile_number, "password", is_active, is_locked, last_login_date, created_by, created_date, modified_by, modified_date, rowversion, password_changed_date, "LockoutEndTime", failedloginattempts, lockoutendtime, orgid, reporting_mgr, refreshtoken, refreshtokenexpirytime)
+VALUES('systemadmin', 'systemadmin@dummy.com', '9999999999', '$2a$11$TWfvFQUKtWysi2cBD0I2MOrJAQAQTiX.S4b2.WzlUVivbR4KrexFa', true, false, now(), 12, now(), null, null, 1, null, null, 0, null, :p_orgid, null, null, null);
 
-INSERT INTO hmsmaster.designation_master
-(designation_code, designation_name, designation_level, is_active, created_by, created_date, modified_by, modified_date, rowversion, channel_id, orgid, hierarchy_path, code_format, sub_channel_id)
-values
-('BNHOC', 'Head of Bancassurnace', 1, true, :p_CreatedBy, now(), null, null, 1, :p_Channel, :p_orgid, null, 'BN', :p_SubChannel),
-('BNRMGR', 'Regional Manager', 1, true, :p_CreatedBy, now(), null, null, 1, :p_Channel, :p_orgid, null, 'BN', :p_SubChannel),
-('BNAMGR', 'Area Manager', 1, true, :p_CreatedBy, now(), null, null, 1, :p_Channel, :p_orgid, null, 'BN', :p_SubChannel),
-('BNRLMGR', 'Relation Manager', 1, true, :p_CreatedBy, now(), null, null, 1, :p_Channel, :p_orgid, null, 'BN', :p_SubChannel),
-('BNOFF', 'Officers', 1, true, :p_CreatedBy, now(), null, null, 1, :p_Channel, :p_orgid, null, 'BN', :p_SubChannel),
-('BNSTAFF', 'Staff', 1, true, :p_CreatedBy, now(), null, null, 1, :p_Channel, :p_orgid, null, 'BN', :p_SubChannel);
-
-
-update hmsmaster.designation_master
-set hierarchy_path = 
-case designation_id 
-when 21 then '21'
-when 22 then '21.22'
-when 23 then '21.22.23'
-when 24 then '21.22.23.24'
-when 25 then '21.22.23.24.25'
-when 26 then '21.22.23.24.25.26'
-end::ltree
-where channel_id = 6 and sub_channel_id = 23;
-
-INSERT INTO hmsmaster.branch_master
-(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
-VALUES(2, 'Agency-HO', 'Agency Head Office', 'Agency Head Office Address', 1, '', '', true, 1, 'system', now());
-
-INSERT INTO hmsmaster.branch_master
-(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
-VALUES
-(2, 'WESTZO', 'Agency West Zone Office', 'Agency West Zone Address', 1, '', '', true, 2, 'system', now()),
-(2, 'NORTHZO', 'Agency West Zone Office', 'Agency North Zone Address', 1, '', '', true, 2, 'system', now()),
-(2, 'SOUTHZO', 'Agency South Zone Office', 'Agency South Zone Address', 1, '', '', true, 2, 'system', now()),
-(2, 'EASTZO', 'Agency East Zone Office', 'Agency East Zone Address', 1, '', '', true, 2, 'system', now());
-
-INSERT INTO hmsmaster.branch_master
-(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
-VALUES
-(2, 'MAHAREG', 'Maharastra Region Office', 'Maharastra Region Address', 1, '', '', true, 3, 'system', now()),
-(2, 'GUJREG', 'Gujarat Region Office', 'Gujarat Region Address', 1, '', '', true, 3, 'system', now()),
-(2, 'RAJAREG', 'Rajastan Region Office', 'Rajastan Region Address', 1, '', '', true, 3, 'system', now());
-
-
-INSERT INTO hmsmaster.branch_master
-(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
-VALUES
-(2, 'MUMAREA', 'Mumbai Area Office', 'Mumbai Area Address', 1, '', '', true, 4, 'system', now()),
-(2, 'BEEDAREA', 'Beed Area Office', 'Beed Area Address', 1, '', '', true, 4, 'system', now()),
-(2, 'PUNEAREA', 'Pune Area Office', 'Pune Area Address', 1, '', '', true, 4, 'system', now());
-
-
-INSERT INTO hmsmaster.branch_master
-(orgid, branch_code, branch_name, address, state, phone_number, email_id, is_active, location_master_id, created_by, created_date)
-VALUES
-(2, 'THANEUNT', 'Thane Unit Office', 'Thane Unit Address', 1, '', '', true, 5, 'system', now()),
-(2, 'ANDHERIUNIT', 'Andheri Unit Office', 'Andheri Unit Address', 1, '', '', true, 5, 'system', now()),
-(2, 'COLABAUNIT', 'Colaba unit Office', 'Colaba Unit Address', 1, '', '', true, 5, 'system', now()),
-(2, 'SHIRURUNIT', 'Shirur unit Office', 'Shirur Unit Address', 1, '', '', true, 5, 'system', now()),
-(2, 'KATRAJUNIT', 'Katraj unit Office', 'Katraj Unit Address', 1, '', '', true, 5, 'system', now());
-
-
-INSERT INTO hmsmaster.channel_branch_heirarchy
-(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
-VALUES(2, 1, 1, '6', 'system', now(), 'system', now(), now(), now());
-
-INSERT INTO hmsmaster.channel_branch_heirarchy
-(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
-VALUES(2, 1, 1, '6.7', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.8', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.9', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.10', 'system', now(), 'system', now(), now(), now());
-
-INSERT INTO hmsmaster.channel_branch_heirarchy
-(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
-values
-(2, 1, 1, '6.7.11', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.12', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.13', 'system', now(), 'system', now(), now(), now());
-
-
-INSERT INTO hmsmaster.channel_branch_heirarchy
-(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
-values
-(2, 1, 1, '6.7.11.17', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.11.18', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.11.19', 'system', now(), 'system', now(), now(), now());
-
-
-INSERT INTO hmsmaster.channel_branch_heirarchy
-(orgid, channel_id, sub_channel_id, hierarchy_path, created_by, created_date, modified_by, modified_date, effective_from_date, effective_to_date)
-values
-(2, 1, 1, '6.7.11.17.20', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.11.17.21', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.11.17.22', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.11.18.23', 'system', now(), 'system', now(), now(), now()),
-(2, 1, 1, '6.7.11.19.24', 'system', now(), 'system', now(), now(), now());
-
- *
- * */
+INSERT INTO hms.user_role_mapping
+(user_id, role_id, is_primary, effective_from, effective_to, is_active, created_by, created_date, modified_by, modified_date, rowversion, orgid)
+select u.user_id, r.role_id, true, null, null, true ,  u.user_id, now(), null, null, 1, :p_orgid
+from hms."user" u join hms.roles r on u.orgid = r.orgid 
+where u.orgid = :p_orgid;

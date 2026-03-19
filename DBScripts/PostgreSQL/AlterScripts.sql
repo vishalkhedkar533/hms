@@ -672,3 +672,5 @@ update hmsmaster.keyvalueentries  set entrydesc='UpdateAgentManager' where  entr
 ALTER TABLE hmsmaster.branch_master ADD COLUMN is_reported_to_regulator boolean NOT NULL DEFAULT false;
 
 ALTER TABLE hmsmaster.branch_master ADD COLUMN regulator_code varchar(50) null;
+
+alter table hms."user"  add column branch_id int4 null

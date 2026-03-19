@@ -2637,3 +2637,23 @@ CREATE TABLE hms.user_audit_trail
     rowversion     INT4,
     constraint fk_user_audit_trail_user FOREIGN KEY (user_id) REFERENCES hms."user"(user_id) ON DELETE CASCADE
 );
+
+CREATE TABLE hmsmaster.user_branch_mapping (
+    user_branch_mapping_id   serial PRIMARY KEY,
+    orgid        int4 NOT NULL,
+    user_id     int4 NOT NULL,
+    branch_id    int8 NOT NULL,
+    created_by   int4 NOT NULL,
+    created_date timestamp NOT NULL DEFAULT now(),
+    modified_by  int4 NULL,
+    modified_date timestamp NULL,
+    CONSTRAINT uq_user_branch_mapping UNIQUE (orgid, user_id, branch_id),
+    CONSTRAINT fk_ubm_org
+        FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+    CONSTRAINT fk_ubm_agent
+        FOREIGN KEY (user_id) REFERENCES hms."user"(user_id),
+    CONSTRAINT fk_ubm_branch
+        FOREIGN KEY (branch_id) REFERENCES hmsmaster.branch_master(branch_id),
+    CONSTRAINT created_by_fkey 
+    	FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE cascade
+);

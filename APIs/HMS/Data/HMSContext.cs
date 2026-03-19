@@ -11,6 +11,7 @@ namespace HMS.Data
             : base(options)
         { }
         public DbSet<User> Users => Set<User>();
+        public DbSet<UserBranchMapping> UserBranchMappings => Set<UserBranchMapping>();
         public DbSet<Role> Roles => Set<Role>();
         //public DbSet<RoleMaster> RoleMasters => Set<RoleMaster>();
         public DbSet<MenuMaster> MenuMasters => Set<MenuMaster>();
@@ -153,6 +154,35 @@ namespace HMS.Data
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserBranchMapping>(entity =>
+            {
+                entity.ToTable("user_branch_mapping", "hmsmaster");
+
+                entity.HasOne(x => x.Organisation)
+                    .WithMany()
+                    .HasForeignKey(x => x.OrgId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.CreatedByUser)
+                    .WithMany()
+                    .HasForeignKey(x => x.CreatedBy)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(x => x.Branch)
+                    .WithMany()
+                    .HasForeignKey(x => x.BranchId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.OrgId, x.UserId, x.BranchId })
+                    .IsUnique()
+                    .HasDatabaseName("uq_user_branch_mapping");
             });
 
             modelBuilder.Entity<Organisation>(entity =>

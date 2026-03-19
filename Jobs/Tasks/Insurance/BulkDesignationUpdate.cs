@@ -156,8 +156,8 @@ namespace Tasks.Insurance
                     await writer.CompleteAsync(token);
                 }
 
-                var rejectedTempRows = new List<object>();
-                var approvedTempRows = new List<object>();
+                var InvaildRows = new List<object>();
+                var CleanTempRows = new List<object>();
                 string? successDataEncoded = null;
                 byte[]? errorFile = null;
 
@@ -195,7 +195,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Invalid Agent Code.";
                             AddError(response, item.RowNumber, agentCode, designation, reason);
-                            rejectedTempRows.Add(new
+                            InvaildRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 Designation = designation,
@@ -211,7 +211,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Invalid Designation.";
                             AddError(response, item.RowNumber, agentCode, designation, reason);
-                            rejectedTempRows.Add(new
+                            InvaildRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 Designation = designation,
@@ -223,7 +223,7 @@ namespace Tasks.Insurance
                             continue;
                         }
 
-                        approvedTempRows.Add(new
+                        CleanTempRows.Add(new
                         {
                             AgentCode = agentCode,
                             Designation = designation,
@@ -235,16 +235,16 @@ namespace Tasks.Insurance
 
                 response.FailedRows = response.Errors.Count;
 
-                if (rejectedTempRows.Count > 0)
+                if (InvaildRows.Count > 0)
                 {
                     var reviewSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "UpdateTempDesignationUpdateReview")?.Script
                         ?? throw new Exception("SQL for DesignationUpdate/UpdateTempDesignationUpdateReview missing");
-                    await conn.ExecuteAsync(reviewSql, rejectedTempRows);
+                    await conn.ExecuteAsync(reviewSql, InvaildRows);
                 }
 
-                if (approvedTempRows.Count > 0)
+                if (CleanTempRows.Count > 0)
                 {
-                    var inboxEntries = await InsertInboxEntriesAsync(conn, task, approvedTempRows, createdByUserId);
+                    var inboxEntries = await InsertInboxEntriesAsync(conn, task, CleanTempRows, createdByUserId);
                     var componentId = await ResolveComponentIdAsync(conn);
 
                     var approvalSettingsql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script
@@ -267,7 +267,7 @@ namespace Tasks.Insurance
                     {
                         var statusSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "UpdateTempDesignationUpdateStatus")?.Script
                             ?? throw new Exception("SQL for DesignationUpdate/UpdateTempDesignationUpdateStatus missing");
-                        await conn.ExecuteAsync(statusSql, approvedTempRows);
+                        await conn.ExecuteAsync(statusSql, CleanTempRows);
 
                         if (useDefaultApprover.Value)
                         {

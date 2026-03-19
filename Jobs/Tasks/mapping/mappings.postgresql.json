@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=143"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=144"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -191,7 +191,7 @@
       },
       "GetAgentsByCode": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
+        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode, location_code AS LocationCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
       },
       "GetLocationsForValidation": {
         "ConnectionStringKey": "CommissionDB",
@@ -213,6 +213,14 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "UPDATE hms.temp_location_update SET status = 'PENDING APPROVAL' WHERE orgid = @OrgId AND agent_code = @AgentCode AND location_code = @LocationCode AND current_channel = @CurrentChannel AND current_subchannel = @CurrentSubChannel AND comment = 'Proceed'"
       },
+      "UpdateTempLocationUpdateApprovedStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_location_update SET status = 'Approved' WHERE orgid = @OrgId AND agent_code = @AgentCode AND location_code = @LocationCode AND current_channel = @CurrentChannel AND current_subchannel = @CurrentSubChannel"
+      },
+      "UpdateAgentLocation": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.agent SET location_code = @LocationMasterId, modified_by = @ModifiedBy, modified_date = NOW() WHERE agent_id = @AgentId"
+      },
       "ApplyTempLocationUpdate": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "WITH candidates AS (\n    SELECT t.agent_code, t.location_code, t.current_channel, t.current_subchannel, t.orgid, a.agent_id, lm.location_master_id\n    FROM hms.temp_location_update t\n    JOIN hms.agent a ON a.agent_code = t.agent_code AND a.orgid = t.orgid\n    JOIN hmsmaster.location_master lm ON lm.location_code = t.location_code AND lm.orgid = t.orgid\n    JOIN hmsmaster.channel_master cm ON cm.channel_id = lm.channel_id AND cm.orgid = lm.orgid AND cm.channel_name = t.current_channel\n    JOIN hmsmaster.subchannel_master scm ON scm.sub_channel_id = lm.sub_channel_id AND scm.orgid = lm.orgid AND scm.subchannel_name = t.current_subchannel\n    WHERE t.orgid = @OrgId\n      AND t.comment = 'Proceed'\n), updated AS (\n    UPDATE hms.agent a\n    SET location_code = c.location_master_id, modified_by = @ModifiedBy, modified_date = NOW()\n    FROM candidates c\n    WHERE a.agent_id = c.agent_id\n    RETURNING a.agent_id\n)\nSELECT COUNT(*) FROM updated;"
@@ -229,7 +237,7 @@
       },
       "GetAgentsByCode": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
+        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode, agent_status_code AS AgentStatusCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
       },
       "GetStatusUpdateComponentId": {
         "ConnectionStringKey": "CommissionDB",
@@ -246,6 +254,14 @@
       "UpdateTempStatusUpdateStatus": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "UPDATE hms.temp_status_update SET processing_status = 'PENDING APPROVAL' WHERE orgid = @OrgId AND agent_code = @AgentCode AND status = @Status AND business_effective_date = @BusinessEffectiveDate AND comments = 'Proceed'"
+      },
+      "UpdateTempStatusUpdateApprovedStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_status_update SET processing_status = 'Approved' WHERE orgid = @OrgId AND agent_code = @AgentCode AND status = @Status AND processing_status IN ('PENDING APPROVAL','Pending')"
+      },
+      "UpdateAgentStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.agent SET agent_status_code = @Status, modified_by = @ModifiedBy, modified_date = NOW() WHERE agent_id = @AgentId"
       },
       "ApplyTempStatusUpdate": {
         "ConnectionStringKey": "CommissionDB",

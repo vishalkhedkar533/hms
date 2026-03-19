@@ -227,10 +227,11 @@ namespace Tasks.Insurance
                     var useDefaultApprover = approvalsetting?.UseDefaultApprover;
                     if (useDefaultApprover is null)
                     {
-                        var applySql = _mappingProvider.GetScriptForOperation("StatusUpdate", "ApplyTempStatusUpdate")?.Script
-                            ?? throw new Exception("SQL for StatusUpdate/ApplyTempStatusUpdate missing");
-                        response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = createdByUserId.ToString() });
-                        await MarkInboxAsApprovedAsync(conn, inboxEntries);
+                        response.UpdatedRows = await ApplyStatusUpdatesWithoutApprovalAsync(
+                            conn,
+                            inboxEntries,
+                            createdByUserId,
+                            token);
                     }
                     else
                     {
@@ -345,7 +346,7 @@ namespace Tasks.Insurance
                     ObjectReference = task.Id
                 });
 
-                inboxEntries.Add(new StatusUpdateInboxEntry(srNo, taskOrgId));
+                inboxEntries.Add(new StatusUpdateInboxEntry(srNo, taskOrgId, agentCode, status));
             }
 
             return inboxEntries;
@@ -509,7 +510,105 @@ namespace Tasks.Insurance
             }
         }
 
-        private sealed record StatusUpdateInboxEntry(int SrNo, int OrgId);
+        private async Task<int> ApplyStatusUpdatesWithoutApprovalAsync(
+            DbConnection conn,
+            List<StatusUpdateInboxEntry> inboxEntries,
+            int decisionBy,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return 0;
+            }
+
+            var agentsSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "GetAgentsByCode")?.Script
+                ?? throw new Exception("SQL for StatusUpdate/GetAgentsByCode missing");
+            var updateSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "UpdateAgentStatus")?.Script
+                ?? throw new Exception("SQL for StatusUpdate/UpdateAgentStatus missing");
+            var auditSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertAuditTrail")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/InsertAuditTrail missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+            var updateTempApprovedSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "UpdateTempStatusUpdateApprovedStatus")?.Script
+                ?? throw new Exception("SQL for StatusUpdate/UpdateTempStatusUpdateApprovedStatus missing");
+
+            var orgIdToCodes = inboxEntries
+                .GroupBy(x => x.OrgId)
+                .ToDictionary(g => g.Key, g => g.Select(x => x.AgentCode)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray());
+
+            var agentLookup = new Dictionary<(int OrgId, string AgentCode), Agent>();
+            foreach (var entry in orgIdToCodes)
+            {
+                var agents = await conn.QueryAsync<Agent>(agentsSql, new { orgId = entry.Key, codes = entry.Value });
+                foreach (var agent in agents.Where(a => !string.IsNullOrWhiteSpace(a.AgentCode)))
+                {
+                    agentLookup[(entry.Key, agent.AgentCode)] = agent;
+                }
+            }
+
+            var updatedRows = 0;
+            foreach (var serviceRequest in inboxEntries)
+            {
+                if (!agentLookup.TryGetValue((serviceRequest.OrgId, serviceRequest.AgentCode), out var agent))
+                {
+                    _logger.LogWarning("Auto-apply skipped for SrNo={SrNo}; agent code {AgentCode} not found.", serviceRequest.SrNo, serviceRequest.AgentCode);
+                    continue;
+                }
+
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    await conn.ExecuteAsync(updateSql, new
+                    {
+                        AgentId = agent.AgentId,
+                        Status = serviceRequest.Status,
+                        ModifiedBy = decisionBy.ToString()
+                    }, tx);
+
+                    await conn.ExecuteAsync(auditSql, new
+                    {
+                        AgentId = agent.AgentId,
+                        FieldName = "AgentStatusCode",
+                        OldValue = agent.AgentStatusCode ?? string.Empty,
+                        NewValue = serviceRequest.Status,
+                        ChangedBy = decisionBy.ToString(),
+                        ChangedDate = DateTime.UtcNow,
+                        CreatedBy = decisionBy.ToString(),
+                        CreatedDate = DateTime.UtcNow,
+                        ModifiedBy = decisionBy.ToString(),
+                        ModifiedDate = DateTime.UtcNow
+                    }, tx);
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = serviceRequest.OrgId,
+                        srNo = serviceRequest.SrNo,
+                        srStatus = 3
+                    }, tx);
+
+                    await conn.ExecuteAsync(updateTempApprovedSql, new
+                    {
+                        OrgId = serviceRequest.OrgId,
+                        AgentCode = serviceRequest.AgentCode,
+                        Status = serviceRequest.Status
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                    updatedRows++;
+                }
+                catch (Exception ex)
+                {
+                    await tx.RollbackAsync(token);
+                    _logger.LogError(ex, "Failed to auto-apply status update for SrNo={SrNo}", serviceRequest.SrNo);
+                }
+            }
+
+            return updatedRows;
+        }
+
+        private sealed record StatusUpdateInboxEntry(int SrNo, int OrgId, string AgentCode, string Status);
 
         private static void AddError(StatusUpdateResponse resp, int row, string? agent, string? status, string msg)
         {

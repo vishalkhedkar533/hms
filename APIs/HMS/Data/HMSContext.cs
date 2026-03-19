@@ -61,6 +61,7 @@ namespace HMS.Data
         public DbSet<RevenueComm> RevenueComms { get; set; }
         public DbSet<OrganizationPeriod> OrganizationPeriods { get; set; }
         public DbSet<AgentBranchMapping> AgentBranchMappings => Set<AgentBranchMapping>();
+        public DbSet<UserAuditTrail> UserAuditTrails => Set<UserAuditTrail>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -144,6 +145,16 @@ namespace HMS.Data
                       .HasConstraintName("fk_menu")
                       .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.Entity<UserAuditTrail>(entity =>
+            {
+                entity.ToTable("user_audit_trail", "hms");
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<Organisation>(entity =>
             {
                 entity.ToTable("organisation", "app_subscription");

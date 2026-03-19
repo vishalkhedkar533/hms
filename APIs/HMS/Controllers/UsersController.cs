@@ -79,6 +79,21 @@ namespace HMS.Controllers
             try
             {
                 await _context.SaveChangesAsync();
+
+                var createdBy = user.CreatedBy.ToString();
+                var now = DateTime.UtcNow;
+                var createAuditEntries = new List<UserAuditTrail>
+                {
+                    new UserAuditTrail { OrgId = orgId, UserId = user.UserId, FieldName = "Username", OldValue = string.Empty, NewValue = user.Username, ChangedBy = createdBy, ChangedDate = now, CreatedBy = createdBy, CreatedDate = now },
+                    new UserAuditTrail { OrgId = orgId, UserId = user.UserId, FieldName = "EmailId", OldValue = string.Empty, NewValue = user.EmailId, ChangedBy = createdBy, ChangedDate = now, CreatedBy = createdBy, CreatedDate = now },
+                    new UserAuditTrail { OrgId = orgId, UserId = user.UserId, FieldName = "MobileNumber", OldValue = string.Empty, NewValue = user.MobileNumber ?? string.Empty, ChangedBy = createdBy, ChangedDate = now, CreatedBy = createdBy, CreatedDate = now },
+                    new UserAuditTrail { OrgId = orgId, UserId = user.UserId, FieldName = "IsActive", OldValue = string.Empty, NewValue = user.IsActive.ToString(), ChangedBy = createdBy, ChangedDate = now, CreatedBy = createdBy, CreatedDate = now },
+                    new UserAuditTrail { OrgId = orgId, UserId = user.UserId, FieldName = "IsLocked", OldValue = string.Empty, NewValue = user.IsLocked.ToString(), ChangedBy = createdBy, ChangedDate = now, CreatedBy = createdBy, CreatedDate = now },
+                    new UserAuditTrail { OrgId = orgId, UserId = user.UserId, FieldName = "ReportingMgr", OldValue = string.Empty, NewValue = user.ReportingMgr?.ToString() ?? string.Empty, ChangedBy = createdBy, ChangedDate = now, CreatedBy = createdBy, CreatedDate = now }
+                };
+
+                await _context.UserAuditTrails.AddRangeAsync(createAuditEntries);
+                await _context.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -151,8 +166,16 @@ namespace HMS.Controllers
                 return Conflict(response);
             }
 
-            // 3. Map updated values from DTO to the existing Entity
-            // AutoMapper will use the Condition(s) we set up previously to only update non-null fields
+            var oldValues = new Dictionary<string, string?>
+            {
+                ["Username"] = existingUser.Username,
+                ["EmailId"] = existingUser.EmailId,
+                ["MobileNumber"] = existingUser.MobileNumber,
+                ["IsActive"] = existingUser.IsActive.ToString(),
+                ["IsLocked"] = existingUser.IsLocked.ToString(),
+                ["ReportingMgr"] = existingUser.ReportingMgr?.ToString()
+            };
+
             _mapper.Map(userDto, existingUser);
 
             // Update Reporting Manager
@@ -162,7 +185,40 @@ namespace HMS.Controllers
             existingUser.ModifiedBy = currentUserId; // Or handle as int if your Model requires it
             existingUser.ModifiedDate = DateTime.UtcNow;
 
-            // 5. Save changes
+            var newValues = new Dictionary<string, string?>
+            {
+                ["Username"] = existingUser.Username,
+                ["EmailId"] = existingUser.EmailId,
+                ["MobileNumber"] = existingUser.MobileNumber,
+                ["IsActive"] = existingUser.IsActive.ToString(),
+                ["IsLocked"] = existingUser.IsLocked.ToString(),
+                ["ReportingMgr"] = existingUser.ReportingMgr?.ToString()
+            };
+
+            var changedOn = DateTime.UtcNow;
+            var auditEntries = oldValues
+                .Where(kvp => (kvp.Value ?? string.Empty) != (newValues[kvp.Key] ?? string.Empty))
+                .Select(kvp => new UserAuditTrail
+                {
+                    OrgId = orgId,
+                    UserId = existingUser.UserId,
+                    FieldName = kvp.Key,
+                    OldValue = kvp.Value,
+                    NewValue = newValues[kvp.Key],
+                    ChangedBy = currentUserId.ToString(),
+                    ChangedDate = changedOn,
+                    CreatedBy = currentUserId.ToString(),
+                    CreatedDate = changedOn,
+                    ModifiedBy = currentUserId.ToString(),
+                    ModifiedDate = changedOn
+                })
+                .ToList();
+
+            if (auditEntries.Any())
+            {
+                await _context.UserAuditTrails.AddRangeAsync(auditEntries);
+            }
+
             await _context.SaveChangesAsync();
 
             response.responseHeader = new HmsSResponseHeader

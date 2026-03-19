@@ -53,6 +53,8 @@ namespace Models.DTO
         public List<DesignationMaster>? designations { get; set; } = null;
         public List<LocationMaster>? locations { get; set; } = null;
         public List<BranchMaster>? branches { get; set; } = null;
+        public List<AgentBranchMapping>? agentBranchMappings { get; set; } = null;
+        public List<RegulatorBranchDto>? regulatorBranches { get; set; } = null;
         public List<UiFieldsSetting>? uiFieldsSettings { get; set; } = null;
         public List<DesignationNode>? designationHierarchy { get; set; } = null;
         public List<BranchNode>? branchHierarchy { get; set; } = null;
@@ -62,7 +64,9 @@ namespace Models.DTO
         public List<UserOtherDetails>? UserOtherDetails { get; set; } = null;
         public List<ApprovalSetting>? ApprovalSettings { get; set; } = null;
         public GraphRevenueCommDto? GraphRevenueCommData { get; set; } = null;
+        public List<BranchListDto>? BranchList { get; set; } = null;
     }
+
 
     public class UpdatedAgentField
     {

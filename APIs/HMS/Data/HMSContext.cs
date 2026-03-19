@@ -60,6 +60,7 @@ namespace HMS.Data
         public DbSet<ApprovalSetting> ApprovalSettings { get; set; }
         public DbSet<RevenueComm> RevenueComms { get; set; }
         public DbSet<OrganizationPeriod> OrganizationPeriods { get; set; }
+        public DbSet<AgentBranchMapping> AgentBranchMappings => Set<AgentBranchMapping>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -168,6 +169,30 @@ namespace HMS.Data
             modelBuilder.Entity<ChannelBranchHeirarchy>()
                 .Property(e => e.HierarchyPath)
                 .HasColumnType("ltree");
+
+            modelBuilder.Entity<AgentBranchMapping>(entity =>
+            {
+                entity.ToTable("agent_branch_mapping", "hmsmaster");
+
+                entity.HasOne(x => x.Organisation)
+                    .WithMany()
+                    .HasForeignKey(x => x.OrgId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.Agent)
+                    .WithMany()
+                    .HasForeignKey(x => x.AgentId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(x => x.Branch)
+                    .WithMany()
+                    .HasForeignKey(x => x.BranchId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(x => new { x.OrgId, x.AgentId, x.BranchId })
+                    .IsUnique()
+                    .HasDatabaseName("uq_agent_branch_mapping");
+            });
 
             modelBuilder.HasDefaultSchema("hms");
         }

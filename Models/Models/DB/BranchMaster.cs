@@ -97,7 +97,24 @@ namespace Models.DB
         public long Id { get; set; }
         public string? Name { get; set; }
         public string? Code { get; set; }
+        public bool IsReportedToRegulator { get; set; }
+        public string? RegulatorCode { get; set; }
         public List<BranchNode> ReportingBranches { get; set; } = new();
+    }
+
+    public class SearchBranch
+    {
+        public bool? IsActive { get; set; }
+    }
+
+    public class BranchListDto
+    {
+        public long BranchId { get; set; }
+        public string? BranchCode { get; set; }
+        public string? BranchName { get; set; }
+        public bool IsActive { get; set; }
+        public bool IsReportedToRegulator { get; set; }
+        public string? RegulatorCode { get; set; }
     }
     public class BranchMasterProfile : Profile
     {

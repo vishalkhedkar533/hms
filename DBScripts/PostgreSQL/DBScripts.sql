@@ -2599,3 +2599,23 @@ CREATE TABLE hms.hms_dashboard (
     mbgcriterianotmet float8 NULL,
     CONSTRAINT fk_orgid FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid)
 );
+
+CREATE TABLE hmsmaster.agent_branch_mapping (
+    mapping_id   serial PRIMARY KEY,
+    orgid        int4 NOT NULL,
+    agent_id     int4 NOT NULL,
+    branch_id    int8 NOT NULL,
+    created_by   int4 NOT NULL,
+    created_date timestamp NOT NULL DEFAULT now(),
+    modified_by  int4 NULL,
+    modified_date timestamp NULL,
+    CONSTRAINT uq_agent_branch_mapping UNIQUE (orgid, agent_id, branch_id),
+    CONSTRAINT fk_abm_org
+        FOREIGN KEY (orgid) REFERENCES app_subscription.organisation(orgid),
+    CONSTRAINT fk_abm_agent
+        FOREIGN KEY (agent_id) REFERENCES hms.agent(agent_id),
+    CONSTRAINT fk_abm_branch
+        FOREIGN KEY (branch_id) REFERENCES hmsmaster.branch_master(branch_id),
+    CONSTRAINT created_by_fkey 
+    	FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE cascade
+);

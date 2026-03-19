@@ -668,3 +668,7 @@ alter table hms.sr_approver  add column comments varchar(2000)
 update hmsmaster.keyvalueentries  set entrydesc='BulkAgentCreate' where  entryidentity=1
 
 update hmsmaster.keyvalueentries  set entrydesc='UpdateAgentManager' where  entryidentity=8
+
+ALTER TABLE hmsmaster.branch_master ADD COLUMN is_reported_to_regulator boolean NOT NULL DEFAULT false;
+
+ALTER TABLE hmsmaster.branch_master ADD COLUMN regulator_code varchar(50) null;

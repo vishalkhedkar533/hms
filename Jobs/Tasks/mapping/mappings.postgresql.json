@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=141"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=142"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -159,6 +159,10 @@
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT designation_id AS DesignationId, designation_name AS DesignationName FROM hmsmaster.designation_master WHERE orgid = @orgId AND designation_name = ANY(@names)"
       },
+      "GetDesignationUpdateComponentId": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE uc.label = 'Individual Agent Action' LIMIT 1"
+      },
       "BulkCopyTempDesignationUpdate": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "COPY hms.temp_designation_update (agent_code, designation, business_effective_date, processing_status, comments, reason, orgid) FROM STDIN (FORMAT BINARY)"
@@ -173,7 +177,7 @@
       },
       "ApplyTempDesignationUpdate": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "WITH candidates AS (\n    SELECT t.agent_code, t.designation, t.business_effective_date, t.orgid, a.agent_id, d.designation_id\n    FROM hms.temp_designation_update t\n    JOIN hms.agent a ON a.agent_code = t.agent_code AND a.orgid = t.orgid\n    JOIN hmsmaster.designation_master d ON d.designation_name = t.designation AND d.orgid = t.orgid\n    WHERE t.orgid = @OrgId\n      AND t.comments = 'Proceed'\n      AND t.processing_status = 'Pending'\n      AND t.business_effective_date = CURRENT_DATE\n), updated AS (\n    UPDATE hms.agent a\n    SET designation_code = c.designation_id, modified_by = @ModifiedBy, modified_date = NOW()\n    FROM candidates c\n    WHERE a.agent_id = c.agent_id\n    RETURNING a.agent_id\n), temp_updated AS (\n    UPDATE hms.temp_designation_update t\n    SET processing_status = 'Updated'\n    FROM candidates c\n    WHERE t.orgid = c.orgid\n      AND t.agent_code = c.agent_code\n      AND t.designation = c.designation\n      AND t.business_effective_date = c.business_effective_date\n    RETURNING t.agent_code\n)\nSELECT COUNT(*) FROM updated;"
+        "Script": "WITH candidates AS (\n    SELECT \n        t.agent_code, \n        t.designation, \n        t.business_effective_date, \n        t.orgid, \n        a.agent_id, \n        d.designation_id\n    FROM hms.temp_designation_update t\n    JOIN hms.agent a \n        ON a.agent_code = t.agent_code \n        AND a.orgid = t.orgid\n    JOIN hmsmaster.designation_master d \n        ON d.designation_name = t.designation \n        AND d.orgid = t.orgid\n    WHERE t.orgid = @OrgId\n      AND t.comments = 'Proceed'\n), \nupdated AS (\n    UPDATE hms.agent a\n    SET \n        designation_code = c.designation_id, \n        modified_by = @ModifiedBy, \n        modified_date = NOW()\n    FROM candidates c\n    WHERE a.agent_id = c.agent_id\n    RETURNING a.agent_id\n), \ntemp_updated AS (\n    UPDATE hms.temp_designation_update t\n    SET processing_status = 'Approved'\n    FROM candidates c\n    WHERE t.orgid = c.orgid\n      AND t.agent_code = c.agent_code\n      AND t.designation = c.designation\n      AND t.business_effective_date = c.business_effective_date\n    RETURNING t.agent_code\n)\nSELECT COUNT(*) FROM updated;"
       },
       "UpdateTask": {
         "ConnectionStringKey": "CommissionDB",
@@ -187,11 +191,15 @@
       },
       "GetAgentsByCode": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
+        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode, location_code AS LocationCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
       },
       "GetLocationsForValidation": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "SELECT lm.location_master_id AS LocationMasterId, lm.location_code AS LocationCode, cm.channel_name AS ChannelName, scm.subchannel_name AS SubChannelName FROM hmsmaster.location_master lm JOIN hmsmaster.channel_master cm ON cm.channel_id = lm.channel_id AND cm.orgid = lm.orgid JOIN hmsmaster.subchannel_master scm ON scm.sub_channel_id = lm.sub_channel_id AND scm.orgid = lm.orgid WHERE lm.orgid = @orgId AND lm.location_code = ANY(@locationCodes) AND cm.channel_name = ANY(@channels) AND scm.subchannel_name = ANY(@subChannels)"
+      },
+      "GetLocationUpdateComponentId": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE uc.label = 'Individual Agent Action' LIMIT 1"
       },
       "BulkCopyTempLocationUpdate": {
         "ConnectionStringKey": "CommissionDB",
@@ -204,6 +212,14 @@
       "UpdateTempLocationUpdateStatus": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "UPDATE hms.temp_location_update SET status = 'PENDING APPROVAL' WHERE orgid = @OrgId AND agent_code = @AgentCode AND location_code = @LocationCode AND current_channel = @CurrentChannel AND current_subchannel = @CurrentSubChannel AND comment = 'Proceed'"
+      },
+      "UpdateTempLocationUpdateApprovedStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_location_update SET status = 'Approved' WHERE orgid = @OrgId AND agent_code = @AgentCode AND location_code = @LocationCode AND current_channel = @CurrentChannel AND current_subchannel = @CurrentSubChannel"
+      },
+      "UpdateAgentLocation": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.agent SET location_code = @LocationMasterId, modified_by = @ModifiedBy, modified_date = NOW() WHERE agent_id = @AgentId"
       },
       "ApplyTempLocationUpdate": {
         "ConnectionStringKey": "CommissionDB",
@@ -221,7 +237,11 @@
       },
       "GetAgentsByCode": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
+        "Script": "SELECT agent_id AS AgentId, agent_code AS AgentCode, agent_status_code AS AgentStatusCode FROM hms.agent WHERE orgid = @orgId AND agent_code = ANY(@codes)"
+      },
+      "GetStatusUpdateComponentId": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc  WHERE uc.label = 'Individual Agent Action' LIMIT 1"
       },
       "BulkCopyTempStatusUpdate": {
         "ConnectionStringKey": "CommissionDB",
@@ -234,6 +254,14 @@
       "UpdateTempStatusUpdateStatus": {
         "ConnectionStringKey": "CommissionDB",
         "Script": "UPDATE hms.temp_status_update SET processing_status = 'PENDING APPROVAL' WHERE orgid = @OrgId AND agent_code = @AgentCode AND status = @Status AND business_effective_date = @BusinessEffectiveDate AND comments = 'Proceed'"
+      },
+      "UpdateTempStatusUpdateApprovedStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.temp_status_update SET processing_status = 'Approved' WHERE orgid = @OrgId AND agent_code = @AgentCode AND status = @Status AND processing_status IN ('PENDING APPROVAL','Pending')"
+      },
+      "UpdateAgentStatus": {
+        "ConnectionStringKey": "CommissionDB",
+        "Script": "UPDATE hms.agent SET agent_status_code = @Status, modified_by = @ModifiedBy, modified_date = NOW() WHERE agent_id = @AgentId"
       },
       "ApplyTempStatusUpdate": {
         "ConnectionStringKey": "CommissionDB",

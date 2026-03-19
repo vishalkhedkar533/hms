@@ -5,6 +5,8 @@ using MiniExcelLibs;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
+using System.Data.Common;
+using System.Text.Json;
 using Tasks.Models;
 
 namespace Tasks.Insurance
@@ -85,7 +87,12 @@ namespace Tasks.Insurance
                     continue;
                 }
 
-                var username = string.IsNullOrWhiteSpace(task.CreatedBy) ? "System" : task.CreatedBy;
+                if (!int.TryParse(task.CreatedBy, out var createdByUserId) || createdByUserId <= 0)
+                {
+                    _logger.LogError("Invalid CreatedBy in fileprocessingtasks. TaskId={TaskId}, CreatedBy={CreatedBy}", task.Id, task.CreatedBy);
+                    continue;
+                }
+
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var tempRows = new List<(string AgentCode, string Designation, DateOnly BusinessEffectiveDate, int OrgId, string Comments, string Reason)>();
                 var todayRows = new List<(int RowNumber, string AgentCode, string Designation, DateOnly BusinessEffectiveDate)>();
@@ -120,10 +127,12 @@ namespace Tasks.Insurance
                     var effectiveDateOnly = DateOnly.FromDateTime(effectiveDate.Value);
                     tempRows.Add((agentCode, designation, effectiveDateOnly, task.OrgId ?? orgId, "Proceed", string.Empty));
 
-                    if (effectiveDateOnly == today)
-                    {
-                        todayRows.Add((item.RowNumber, agentCode, designation, effectiveDateOnly));
-                    }
+                    todayRows.Add((item.RowNumber, agentCode, designation, effectiveDateOnly));
+
+                    //if (effectiveDateOnly == today)
+                    //{
+                    //    todayRows.Add((item.RowNumber, agentCode, designation, effectiveDateOnly));
+                    //}
                 }
 
                 if (tempRows.Any())
@@ -147,8 +156,8 @@ namespace Tasks.Insurance
                     await writer.CompleteAsync(token);
                 }
 
-                var rejectedTempRows = new List<object>();
-                var approvedTempRows = new List<object>();
+                var InvaildRows = new List<object>();
+                var CleanTempRows = new List<object>();
                 string? successDataEncoded = null;
                 byte[]? errorFile = null;
 
@@ -186,7 +195,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Invalid Agent Code.";
                             AddError(response, item.RowNumber, agentCode, designation, reason);
-                            rejectedTempRows.Add(new
+                            InvaildRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 Designation = designation,
@@ -202,7 +211,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Invalid Designation.";
                             AddError(response, item.RowNumber, agentCode, designation, reason);
-                            rejectedTempRows.Add(new
+                            InvaildRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 Designation = designation,
@@ -214,7 +223,7 @@ namespace Tasks.Insurance
                             continue;
                         }
 
-                        approvedTempRows.Add(new
+                        CleanTempRows.Add(new
                         {
                             AgentCode = agentCode,
                             Designation = designation,
@@ -226,51 +235,308 @@ namespace Tasks.Insurance
 
                 response.FailedRows = response.Errors.Count;
 
-                if (rejectedTempRows.Count > 0)
+                if (InvaildRows.Count > 0)
                 {
                     var reviewSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "UpdateTempDesignationUpdateReview")?.Script
                         ?? throw new Exception("SQL for DesignationUpdate/UpdateTempDesignationUpdateReview missing");
-                    await conn.ExecuteAsync(reviewSql, rejectedTempRows);
+                    await conn.ExecuteAsync(reviewSql, InvaildRows);
                 }
 
-                if (approvedTempRows.Count > 0)
+                if (CleanTempRows.Count > 0)
                 {
-                    var statusSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "UpdateTempDesignationUpdateStatus")?.Script
-                        ?? throw new Exception("SQL for DesignationUpdate/UpdateTempDesignationUpdateStatus missing");
-                    await conn.ExecuteAsync(statusSql, approvedTempRows);
+                    var inboxEntries = await InsertInboxEntriesAsync(conn, task, CleanTempRows, createdByUserId);
+                    var componentId = await ResolveComponentIdAsync(conn);
+
+                    var approvalSettingsql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script
+                        ?? throw new Exception("SQL for approval setting missing");
+                    var approvalsetting = componentId.HasValue
+                        ? await conn.QuerySingleOrDefaultAsync<InboxFieldConfig>(approvalSettingsql, new { componentId = componentId.Value, orgId = task.OrgId ?? orgId })
+                        : null;
+
+                    var useDefaultApprover = approvalsetting?.UseDefaultApprover;
+
+                    if (useDefaultApprover is null)
+                    {
+                        response.UpdatedRows = await ApplyDesignationUpdatesWithoutApprovalAsync(
+                            conn,
+                            inboxEntries,
+                            createdByUserId,
+                            token);
+                    }
+                    else
+                    {
+                        var statusSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "UpdateTempDesignationUpdateStatus")?.Script
+                            ?? throw new Exception("SQL for DesignationUpdate/UpdateTempDesignationUpdateStatus missing");
+                        await conn.ExecuteAsync(statusSql, CleanTempRows);
+
+                        if (useDefaultApprover.Value)
+                        {
+                            await AssignUserHierarchyApproversAsync(conn, inboxEntries, task.OrgId ?? orgId, createdByUserId, token);
+                            _logger.LogInformation("Designation update entries are pending approval using user hierarchy. TaskId={TaskId}", task.Id);
+                        }
+                        else
+                        {
+                            await AssignCustomHierarchyApproversAsync(conn, inboxEntries, task.OrgId ?? orgId, createdByUserId, approvalsetting, token);
+                            _logger.LogInformation("Designation update entries are pending approval using custom hierarchy. TaskId={TaskId}", task.Id);
+                        }
+                    }
                 }
-
-                // var applySql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "ApplyTempDesignationUpdate")?.Script
-                //     ?? throw new Exception("SQL for DesignationUpdate/ApplyTempDesignationUpdate missing");
-                // response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = username });
-
-                response.UpdatedRows = 0;
 
                 response.FailedRows = response.Errors.Count;
 
-                var updateTaskSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "UpdateTask")?.Script
-                    ?? throw new Exception("SQL for DesignationUpdate/UpdateTask missing");
+                //var updateTaskSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "UpdateTask")?.Script
+                //    ?? throw new Exception("SQL for DesignationUpdate/UpdateTask missing");
 
-                var errorMessageEncoded = errorFile != null
-                    ? Convert.ToBase64String(errorFile)
-                    : null;
+                //var errorMessageEncoded = errorFile != null
+                //    ? Convert.ToBase64String(errorFile)
+                //    : null;
 
-                await conn.ExecuteAsync(updateTaskSql, new
-                {
-                    Id = task.Id,
-                    RowsProcessed = response.UpdatedRows,
-                    TotalRows = response.TotalRows,
-                    RowsRejected = response.FailedRows,
-                    ErrorMessage = errorMessageEncoded,
-                    SuccessData = successDataEncoded,
-                    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
-                });
+                //await conn.ExecuteAsync(updateTaskSql, new
+                //{
+                //    Id = task.Id,
+                //    RowsProcessed = response.UpdatedRows,
+                //    TotalRows = response.TotalRows,
+                //    RowsRejected = response.FailedRows,
+                //    ErrorMessage = errorMessageEncoded,
+                //    SuccessData = successDataEncoded,
+                //    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
+                //});
 
                 _logger.LogInformation("BulkDesignationUpdate completed for TaskId={TaskId}. UpdatedRows={UpdatedRows}, FailedRows={FailedRows}",
                     task.Id, response.UpdatedRows, response.FailedRows);
             }
 
             _logger.LogInformation("BulkDesignationUpdate job finished");
+        }
+
+        private async Task<int?> ResolveComponentIdAsync(DbConnection conn)
+        {
+            var componentSql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "GetDesignationUpdateComponentId")?.Script;
+            if (string.IsNullOrWhiteSpace(componentSql))
+            {
+                return null;
+            }
+            return await conn.QuerySingleOrDefaultAsync<int?>(componentSql);
+        }
+
+        private async Task<List<DesignationUpdateInboxEntry>> InsertInboxEntriesAsync(
+            DbConnection conn,
+            FileProcessingTask task,
+            List<object> approvedRows,
+            int createdByUserId)
+        {
+            var taskOrgId = task.OrgId ?? orgId;
+            var componentId = await ResolveComponentIdAsync(conn);
+
+            int? allocatedToRole = null;
+            if (componentId.HasValue)
+            {
+                var approvalSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script;
+                if (!string.IsNullOrWhiteSpace(approvalSql))
+                {
+                    var setting = await conn.QuerySingleOrDefaultAsync<InboxFieldConfig>(approvalSql, new { componentId = componentId.Value, orgId = taskOrgId });
+                    if (setting != null && setting.UseDefaultApprover == false)
+                    {
+                        allocatedToRole = setting.ApproverOneId ?? setting.ApproverTwoId ?? setting.ApproverThreeId;
+                    }
+                }
+            }
+
+            var insertInboxSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertInboxEntry")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/InsertInboxEntry missing");
+
+            var inboxEntries = new List<DesignationUpdateInboxEntry>();
+            foreach (var row in approvedRows)
+            {
+                var agentCode = row.GetType().GetProperty("AgentCode")?.GetValue(row)?.ToString() ?? string.Empty;
+                var designation = row.GetType().GetProperty("Designation")?.GetValue(row)?.ToString() ?? string.Empty;
+                var effectiveDate = row.GetType().GetProperty("BusinessEffectiveDate")?.GetValue(row);
+
+                var requestorNote = JsonSerializer.Serialize(new[]
+                {
+                    new { FieldName = "AgentCode", OldValue = string.Empty, NewValue = agentCode },
+                    new { FieldName = "Designation", OldValue = string.Empty, NewValue = designation },
+                    new { FieldName = "BusinessEffectiveDate", OldValue = string.Empty, NewValue = effectiveDate?.ToString() ?? string.Empty }
+                });
+
+                var srNo = await conn.ExecuteScalarAsync<int>(insertInboxSql, new
+                {
+                    OrgId = taskOrgId,
+                    RequestDets = "Bulk Designation Updated",
+                    RequestorNote = requestorNote,
+                    CreatedBy = createdByUserId,
+                    CreatedDate = DateTime.UtcNow,
+                    SrStatus = 1,
+                    ComponentId = componentId,
+                    AllocatedToRole = allocatedToRole,
+                    ApprovalEndpoint = (string?)null,
+                    ApprovalPayload = (string?)null,
+                    ObjectName = "BulkDesignationUpdate",
+                    ObjectReference = task.Id
+                });
+
+                inboxEntries.Add(new DesignationUpdateInboxEntry(srNo, taskOrgId));
+            }
+
+            return inboxEntries;
+        }
+
+        private async Task MarkInboxAsApprovedAsync(DbConnection conn, List<DesignationUpdateInboxEntry> inboxEntries)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+
+            foreach (var entry in inboxEntries)
+            {
+                await conn.ExecuteAsync(updateInboxSql, new
+                {
+                    orgId = entry.OrgId,
+                    srNo = entry.SrNo,
+                    srStatus = 3
+                });
+            }
+        }
+
+        private async Task AssignUserHierarchyApproversAsync(
+            DbConnection conn,
+            List<DesignationUpdateInboxEntry> inboxEntries,
+            int orgId,
+            int createdByUserId,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var insertSql = _mappingProvider.GetScriptForOperation("Inbox", "InsertSrApprover")?.Script
+                ?? throw new Exception("SQL for Inbox/InsertSrApprover missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+            var reportingMgrSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
+                ?? throw new Exception("SQL for Inbox/GetManagerHierarchyRoles missing");
+
+            var reportingMgrId = await conn.QuerySingleOrDefaultAsync<int?>(reportingMgrSql, new { orgId, userId = createdByUserId });
+            if (!reportingMgrId.HasValue || reportingMgrId.Value <= 0)
+            {
+                _logger.LogWarning("No reporting manager resolved for OrgId={OrgId}, CreatedBy={CreatedBy}", orgId, createdByUserId);
+                return;
+            }
+
+            foreach (var entry in inboxEntries)
+            {
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    await conn.ExecuteAsync(insertSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        approverLevel = 1,
+                        allocatedRoleId = (int?)null,
+                        reportingMgr = reportingMgrId.Value,
+                        decisionBy = createdByUserId,
+                        decisionOn = DateTime.UtcNow,
+                        approverDecision = 1
+                    }, tx);
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        srStatus = 2
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                }
+                catch
+                {
+                    await tx.RollbackAsync(token);
+                    throw;
+                }
+            }
+        }
+
+        private async Task AssignCustomHierarchyApproversAsync(
+            DbConnection conn,
+            List<DesignationUpdateInboxEntry> inboxEntries,
+            int orgId,
+            int createdByUserId,
+            InboxFieldConfig? approvalSetting,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var approverRoles = new List<int>();
+            if (approvalSetting?.ApproverOneId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverOneId.Value);
+            }
+            if (approvalSetting?.ApproverTwoId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverTwoId.Value);
+            }
+            if (approvalSetting?.ApproverThreeId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverThreeId.Value);
+            }
+
+            if (approverRoles.Count == 0)
+            {
+                _logger.LogWarning("No custom approver roles resolved for OrgId={OrgId}.", orgId);
+                return;
+            }
+
+            var insertSql = _mappingProvider.GetScriptForOperation("Inbox", "InsertSrApprover")?.Script
+                ?? throw new Exception("SQL for Inbox/InsertSrApprover missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+
+            foreach (var entry in inboxEntries)
+            {
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    var level = 1;
+                    foreach (var roleId in approverRoles)
+                    {
+                        await conn.ExecuteAsync(insertSql, new
+                        {
+                            orgId = entry.OrgId,
+                            srNo = entry.SrNo,
+                            approverLevel = level,
+                            allocatedRoleId = roleId,
+                            reportingMgr = (int?)null,
+                            decisionBy = createdByUserId,
+                            decisionOn = DateTime.UtcNow,
+                            approverDecision = 1
+                        }, tx);
+                        level++;
+                    }
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        srStatus = 2
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                }
+                catch
+                {
+                    await tx.RollbackAsync(token);
+                    throw;
+                }
+            }
         }
 
         private static DateTime? ParseBusinessEffectiveDate(string? rawValue)
@@ -306,6 +572,8 @@ namespace Tasks.Insurance
             return null;
         }
 
+        private sealed record DesignationUpdateInboxEntry(int SrNo, int OrgId);
+
         private static void AddError(DesignationUpdateResponse resp, int row, string? agent, string? designation, string msg)
         {
             resp.Errors.Add(new DesignationUpdateError
@@ -315,6 +583,59 @@ namespace Tasks.Insurance
                 Designation = designation ?? string.Empty,
                 Message = msg
             });
+        }
+
+        private async Task<int> ApplyDesignationUpdatesWithoutApprovalAsync(
+            DbConnection conn,
+            List<DesignationUpdateInboxEntry> inboxEntries,
+            int decisionBy,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return 0;
+            }
+
+            var applySql = _mappingProvider.GetScriptForOperation("DesignationUpdate", "ApplyTempDesignationUpdate")?.Script
+                ?? throw new Exception("SQL for DesignationUpdate/ApplyTempDesignationUpdate missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+
+            var totalUpdatedRows = 0;
+            var orgIds = inboxEntries.Select(x => x.OrgId).Distinct().ToList();
+
+            await using var tx = await conn.BeginTransactionAsync(token);
+            try
+            {
+                foreach (var currentOrgId in orgIds)
+                {
+                    totalUpdatedRows += await conn.ExecuteScalarAsync<int>(applySql, new
+                    {
+                        OrgId = currentOrgId,
+                        ModifiedBy = decisionBy.ToString()
+                    }, tx);
+                }
+
+                foreach (var serviceRequest in inboxEntries)
+                {
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = serviceRequest.OrgId,
+                        srNo = serviceRequest.SrNo,
+                        srStatus = 3
+                    }, tx);
+                }
+
+                await tx.CommitAsync(token);
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync(token);
+                _logger.LogError(ex, "Failed to auto-apply designation updates without approval.");
+                throw;
+            }
+
+            return totalUpdatedRows;
         }
     }
 }

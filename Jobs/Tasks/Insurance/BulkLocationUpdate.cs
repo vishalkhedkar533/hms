@@ -5,6 +5,8 @@ using MiniExcelLibs;
 using Quartz;
 using Repository;
 using SharedModels.BackEndCalculation;
+using System.Data.Common;
+using System.Text.Json;
 using Tasks.Models;
 
 namespace Tasks.Insurance
@@ -82,6 +84,12 @@ namespace Tasks.Insurance
                 if (rows.Count == 0)
                 {
                     _logger.LogInformation("No rows found in file: {FilePath}", task.FilePath);
+                    continue;
+                }
+
+                if (!int.TryParse(task.CreatedBy, out var createdByUserId) || createdByUserId <= 0)
+                {
+                    _logger.LogError("Invalid CreatedBy in fileprocessingtasks. TaskId={TaskId}, CreatedBy={CreatedBy}", task.Id, task.CreatedBy);
                     continue;
                 }
 
@@ -254,9 +262,40 @@ namespace Tasks.Insurance
 
                 if (approvedTempRows.Count > 0)
                 {
-                    var statusSql = _mappingProvider.GetScriptForOperation("LocationUpdate", "UpdateTempLocationUpdateStatus")?.Script
-                        ?? throw new Exception("SQL for LocationUpdate/UpdateTempLocationUpdateStatus missing");
-                    await conn.ExecuteAsync(statusSql, approvedTempRows);
+                    var inboxEntries = await InsertInboxEntriesAsync(conn, task, approvedTempRows, createdByUserId);
+                    var componentId = await ResolveComponentIdAsync(conn);
+
+                    var approvalSettingsql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script
+                        ?? throw new Exception("SQL for approval setting missing");
+                    var approvalsetting = componentId.HasValue
+                        ? await conn.QuerySingleOrDefaultAsync<InboxFieldConfig>(approvalSettingsql, new { componentId = componentId.Value, orgId = task.OrgId ?? orgId })
+                        : null;
+
+                    var useDefaultApprover = approvalsetting?.UseDefaultApprover;
+                    if (useDefaultApprover is null)
+                    {
+                        var applySql = _mappingProvider.GetScriptForOperation("LocationUpdate", "ApplyTempLocationUpdate")?.Script
+                            ?? throw new Exception("SQL for LocationUpdate/ApplyTempLocationUpdate missing");
+                        response.UpdatedRows = await conn.ExecuteScalarAsync<int>(applySql, new { OrgId = task.OrgId ?? orgId, ModifiedBy = createdByUserId.ToString() });
+                        await MarkInboxAsApprovedAsync(conn, inboxEntries);
+                    }
+                    else
+                    {
+                        var statusSql = _mappingProvider.GetScriptForOperation("LocationUpdate", "UpdateTempLocationUpdateStatus")?.Script
+                            ?? throw new Exception("SQL for LocationUpdate/UpdateTempLocationUpdateStatus missing");
+                        await conn.ExecuteAsync(statusSql, approvedTempRows);
+
+                        if (useDefaultApprover.Value)
+                        {
+                            await AssignUserHierarchyApproversAsync(conn, inboxEntries, task.OrgId ?? orgId, createdByUserId, token);
+                            _logger.LogInformation("Location update entries are pending approval using user hierarchy. TaskId={TaskId}", task.Id);
+                        }
+                        else
+                        {
+                            await AssignCustomHierarchyApproversAsync(conn, inboxEntries, task.OrgId ?? orgId, createdByUserId, approvalsetting, token);
+                            _logger.LogInformation("Location update entries are pending approval using custom hierarchy. TaskId={TaskId}", task.Id);
+                        }
+                    }
                 }
 
                 // var applySql = _mappingProvider.GetScriptForOperation("LocationUpdate", "ApplyTempLocationUpdate")?.Script
@@ -286,6 +325,239 @@ namespace Tasks.Insurance
             _logger.LogInformation("BulkLocationUpdate job finished");
         }
 
+        private async Task<int?> ResolveComponentIdAsync(DbConnection conn)
+        {
+            var componentSql = _mappingProvider.GetScriptForOperation("LocationUpdate", "GetLocationUpdateComponentId")?.Script;
+            if (string.IsNullOrWhiteSpace(componentSql))
+            {
+                return null;
+            }
+
+            return await conn.QuerySingleOrDefaultAsync<int?>(componentSql);
+        }
+
+        private async Task<List<LocationUpdateInboxEntry>> InsertInboxEntriesAsync(
+            DbConnection conn,
+            FileProcessingTask task,
+            List<object> approvedRows,
+            int createdByUserId)
+        {
+            var taskOrgId = task.OrgId ?? orgId;
+            var componentId = await ResolveComponentIdAsync(conn);
+
+            int? allocatedToRole = null;
+            if (componentId.HasValue)
+            {
+                var approvalSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script;
+                if (!string.IsNullOrWhiteSpace(approvalSql))
+                {
+                    var setting = await conn.QuerySingleOrDefaultAsync<InboxFieldConfig>(approvalSql, new { componentId = componentId.Value, orgId = taskOrgId });
+                    if (setting != null && setting.UseDefaultApprover == false)
+                    {
+                        allocatedToRole = setting.ApproverOneId ?? setting.ApproverTwoId ?? setting.ApproverThreeId;
+                    }
+                }
+            }
+
+            var insertInboxSql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "InsertInboxEntry")?.Script
+                ?? throw new Exception("SQL for ManagerUpdate/InsertInboxEntry missing");
+
+            var inboxEntries = new List<LocationUpdateInboxEntry>();
+            foreach (var row in approvedRows)
+            {
+                var agentCode = row.GetType().GetProperty("AgentCode")?.GetValue(row)?.ToString() ?? string.Empty;
+                var locationCode = row.GetType().GetProperty("LocationCode")?.GetValue(row)?.ToString() ?? string.Empty;
+                var currentChannel = row.GetType().GetProperty("CurrentChannel")?.GetValue(row)?.ToString() ?? string.Empty;
+                var currentSubChannel = row.GetType().GetProperty("CurrentSubChannel")?.GetValue(row)?.ToString() ?? string.Empty;
+
+                var requestorNote = JsonSerializer.Serialize(new[]
+                {
+                    new { FieldName = "AgentCode", OldValue = string.Empty, NewValue = agentCode },
+                    new { FieldName = "LocationCode", OldValue = string.Empty, NewValue = locationCode },
+                    new { FieldName = "CurrentChannel", OldValue = string.Empty, NewValue = currentChannel },
+                    new { FieldName = "CurrentSubChannel", OldValue = string.Empty, NewValue = currentSubChannel }
+                });
+
+                var srNo = await conn.ExecuteScalarAsync<int>(insertInboxSql, new
+                {
+                    OrgId = taskOrgId,
+                    RequestDets = "Bulk Location Updated",
+                    RequestorNote = requestorNote,
+                    CreatedBy = createdByUserId,
+                    CreatedDate = DateTime.UtcNow,
+                    SrStatus = 1,
+                    ComponentId = componentId,
+                    AllocatedToRole = allocatedToRole,
+                    ApprovalEndpoint = (string?)null,
+                    ApprovalPayload = (string?)null,
+                    ObjectName = "BulkLocationUpdate",
+                    ObjectReference = task.Id
+                });
+
+                inboxEntries.Add(new LocationUpdateInboxEntry(srNo, taskOrgId));
+            }
+
+            return inboxEntries;
+        }
+
+        private async Task MarkInboxAsApprovedAsync(DbConnection conn, List<LocationUpdateInboxEntry> inboxEntries)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+
+            foreach (var entry in inboxEntries)
+            {
+                await conn.ExecuteAsync(updateInboxSql, new
+                {
+                    orgId = entry.OrgId,
+                    srNo = entry.SrNo,
+                    srStatus = 3
+                });
+            }
+        }
+
+        private async Task AssignUserHierarchyApproversAsync(
+            DbConnection conn,
+            List<LocationUpdateInboxEntry> inboxEntries,
+            int orgId,
+            int createdByUserId,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var insertSql = _mappingProvider.GetScriptForOperation("Inbox", "InsertSrApprover")?.Script
+                ?? throw new Exception("SQL for Inbox/InsertSrApprover missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+            var reportingMgrSql = _mappingProvider.GetScriptForOperation("Inbox", "GetManagerHierarchyRoles")?.Script
+                ?? throw new Exception("SQL for Inbox/GetManagerHierarchyRoles missing");
+
+            var reportingMgrId = await conn.QuerySingleOrDefaultAsync<int?>(reportingMgrSql, new { orgId, userId = createdByUserId });
+            if (!reportingMgrId.HasValue || reportingMgrId.Value <= 0)
+            {
+                _logger.LogWarning("No reporting manager resolved for OrgId={OrgId}, CreatedBy={CreatedBy}", orgId, createdByUserId);
+                return;
+            }
+
+            foreach (var entry in inboxEntries)
+            {
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    await conn.ExecuteAsync(insertSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        approverLevel = 1,
+                        allocatedRoleId = (int?)null,
+                        reportingMgr = reportingMgrId.Value,
+                        decisionBy = createdByUserId,
+                        decisionOn = DateTime.UtcNow,
+                        approverDecision = 1
+                    }, tx);
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        srStatus = 2
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                }
+                catch
+                {
+                    await tx.RollbackAsync(token);
+                    throw;
+                }
+            }
+        }
+
+        private async Task AssignCustomHierarchyApproversAsync(
+            DbConnection conn,
+            List<LocationUpdateInboxEntry> inboxEntries,
+            int orgId,
+            int createdByUserId,
+            InboxFieldConfig? approvalSetting,
+            CancellationToken token)
+        {
+            if (inboxEntries.Count == 0)
+            {
+                return;
+            }
+
+            var approverRoles = new List<int>();
+            if (approvalSetting?.ApproverOneId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverOneId.Value);
+            }
+            if (approvalSetting?.ApproverTwoId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverTwoId.Value);
+            }
+            if (approvalSetting?.ApproverThreeId is > 0)
+            {
+                approverRoles.Add(approvalSetting.ApproverThreeId.Value);
+            }
+
+            if (approverRoles.Count == 0)
+            {
+                _logger.LogWarning("No custom approver roles resolved for OrgId={OrgId}.", orgId);
+                return;
+            }
+
+            var insertSql = _mappingProvider.GetScriptForOperation("Inbox", "InsertSrApprover")?.Script
+                ?? throw new Exception("SQL for Inbox/InsertSrApprover missing");
+            var updateInboxSql = _mappingProvider.GetScriptForOperation("Inbox", "UpdateInboxStatus")?.Script
+                ?? throw new Exception("SQL for Inbox/UpdateInboxStatus missing");
+
+            foreach (var entry in inboxEntries)
+            {
+                await using var tx = await conn.BeginTransactionAsync(token);
+                try
+                {
+                    var level = 1;
+                    foreach (var roleId in approverRoles)
+                    {
+                        await conn.ExecuteAsync(insertSql, new
+                        {
+                            orgId = entry.OrgId,
+                            srNo = entry.SrNo,
+                            approverLevel = level,
+                            allocatedRoleId = roleId,
+                            reportingMgr = (int?)null,
+                            decisionBy = createdByUserId,
+                            decisionOn = DateTime.UtcNow,
+                            approverDecision = 1
+                        }, tx);
+                        level++;
+                    }
+
+                    await conn.ExecuteAsync(updateInboxSql, new
+                    {
+                        orgId = entry.OrgId,
+                        srNo = entry.SrNo,
+                        srStatus = 2
+                    }, tx);
+
+                    await tx.CommitAsync(token);
+                }
+                catch
+                {
+                    await tx.RollbackAsync(token);
+                    throw;
+                }
+            }
+        }
+
         private static string BuildLocationKey(string locationCode, string channel, string subChannel)
         {
             return $"{locationCode.Trim().ToLowerInvariant()}|{channel.Trim().ToLowerInvariant()}|{subChannel.Trim().ToLowerInvariant()}";
@@ -313,5 +585,7 @@ namespace Tasks.Insurance
             int OrgId,
             string Comment,
             string Reason);
+
+        private sealed record LocationUpdateInboxEntry(int SrNo, int OrgId);
     }
 }

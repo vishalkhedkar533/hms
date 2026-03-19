@@ -43,6 +43,13 @@ namespace Models.DB
         [Column("is_active")]
         public bool IsActive { get; set; }
 
+        [Column("is_reported_to_regulator")]
+        public bool IsReportedToRegulator { get; set; }
+
+        [MaxLength(50)]
+        [Column("regulator_code")]
+        public string? RegulatorCode { get; set; }
+
         // FOREIGN KEY PROPERTY
         [Column("location_master_id")]
         public long? LocationMasterId { get; set; } // int8 -> long?
@@ -79,6 +86,8 @@ namespace Models.DB
         [EmailAddress]
         public string? EmailId { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool IsReportedToRegulator { get; set; }
+        public string? RegulatorCode { get; set; }
         public long? LocationMasterId { get; set; }
         public long? ParentBranchId { get; set; } 
     }

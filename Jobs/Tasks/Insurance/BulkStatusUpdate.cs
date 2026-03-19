@@ -126,11 +126,13 @@ namespace Tasks.Insurance
 
                     var effectiveDateOnly = DateOnly.FromDateTime(effectiveDate.Value);
                     tempRows.Add((agentCode, status, effectiveDateOnly, task.OrgId ?? orgId, "Proceed", string.Empty));
+                    
+                    todayRows.Add((item.RowNumber, agentCode, status, effectiveDateOnly));
 
-                    if (effectiveDateOnly == today)
-                    {
-                        todayRows.Add((item.RowNumber, agentCode, status, effectiveDateOnly));
-                    }
+                    //if (effectiveDateOnly == today)
+                    //{
+                    //    todayRows.Add((item.RowNumber, agentCode, status, effectiveDateOnly));
+                    //}
                 }
 
                 if (tempRows.Any())
@@ -154,8 +156,8 @@ namespace Tasks.Insurance
                     await writer.CompleteAsync(token);
                 }
 
-                var rejectedTempRows = new List<object>();
-                var approvedTempRows = new List<object>();
+                var InvalidTempRows = new List<object>();
+                var cleanTempRows = new List<object>();
                 string? successDataEncoded = null;
                 byte[]? errorFile = null;
 
@@ -182,7 +184,7 @@ namespace Tasks.Insurance
                         {
                             var reason = "Invalid Agent Code.";
                             AddError(response, item.RowNumber, agentCode, status, reason);
-                            rejectedTempRows.Add(new
+                            InvalidTempRows.Add(new
                             {
                                 AgentCode = agentCode,
                                 Status = status,
@@ -194,7 +196,7 @@ namespace Tasks.Insurance
                             continue;
                         }
 
-                        approvedTempRows.Add(new
+                        cleanTempRows.Add(new
                         {
                             AgentCode = agentCode,
                             Status = status,
@@ -206,16 +208,16 @@ namespace Tasks.Insurance
 
                 response.FailedRows = response.Errors.Count;
 
-                if (rejectedTempRows.Count > 0)
+                if (InvalidTempRows.Count > 0)
                 {
                     var reviewSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "UpdateTempStatusUpdateReview")?.Script
                         ?? throw new Exception("SQL for StatusUpdate/UpdateTempStatusUpdateReview missing");
-                    await conn.ExecuteAsync(reviewSql, rejectedTempRows);
+                    await conn.ExecuteAsync(reviewSql, InvalidTempRows);
                 }
 
-                if (approvedTempRows.Count > 0)
+                if (cleanTempRows.Count > 0)
                 {
-                    var inboxEntries = await InsertInboxEntriesAsync(conn, task, approvedTempRows, createdByUserId);
+                    var inboxEntries = await InsertInboxEntriesAsync(conn, task, cleanTempRows, createdByUserId);
                     var componentId = await ResolveComponentIdAsync(conn);
 
                     var approvalSettingsql = _mappingProvider.GetScriptForOperation("ManagerUpdate", "GetApprovalSettingForComponent")?.Script
@@ -237,7 +239,7 @@ namespace Tasks.Insurance
                     {
                         var statusSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "UpdateTempStatusUpdateStatus")?.Script
                             ?? throw new Exception("SQL for StatusUpdate/UpdateTempStatusUpdateStatus missing");
-                        await conn.ExecuteAsync(statusSql, approvedTempRows);
+                        await conn.ExecuteAsync(statusSql, cleanTempRows);
 
                         if (useDefaultApprover.Value)
                         {
@@ -254,23 +256,23 @@ namespace Tasks.Insurance
 
                 response.FailedRows = response.Errors.Count;
 
-                var updateTaskSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "UpdateTask")?.Script
-                    ?? throw new Exception("SQL for StatusUpdate/UpdateTask missing");
+                //var updateTaskSql = _mappingProvider.GetScriptForOperation("StatusUpdate", "UpdateTask")?.Script
+                //    ?? throw new Exception("SQL for StatusUpdate/UpdateTask missing");
 
-                var errorMessageEncoded = errorFile != null
-                    ? Convert.ToBase64String(errorFile)
-                    : null;
+                //var errorMessageEncoded = errorFile != null
+                //    ? Convert.ToBase64String(errorFile)
+                //    : null;
 
-                await conn.ExecuteAsync(updateTaskSql, new
-                {
-                    Id = task.Id,
-                    RowsProcessed = response.UpdatedRows,
-                    TotalRows = response.TotalRows,
-                    RowsRejected = response.FailedRows,
-                    ErrorMessage = errorMessageEncoded,
-                    SuccessData = successDataEncoded,
-                    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
-                });
+                //await conn.ExecuteAsync(updateTaskSql, new
+                //{
+                //    Id = task.Id,
+                //    RowsProcessed = response.UpdatedRows,
+                //    TotalRows = response.TotalRows,
+                //    RowsRejected = response.FailedRows,
+                //    ErrorMessage = errorMessageEncoded,
+                //    SuccessData = successDataEncoded,
+                //    Status = response.Errors.Any() ? "CompletedWithErrors" : "Completed"
+                //});
 
                 _logger.LogInformation("BulkStatusUpdate completed for TaskId={TaskId}. UpdatedRows={UpdatedRows}, FailedRows={FailedRows}",
                     task.Id, response.UpdatedRows, response.FailedRows);

@@ -4,7 +4,7 @@
       "Fetch": {
         "ConnectionStringKey": "CommissionDB",
         "Function": "GetActiveJobs",
-        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=144"
+        "Script": "SELECT job_config_id, job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at,TargetType,TargetMethod,Args,orgid FROM scheduler.job_config where enabled  = true and job_config_id=142"
       },
       "GetJobExtn": {
         "ConnectionStringKey": "CommissionDB",
@@ -241,7 +241,7 @@
       },
       "GetStatusUpdateComponentId": {
         "ConnectionStringKey": "CommissionDB",
-        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc WHERE LOWER(uc.label) IN ('status update', 'status') LIMIT 1"
+        "Script": "SELECT uc.component_id FROM hmsmaster.ui_components uc  WHERE uc.label = 'Individual Agent Action' LIMIT 1"
       },
       "BulkCopyTempStatusUpdate": {
         "ConnectionStringKey": "CommissionDB",

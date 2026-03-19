@@ -2619,3 +2619,21 @@ CREATE TABLE hmsmaster.agent_branch_mapping (
     CONSTRAINT created_by_fkey 
     	FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE cascade
 );
+
+CREATE TABLE hms.user_audit_trail
+(
+    user_audit_id  BIGSERIAL PRIMARY KEY,
+    user_id        INT4 NOT NULL,
+    orgid          INT4 NOT NULL,
+    field_name     VARCHAR(100) NOT NULL,
+    old_value      VARCHAR(255),
+    new_value      VARCHAR(255),
+    changed_by     VARCHAR(100) NOT NULL,
+    changed_date   TIMESTAMP NOT NULL,
+    created_by     VARCHAR(100) NOT NULL,
+    created_date   TIMESTAMP NOT NULL,
+    modified_by    VARCHAR(100),
+    modified_date  TIMESTAMP,
+    rowversion     INT4,
+    constraint fk_user_audit_trail_user FOREIGN KEY (user_id) REFERENCES hms."user"(user_id) ON DELETE CASCADE
+);

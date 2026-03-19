@@ -7,7 +7,7 @@ namespace Models.DB
     public class UserAuditTrail
     {
         [Key]
-        [Column("audit_id")]
+        [Column("user_audit_id")]
         public long AuditId { get; set; }
 
         [Column("orgid")]

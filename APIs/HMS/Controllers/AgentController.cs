@@ -2132,10 +2132,19 @@ namespace HMS.Controllers
                 }
 
                 var existingMappings = await _context.AgentBranchMappings
-                    .Where(x => x.OrgId == orgId && x.AgentId == dto.AgentId && branchIds.Contains(x.BranchId))
+                    .Where(x => x.OrgId == orgId && x.AgentId == dto.AgentId)
                     .ToListAsync();
 
                 var existingBranchIds = existingMappings.Select(x => x.BranchId).ToHashSet();
+
+                var mappingsToRemove = existingMappings
+                    .Where(x => !branchIds.Contains(x.BranchId))
+                    .ToList();
+
+                var mappingsToKeep = existingMappings
+                    .Where(x => branchIds.Contains(x.BranchId))
+                    .ToList();
+
                 var newMappings = branchIds
                     .Where(branchId => !existingBranchIds.Contains(branchId))
                     .Select(branchId => new AgentBranchMapping
@@ -2148,10 +2157,13 @@ namespace HMS.Controllers
                     })
                     .ToList();
 
+                if (mappingsToRemove.Count > 0)
+                    _context.AgentBranchMappings.RemoveRange(mappingsToRemove);
+
                 if (newMappings.Count > 0)
                     await _context.AgentBranchMappings.AddRangeAsync(newMappings);
 
-                foreach (var existing in existingMappings)
+                foreach (var existing in mappingsToKeep)
                 {
                     existing.ModifiedBy = loggedInUserId;
                     existing.ModifiedDate = DateTime.UtcNow;
@@ -2161,7 +2173,7 @@ namespace HMS.Controllers
 
                 response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 response.responseHeader.ErrorMessage = "Regulator branch mappings saved successfully.";
-                response.responseBody.agentBranchMappings = existingMappings.Concat(newMappings).ToList();
+                response.responseBody.agentBranchMappings = mappingsToKeep.Concat(newMappings).ToList();
                 return Ok(response);
             }
             catch (Exception ex)

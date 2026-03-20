@@ -1,9 +1,7 @@
 ﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
 using CommonLibrary;
 using HMS.Data;
 using HMS.Security;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Models.DB;
@@ -21,12 +19,15 @@ namespace HMS.Controllers
         private readonly IMapper _mapper;
         private readonly IAuthClaimService _authClaimService;
         private int orgId;
-        public UsersController(HMSContext context, IConfiguration config, IMapper mapper, IAuthClaimService authClaimService)
+        private readonly ILogger<UsersController> _logger;
+
+        public UsersController(HMSContext context, IConfiguration config, IMapper mapper, IAuthClaimService authClaimService, ILogger<UsersController> logger)
         {
             _context = context;
             _config = config;
             _mapper = mapper;
             _authClaimService = authClaimService;
+            _logger = logger;
         }
         //[Authorize]
         //[Authorize(Roles = "Admin")]
@@ -486,5 +487,135 @@ namespace HMS.Controllers
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [HttpPost("RegulatorUserBranch/Save")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        public async Task<IActionResult> SaveRegulatorUserBranchMapping([FromBody] UserBranchMappingDto dto)
+        {
+            var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (dto is null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return BadRequest(response);
+            }
+
+            var branchIds = dto.BranchIds?
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList() ?? new List<long>();
+
+            if (branchIds.Count == 0)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "At least one valid BranchId is required.";
+                return BadRequest(response);
+            }
+
+            try
+            {
+                var isUserValid = await _context.Users.AsNoTracking()
+                    .AnyAsync(x => x.UserId == dto.UserId && x.OrgId == orgId);
+
+                if (!isUserValid)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid UserId for the given Organisation.";
+                    return Conflict(response);
+                }
+
+                var branches = await _context.BranchMaster.AsNoTracking()
+                    .Where(x => x.OrgId == orgId && branchIds.Contains(x.BranchId))
+                    .ToListAsync();
+
+                if (branches.Count != branchIds.Count)
+                {
+                    var foundBranchIds = branches.Select(x => x.BranchId).ToHashSet();
+                    var missingBranchIds = branchIds.Where(id => !foundBranchIds.Contains(id));
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = $"Invalid BranchId(s) for the given Organisation: {string.Join(",", missingBranchIds)}";
+                    return Conflict(response);
+                }
+
+                var existingMappings = await _context.UserBranchMappings
+                    .Where(x => x.OrgId == orgId && x.UserId == dto.UserId && branchIds.Contains(x.BranchId))
+                    .ToListAsync();
+
+                var existingBranchIds = existingMappings.Select(x => x.BranchId).ToHashSet();
+                var newMappings = branchIds
+                    .Where(branchId => !existingBranchIds.Contains(branchId))
+                    .Select(branchId => new UserBranchMapping
+                    {
+                        OrgId = orgId,
+                        UserId = dto.UserId,
+                        BranchId = branchId,
+                        CreatedBy = loggedInUserId,
+                        CreatedDate = DateTime.UtcNow
+                    })
+                    .ToList();
+
+                if (newMappings.Count > 0)
+                    await _context.UserBranchMappings.AddRangeAsync(newMappings);
+
+                foreach (var existing in existingMappings)
+                {
+                    existing.ModifiedBy = loggedInUserId;
+                    existing.ModifiedDate = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "User regulator branch mappings saved successfully.";
+                response.responseBody.userBranchMappings = existingMappings.Concat(newMappings).ToList();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while saving user regulator branch mappings.");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("RegulatorUserBranch/FetchByUser/{UserId}")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        public async Task<ActionResult<HmsResponse>> GetRegulatorBranchesByAgent([FromRoute] int UserId)
+        {
+            HmsResponse response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            try
+            {
+                var userMappedBranches = await (
+                    from ubm in _context.UserBranchMappings.AsNoTracking()
+                    join bm in _context.BranchMaster.AsNoTracking() on ubm.BranchId equals bm.BranchId
+                    where ubm.OrgId == orgId && ubm.UserId == UserId
+                    select new BranchListDto
+                    {
+                        BranchId = bm.BranchId,
+                        BranchCode = bm.BranchCode,
+                        BranchName = bm.BranchName,
+                        IsActive = bm.IsActive,
+                        IsReportedToRegulator = bm.IsReportedToRegulator
+                    }).ToListAsync();
+
+                if (userMappedBranches == null || userMappedBranches.Count == 0)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "No branches mapped to the given UserId.";
+                    return NotFound(response);
+                }
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.BranchList = userMappedBranches;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while fetching regulator branches.");
+                return StatusCode(500, ex.Message);
+            }
+        }
     }
 }

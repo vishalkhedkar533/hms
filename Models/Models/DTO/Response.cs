@@ -54,6 +54,7 @@ namespace Models.DTO
         public List<LocationMaster>? locations { get; set; } = null;
         public List<BranchMaster>? branches { get; set; } = null;
         public List<AgentBranchMapping>? agentBranchMappings { get; set; } = null;
+        public List<UserBranchMapping>? userBranchMappings { get; set; } = null;
         public List<UiFieldsSetting>? uiFieldsSettings { get; set; } = null;
         public List<DesignationNode>? designationHierarchy { get; set; } = null;
         public List<BranchNode>? branchHierarchy { get; set; } = null;

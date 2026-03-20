@@ -306,35 +306,27 @@ namespace HMS.Controllers
                 agentDto.PageSize = 10;
             }
             HmsResponse hMSResponse = new HmsResponse();
-            // List<AgentDto> agents = new List<AgentDto>();
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            var userId = Convert.ToInt64(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+            var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+
             var agentDtos = await _db.ExecuteQueryAsync<AgentDto>(
                 "Agent",
-                "Search1",
+                "SearchTestForBranch",
                 new
                 {
                     p_searchcondition = agentDto.SearchCondition,
                     p_zone = agentDto.Zone,
+                    p_user_id = userId,
+                    p_orgid = orgId,
                     p_page_number = agentDto.PageNo,
                     p_page_size = agentDto.PageSize,
                     p_sort_column = agentDto.SortColumn,
                     p_sort_direction = agentDto.SortDirection
                 });
-            /*
-             *     p_agent_name VARCHAR DEFAULT NULL,
-    p_email VARCHAR DEFAULT NULL,
-    p_mobileno VARCHAR DEFAULT NULL,
-    p_pan_number VARCHAR DEFAULT NULL,
-    p_aadhaar_number VARCHAR DEFAULT NULL,
-    p_irda_license_number VARCHAR DEFAULT NULL,
-    p_gst_number VARCHAR DEFAULT NULL,
-    p_page_number INT DEFAULT 1,
-    p_page_size INT DEFAULT 10,
-    p_sort_column VARCHAR DEFAULT 'agent_id',
-    p_sort_direction VARCHAR DEFAULT 'ASC'
-             */
+
             if (agentDtos != null)
             {
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;

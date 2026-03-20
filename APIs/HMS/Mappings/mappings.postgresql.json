@@ -14,6 +14,10 @@
         "Function": "hms.get_agentSearch",
         "Script": "SELECT * from hms.get_agentSearch (@p_searchcondition,@p_zone, @p_page_number, @p_page_size, @p_sort_column, @p_sort_direction)"
       },
+      "SearchTestForBranch": {
+        "Function": "hms.get_agentsearchtestforbranch",
+        "Script": "SELECT * from hms.get_agentsearchtestforbranch (@p_searchcondition, @p_zone, @p_user_id, @p_orgid, @p_page_number, @p_page_size, @p_sort_column, @p_sort_direction)"
+      },
       "SaveAgentlicense": {
         "Function": "hms.insert_agent_license",
         "Script": "SELECT * from hms.insert_agent_license (@p_agent_id, @p_license_no, @p_license_type_code, @p_effective_from_date, @p_created_by,@p_effective_to_date,@p_license_status,@p_modified_by,@p_rowversion)"

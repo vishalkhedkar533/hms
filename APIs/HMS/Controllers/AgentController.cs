@@ -15,7 +15,6 @@ using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Security.Claims;
-using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -2069,7 +2068,7 @@ namespace HMS.Controllers
         }
 
         [HttpPost("RegulatorBranch/Save")]
-        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
+        [MenuAuthorize(AuthorisationConstants.AddRegulatedBranchByAgent)]
         public async Task<IActionResult> SaveRegulatorBranchMapping([FromBody] AgentBranchMappingDto dto)
         {
             var response = new HmsResponse();
@@ -2168,6 +2167,45 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while saving regulator branch mapping.");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("RegulatorBranch/FetchByAgent/{AgentId}")]
+        [MenuAuthorize(AuthorisationConstants.FetchRegulatedBranchByAgent)]
+        public async Task<ActionResult<HmsResponse>> GetRegulatorBranchesByAgent([FromRoute] int AgentId)
+        {
+            HmsResponse response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            try
+            {
+                var agentMappedBranches = await (
+                    from abm in _context.AgentBranchMappings.AsNoTracking()
+                    join bm in _context.BranchMaster.AsNoTracking() on abm.BranchId equals bm.BranchId
+                    where abm.OrgId == orgId && abm.AgentId == AgentId
+                    select new BranchListDto
+                    {
+                        BranchId = bm.BranchId,
+                        BranchCode = bm.BranchCode,
+                        BranchName = bm.BranchName,
+                        IsActive = bm.IsActive,
+                        IsReportedToRegulator = bm.IsReportedToRegulator
+                    }).ToListAsync();
+
+                if (agentMappedBranches == null || agentMappedBranches.Count == 0)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "No branches mapped to the given AgentId.";
+                    return NotFound(response);
+                }
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.BranchList = agentMappedBranches;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while fetching regulator branches.");
                 return StatusCode(500, ex.Message);
             }
         }

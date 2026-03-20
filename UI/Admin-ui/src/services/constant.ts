@@ -51,7 +51,12 @@ export const APIRoutes = {
   ACTIVATE_DEACTIVATE_USER: "activateDeactivateUser",
   LOCK_UNLOCK_USER: "lockUnlockUser",
   ORG_CONFIG:"orgConfiguration",
-  ORG_CONFIG_UPDATE:"orgConfigUpdate"
+  ORG_CONFIG_UPDATE:"orgConfigUpdate",
+  FETCH_ALL_AGENTS: 'fetchAllBranches',
+  SAVE_BRANCH_LINK: 'saveBranchLinkedAgent',
+  FETCH_BRANCHES_BY_AGENT: 'fetchBranchByAgent',
+  SAVE_BRANCH_LINKED_USER:'saveBranchLinkedUser',
+  FETCH_BRANCH_BY_USER: 'fetchBranchByUser',
 }
 
 export const LoginConstants = {

@@ -543,6 +543,27 @@ const orgConfiguration = (data = {}, headers = {}) => {
 const orgConfigUpdate = (data = {}, headers = {}) => {
   return apiClient.post(APIRoutes.ORGCONFIGUPDATE, data, { headers });
 }
+const fetchAllBranches = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.FETCHALLBRANCHES, data, { headers });
+};
+
+const saveBranchLinkedAgent = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.SAVEAGENTLINKEDBRANCH, data, { headers });
+};
+
+const fetchBranchByAgent = (data = {}, headers = {}) => {
+  return apiClient.post(`${APIRoutes.FETCHBRANCHBYAGENT}/${data.agentId}`, {}, { headers });
+};
+
+const saveBranchLinkedUser = (data = {}, headers = {}) => {
+  return apiClient.post(APIRoutes.SAVEUSERLINKEDBRANCH, data, { headers });
+};
+
+const fetchBranchByUser = (data = {}, headers = {}) => {
+  return apiClient.post(`${APIRoutes.FETCHBRANCHBYUSER}/${data.userId}`, {}, { headers });
+};
+
+
 
 module.exports = {
   login,
@@ -613,5 +634,10 @@ module.exports = {
   activateDeactivateUser,
   lockUnlockUser,
   orgConfiguration,
-  orgConfigUpdate
+  orgConfigUpdate,
+  fetchAllBranches,
+  saveBranchLinkedAgent,
+  fetchBranchByAgent,
+  saveBranchLinkedUser,
+  fetchBranchByUser,
 };

@@ -209,7 +209,8 @@ namespace Models.DB
                 .ForMember(dest => dest.ReportingMgrId, opt => opt.MapFrom(src => src.ReportingMgr))
                 .ForMember(dest => dest.ReportingMgrName, opt => opt.Ignore()) // Ignored because we handle it in the join
                 .ForMember(dest => dest.FailedLoginAttempts, opt => opt.MapFrom(src => src.failedloginattempts))
-                .ForMember(dest => dest.LockoutEndTime, opt => opt.MapFrom(src => src.lockoutendtime));
+                .ForMember(dest => dest.LockoutEndTime, opt => opt.MapFrom(src => src.lockoutendtime))
+                .ForMember(dest => dest.BranchIds, opt => opt.Ignore());
         }
 
     }

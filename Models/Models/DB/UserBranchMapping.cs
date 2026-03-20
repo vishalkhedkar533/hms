@@ -48,4 +48,10 @@ namespace Models.DB
         [ForeignKey(nameof(CreatedBy))]
         public virtual User? CreatedByUser { get; set; }
     }
+
+    public class UserBranchMappingDto
+    {
+        public int UserId { get; set; }
+        public List<long>? BranchIds { get; set; }
+    }
 }

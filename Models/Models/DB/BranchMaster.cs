@@ -102,11 +102,6 @@ namespace Models.DB
         public List<BranchNode> ReportingBranches { get; set; } = new();
     }
 
-    public class SearchBranch
-    {
-        public bool? IsActive { get; set; }
-    }
-
     public class BranchListDto
     {
         public long BranchId { get; set; }
@@ -115,6 +110,11 @@ namespace Models.DB
         public bool IsActive { get; set; }
         public bool IsReportedToRegulator { get; set; }
         public string? RegulatorCode { get; set; }
+    }
+
+    public class BranchSearchDto
+    {
+        public bool? IsActive { get; set; }
     }
     public class BranchMasterProfile : Profile
     {

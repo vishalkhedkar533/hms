@@ -51,25 +51,7 @@ namespace Models.DB
 
     public class AgentBranchMappingDto
     {
-        public long? MappingId { get; set; }
         public int AgentId { get; set; }
-        public long BranchId { get; set; }
-    }
-
-    public class RegulatorBranchDto
-    {
-        public long MappingId { get; set; }
-        public int OrgId { get; set; }
-        public int AgentId { get; set; }
-        public string? AgentCode { get; set; }
-        public string? AgentName { get; set; }
-        public long BranchId { get; set; }
-        public string? BranchCode { get; set; }
-        public string? BranchName { get; set; }
-        public bool IsReportedToRegulator { get; set; }
-        public string? RegulatorCode { get; set; }
-        public long? ChannelId { get; set; }
-        public long? SubChannelId { get; set; }
-        public long? LocationMasterId { get; set; }
+        public List<long>? BranchIds { get; set; }
     }
 }

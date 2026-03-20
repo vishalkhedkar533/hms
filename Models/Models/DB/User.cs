@@ -87,8 +87,6 @@ namespace Models.DB
         public string? RefreshToken { get; set; }
         [Column("refreshtokenexpirytime")]
         public DateTime? RefreshTokenExpiryTime { get; set; }
-        [Column("branch_id")]
-        public int? BranchId { get; set; }
     }
     public class UserCreateDto
     {
@@ -98,7 +96,7 @@ namespace Models.DB
         public string? MobileNumber { get; set; }
         public string? ReportingMgrName { get; set; }
         public string? ReportingMgrId { get; set; }
-        public int? BranchId { get; set; }
+        public List<long> BranchIds { get; set; } = new();
     }
 
     public class UserOtherDetails
@@ -127,6 +125,7 @@ namespace Models.DB
 
         public int? ReportingMgrId { get; set; }
         public string? ReportingMgrName { get; set; }
+        public List<long> BranchIds { get; set; } = new();
 
         public string? OrgName { get; set; }
 
@@ -202,7 +201,6 @@ namespace Models.DB
                 .ForMember(dest => dest.RowVersion, opt => opt.Ignore())
                 .ForMember(dest => dest.RefreshToken, opt =>  opt.Ignore())
                 .ForMember(dest => dest.RefreshTokenExpiryTime, opt =>  opt.Ignore())
-                .ForMember(dest => dest.BranchId, opt =>  opt.Ignore())
                 ;
             // 3. Mapping for reading User (Entity -> DTO)
             // Update your existing mapping
@@ -211,7 +209,8 @@ namespace Models.DB
                 .ForMember(dest => dest.ReportingMgrId, opt => opt.MapFrom(src => src.ReportingMgr))
                 .ForMember(dest => dest.ReportingMgrName, opt => opt.Ignore()) // Ignored because we handle it in the join
                 .ForMember(dest => dest.FailedLoginAttempts, opt => opt.MapFrom(src => src.failedloginattempts))
-                .ForMember(dest => dest.LockoutEndTime, opt => opt.MapFrom(src => src.lockoutendtime));
+                .ForMember(dest => dest.LockoutEndTime, opt => opt.MapFrom(src => src.lockoutendtime))
+                .ForMember(dest => dest.BranchIds, opt => opt.Ignore());
         }
 
     }

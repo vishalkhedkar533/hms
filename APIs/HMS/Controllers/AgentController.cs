@@ -15,7 +15,6 @@ using Models.HMSConsts;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Security.Claims;
-using System.Threading.Channels;
 
 namespace HMS.Controllers
 {
@@ -2066,6 +2065,161 @@ namespace HMS.Controllers
             hMSResponse.responseHeader.ErrorMessage = $"{Agents.Count()} Agent(s) found";
             hMSResponse.responseBody.agents = Agents;
             return Ok(hMSResponse);
+        }
+
+        [HttpPost("RegulatorBranch/Save")]
+        [MenuAuthorize(AuthorisationConstants.AddRegulatedBranchByAgent)]
+        public async Task<IActionResult> SaveRegulatorBranchMapping([FromBody] AgentBranchMappingDto dto)
+        {
+            var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+
+            if (dto is null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return BadRequest(response);
+            }
+
+            var branchIds = dto.BranchIds?
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList() ?? new List<long>();
+
+            if (branchIds.Count == 0)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "At least one valid BranchId is required.";
+                return BadRequest(response);
+            }
+
+            try
+            {
+                var isAgentValid = await _context.agent.AsNoTracking()
+                    .AnyAsync(x => x.AgentId == dto.AgentId && x.OrgId == orgId);
+
+                if (!isAgentValid)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid AgentId for the given Organisation.";
+                    return Conflict(response);
+                }
+
+                var branches = await _context.BranchMaster.AsNoTracking()
+                    .Where(x => x.OrgId == orgId && branchIds.Contains(x.BranchId))
+                    .ToListAsync();
+
+                if (branches.Count != branchIds.Count)
+                {
+                    var foundBranchIds = branches.Select(x => x.BranchId).ToHashSet();
+                    var missingBranchIds = branchIds.Where(id => !foundBranchIds.Contains(id));
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = $"Invalid BranchId(s) for the given Organisation: {string.Join(",", missingBranchIds)}";
+                    return Conflict(response);
+                }
+
+                var invalidRegulatorBranches = branches
+                    .Where(x => !x.IsActive || !x.IsReportedToRegulator)
+                    .Select(x => x.BranchCode)
+                    .ToList();
+
+                if (invalidRegulatorBranches.Count > 0)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = $"Branch code(s) are either inactive or not reported to regulator: {string.Join(",", invalidRegulatorBranches)}";
+                    return Conflict(response);
+                }
+
+                var existingMappings = await _context.AgentBranchMappings
+                    .Where(x => x.OrgId == orgId && x.AgentId == dto.AgentId)
+                    .ToListAsync();
+
+                var existingBranchIds = existingMappings.Select(x => x.BranchId).ToHashSet();
+
+                var mappingsToRemove = existingMappings
+                    .Where(x => !branchIds.Contains(x.BranchId))
+                    .ToList();
+
+                var mappingsToKeep = existingMappings
+                    .Where(x => branchIds.Contains(x.BranchId))
+                    .ToList();
+
+                var newMappings = branchIds
+                    .Where(branchId => !existingBranchIds.Contains(branchId))
+                    .Select(branchId => new AgentBranchMapping
+                    {
+                        OrgId = orgId,
+                        AgentId = dto.AgentId,
+                        BranchId = branchId,
+                        CreatedBy = loggedInUserId,
+                        CreatedDate = DateTime.UtcNow
+                    })
+                    .ToList();
+
+                if (mappingsToRemove.Count > 0)
+                    _context.AgentBranchMappings.RemoveRange(mappingsToRemove);
+
+                if (newMappings.Count > 0)
+                    await _context.AgentBranchMappings.AddRangeAsync(newMappings);
+
+                foreach (var existing in mappingsToKeep)
+                {
+                    existing.ModifiedBy = loggedInUserId;
+                    existing.ModifiedDate = DateTime.UtcNow;
+                }
+
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Regulator branch mappings saved successfully.";
+                response.responseBody.agentBranchMappings = mappingsToKeep.Concat(newMappings).ToList();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while saving regulator branch mapping.");
+                return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpPost("RegulatorBranch/FetchByAgent/{AgentId}")]
+        [MenuAuthorize(AuthorisationConstants.FetchRegulatedBranchByAgent)]
+        public async Task<ActionResult<HmsResponse>> GetRegulatorBranchesByAgent([FromRoute] int AgentId)
+        {
+            HmsResponse response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            try
+            {
+                var agentMappedBranches = await (
+                    from abm in _context.AgentBranchMappings.AsNoTracking()
+                    join bm in _context.BranchMaster.AsNoTracking() on abm.BranchId equals bm.BranchId
+                    where abm.OrgId == orgId && abm.AgentId == AgentId
+                    select new BranchListDto
+                    {
+                        BranchId = bm.BranchId,
+                        BranchCode = bm.BranchCode,
+                        BranchName = bm.BranchName,
+                        IsActive = bm.IsActive,
+                        IsReportedToRegulator = bm.IsReportedToRegulator
+                    }).ToListAsync();
+
+                if (agentMappedBranches == null || agentMappedBranches.Count == 0)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "No branches mapped to the given AgentId.";
+                    return NotFound(response);
+                }
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "SUCCESS";
+                response.responseBody.BranchList = agentMappedBranches;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while fetching regulator branches.");
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }

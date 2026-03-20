@@ -38,5 +38,7 @@
         public const Int32 GetCommissionData = 1035;
 
         public const Int32 AccessHMSDashboard = 1037;
+        public const Int32 AddRegulatedBranchByAgent = 1038;
+        public const Int32 FetchRegulatedBranchByAgent = 1039;
     }
 }

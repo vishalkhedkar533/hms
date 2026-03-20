@@ -96,6 +96,7 @@ namespace Models.DB
         public string? MobileNumber { get; set; }
         public string? ReportingMgrName { get; set; }
         public string? ReportingMgrId { get; set; }
+        public List<long> BranchIds { get; set; } = new();
     }
 
     public class UserOtherDetails
@@ -124,6 +125,7 @@ namespace Models.DB
 
         public int? ReportingMgrId { get; set; }
         public string? ReportingMgrName { get; set; }
+        public List<long> BranchIds { get; set; } = new();
 
         public string? OrgName { get; set; }
 

@@ -933,149 +933,6 @@ namespace HMS.Controllers
             }
         }
 
-        [HttpPost("RegulatorBranch/Save")]
-        [MenuAuthorize(AuthorisationConstants.SaveChannelDetails)]
-        public async Task<IActionResult> SaveRegulatorBranchMapping([FromBody] AgentBranchMappingDto dto)
-        {
-            var response = new HmsResponse();
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
-
-            if (dto is null)
-            {
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Request body is required.";
-                return BadRequest(response);
-            }
-
-            try
-            {
-                var isAgentValid = await _context.agent.AsNoTracking()
-                    .AnyAsync(x => x.AgentId == dto.AgentId && x.OrgId == orgId);
-
-                if (!isAgentValid)
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Invalid AgentId for the given Organisation.";
-                    return Conflict(response);
-                }
-
-                var branch = await _context.BranchMaster.AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.BranchId == dto.BranchId && x.OrgId == orgId);
-
-                if (branch == null)
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "Invalid BranchId for the given Organisation.";
-                    return Conflict(response);
-                }
-
-                if (!branch.IsReportedToRegulator)
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = $"Branch code {branch.BranchCode} is not reported to regulator.";
-                    return Conflict(response);
-                }
-
-                var existing = await _context.AgentBranchMappings.FirstOrDefaultAsync(x =>
-                    x.OrgId == orgId && x.AgentId == dto.AgentId && x.BranchId == dto.BranchId);
-
-                if (existing == null)
-                {
-                    existing = new AgentBranchMapping
-                    {
-                        OrgId = orgId,
-                        AgentId = dto.AgentId,
-                        BranchId = dto.BranchId,
-                        CreatedBy = loggedInUserId,
-                        CreatedDate = DateTime.UtcNow
-                    };
-                    _context.AgentBranchMappings.Add(existing);
-                }
-                else
-                {
-                    existing.ModifiedBy = loggedInUserId;
-                    existing.ModifiedDate = DateTime.UtcNow;
-                    _context.AgentBranchMappings.Update(existing);
-                }
-
-                await _context.SaveChangesAsync();
-
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "Regulator branch mapping saved successfully.";
-                response.responseBody.agentBranchMappings = new List<AgentBranchMapping> { existing };
-                return Ok(response);
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Error saving regulator branch mapping.");
-                response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                response.responseHeader.ErrorMessage = "Database error while saving regulator branch mapping.";
-                return Conflict(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while saving regulator branch mapping.");
-                return StatusCode(500, ex.Message);
-            }
-        }
-
-        [HttpPost("GetRegulatorBranches")]
-        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
-        public async Task<IActionResult> GetRegulatorBranches()
-        {
-            var response = new HmsResponse();
-            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-
-            try
-            {
-                var regulatorBranches = await (
-                    from map in _context.AgentBranchMappings.AsNoTracking()
-                    join ag in _context.agent.AsNoTracking() on map.AgentId equals ag.AgentId
-                    join br in _context.BranchMaster.AsNoTracking() on map.BranchId equals br.BranchId
-                    join loc in _context.LocationMasters.AsNoTracking() on br.LocationMasterId equals loc.LocationMasterId into locJoin
-                    from location in locJoin.DefaultIfEmpty()
-                    where map.OrgId == orgId
-                          && (ag.OrgId ?? 0) == orgId
-                          && (br.OrgId ?? 0) == orgId
-                          && br.IsReportedToRegulator
-                    orderby br.BranchCode
-                    select new RegulatorBranchDto
-                    {
-                        MappingId = map.MappingId,
-                        OrgId = map.OrgId,
-                        AgentId = map.AgentId,
-                        AgentCode = ag.AgentCode,
-                        AgentName = ag.AgentName,
-                        BranchId = map.BranchId,
-                        BranchCode = br.BranchCode,
-                        BranchName = br.BranchName,
-                        IsReportedToRegulator = br.IsReportedToRegulator,
-                        RegulatorCode = br.RegulatorCode,
-                        ChannelId = location != null ? location.ChannelId : null,
-                        SubChannelId = location != null ? location.SubChannelId : null,
-                        LocationMasterId = br.LocationMasterId
-                    }).ToListAsync();
-
-                if (regulatorBranches.Count == 0)
-                {
-                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
-                    response.responseHeader.ErrorMessage = "No regulator branch mappings found.";
-                    return NotFound(response);
-                }
-
-                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-                response.responseHeader.ErrorMessage = "Regulator branch mappings fetched successfully.";
-                response.responseBody.regulatorBranches = regulatorBranches;
-                return Ok(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching regulator branch mappings.");
-                return StatusCode(500, ex.Message);
-            }
-        }
-
         [HttpPost("{ChannelId}/{SubChannelId}/Branch/Fetch")]
         [MenuAuthorize(AuthorisationConstants.ReadMasters)]
         public async Task<IActionResult> FetchBranch([FromRoute] long ChannelId,
@@ -1404,9 +1261,9 @@ namespace HMS.Controllers
 
         }
 
-        [HttpPost("GetBranchIds")]
+        [HttpPost("GetRegulatorBranches")]
         [MenuAuthorize(AuthorisationConstants.ReadMasters)]
-        public async Task<ActionResult<HmsResponse>> GetActiveBranchIds([FromBody] SearchBranch searchBranch)
+        public async Task<ActionResult<HmsResponse>> GetRegulatorBranches([FromBody] BranchSearchDto searchDto)
         {
             HmsResponse response = new HmsResponse();
 
@@ -1416,7 +1273,7 @@ namespace HMS.Controllers
                 .AsNoTracking()
                 .Where(x => x.OrgId == orgId &&
                        x.IsReportedToRegulator == true &&
-                       x.IsActive == (searchBranch.IsActive == null ? x.IsActive : searchBranch.IsActive))
+                       x.IsActive == searchDto.IsActive)
                 .Select(b => new BranchListDto
                 {
                     BranchId = b.BranchId,

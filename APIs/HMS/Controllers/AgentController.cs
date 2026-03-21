@@ -306,9 +306,11 @@ namespace HMS.Controllers
                 agentDto.PageSize = 10;
             }
             HmsResponse hMSResponse = new HmsResponse();
-            // List<AgentDto> agents = new List<AgentDto>();
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            var userId = Convert.ToInt64(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+            var orgId = Convert.ToInt64(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
             var agentDtos = await _db.ExecuteQueryAsync<AgentDto>(
                 "Agent",
@@ -322,24 +324,41 @@ namespace HMS.Controllers
                     p_sort_column = agentDto.SortColumn,
                     p_sort_direction = agentDto.SortDirection
                 });
-            /*
-             *     p_agent_name VARCHAR DEFAULT NULL,
-    p_email VARCHAR DEFAULT NULL,
-    p_mobileno VARCHAR DEFAULT NULL,
-    p_pan_number VARCHAR DEFAULT NULL,
-    p_aadhaar_number VARCHAR DEFAULT NULL,
-    p_irda_license_number VARCHAR DEFAULT NULL,
-    p_gst_number VARCHAR DEFAULT NULL,
-    p_page_number INT DEFAULT 1,
-    p_page_size INT DEFAULT 10,
-    p_sort_column VARCHAR DEFAULT 'agent_id',
-    p_sort_direction VARCHAR DEFAULT 'ASC'
-             */
-            if (agentDtos != null)
+
+            var filteredAgentDtos = agentDtos?.ToList();
+
+            var userBranchIds = await _context.UserBranchMappings
+                .AsNoTracking()
+                .Where(x => x.OrgId == orgId && x.UserId == userId)
+                .Select(x => x.BranchId)
+                .Distinct()
+                .ToListAsync();
+
+            if (filteredAgentDtos != null && filteredAgentDtos.Any() && userBranchIds.Count > 0)
+            {
+                var searchedAgentIds = filteredAgentDtos
+                    .Select(x => x.AgentId)
+                    .Distinct()
+                    .ToList();
+
+                var allowedAgentIds = await _context.AgentBranchMappings
+                    .AsNoTracking()
+                    .Where(x => x.OrgId == orgId && userBranchIds.Contains(x.BranchId))
+                    .Select(x => x.AgentId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var allowedAgentIdSet = allowedAgentIds.ToHashSet();
+                filteredAgentDtos = filteredAgentDtos
+                    .Where(x => allowedAgentIdSet.Contains(x.AgentId))
+                    .ToList();
+            }
+
+            if (filteredAgentDtos != null)
             {
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                hMSResponse.responseBody.agents = agentDtos.ToList();
+                hMSResponse.responseBody.agents = filteredAgentDtos;
             }
             else
             {
@@ -349,7 +368,7 @@ namespace HMS.Controllers
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
             }
-            return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+            return filteredAgentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
         [HttpPost("Create")]
         [MenuAuthorize(AuthorisationConstants.ModifyAgent)]

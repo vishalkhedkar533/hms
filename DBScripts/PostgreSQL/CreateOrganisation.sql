@@ -178,6 +178,13 @@ INSERT INTO hms."user"
 (username, email_id, mobile_number, "password", is_active, is_locked, last_login_date, created_by, created_date, modified_by, modified_date, rowversion, password_changed_date, "LockoutEndTime", failedloginattempts, lockoutendtime, orgid, reporting_mgr, refreshtoken, refreshtokenexpirytime)
 VALUES('systemadmin', 'systemadmin@dummy.com', '9999999999', '$2a$11$TWfvFQUKtWysi2cBD0I2MOrJAQAQTiX.S4b2.WzlUVivbR4KrexFa', true, false, now(), 12, now(), null, null, 1, null, null, 0, null, :p_orgid, null, null, null);
 
+    INSERT INTO hmsmaster.approval_setting (orgid, component_id, approveroneid, approvertwoid, approverthreeid, 
+                                            usedefaultapprover, created_by, created_date, modified_by, modified_date)
+    select :p_orgid , uic.component_id, null approveroneid , null approvertwoid , null approverthreeid, null usedefaultapprover
+           ,1 created_by, now() created_date, null modified_by, null modified_date
+    from hmsmaster.ui_components uic 
+    where not exists(select 1 from hmsmaster.approval_setting aps where aps.component_id  = uic.component_id );
+
 INSERT INTO hms.user_role_mapping
 (user_id, role_id, is_primary, effective_from, effective_to, is_active, created_by, created_date, modified_by, modified_date, rowversion, orgid)
 select u.user_id, r.role_id, true, CURRENT_DATE, CURRENT_DATE + interval '1 year' , true ,  u.user_id, now(), null, null, 1, :p_orgid

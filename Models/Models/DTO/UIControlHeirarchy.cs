@@ -29,6 +29,7 @@
         public int? approverTwoRoleId { get; set; }
         public int? approverThreeRoleId { get; set; }
         public bool useDefaultApprover { get; set; } = false;
+        public bool isLog { get; set; }
     }
 
 

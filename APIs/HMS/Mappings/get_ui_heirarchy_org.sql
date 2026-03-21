@@ -22,7 +22,8 @@ flat_data AS (
                     'approverOneRoleId', f.approveroneid,
                     'approverTwoRoleId', f.approvertwoid,
                     'approverThreeRoleId', f.approverthreeid,
-                    'useDefaultApprover', f.usedefaultapprover                    
+                    'useDefaultApprover', f.usedefaultapprover,
+                    'isLog', f.is_log
                 ) ORDER BY f.component_id
             ) FILTER (WHERE f.component_id IS NOT NULL), 
             '[]'::jsonb

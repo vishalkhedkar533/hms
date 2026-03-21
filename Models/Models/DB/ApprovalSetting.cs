@@ -33,6 +33,9 @@ namespace Models.DB
         [Column("usedefaultapprover")]
         public bool? UseDefaultApprover { get; set; } = true;
 
+        [Column("is_log")]
+        public bool? IsLog { get; set; } = false;
+
         [Required]
         [Column("created_by")]
         public int CreatedBy { get; set; }
@@ -71,6 +74,8 @@ namespace Models.DB
         public int? ApproverThreeId { get; set; }
 
         public bool UseDefaultApprover { get; set; } = true;
+
+        public bool? IsLog { get; set; } = false;
     }
     public class ApprovalSettingProfile : Profile
     {

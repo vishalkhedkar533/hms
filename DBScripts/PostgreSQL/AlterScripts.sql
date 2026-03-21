@@ -676,3 +676,5 @@ ALTER TABLE hmsmaster.branch_master ADD COLUMN regulator_code varchar(50) null;
 alter table hms."user"  add column branch_id int4 null
 
 alter table hms."user" drop column branch_id
+
+ALTER TABLE hmsmaster.approval_setting ADD COLUMN is_log bool DEFAULT false;

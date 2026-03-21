@@ -314,24 +314,51 @@ namespace HMS.Controllers
 
             var agentDtos = await _db.ExecuteQueryAsync<AgentDto>(
                 "Agent",
-                "SearchTestForBranch",
+                "Search1",
                 new
                 {
                     p_searchcondition = agentDto.SearchCondition,
                     p_zone = agentDto.Zone,
-                    p_user_id = userId,
-                    p_orgid = orgId,
                     p_page_number = agentDto.PageNo,
                     p_page_size = agentDto.PageSize,
                     p_sort_column = agentDto.SortColumn,
                     p_sort_direction = agentDto.SortDirection
                 });
 
-            if (agentDtos != null)
+            var filteredAgentDtos = agentDtos?.ToList();
+
+            var userBranchIds = await _context.UserBranchMappings
+                .AsNoTracking()
+                .Where(x => x.OrgId == orgId && x.UserId == userId)
+                .Select(x => x.BranchId)
+                .Distinct()
+                .ToListAsync();
+
+            if (filteredAgentDtos != null && filteredAgentDtos.Any() && userBranchIds.Count > 0)
+            {
+                var searchedAgentIds = filteredAgentDtos
+                    .Select(x => x.AgentId)
+                    .Distinct()
+                    .ToList();
+
+                var allowedAgentIds = await _context.AgentBranchMappings
+                    .AsNoTracking()
+                    .Where(x => x.OrgId == orgId && userBranchIds.Contains(x.BranchId))
+                    .Select(x => x.AgentId)
+                    .Distinct()
+                    .ToListAsync();
+
+                var allowedAgentIdSet = allowedAgentIds.ToHashSet();
+                filteredAgentDtos = filteredAgentDtos
+                    .Where(x => allowedAgentIdSet.Contains(x.AgentId))
+                    .ToList();
+            }
+
+            if (filteredAgentDtos != null)
             {
                 hMSResponse.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                 hMSResponse.responseHeader.ErrorMessage = "SUCCESS";
-                hMSResponse.responseBody.agents = agentDtos.ToList();
+                hMSResponse.responseBody.agents = filteredAgentDtos;
             }
             else
             {
@@ -341,7 +368,7 @@ namespace HMS.Controllers
                     .Select(x => x.ErrorMsg)
                     .FirstOrDefaultAsync() ?? "Undefined Error Message";
             }
-            return agentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
+            return filteredAgentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
         [HttpPost("Create")]
         [MenuAuthorize(AuthorisationConstants.ModifyAgent)]

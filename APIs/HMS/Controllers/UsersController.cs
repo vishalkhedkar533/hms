@@ -351,26 +351,13 @@ namespace HMS.Controllers
                 return NotFound(response);
             }
 
-            // Verify old password
-            bool isOldPasswordValid = BCrypt.Net.BCrypt.Verify(request.OldPassword, user.Password);
-            if (!isOldPasswordValid)
-            {
-                response.responseHeader = new HmsSResponseHeader
-                {
-                    ErrorCode = CommonConstants.FAILED,
-                    ErrorMessage = "Old password is incorrect."
-                };
-                return BadRequest(response);
-            }
-
             // Check if new password is same as old password
-            bool isSamePassword = BCrypt.Net.BCrypt.Verify(request.NewPassword, user.Password);
-            if (isSamePassword)
+            if (request.NewPassword != request.OldPassword)
             {
                 response.responseHeader = new HmsSResponseHeader
                 {
                     ErrorCode = CommonConstants.FAILED,
-                    ErrorMessage = "New password cannot be the same as the old password."
+                    ErrorMessage = "New password does not match with confirm password."
                 };
                 return BadRequest(response);
             }

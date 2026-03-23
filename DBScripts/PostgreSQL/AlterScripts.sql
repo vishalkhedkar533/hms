@@ -678,3 +678,7 @@ alter table hms."user"  add column branch_id int4 null
 alter table hms."user" drop column branch_id
 
 ALTER TABLE hmsmaster.approval_setting ADD COLUMN is_log bool DEFAULT false;
+
+alter table hms.agent add column agent_status_code_id int4
+
+alter table hms.tempagentdto  add column agent_status_code_desc varchar(100);

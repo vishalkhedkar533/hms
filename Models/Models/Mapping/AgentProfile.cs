@@ -133,6 +133,7 @@ namespace Models.Mapping
                 .ForMember(d => d.VerticalDesc, o => o.Ignore())
                 .ForMember(d => d.TrainingGroupTypeDesc, o => o.Ignore())
                 .ForMember(d => d.BranchDesc, o => o.Ignore())
+                .ForMember(d => d.AgentStatusCodeDesc, o => o.Ignore())
 
                 ;
             // ================================

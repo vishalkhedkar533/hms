@@ -77,7 +77,7 @@ namespace HMS.Controllers
             var oldStatus = agent.AgentStatusCode;
 
             // Perform soft delete
-            agent.AgentStatusCode = "Terminated";
+            agent.AgentStatusCode = AgentStatusCodes.Terminated;
             agent.IsActive = false;
             agent.ModifiedBy = username;
             agent.ModifiedDate = DateTime.UtcNow;
@@ -251,14 +251,14 @@ namespace HMS.Controllers
             var entries = new List<AgentAuditTrail>();
 
             // You can expand this with any fields you want to audit
-            if (agent.AgentStatusCode != "Terminated")
+            if (agent.AgentStatusCode != AgentStatusCodes.Terminated)
             {
                 entries.Add(new AgentAuditTrail
                 {
                     AgentId = agent.AgentId,
                     FieldName = "AgentStatusCode",
                     OldValue = agent.AgentStatusCode,
-                    NewValue = "Terminated",
+                    NewValue = AgentStatusCodes.Terminated,
                     ChangedBy = username,
                     ChangedDate = DateTime.UtcNow,
                     CreatedBy = username,
@@ -881,6 +881,8 @@ namespace HMS.Controllers
                             agent.DesignationCode = agentDto.DesignationCode;
                         if (agentDto.LocationCode.HasValue)
                             agent.LocationCode = agentDto.LocationCode;
+                        if (!string.IsNullOrWhiteSpace(agentDto.AgentStatusCode))
+                            agent.AgentStatusCode = agentDto.AgentStatusCode;
 
                         break;
 

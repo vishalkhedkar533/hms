@@ -5,7 +5,5 @@ namespace CommonLibrary
         public const string Active = "Active";
         public const string Inactive = "Inactive";
         public const string Terminated = "Terminated";
-
-        public const string DefaultOnCreation = Inactive;
     }
 }

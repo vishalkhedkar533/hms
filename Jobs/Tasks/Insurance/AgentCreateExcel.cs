@@ -195,7 +195,6 @@ namespace Tasks.Insurance
                         writer.Write(r.StaffCode ?? "");
                         writer.Write(r.Supervisor_Code ?? "");
                         writer.Write(r.ContractedDate?.ToString("yyyy-MM-dd") ?? "");
-                        writer.Write(r.AgentStatusCode ?? "");
                         writer.Write(r.StatusDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.IsLicensed.ToString());
                         writer.Write(r.MaskedPanNumber ?? "");
@@ -209,7 +208,6 @@ namespace Tasks.Insurance
                         writer.Write(r.ModifiedBy ?? "");
                         writer.Write(r.ModifiedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "");
                         writer.Write(r.RowVersion?.ToString() ?? "");
-                        writer.Write(r.IsActive.ToString());
                         writer.Write(r.ApplicationDocketNo ?? "");
 
                         // 31-40
@@ -341,7 +339,7 @@ namespace Tasks.Insurance
                         writer.Write(r.WorkExpMonths?.ToString() ?? "");
 
                         writer.Write(r.BranchDesc ?? "");
-
+                        writer.Write(AgentStatusCodes.Inactive);
                     }
 
                     await writer.CompleteAsync(token);

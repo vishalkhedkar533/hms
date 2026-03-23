@@ -29,7 +29,9 @@ WITH master_map AS (
         MAX(CASE WHEN k.entrycategory = 'VERTICAL' THEN k.entryidentity END) AS vertical_id,
         MAX(CASE WHEN k.entrycategory = 'TRAINING_GROUP' THEN k.entryidentity END) AS traininggrouptype_id,
         MAX(CASE WHEN k.entrycategory = 'STATE_NAME' THEN k.entrydesc END) AS state_desc,
-        MAX(CASE WHEN k.entrycategory = 'COUNTRY' THEN k.entrydesc END) AS country_desc
+        MAX(CASE WHEN k.entrycategory = 'COUNTRY' THEN k.entrydesc END) AS country_desc,
+        MAX(CASE WHEN k.entrycategory = 'AGENT_STATUS_CODES' THEN k.entryidentity END) AS agent_status_code_id,
+
     FROM hms.tempagentdto t
     LEFT JOIN hmsmaster.channel_master cm 
         ON UPPER(TRIM(t.channel_desc)) = UPPER(TRIM(cm.channel_name)) 
@@ -70,6 +72,7 @@ WITH master_map AS (
             OR (k.entrycategory = 'LICENSE_STATUS' AND k.entrydesc = t.licensestatus)
             OR (k.entrycategory = 'VERTICAL' AND k.entrydesc = t.vertical)
             OR (k.entrycategory = 'TRAINING_GROUP' AND k.entrydesc = t.traininggrouptype)
+            OR (k.entrycategory = 'AGENT_STATUS_CODES' AND k.entrydesc = t.agent_status_codes_desc)
         )
     WHERE t.comments = 'Processed'
     GROUP BY 
@@ -80,10 +83,10 @@ ins AS (
     INSERT INTO hms.agent (
         agent_code, agent_name, business_name, first_name, middle_name, last_name, prefix,
         suffix, dob, nationality, preferred_language, agent_level,
-        staff_code, contracted_date, agent_status_code, status_date,
+        staff_code, contracted_date, status_date,
         is_licensed, pan_number, aadhaar_number, irda_license_number, gst_number,
         created_by, created_date, modified_by, modified_date, rowversion,
-        supervisor_id, is_active, applicationdocketno, father_husband_nm,
+        supervisor_id, applicationdocketno, father_husband_nm,
         employeecode, startdate, panaadharlinkflag, sec206abflag,
         taxstatus, urn, additionalcomment, appointmentdate, incorporationdate,
         cnctpersondesig, cnctpersonmobileno, cnctpersonemail, cnctpersonname,
@@ -99,19 +102,18 @@ ins AS (
         agent_type_cat, agent_class, martial_status, education,
         state, country, gender, title, occupation,
         agent_sub_type_code, designation_code, agent_type_code,
-        location_code, candidatetype, agenttype, commissionclass, branch
+        location_code, candidatetype, agenttype, commissionclass, branch, agent_status_code_id
     )
     SELECT DISTINCT ON (t.agentcode)
         t.agentcode, t.agentname, t.businessname, t.firstname, t.middlename, t.lastname, t.prefix,
         t.suffix, NULLIF(TRIM(t.dob), '')::date, t.nationality, t.preferredlanguage,
         CASE TRIM(t.agentlevel) WHEN 'Level1' THEN 1 WHEN 'Level2' THEN 2 WHEN 'Level3' THEN 3 ELSE NULL END,
-        t.staffcode, NULLIF(TRIM(t.contracteddate), '')::date, t.agentstatuscode, NULLIF(TRIM(t.statusdate), '')::date,
+        t.staffcode, NULLIF(TRIM(t.contracteddate), '')::date, NULLIF(TRIM(t.statusdate), '')::date,
         CASE WHEN t.islicensed IN ('Y','y','1','TRUE','true','T') THEN TRUE ELSE FALSE END,
         t.maskedpannumber, t.aadhaar_number, t.irdalicensenumber, t.gstnumber,
         t.createdby, NULLIF(TRIM(t.createddate), '')::date, t.modifiedby, NULLIF(TRIM(t.modifieddate), '')::date,
         NULLIF(TRIM(t.rowversion), '')::integer, 
         sup.agent_id::integer,
-        CASE WHEN t.isactive IN ('Y','y','1','TRUE','true','T') THEN TRUE ELSE FALSE END,
         t.applicationdocketno, t.father_husband_nm, t.employeecode, NULLIF(TRIM(t.startdate), '')::date,
         CASE WHEN t.panaadharlinkflag IN ('Y','y','1','T','TRUE','true') THEN TRUE ELSE FALSE END,
         CASE WHEN t.sec206abflag IN ('Y','y','1','T','TRUE','true') THEN TRUE ELSE FALSE END,
@@ -135,7 +137,7 @@ ins AS (
         m.licensestatus_id, t.orgid, m.bankacctype, m.channel_id, m.sub_channel_id,
         m.agent_type_cat, m.agent_class, m.marital_status, m.education, m.state, m.country, m.gender,
         m.title, m.occupation, m.agent_sub_type_code, m.designation_id, m.agent_type_code,
-        m.location_id, m.candidatetype, m.agenttype, m.commissionclass, m.branch_id
+        m.location_id, m.candidatetype, m.agenttype, m.commissionclass, m.branch_id, m.agent_status_code_id
     FROM hms.tempagentdto t
     LEFT JOIN LATERAL (
         SELECT agent_id FROM hms.agent 

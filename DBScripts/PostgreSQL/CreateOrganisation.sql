@@ -190,3 +190,13 @@ INSERT INTO hms.user_role_mapping
 select u.user_id, r.role_id, true, CURRENT_DATE, CURRENT_DATE + interval '1 year' , true ,  u.user_id, now(), null, null, 1, :p_orgid
 from hms."user" u join hms.roles r on u.orgid = r.orgid and r.role_id = :p_AdminRoleId and u.user_id = :p_UserId
 where u.orgid = :p_orgid and not exists (select 1 from hms.user_role_mapping urm where urm.orgid = :p_orgid and u.user_id = urm.user_id  and r.role_id = urm.role_id );
+
+INSERT INTO hmsmaster.keyvalueentries 
+(orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+(:p_orgid, 'AGENT_STATUS_CODES', 1, 'Active', NULL, true),
+(:p_orgid, 'AGENT_STATUS_CODES', 2, 'Inactive', NULL, true),
+(:p_orgid, 'AGENT_STATUS_CODES', 3, 'Terminated', NULL, true);
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (:p_orgid, 'AgentStatusCodes', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''AGENT_STATUS_CODES''');

@@ -3,8 +3,8 @@
     public class UpdateUser
     {
         public string Username { get; set; }
-        public string OldPassword { get; set; } = null!;
         public string NewPassword { get; set; } = null!;
+        public string ConfirmPassword { get; set; } = null!;
         public bool IsActive { get; set; }
         public bool IsLocked { get; set; }
         public int? ReportingMgr { get; set; }

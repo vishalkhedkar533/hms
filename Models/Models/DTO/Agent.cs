@@ -162,6 +162,8 @@ namespace Models.DTO
         public string? TrainingGroupTypeDesc { get; set; }
         public int? Branch { get; set; }
         public string? BranchDesc { get; set; }
+        public int? AgentStatusCodeId { get; set; }
+        public string? AgentStatusCodeDesc { get; set; }
     }
     public class AgentListRequest
     {

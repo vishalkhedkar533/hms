@@ -77,7 +77,7 @@ namespace HMS.Controllers
             var oldStatus = agent.AgentStatusCode;
 
             // Perform soft delete
-            agent.AgentStatusCode = "Terminated";
+            agent.AgentStatusCode = AgentStatusCodes.Terminated;
             agent.IsActive = false;
             agent.ModifiedBy = username;
             agent.ModifiedDate = DateTime.UtcNow;
@@ -251,14 +251,14 @@ namespace HMS.Controllers
             var entries = new List<AgentAuditTrail>();
 
             // You can expand this with any fields you want to audit
-            if (agent.AgentStatusCode != "Terminated")
+            if (agent.AgentStatusCode != AgentStatusCodes.Terminated)
             {
                 entries.Add(new AgentAuditTrail
                 {
                     AgentId = agent.AgentId,
                     FieldName = "AgentStatusCode",
                     OldValue = agent.AgentStatusCode,
-                    NewValue = "Terminated",
+                    NewValue = AgentStatusCodes.Terminated,
                     ChangedBy = username,
                     ChangedDate = DateTime.UtcNow,
                     CreatedBy = username,
@@ -559,6 +559,7 @@ namespace HMS.Controllers
                 var Designation = GetMasterData("Designation").ToList();
                 var Location = GetMasterData("Location").ToList();
                 var Branch = GetMasterData("Branch").ToList();
+                var AgentStausCode = AgentProfileMst.Where(x => x.EntryCategory == "AGENT_STATUS_CODES");
 
                 foreach (var bankAcc in agentDTO.bankAccounts)
                 {
@@ -589,6 +590,7 @@ namespace HMS.Controllers
                 agentDTO.DesignationCodeDesc = Designation.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.DesignationCode ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.LocationCodeDesc = Location.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.LocationCode ?? -1000))?.EntryDesc ?? string.Empty;
                 agentDTO.BranchDesc = Branch.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.Branch ?? -1000))?.EntryDesc ?? string.Empty;
+                agentDTO.AgentStatusCodeDesc = AgentStausCode.SingleOrDefault(x => x.EntryIdentity.Equals(agentDTO?.AgentStatusCodeId ?? -1000))?.EntryDesc ?? string.Empty;
 
                 List<AgentAuditTrailDTO> agentAuditTrailDTOs = _mapper.Map<List<AgentAuditTrailDTO>>(auditTrail);
                 agentDTO.agentAuditTrail = agentAuditTrailDTOs;
@@ -881,6 +883,8 @@ namespace HMS.Controllers
                             agent.DesignationCode = agentDto.DesignationCode;
                         if (agentDto.LocationCode.HasValue)
                             agent.LocationCode = agentDto.LocationCode;
+                        if (agentDto.AgentStatusCodeId.HasValue)
+                            agent.AgentStatusCodeId = agentDto.AgentStatusCodeId;
 
                         break;
 

@@ -351,8 +351,8 @@ namespace HMS.Controllers
                 return NotFound(response);
             }
 
-            // Check if new password is same as old password
-            if (request.NewPassword != request.OldPassword)
+            // Check if new password is same as ConfirmPassword password
+            if (request.NewPassword != request.ConfirmPassword)
             {
                 response.responseHeader = new HmsSResponseHeader
                 {

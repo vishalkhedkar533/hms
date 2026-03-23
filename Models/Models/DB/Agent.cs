@@ -389,5 +389,8 @@ namespace Models.DB
         public virtual Agent? Supervisor { get; set; }
         [Column("branch")]
         public int? Branch { get; set; }
+
+        [Column("agent_status_code_id")]
+        public int? AgentStatusCodeId { get; set; }
     }
 }

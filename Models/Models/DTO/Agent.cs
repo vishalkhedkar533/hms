@@ -13,6 +13,23 @@ namespace Models.DTO
         public PeopleHeirarchyDto? Supervisors { get; set; }
         public string? HierarchyPath { get; set; } = string.Empty;
     }
+    public class AgentCreateIndividualDto
+    {
+        public string? AgentName { get; set; }
+        public string? FirstName { get; set; }
+        public string? MiddleName { get; set; }
+        public string? LastName { get; set; }
+        public string? MobileNo { get; set; }
+        public string? Email { get; set; }
+        public string? PanNumber { get; set; }
+        //number, emailid, pan number valdtion on one
+        public int? Channel { get; set; }
+        public int? SubChannel { get; set; }
+        public int? Branch { get; set; }
+        public int? LocationCode { get; set; }
+        public int? DesignationCode { get; set; }
+        public string? SupervisorCode { get; set; }
+    }
     public class AgentDto
     {
         public int AgentId { get; set; }

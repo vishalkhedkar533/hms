@@ -370,24 +370,6 @@ namespace HMS.Controllers
             }
             return filteredAgentDtos == null ? NotFound(hMSResponse) : Ok(hMSResponse);
         }
-        [HttpPost("Create")]
-        [MenuAuthorize(AuthorisationConstants.ModifyAgent)]
-        public async Task<IActionResult> CreateAgent([FromBody] AgentDto agentDto)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            var agent = _mapper.Map<Agent>(agentDto);
-            agent.CreatedDate = DateTime.UtcNow;  // set server timestamp
-            agent.IsActive = true;                // default active
-
-            _context.Agents.Add(agent);
-            await _context.SaveChangesAsync();
-
-            var result = _mapper.Map<AgentDto>(agent);
-            return CreatedAtAction(nameof(GetAgentById), new { id = agent.AgentId }, result);
-        }
-
         private List<KeyValueEntry> GetMasterData(string EntryCategory)
         {
             var masterTableConfigs = (_cacheService.GetRecordsAsync<MasterTable>(
@@ -642,7 +624,7 @@ namespace HMS.Controllers
 
             //var agent = await _context.Agents.Where(u => u.AgentCode == AgentCode).ToListAsync();
             //var agent = await _context.Agents.ToListAsync();
-            //// var agent = await _context.Agents.FindAsync(userid);
+            //// var agent = await _context.Agents.FindAsync userid);
             //if (agent == null)
             //    return NotFound();
 
@@ -2058,6 +2040,7 @@ namespace HMS.Controllers
                 hMSResponse.responseHeader.ErrorMessage = $"Please specify a search criteria, you can search on AgentCode/MobileNo/Email/PanNumber";
                 return Conflict(hMSResponse);
             }
+
             if (! _context.SubchannelMaster.AsNoTracking().Any(x=> x.OrgId == orgId 
             && x.ChannelId == ChannelId 
             && x.SubChannelId == SubChannelId))
@@ -2202,7 +2185,7 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while saving regulator branch mapping.");
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, "Internal Server Error");
             }
         }
 
@@ -2241,8 +2224,192 @@ namespace HMS.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error while fetching regulator branches.");
-                return StatusCode(500, ex.Message);
+                return StatusCode(500, "Internal Server Error");
             }
+        }
+
+        [HttpPost("CreateIndividualAgent")]
+        [MenuAuthorize(AuthorisationConstants.CreateIndividualAgent)]
+        public async Task<IActionResult> CreateIndividualAgent([FromBody] AgentCreateIndividualDto agentDto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var response = new HmsResponse();
+            var orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var userIdValue = _authClaimService.GetClaim(ClaimTypes.NameIdentifier);
+            var createdBy = int.TryParse(userIdValue, out var parsedUserId) ? parsedUserId : 0;
+            var username = HttpContext?.User?.Identity?.Name ?? userIdValue ?? "System";
+
+            if ((!agentDto.Channel.HasValue) || (!agentDto.Branch.HasValue)
+                || (!agentDto.LocationCode.HasValue) || (!agentDto.DesignationCode.HasValue))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Channel, SubChannel, Branch, LocationCode, DesignationCode are required.";
+                return BadRequest(response);
+            }
+
+            if (string.IsNullOrWhiteSpace(agentDto.MobileNo)
+                && string.IsNullOrWhiteSpace(agentDto.Email)
+                && string.IsNullOrWhiteSpace(agentDto.PanNumber))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "At least one of MobileNo, Email or PanNumber is required.";
+                return BadRequest(response);
+            }
+
+            int? resolvedSupervisorId = null;
+            if (!string.IsNullOrWhiteSpace(agentDto.SupervisorCode))
+            {
+                resolvedSupervisorId = await _context.Agents.AsNoTracking()
+                    .Where(x => x.OrgId == orgId && x.AgentCode.ToUpper() == agentDto.SupervisorCode.ToUpper())
+                    .Select(x => (int?)x.AgentId)
+                    .FirstOrDefaultAsync();
+
+                if (!resolvedSupervisorId.HasValue)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid reporting manager/supervisor code.";
+                    return Conflict(response);
+                }
+            }
+
+            var channelId = agentDto.Channel.Value;
+            var subChannelId = agentDto.SubChannel ?? 0;
+            var branchId = agentDto.Branch.Value;
+            var locationId = agentDto.LocationCode.Value;
+            var designationId = agentDto.DesignationCode.Value;
+
+            var agentCode = await GenerateAgentCodeAsync(orgId, channelId, subChannelId, designationId);
+            var agentName = string.IsNullOrWhiteSpace(agentDto.AgentName)
+                ? string.Join(" ", new[] { agentDto.FirstName, agentDto.MiddleName, agentDto.LastName }
+                    .Where(x => !string.IsNullOrWhiteSpace(x))).Trim()
+                : agentDto.AgentName.Trim();
+
+            if (string.IsNullOrWhiteSpace(agentName))
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Agent name is required.";
+                return BadRequest(response);
+            }
+
+            var agent = new Agent
+            {
+                AgentCode = agentCode,
+                AgentName = agentName,
+                FirstName = agentDto.FirstName,
+                MiddleName = agentDto.MiddleName,
+                LastName = agentDto.LastName,
+                MobileNo = agentDto.MobileNo,
+                Email = agentDto.Email,
+                PanNumber = agentDto.PanNumber,
+                Channel = channelId,
+                SubChannel = subChannelId,
+                Branch = branchId,
+                LocationCode = locationId,
+                DesignationCode = designationId,
+                SupervisorId = resolvedSupervisorId,
+                AgentStatusCodeId = 2,
+                OrgId = orgId,
+                CreatedBy = username,
+                CreatedDate = DateTime.UtcNow,
+            };
+
+            await _context.Agents.AddAsync(agent);
+            await _context.SaveChangesAsync();
+
+            await CreateAgentHierarchyEntryAsync(agent, username);
+
+            //var hasBranchMapping = await _context.AgentBranchMappings.AsNoTracking()
+            //    .AnyAsync(x => x.OrgId == orgId && x.AgentId == agent.AgentId && x.BranchId == branchId);
+
+            //if (!hasBranchMapping)
+            //{
+            //    await _context.AgentBranchMappings.AddAsync(new AgentBranchMapping
+            //    {
+            //        OrgId = orgId,
+            //        AgentId = agent.AgentId,
+            //        BranchId = branchId,
+            //        CreatedBy = createdBy,
+            //        CreatedDate = DateTime.UtcNow
+            //    });
+            //    await _context.SaveChangesAsync();
+            //}
+
+            response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+            response.responseHeader.ErrorMessage = "Agent created successfully.";
+            response.responseBody.agents = new List<AgentDto> { _mapper.Map<AgentDto>(agent) };
+            return Ok(response);
+        }
+        private async Task<string> GenerateAgentCodeAsync(int orgId, int channelId, int subChannelId, int designationId)
+        {
+            var codeFormat = await _context.DesignationMaster.AsNoTracking()
+                .Where(x => x.OrgId == orgId
+                            && x.ChannelId == channelId
+                            //&& x.SubChannelId == subChannelId
+                            && x.DesignationId == designationId)
+                .Select(x => x.CodeFormat)
+                .FirstOrDefaultAsync();
+
+            var prefix = string.IsNullOrWhiteSpace(codeFormat) ? "UNDEF" : codeFormat;
+            var stamp = DateTime.UtcNow.ToString("yyMMddHHmm");
+            var baseCode = $"{prefix}{stamp}";
+
+            var index = await _context.Agents.AsNoTracking()
+                .CountAsync(x => x.OrgId == orgId 
+                && x.Channel == channelId 
+                && x.SubChannel == subChannelId 
+                && x.AgentCode.StartsWith(baseCode)) + 1;
+
+            return $"{baseCode}{index.ToString().PadLeft(3, '0')}";
+        }
+        private async Task CreateAgentHierarchyEntryAsync(Agent agent, string createdBy)
+        {
+            var channelCode = agent.Channel.HasValue
+                ? await _context.ChannelMaster.AsNoTracking()
+                    .Where(x => x.OrgId == agent.OrgId && x.ChannelId == agent.Channel.Value)
+                    .Select(x => x.ChannelCode)
+                    .FirstOrDefaultAsync()
+                : null;
+
+            var designationCode = agent.DesignationCode.HasValue
+                ? await _context.DesignationMaster.AsNoTracking()
+                    .Where(x => x.OrgId == agent.OrgId && x.DesignationId == agent.DesignationCode.Value)
+                    .Select(x => x.DesignationCode)
+                    .FirstOrDefaultAsync()
+                : null;
+
+            string hierarchyPath;
+            if (!agent.SupervisorId.HasValue)
+            {
+                hierarchyPath = agent.AgentId.ToString();
+            }
+            else
+            {
+                var supervisorPath = await _context.AgentHierarchies.AsNoTracking()
+                    .Where(h => h.AgentId == agent.SupervisorId.Value
+                                && (h.OrgId == agent.OrgId || h.OrgId == null))
+                    .OrderByDescending(h => h.EffectiveFromDate)
+                    .Select(h => h.HierarchyPath)
+                    .FirstOrDefaultAsync();
+
+                hierarchyPath = string.IsNullOrWhiteSpace(supervisorPath)
+                    ? agent.AgentId.ToString()
+                    : $"{supervisorPath}.{agent.AgentId}";
+            }
+
+            await _db.ExecuteScalarAsync<long>("Agent", "InsertAgentHierarchy", new
+            {
+                agent_id = agent.AgentId,
+                channel_code = channelCode,
+                effective_from_date = DateTime.UtcNow.Date,
+                designation_code = designationCode,
+                created_by = createdBy ?? string.Empty,
+                created_date = DateTime.UtcNow,
+                rowversion = 1,
+                hierarchy_path = hierarchyPath,
+                orgid = agent.OrgId
+            });
         }
     }
 }

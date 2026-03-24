@@ -160,3 +160,7 @@ VALUES(1038, 'Add Regulator Branch By Agent', 1001, null, 1, true, true, 'vishal
 INSERT INTO hms.menu_master
 (menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
 VALUES(1039, 'Fetch Regulator Branch By Agent', 1001, null, 1, true, true, 'vishal', '2026-03-10', null, null, 0);
+
+INSERT INTO hms.menu_master
+(menu_id, menu_name, parent_menu_id, route_path, display_order, is_active, is_internal, created_by, created_date, modified_by, modified_date, rowversion)
+VALUES(1040, 'Create Individual Agent', 1001, null, 1, true, true, 'vishal', '2026-03-24', null, null, 0);

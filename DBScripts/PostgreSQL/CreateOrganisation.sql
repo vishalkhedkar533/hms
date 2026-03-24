@@ -200,3 +200,12 @@ VALUES
 
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
 VALUES (:p_orgid, 'AgentStatusCodes', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''AGENT_STATUS_CODES''');
+
+INSERT INTO hmsmaster.keyvalueentries 
+(orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+(:p_orgid, 'ALLOW_AUTO_AGENT_CREATION', 1, 'Yes', NULL, true),
+(:p_orgid, 'ALLOW_AUTO_AGENT_CREATION', 2, 'No', NULL, true)
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (:p_orgid, 'AllowAutoAgentCreation', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''ALLOW_AUTO_AGENT_CREATION''');

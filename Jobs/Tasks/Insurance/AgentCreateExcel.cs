@@ -177,7 +177,6 @@ namespace Tasks.Insurance
 
                         var agentCode = $"{currDesignationHeirarchy?.CodeFormat ?? "UNDEF"}{DateTime.Now:yyMMddHHmm}{index.ToString().PadLeft(3, '0')}";
                         
-                        writer.Write(r.AgentId.ToString());
                         writer.Write(agentCode);
                         writer.Write(r.AgentName ?? "");
                         writer.Write(r.BusinessName ?? "");
@@ -191,12 +190,11 @@ namespace Tasks.Insurance
                         // 11-20
                         writer.Write(r.Nationality ?? "");
                         writer.Write(r.PreferredLanguage ?? "");
-                        writer.Write(r.AgentLevel ?? "");
-                        writer.Write(r.StaffCode ?? "");
+                        //writer.Write(r.AgentLevel ?? "");
+                        //writer.Write(r.StaffCode ?? "");
                         writer.Write(r.Supervisor_Code ?? "");
-                        writer.Write(r.ContractedDate?.ToString("yyyy-MM-dd") ?? "");
-                        writer.Write(r.AgentStatusCode ?? "");
-                        writer.Write(r.StatusDate?.ToString("yyyy-MM-dd") ?? "");
+                        //writer.Write(r.ContractedDate?.ToString("yyyy-MM-dd") ?? "");
+                        //writer.Write(r.StatusDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.IsLicensed.ToString());
                         writer.Write(r.MaskedPanNumber ?? "");
 
@@ -204,21 +202,20 @@ namespace Tasks.Insurance
                         writer.Write(r.AadhaarNumber ?? "");
                         writer.Write(r.IrdaLicenseNumber ?? "");
                         writer.Write(r.GstNumber ?? "");
-                        writer.Write(r.CreatedBy ?? "");
-                        writer.Write(r.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss"));
-                        writer.Write(r.ModifiedBy ?? "");
-                        writer.Write(r.ModifiedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "");
-                        writer.Write(r.RowVersion?.ToString() ?? "");
-                        writer.Write(r.IsActive.ToString());
+                        writer.Write(task.CreatedBy);
+                        writer.Write(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+                        //writer.Write(r.ModifiedBy ?? "");
+                        //writer.Write(r.ModifiedDate?.ToString("yyyy-MM-dd HH:mm:ss") ?? "");
+                        //writer.Write(r.RowVersion?.ToString() ?? "");
                         writer.Write(r.ApplicationDocketNo ?? "");
 
                         // 31-40
                         writer.Write(r.Father_Husband_Nm ?? "");
-                        writer.Write(r.EmployeeCode ?? "");
-                        writer.Write(r.StartDate?.ToString("yyyy-MM-dd") ?? "");
+                        //writer.Write(r.EmployeeCode ?? "");
+                        //writer.Write(r.StartDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.PanAadharLinkFlag.ToString());
                         writer.Write(r.Sec206abFlag.ToString());
-                        writer.Write(r.PackageID ?? "");
+                        //writer.Write(r.PackageID ?? "");
                         writer.Write(r.TaxStatus ?? "");
                         writer.Write(r.StateEid ?? "");
                         writer.Write(r.URN ?? "");
@@ -240,9 +237,9 @@ namespace Tasks.Insurance
                         writer.Write(r.Ifs ?? "");
                         writer.Write(r.RefresherTrainingCompleted.ToString());
                         writer.Write(r.IsMigrated.ToString());
-                        writer.Write(r.MainPartnerClientCode ?? "");
-                        writer.Write(r.AgentMainCodeVWEid ?? "");
-                        writer.Write(r.RegistrationDate?.ToString("yyyy-MM-dd") ?? "");
+                        //writer.Write(r.MainPartnerClientCode ?? "");
+                        //writer.Write(r.AgentMainCodeVWEid ?? "");
+                        //writer.Write(r.RegistrationDate?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.Vertical ?? "");
                         writer.Write(r.BranchCode ?? "");
                         writer.Write(r.BranchName ?? "");
@@ -323,7 +320,7 @@ namespace Tasks.Insurance
                         // 121-130
                         writer.Write(r.FactoringHouse ?? "");
                         writer.Write(r.PreferredPaymentMode.ToString());
-                        writer.Write(r.DoB?.ToString("yyyy-MM-dd") ?? "");
+                        //writer.Write(r.DoB?.ToString("yyyy-MM-dd") ?? "");
                         writer.Write(r.PanNumber ?? "");
                         writer.Write(r.Email ?? "");
                         writer.Write(r.MobileNo ?? "");
@@ -333,15 +330,15 @@ namespace Tasks.Insurance
                         writer.Write(r.BirthPlace ?? "");
 
                         // 131-136
-                        writer.Write(r.MaritalStatusDesc ?? "");
-                        writer.Write(r.EducationCode?.ToString() ?? "");
+                        //writer.Write(r.MaritalStatusDesc ?? "");
+                        //writer.Write(r.EducationCode?.ToString() ?? "");
                         writer.Write(r.EducationLevel ?? "");
                         writer.Write(r.WorkProfile ?? "");
                         writer.Write(r.AnnualIncome?.ToString() ?? "");
                         writer.Write(r.WorkExpMonths?.ToString() ?? "");
 
                         writer.Write(r.BranchDesc ?? "");
-
+                        writer.Write(AgentStatusCodes.Inactive);
                     }
 
                     await writer.CompleteAsync(token);

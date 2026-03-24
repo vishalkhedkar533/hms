@@ -40,5 +40,7 @@
         public const Int32 AccessHMSDashboard = 1037;
         public const Int32 AddRegulatedBranchByAgent = 1038;
         public const Int32 FetchRegulatedBranchByAgent = 1039;
+        public const Int32 CreateIndividualAgent = 1040;
+
     }
 }

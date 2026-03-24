@@ -5,17 +5,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Models.DB
 {
     /*
-     * modelBuilder.Entity<AgentHierarchy>(entity =>
-{
-    entity.ToTable("AGENT_HIERARCHY", "hms");
+    Fluent API Configuration (for your DbContext):
+    modelBuilder.Entity<AgentHierarchy>(entity =>
+    {
+        entity.ToTable("agent_hierarchy", "hms"); // Match exact case from SQL
 
-    entity.HasOne(e => e.Agent)
-          .WithMany()
-          .HasForeignKey(e => e.AgentId)
-          .HasConstraintName("fk_agent")
-          .OnDelete(DeleteBehavior.Cascade);
-});
-     */
+        entity.HasOne(e => e.Agent)
+              .WithMany()
+              .HasForeignKey(e => e.AgentId)
+              .HasConstraintName("fk_agent")
+              .OnDelete(DeleteBehavior.Cascade);
+    });
+    */
+
     [Table("agent_hierarchy", Schema = "hms")]
     public class AgentHierarchy
     {
@@ -28,11 +30,6 @@ namespace Models.DB
         [Column("agent_id")]
         [SwaggerSchema("Reference to the agent.")]
         public int AgentId { get; set; }
-
-        [Required]
-        [Column("supervisor_code")]
-        [SwaggerSchema("Code of the supervisor.")]
-        public int SupervisorCode { get; set; }
 
         [Required]
         [Column("effective_from_date", TypeName = "date")]
@@ -78,8 +75,21 @@ namespace Models.DB
         [SwaggerSchema("Concurrency token for optimistic concurrency control.")]
         public int? RowVersion { get; set; }
 
+        /// <summary>
+        /// Note: Postgres ltree type is usually handled as a string in C# 
+        /// when using Npgsql.
+        /// </summary>
+        [Column("hierarchy_path", TypeName = "ltree")]
+        [SwaggerSchema("The ltree path representing the agent's position in the tree.")]
+        public string? HierarchyPath { get; set; }
+
+        [Column("orgid")]
+        [SwaggerSchema("Organization ID associated with this hierarchy.")]
+        public int? OrgId { get; set; }
+
         // Navigation property
+        [ForeignKey("AgentId")]
         [SwaggerSchema("Reference to the agent.")]
-        public Agent? Agent { get; set; }
+        public virtual Agent? Agent { get; set; }
     }
 }

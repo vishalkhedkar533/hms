@@ -30,7 +30,7 @@ WITH master_map AS (
         MAX(CASE WHEN k.entrycategory = 'TRAINING_GROUP' THEN k.entryidentity END) AS traininggrouptype_id,
         MAX(CASE WHEN k.entrycategory = 'STATE_NAME' THEN k.entrydesc END) AS state_desc,
         MAX(CASE WHEN k.entrycategory = 'COUNTRY' THEN k.entrydesc END) AS country_desc,
-        MAX(CASE WHEN k.entrycategory = 'AGENT_STATUS_CODES' THEN k.entryidentity END) AS agent_status_code_id,
+        MAX(CASE WHEN k.entrycategory = 'AGENT_STATUS_CODES' THEN k.entryidentity END) AS agent_status_code_id
 
     FROM hms.tempagentdto t
     LEFT JOIN hmsmaster.channel_master cm 
@@ -72,7 +72,7 @@ WITH master_map AS (
             OR (k.entrycategory = 'LICENSE_STATUS' AND k.entrydesc = t.licensestatus)
             OR (k.entrycategory = 'VERTICAL' AND k.entrydesc = t.vertical)
             OR (k.entrycategory = 'TRAINING_GROUP' AND k.entrydesc = t.traininggrouptype)
-            OR (k.entrycategory = 'AGENT_STATUS_CODES' AND k.entrydesc = t.agent_status_codes_desc)
+            OR (k.entrycategory = 'AGENT_STATUS_CODES' AND k.entrydesc = t.agent_status_code_desc)
         )
     WHERE t.comments = 'Processed'
     GROUP BY 

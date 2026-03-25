@@ -182,3 +182,27 @@ INSERT INTO hmsmaster.ui_fields (cntrl_id, component_id, cntrl_name) VALUES
 (1098,139,'HR DOJ'),
 (1099,139,'Last Working Date'),
 (1100,139,'Last Promotion Date');
+
+INSERT INTO scheduler.job_config 
+(job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, updated_at, targettype, targetmethod, args, orgid)
+VALUES
+('PremiumCollExcelUpload', 'PremiumCollExcelUpload', true, 'interval', NULL, 30, '2026-01-12 00:00:00.000', NULL, '""'::jsonb, '2026-01-12 11:57:00.422', NULL, 'Tasks.Insurance.PremiumUploadExcel', 'UploadPremiumData', '', 2),
+
+('ProcessPolicyExcel', 'ProcessPolicyExcel', true, 'Interval', NULL, 60, '2025-12-27 00:00:00.000', NULL, '""'::jsonb, '2025-12-27 13:43:48.991', NULL, 'Tasks.Insurance.PolicyExcelUpload', 'UploadPolicyData', '', 2),
+
+('Comission by Navin K', 'Comission by Navin K', true, 'interval', NULL, 30, '2026-01-01 00:00:00.000', NULL, '""'::jsonb, '2026-01-01 00:00:00.000', '2026-01-01 00:00:00.000', 'Tasks.Insurance.Commission', 'Calculate', '', 2),
+
+('BulkLocationUpdate', 'BulkLocationUpdate', true, 'interval', NULL, 30, '2025-12-29 08:00:00.000', NULL, '""'::jsonb, '2026-02-18 09:26:35.876', NULL, 'Tasks.Insurance.BulkLocationUpdate', 'ProcessLocationUpdate', '', 2),
+
+('InboxProcessing', 'InboxProcessing', true, 'interval', NULL, 30, '2025-12-29 08:00:00.000', NULL, '""'::jsonb, '2026-02-17 16:13:34.325', NULL, 'Tasks.Insurance.InboxProcessing', 'ProcessInboxData', '', 2),
+
+('CreateAgentExcel', 'CreateAgentExcel', true, 'interval', NULL, 30, '2025-12-28 00:00:00.000', NULL, '""'::jsonb, '2025-12-28 00:00:00.000', '2025-12-28 00:00:00.000', 'Tasks.Insurance.AgentCreateExcel', 'ProcessAgentCreateData', '', 2),
+
+('BulkManagerUpdate', 'BulkManagerUpdate', true, 'interval', NULL, 30, '2025-12-29 08:00:00.000', NULL, '""'::jsonb, '2026-01-20 21:40:01.458', '2026-01-20 21:42:22.070', 'Tasks.Insurance.BulkManagerUpdate', 'ProcessManagerUpdate', '', 2),
+
+('BulkStatusUpdate', 'BulkStatusUpdate', true, 'interval', NULL, 30, '2025-12-29 08:00:00.000', NULL, '""'::jsonb, '2026-02-17 09:10:23.751', '2026-01-20 21:42:22.070', 'Tasks.Insurance.BulkStatusUpdate', 'ProcessStatusUpdate', '', 2),
+
+('BulkDesignationUpdate', 'BulkDesignationUpdate', true, 'interval', NULL, 30, '2025-12-29 08:00:00.000', NULL, '""'::jsonb, '2026-02-17 16:13:34.325', NULL, 'Tasks.Insurance.BulkDesignationUpdate', 'ProcessDesignationUpdate', '', 2);
+
+INSERT INTO scheduler.job_config (job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, targettype, targetmethod, args, orgid) 
+VALUES ('MonthlyOrgConfiguration', 'CRON', true, 'CRON', '0 0 0 1 * ?', NULL, '2026-04-01 00:00:00.000', NULL, '{}'::jsonb, NOW(), 'Tasks.Insurance.OrgConfig', 'SetMonthlyConfiguration', '', 2);

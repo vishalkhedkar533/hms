@@ -1,38 +1,28 @@
 ﻿using CommonLibrary.mapping;
 using Dapper;
-using Database;
 using Quartz;
 using Repository;
-using System.Data.Common;
-using System.Linq.Dynamic.Core;
 using Tasks.Models;
-using Tasks.Repository;
 
 namespace Tasks.Finance
 {
     public class OrgConfig
     {
         private readonly IJobExecutionContext _jobExecutionContext;
-        private int orgId = 0;
-        public JobKey jobKey;
-
         private readonly IMappingProvider _mappingProvider;
         private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
-        private readonly string _baseDir = AppContext.BaseDirectory;
         private readonly ILogger<OrgConfig> _logger;
         private readonly IConnectionScope _connectionScope;
-        private readonly IBinaryImportFactory _bulkOpsFactory;
-        private string connectionString;
-        private OperationMapping? operationMapping;
-        private DbConnection conn;
-        private readonly IJobTriggerRepository _jobTriggerRepository;
-        public  OrgConfig(IJobExecutionContext jobExecutionContext,
+
+        private readonly int orgId;
+        public JobKey jobKey;
+
+        public OrgConfig(
+            IJobExecutionContext jobExecutionContext,
             IMappingProvider mappingProvider,
             Microsoft.Extensions.Configuration.IConfiguration configuration,
             ILogger<OrgConfig> logger,
-            IConnectionScope connectionScope,
-            IBinaryImportFactory bulkOpsFactory,
-            IJobTriggerRepository jobTriggerRepository)
+            IConnectionScope connectionScope)
         {
             _jobExecutionContext = jobExecutionContext;
             orgId = int.Parse(jobExecutionContext.JobDetail.JobDataMap.Values
@@ -42,42 +32,57 @@ namespace Tasks.Finance
                     .Select((value, index) => new { value, index })
                     .FirstOrDefault(x => x.value == "orgId").index))
                 .value.ToString());
+
             jobKey = jobExecutionContext.JobDetail.Key;
-            _mappingProvider = mappingProvider;
-            _configuration = configuration;
-            _logger = logger;
+            _mappingProvider = mappingProvider ?? throw new ArgumentNullException(nameof(mappingProvider));
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _connectionScope = connectionScope ?? throw new ArgumentNullException(nameof(connectionScope));
-            _bulkOpsFactory = bulkOpsFactory ?? throw new ArgumentNullException(nameof(bulkOpsFactory));
-            _jobTriggerRepository = jobTriggerRepository;
         }
 
-        public async Task SetMonthlyCondfiguration(JobExeHist jobExeHist,CancellationToken ct)
+        public async Task SetMonthlyConfiguration(JobExeHist jobExeHist, CancellationToken ct)
         {
-            string sqlCommand = string.Empty;
-            sqlCommand = _mappingProvider.GetScriptForOperation("Organisation", "GenerateFinancialMonths")?.Script;
-            using (var tx = await conn.BeginTransactionAsync(ct))
+            if (DateTime.UtcNow.Day != 1)
             {
-                var command = new CommandDefinition(
-                    commandText: sqlCommand,
-                    parameters: new { OrgId = jobExeHist.OrgId }, // Assuming OrgId is in jobExeHist
-                    transaction: tx,
-                    cancellationToken: ct
-                    );
-                await conn.ExecuteAsync(command);
-                await tx.CommitAsync(ct);
+                _logger.LogInformation("Skipping OrgConfig monthly setup. Today is not day 1. OrgId={OrgId}", jobExeHist.OrgId);
+                return;
             }
-            sqlCommand = _mappingProvider.GetScriptForOperation("Organisation", "GenerateFinancialQuarters")?.Script;
 
-            using (var tx = await conn.BeginTransactionAsync(ct))
+            var monthSqlMapping = _mappingProvider.GetScriptForOperation("Organisation", "GenerateFinancialMonths")
+                ?? throw new InvalidOperationException("Operation mapping for Organisation/GenerateFinancialMonths not found.");
+            var quarterSqlMapping = _mappingProvider.GetScriptForOperation("Organisation", "GenerateFinancialQuarters")
+                ?? throw new InvalidOperationException("Operation mapping for Organisation/GenerateFinancialQuarters not found.");
+
+            var connectionString = _configuration.GetConnectionString(monthSqlMapping.ConnectionStringKey)
+                ?? throw new InvalidOperationException($"Connection string '{monthSqlMapping.ConnectionStringKey}' not found.");
+
+            await using var conn = await _connectionScope.GetOpenConnectionAsync(connectionString);
+            await using var tx = await conn.BeginTransactionAsync(ct);
+
+            try
             {
-                var command = new CommandDefinition(
-                    commandText: sqlCommand,
-                    parameters: new { OrgId = jobExeHist.OrgId }, // Assuming OrgId is in jobExeHist
-                    transaction: tx,
-                    cancellationToken: ct
-                    );
-                await conn.ExecuteAsync(command);
+                await conn.ExecuteAsync(
+                    new CommandDefinition(
+                        monthSqlMapping.Script,
+                        new { p_organization_id = jobExeHist.OrgId },
+                        tx,
+                        cancellationToken: ct));
+
+                await conn.ExecuteAsync(
+                    new CommandDefinition(
+                        quarterSqlMapping.Script,
+                        new { p_organization_id = jobExeHist.OrgId },
+                        tx,
+                        cancellationToken: ct));
+
                 await tx.CommitAsync(ct);
+                _logger.LogInformation("Monthly period setup completed for OrgId={OrgId}", jobExeHist.OrgId);
+            }
+            catch (Exception ex)
+            {
+                await tx.RollbackAsync(ct);
+                _logger.LogError(ex, "Monthly period setup failed for OrgId={OrgId}", jobExeHist.OrgId);
+                throw;
             }
         }
     }

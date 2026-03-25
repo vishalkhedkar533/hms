@@ -54,4 +54,10 @@
     <ProjectReference Include="..\..\CommonLibrary\CommonLibrary\CommonLibrary.csproj" />
     <ProjectReference Include="..\..\SharedModels\SharedModels.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="mapping\UpsertDashboardFromAgent.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

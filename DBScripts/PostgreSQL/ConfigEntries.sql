@@ -206,3 +206,9 @@ VALUES
 
 INSERT INTO scheduler.job_config (job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, targettype, targetmethod, args, orgid) 
 VALUES ('MonthlyOrgConfiguration', 'CRON', true, 'CRON', '0 0 0 1 * ?', NULL, '2026-04-01 00:00:00.000', NULL, '{}'::jsonb, NOW(), 'Tasks.Insurance.OrgConfig', 'SetMonthlyConfiguration', '', 2);
+
+INSERT INTO scheduler.job_config
+(job_name, job_type, enabled, trigger_type, cron_expression, interval_seconds, start_at, end_at, parameters, created_at, targettype, targetmethod, args, orgid)
+VALUES
+('DashboardSyncFromAgent', 'CRON', true, 'CRON', '0 0/15 * * * ?', NULL, NOW(), NULL, '{}'::jsonb, NOW(),
+ 'Tasks.Insurance.DashboardConfig', 'SyncDashboardFromAgent', '', 2);

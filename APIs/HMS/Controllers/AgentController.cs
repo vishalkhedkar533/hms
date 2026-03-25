@@ -840,6 +840,7 @@ namespace HMS.Controllers
                     { "AdditionalComment", agent.AdditionalComment },
                     { "Channel", agent.Channel },
                     { "SubChannel", agent.SubChannel },
+                    { "LocationCode", agent.LocationCode },
                     { "Ic36TrngCompletionDate", agent.Ic36TrngCompletionDate },
                     { "STrngCompletionDate", agent.STrngCompletionDate },
                     { "FgRockstarTrainingDate", agent.FgRockstarTrainingDate },
@@ -850,7 +851,8 @@ namespace HMS.Controllers
                     { "WhistleBlowerTrngDate", agent.WhistleBlowerTrngDate },
                     { "GovPolicyTrngDate", agent.GovPolicyTrngDate },
                     { "InductionTrngDate", agent.InductionTrngDate },
-                    { "DesignationCode", agent.DesignationCode }
+                    { "DesignationCode", agent.DesignationCode },
+                    { "AgentStatusCodeId", agent.AgentStatusCodeId }
 
                 };
 
@@ -1627,14 +1629,7 @@ namespace HMS.Controllers
                         var userIdValue = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                         var createdBy = int.TryParse(userIdValue, out var parsedUserId) ? parsedUserId : 0;
                         var orgIdValue = Convert.ToInt32(orgId);
-                        var fieldNames = updatedFields
-                            .Select(f => f.FieldName)
-                            .Where(n => !string.IsNullOrWhiteSpace(n))
-                            .Select(n => n.Trim())
-                            .Distinct(StringComparer.OrdinalIgnoreCase)
-                            .ToList();
-
-                        if (fieldNames.Any())
+                        if (updatedFields.Any())
                         {
                             string Normalize(string value)
                             {
@@ -1679,7 +1674,8 @@ namespace HMS.Controllers
                                 ["SubChannel"] = ToMap(GetMasterData("SubChannel")),
                                 ["DesignationCode"] = ToMap(GetMasterData("Designation")),
                                 ["LocationCode"] = ToMap(GetMasterData("Location")),
-                                ["Branch"] = ToMap(GetMasterData("Branch"))
+                                ["Branch"] = ToMap(GetMasterData("Branch")),
+                                ["AgentStatusCodeId"] = GetCategoryMap("AGENT_STATUS_CODES")
                             };
 
                             string ResolveDisplayValue(string fieldName, string value)
@@ -1717,68 +1713,52 @@ namespace HMS.Controllers
                                 return map.TryGetValue(id, out var desc) && !string.IsNullOrWhiteSpace(desc) ? desc : value;
                             }
 
-                            var uiFields = await _context.uiField
+                            var normalizedSection = Normalize(sectionName);
+
+                            var components = await _context.uiComponent
                                 .AsNoTracking()
-                                .Select(f => new { f.CntrlId, f.CntrlName })
+                                .Where(c => c.ElementType == "Section")
+                                .Select(c => new { c.ComponentId, c.Label, c.Path })
                                 .ToListAsync();
 
-                            var normalizedUiFields = uiFields
-                                .Select(f => new { f.CntrlId, f.CntrlName, Normalized = Normalize(f.CntrlName) })
-                                .ToList();
-
-                            var controlIdMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-                            foreach (var fieldName in fieldNames)
-                            {
-                                var normalizedField = Normalize(fieldName);
-                                if (string.IsNullOrWhiteSpace(normalizedField))
+                            var sectionComponent = components
+                                .Select(c =>
                                 {
-                                    continue;
-                                }
+                                    var normalizedLabel = Normalize(c.Label);
+                                    var normalizedPath = Normalize(c.Path);
+                                    var pathLeaf = c.Path?.Split('.', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? string.Empty;
+                                    var normalizedPathLeaf = Normalize(pathLeaf);
 
-                                var match = normalizedUiFields.FirstOrDefault(f => f.Normalized == normalizedField)
-                                            ?? normalizedUiFields.FirstOrDefault(f => f.Normalized.Contains(normalizedField)
-                                                                                  || normalizedField.Contains(f.Normalized));
+                                    var score = 0;
+                                    if (normalizedLabel == normalizedSection || normalizedPathLeaf == normalizedSection || normalizedPath == normalizedSection)
+                                        score = 100;
+                                    else if (normalizedLabel.Contains(normalizedSection) || normalizedPathLeaf.Contains(normalizedSection) || normalizedPath.Contains(normalizedSection))
+                                        score = 80;
+                                    else if (normalizedSection.Contains(normalizedLabel) || normalizedSection.Contains(normalizedPathLeaf))
+                                        score = 60;
 
-                                if (match != null && match.CntrlId != 0)
-                                {
-                                    controlIdMap[fieldName] = match.CntrlId;
-                                }
-                            }
+                                    return new { Component = c, Score = score };
+                                })
+                                .Where(x => x.Score > 0)
+                                .OrderByDescending(x => x.Score)
+                                .ThenByDescending(x => Normalize(x.Component.Label).Length)
+                                .Select(x => x.Component)
+                                .FirstOrDefault();
 
-                            var controlIds = controlIdMap.Values.Distinct().ToList();
-
-                            var componentLookup = await _context.uiField
-                                .AsNoTracking()
-                                .Where(f => controlIds.Contains(f.CntrlId))
-                                .Select(f => new { f.CntrlId, f.ComponentId })
-                                .ToListAsync();
-
-                            var componentIdMap = componentLookup
-                                .Where(x => x.ComponentId.HasValue)
-                                .ToDictionary(x => x.CntrlId, x => x.ComponentId!.Value);
+                            var componentId = sectionComponent?.ComponentId ?? 0;
 
                             var payload = updatedFields
                                 .Where(f => !string.IsNullOrWhiteSpace(f.FieldName))
                                 .ToDictionary(f => f.FieldName, f => (object?)f.NewValue, StringComparer.OrdinalIgnoreCase);
 
-                            var inboxFields = updatedFields
-                                .Where(f => controlIdMap.TryGetValue(f.FieldName, out var cntrlId)
-                                            && cntrlId != 0
-                                            && componentIdMap.TryGetValue(cntrlId, out var componentId)
-                                            && componentId != 0)
-                                .ToList();
-
-                            var primaryField = inboxFields.FirstOrDefault();
-                            if (primaryField != null)
+                            if (componentId != 0)
                             {
-                                var cntrlId = controlIdMap[primaryField.FieldName];
-                                var componentId = componentIdMap[cntrlId];
                                 var approvalRoleId = await _context.ApprovalSettings
                                     .AsNoTracking()
                                     .Where(x => x.OrgId == orgIdValue && x.ComponentId == componentId)
                                     .Select(x => x.ApproverOneId ?? x.ApproverTwoId ?? x.ApproverThreeId)
                                     .FirstOrDefaultAsync();
+
                                 inboxEntries = new List<Inbox>
                                 {
                                     new Inbox
@@ -1789,7 +1769,7 @@ namespace HMS.Controllers
                                         SrStatus = SrStatus.Created,
                                         RequestDets = $"{sectionName} Updated",
                                         RequestorNote = JsonConvert.SerializeObject(
-                                            inboxFields.Select(f => new
+                                            updatedFields.Select(f => new
                                             {
                                                 FieldName = f.FieldName,
                                                 OldValue = ResolveDisplayValue(f.FieldName, f.OldValue),
@@ -1797,7 +1777,7 @@ namespace HMS.Controllers
                                             }),
                                             Formatting.None),
                                         ComponentId = componentId,
-                                        AllocatedToRole = approvalRoleId,
+                                        AllocatedToRole = null,
                                         ObjectName = $"Agent",
                                         ApprovalPayload = JsonConvert.SerializeObject(new
                                         {

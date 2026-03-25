@@ -2657,3 +2657,19 @@ CREATE TABLE hmsmaster.user_branch_mapping (
     CONSTRAINT created_by_fkey 
     	FOREIGN KEY (created_by) REFERENCES hms."user"(user_id) ON DELETE cascade
 );
+
+CREATE TABLE hmsmaster.product_master (
+    product_id SERIAL PRIMARY KEY,
+    product_code VARCHAR(10) NOT NULL UNIQUE,
+    product_name VARCHAR(100) NOT NULL,
+    category_id INT NOT NULL,
+    effective_from DATE NOT NULL DEFAULT CURRENT_DATE,
+    effective_to DATE NOT NULL DEFAULT (CURRENT_DATE + INTERVAL '50 years'),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_by INT,
+    created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modified_by INT,
+    modified_date TIMESTAMP
+);
+
+CREATE INDEX idx_product_code ON hmsmaster.product_master(product_code);

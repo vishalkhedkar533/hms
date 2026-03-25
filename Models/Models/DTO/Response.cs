@@ -65,6 +65,7 @@ namespace Models.DTO
         public List<ApprovalSetting>? ApprovalSettings { get; set; } = null;
         public GraphRevenueCommDto? GraphRevenueCommData { get; set; } = null;
         public List<BranchListDto>? BranchList { get; set; } = null;
+        public List<ProductMaster>? products { get; set; } = null;
     }
 
 

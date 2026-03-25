@@ -63,6 +63,7 @@ namespace HMS.Data
         public DbSet<OrganizationPeriod> OrganizationPeriods { get; set; }
         public DbSet<AgentBranchMapping> AgentBranchMappings => Set<AgentBranchMapping>();
         public DbSet<UserAuditTrail> UserAuditTrails => Set<UserAuditTrail>();
+        public DbSet<ProductMaster> productMasters => Set<ProductMaster>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

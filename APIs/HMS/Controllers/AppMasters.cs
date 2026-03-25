@@ -1344,6 +1344,17 @@ namespace HMS.Controllers
 
             try
             {
+                var isDuplicateProductCode = await _context.productMasters.AsNoTracking().AnyAsync(x =>
+                    x.ProductCode == dto.ProductCode &&
+                    (!dto.ProductId.HasValue || x.ProductId != dto.ProductId.Value));
+
+                if (isDuplicateProductCode)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "A product with the same code already exists.";
+                    return Conflict(response);
+                }
+
                 if (dto.ProductId.HasValue && dto.ProductId > 0)
                 {
                     var existing = await _context.productMasters.FindAsync(dto.ProductId.Value);

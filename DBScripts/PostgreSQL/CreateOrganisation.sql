@@ -209,3 +209,14 @@ VALUES
 
 INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
 VALUES (:p_orgid, 'AllowAutoAgentCreation', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''ALLOW_AUTO_AGENT_CREATION''');
+
+INSERT INTO hmsmaster.keyvalueentries 
+(orgid, entrycategory, entryidentity, entrydesc, entryparentid, activestatus)
+VALUES 
+(:p_orgid, 'PRODUCT_CATEGORY', 1, 'ULIP', NULL, true),
+(:p_orgid, 'PRODUCT_CATEGORY', 2, 'Savings', NULL, true),
+(:p_orgid, 'PRODUCT_CATEGORY', 3, 'Term', NULL, true),
+(:p_orgid, 'PRODUCT_CATEGORY', 2, 'Group', NULL, true);
+
+INSERT INTO hmsmaster.mastertables (orgid, entrycategory, schemaname, tablename, filtercriteria)
+VALUES (:p_orgid, 'ProductCategory', 'hmsmaster', 'keyvalueentries',' AND entrycategory = ''PRODUCT_CATEGORY''');

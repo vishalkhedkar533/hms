@@ -1291,5 +1291,112 @@ namespace HMS.Controllers
 
             return Ok(response);
         }
+
+        [HttpPost("GetProducts")]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
+        public async Task<IActionResult> GetProducts()
+        {
+            var response = new HmsResponse();
+            try
+            {
+                var products = await _context.productMasters
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                if (products == null || products.Count == 0)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "No products found.";
+                    return NotFound(response);
+                }
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Products fetched successfully.";
+                response.responseBody.products = products;
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while fetching products.");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
+
+        [HttpPost("SaveProduct")]
+        [MenuAuthorize(AuthorisationConstants.ReadMasters)]
+        public async Task<IActionResult> SaveProduct([FromBody] ProductSaveDto dto)
+        {
+            var response = new HmsResponse();
+
+            if (dto == null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return BadRequest(response);
+            }
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            var userId = int.TryParse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier), out var parsedUserId)
+                ? parsedUserId
+                : 0;
+
+            try
+            {
+                if (dto.ProductId.HasValue && dto.ProductId > 0)
+                {
+                    var existing = await _context.productMasters.FindAsync(dto.ProductId.Value);
+                    if (existing == null)
+                    {
+                        response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                        response.responseHeader.ErrorMessage = "Product not found.";
+                        return NotFound(response);
+                    }
+
+                    existing.ProductCode = dto.ProductCode;
+                    existing.ProductName = dto.ProductName;
+                    existing.CategoryId = dto.CategoryId;
+                    existing.EffectiveFrom = dto.EffectiveFrom;
+                    existing.EffectiveTo = dto.EffectiveTo ?? DateTime.UtcNow.AddYears(50);
+                    existing.IsActive = dto.IsActive ?? existing.IsActive;
+                    existing.ModifiedBy = userId > 0 ? userId : null;
+                    existing.ModifiedDate = DateTime.UtcNow;
+
+                    _context.productMasters.Update(existing);
+
+                    await _context.SaveChangesAsync();
+                    response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                    response.responseHeader.ErrorMessage = "Product updated successfully.";
+                    response.responseBody.products = new List<ProductMaster> { existing };
+                    return Ok(response);
+                }
+
+                var product = new ProductMaster
+                {
+                    ProductCode = dto.ProductCode,
+                    ProductName = dto.ProductName,
+                    CategoryId = dto.CategoryId,
+                    EffectiveFrom = dto.EffectiveFrom,
+                    EffectiveTo = dto.EffectiveTo ?? DateTime.UtcNow.AddYears(50),
+                    IsActive = dto.IsActive ?? true,
+                    CreatedBy = userId > 0 ? userId : null,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                await _context.productMasters.AddAsync(product);
+                await _context.SaveChangesAsync();
+
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "Product created successfully.";
+                response.responseBody.products = new List<ProductMaster> { product };
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred while saving product.");
+                return StatusCode(500, "Internal Server Error");
+            }
+        }
     }
 }

@@ -448,41 +448,83 @@ namespace HMS.Controllers
         [HttpPost("ProcessCommissions")]
         [Authorize]
         [MenuAuthorize(1001)]
-        public async Task<IActionResult> ProcessCommissionRecord([FromBody] PaginationRequest paginationRequest)
+        public async Task<IActionResult> ProcessCommissionRecord([FromBody] ProcessCommissionListRequest? request)
         {
             HmsResponse response = new HmsResponse();
 
-            paginationRequest.PageNumber = paginationRequest.PageNumber <= 0 ? 1 : paginationRequest.PageNumber;
-            paginationRequest.PageSize = paginationRequest.PageSize <= 0 ? 10 : paginationRequest.PageSize;
+            request ??= new ProcessCommissionListRequest();
+
+            request.PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber;
+            request.PageSize = request.PageSize <= 0 ? 10 : request.PageSize;
+            request.CommissionName = string.IsNullOrWhiteSpace(request.CommissionName)
+                ? null
+                : request.CommissionName.Trim();
 
             try
             {
                 int orgId = Convert.ToInt32(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
 
-                var results = await _db.ExecuteQueryAsync<ProcessCommissionDTO>(
-                    "Commission",
-                    "GetProcessComissionList",
-                    new
-                    {
-                        p_orgid = orgId,
-                        p_page_number = paginationRequest.PageNumber,
-                        p_page_size = paginationRequest.PageSize
-                    });
+                var query = from jeh in _context.JobExeHists.AsNoTracking()
+                            join jc in _context.JobConfigs.AsNoTracking()
+                                on jeh.JobConfigId equals jc.JobConfigId into jobConfigGroup
+                            from jc in jobConfigGroup.DefaultIfEmpty()
+                            where jeh.OrgId == orgId
+                               && jc != null
+                               && jc.TargetType == "Tasks.Insurance.Commission"
+                            select new ProcessCommissionDTO
+                            {
+                                JobExeHistId = jeh.JobExeHistId,
+                                JobConfigId = jeh.JobConfigId,
+                                CommissionName = jc!.JobName,
+                                StartedAt = jeh.StartedAt,
+                                FinishedAt = jeh.FinishedAt,
+                                Records = jeh.Records,
+                                ExeStatus = jeh.ExeStatus,
+                                DownloadLnk = jeh.DownloadLnk,
+                                OrgId = jeh.OrgId,
+                                TotalCount = 0
+                            };
 
-                var processList = results?.ToList() ?? new List<ProcessCommissionDTO>();
+                if (!string.IsNullOrWhiteSpace(request.CommissionName))
+                {
+                    query = query.Where(x => EF.Functions.ILike(x.CommissionName, $"%{request.CommissionName}%"));
+                }
+
+                if (request.FromDate.HasValue)
+                {
+                    var fromDate = request.FromDate.Value.Date;
+                    query = query.Where(x => x.StartedAt.Date >= fromDate);
+                }
+
+                if (request.ToDate.HasValue)
+                {
+                    var toDate = request.ToDate.Value.Date;
+                    query = query.Where(x => x.StartedAt.Date <= toDate);
+                }
+
+                var totalItems = await query.CountAsync();
+
+                var processList = await query
+                    .OrderByDescending(x => x.StartedAt)
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToListAsync();
 
                 if (processList.Any())
                 {
-                    int totalItems = processList.First().TotalCount;
+                    foreach (var item in processList)
+                    {
+                        item.TotalCount = totalItems;
+                    }
 
                     response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
                     response.responseHeader.ErrorMessage = "SUCCESS";
                     response.responseBody.processCommissionList = processList;
                     response.responseBody.pagination = new
                     {
-                        currentPage = paginationRequest.PageNumber,
-                        totalPages = (int)Math.Ceiling(totalItems / (double)paginationRequest.PageSize),
-                        pageSize = paginationRequest.PageSize,
+                        currentPage = request.PageNumber,
+                        totalPages = (int)Math.Ceiling(totalItems / (double)request.PageSize),
+                        pageSize = request.PageSize,
                         totalItems = totalItems
                     };
 
@@ -506,10 +548,9 @@ namespace HMS.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
-
         private byte[] GenerateCommissionExcel(List<ProcessCommissionExcelDTO> data)
         {
-            var excelData = data.Select(x => new
+            var detailsSheet = data.Select(x => new
             {
                 // Agent / Commission details
                 Agent_Id = x.AgentId,
@@ -554,12 +595,37 @@ namespace HMS.Controllers
                 Product_Code = x.ProductCode
             });
 
+            var summarySheet = data
+                .GroupBy(x => new { x.AgentId, x.AgentName, x.Channel })
+                .Select(g => new
+                {
+                    Agent_Id = g.Key.AgentId,
+                    Agent_Name = g.Key.AgentName,
+                    Channel = g.Key.Channel,
+                    Total_Commission_Amount = g.Sum(x => x.CommissionAmount),
+                    Total_Records = g.Count(),
+                    Ledger_Entry_Date = g.Select(x => x.LedgerEntryDate).FirstOrDefault(x => x.HasValue),
+                    Ledger_Period_From = g.Select(x => x.LedgerFinPeriodFrom).FirstOrDefault(x => x.HasValue),
+                    Ledger_Period_To = g.Select(x => x.LedgerFinPeriodTo).FirstOrDefault(x => x.HasValue),
+                    Ledger_Trans_Amount_Total = g.Select(x => x.LedgerTransAmountTotal).FirstOrDefault(x => x.HasValue),
+                    Ledger_Balance_Amount = g.Select(x => x.LedgerBalanceAmount).FirstOrDefault(x => x.HasValue),
+                    Fy_Ledger_Entry_Date = g.Select(x => x.FyLedgerEntryDate).FirstOrDefault(x => x.HasValue),
+                    Fy_Period_From = g.Select(x => x.FyFinPeriodFrom).FirstOrDefault(x => x.HasValue),
+                    Fy_Period_To = g.Select(x => x.FyFinPeriodTo).FirstOrDefault(x => x.HasValue),
+                    Fy_Balance_Amount = g.Select(x => x.FyBalanceAmount).FirstOrDefault(x => x.HasValue)
+                })
+                .ToList();
+
+            var sheets = new Dictionary<string, object>
+            {
+                ["Commission_Details"] = detailsSheet,
+                ["Agent_Ledger_Summary"] = summarySheet
+            };
+
             using var stream = new MemoryStream();
-            stream.SaveAs(excelData);
+            MiniExcel.SaveAs(stream, sheets);
             return stream.ToArray();
         }
-
-
 
         [HttpPost("DownloadCommissionExcel/{jobExeHistId}")]
         [Authorize]

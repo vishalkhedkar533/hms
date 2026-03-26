@@ -19,6 +19,15 @@
         public int AgentId { get; set; }
         public string AgentName { get; set; } = null!;
         public string Channel { get; set; } = null!;
+        public DateTime? LedgerEntryDate { get; set; }
+        public DateTime? LedgerFinPeriodFrom { get; set; }
+        public DateTime? LedgerFinPeriodTo { get; set; }
+        public decimal? LedgerTransAmountTotal { get; set; }
+        public decimal? LedgerBalanceAmount { get; set; }
+        public DateTime? FyLedgerEntryDate { get; set; }
+        public DateTime? FyFinPeriodFrom { get; set; }
+        public DateTime? FyFinPeriodTo { get; set; }
+        public decimal? FyBalanceAmount { get; set; }
         public int PremiumCollectionId { get; set; }
         public decimal PremiumAmount { get; set; }
         public string? Formula { get; set; }

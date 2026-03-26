@@ -580,110 +580,110 @@ namespace HMS.Controllers
 
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        //[HttpPost("RegulatorUserBranch/Save")]
-        //[MenuAuthorize(AuthorisationConstants.ManagerUser)]
-        //public async Task<IActionResult> SaveRegulatorUserBranchMapping([FromBody] UserBranchMappingDto dto)
-        //{
-        //    var response = new HmsResponse();
-        //    orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
-        //    var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
-        //    var targetUserId = dto?.UserId > 0 ? dto.UserId : loggedInUserId;
+        [HttpPost("RegulatorUserBranch/Save")]
+        [MenuAuthorize(AuthorisationConstants.ManagerUser)]
+        public async Task<IActionResult> SaveRegulatorUserBranchMapping([FromBody] UserBranchMappingDto dto)
+        {
+            var response = new HmsResponse();
+            orgId = int.Parse(_authClaimService.GetClaim(ApiConstants.OrganisationId) ?? "0");
+            var loggedInUserId = int.Parse(_authClaimService.GetClaim(ClaimTypes.NameIdentifier) ?? "0");
+            var targetUserId = dto?.UserId > 0 ? dto.UserId : loggedInUserId;
 
-        //    if (dto is null)
-        //    {
-        //        response.responseHeader.ErrorCode = CommonConstants.FAILED;
-        //        response.responseHeader.ErrorMessage = "Request body is required.";
-        //        return BadRequest(response);
-        //    }
+            if (dto is null)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "Request body is required.";
+                return BadRequest(response);
+            }
 
-        //    var branchIds = dto.BranchIds?
-        //        .Where(x => x > 0)
-        //        .Distinct()
-        //        .ToList() ?? new List<long>();
+            var branchIds = dto.BranchIds?
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList() ?? new List<long>();
 
-        //    if (branchIds.Count == 0)
-        //    {
-        //        response.responseHeader.ErrorCode = CommonConstants.FAILED;
-        //        response.responseHeader.ErrorMessage = "At least one valid BranchId is required.";
-        //        return BadRequest(response);
-        //    }
+            if (branchIds.Count == 0)
+            {
+                response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                response.responseHeader.ErrorMessage = "At least one valid BranchId is required.";
+                return BadRequest(response);
+            }
 
-        //    try
-        //    {
-        //        var isUserValid = await _context.Users.AsNoTracking()
-        //            .AnyAsync(x => x.UserId == targetUserId && x.OrgId == orgId);
+            try
+            {
+                var isUserValid = await _context.Users.AsNoTracking()
+                    .AnyAsync(x => x.UserId == targetUserId && x.OrgId == orgId);
 
-        //        if (!isUserValid)
-        //        {
-        //            response.responseHeader.ErrorCode = CommonConstants.FAILED;
-        //            response.responseHeader.ErrorMessage = "Invalid UserId for the given Organisation.";
-        //            return Conflict(response);
-        //        }
+                if (!isUserValid)
+                {
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = "Invalid UserId for the given Organisation.";
+                    return Conflict(response);
+                }
 
-        //        var branches = await _context.BranchMaster.AsNoTracking()
-        //            .Where(x => x.OrgId == orgId && branchIds.Contains(x.BranchId))
-        //            .ToListAsync();
+                var branches = await _context.BranchMaster.AsNoTracking()
+                    .Where(x => x.OrgId == orgId && branchIds.Contains(x.BranchId))
+                    .ToListAsync();
 
-        //        if (branches.Count != branchIds.Count)
-        //        {
-        //            var foundBranchIds = branches.Select(x => x.BranchId).ToHashSet();
-        //            var missingBranchIds = branchIds.Where(id => !foundBranchIds.Contains(id));
-        //            response.responseHeader.ErrorCode = CommonConstants.FAILED;
-        //            response.responseHeader.ErrorMessage = $"Invalid BranchId(s) for the given Organisation: {string.Join(",", missingBranchIds)}";
-        //            return Conflict(response);
-        //        }
+                if (branches.Count != branchIds.Count)
+                {
+                    var foundBranchIds = branches.Select(x => x.BranchId).ToHashSet();
+                    var missingBranchIds = branchIds.Where(id => !foundBranchIds.Contains(id));
+                    response.responseHeader.ErrorCode = CommonConstants.FAILED;
+                    response.responseHeader.ErrorMessage = $"Invalid BranchId(s) for the given Organisation: {string.Join(",", missingBranchIds)}";
+                    return Conflict(response);
+                }
 
-        //        var existingMappings = await _context.UserBranchMappings
-        //            .Where(x => x.OrgId == orgId && x.UserId == targetUserId)
-        //            .ToListAsync();
+                var existingMappings = await _context.UserBranchMappings
+                    .Where(x => x.OrgId == orgId && x.UserId == targetUserId)
+                    .ToListAsync();
 
-        //        var existingBranchIds = existingMappings.Select(x => x.BranchId).ToHashSet();
+                var existingBranchIds = existingMappings.Select(x => x.BranchId).ToHashSet();
 
-        //        var mappingsToRemove = existingMappings
-        //            .Where(x => !branchIds.Contains(x.BranchId))
-        //            .ToList();
+                var mappingsToRemove = existingMappings
+                    .Where(x => !branchIds.Contains(x.BranchId))
+                    .ToList();
 
-        //        var mappingsToKeep = existingMappings
-        //            .Where(x => branchIds.Contains(x.BranchId))
-        //            .ToList();
+                var mappingsToKeep = existingMappings
+                    .Where(x => branchIds.Contains(x.BranchId))
+                    .ToList();
 
-        //        var newMappings = branchIds
-        //            .Where(branchId => !existingBranchIds.Contains(branchId))
-        //            .Select(branchId => new UserBranchMapping
-        //            {
-        //                OrgId = orgId,
-        //                UserId = targetUserId,
-        //                BranchId = branchId,
-        //                CreatedBy = loggedInUserId,
-        //                CreatedDate = DateTime.UtcNow
-        //            })
-        //            .ToList();
+                var newMappings = branchIds
+                    .Where(branchId => !existingBranchIds.Contains(branchId))
+                    .Select(branchId => new UserBranchMapping
+                    {
+                        OrgId = orgId,
+                        UserId = targetUserId,
+                        BranchId = branchId,
+                        CreatedBy = loggedInUserId,
+                        CreatedDate = DateTime.UtcNow
+                    })
+                    .ToList();
 
-        //        if (mappingsToRemove.Count > 0)
-        //            _context.UserBranchMappings.RemoveRange(mappingsToRemove);
+                if (mappingsToRemove.Count > 0)
+                    _context.UserBranchMappings.RemoveRange(mappingsToRemove);
 
-        //        if (newMappings.Count > 0)
-        //            await _context.UserBranchMappings.AddRangeAsync(newMappings);
+                if (newMappings.Count > 0)
+                    await _context.UserBranchMappings.AddRangeAsync(newMappings);
 
-        //        foreach (var existing in mappingsToKeep)
-        //        {
-        //            existing.ModifiedBy = loggedInUserId;
-        //            existing.ModifiedDate = DateTime.UtcNow;
-        //        }
+                foreach (var existing in mappingsToKeep)
+                {
+                    existing.ModifiedBy = loggedInUserId;
+                    existing.ModifiedDate = DateTime.UtcNow;
+                }
 
-        //        await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-        //        response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
-        //        response.responseHeader.ErrorMessage = "User regulator branch mappings saved successfully.";
-        //        response.responseBody.userBranchMappings = mappingsToKeep.Concat(newMappings).ToList();
-        //        return Ok(response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "An error occurred while saving user regulator branch mappings.");
-        //        return StatusCode(500, ex.Message);
-        //    }
-        //}
+                response.responseHeader.ErrorCode = CommonConstants.SUCCESS;
+                response.responseHeader.ErrorMessage = "User regulator branch mappings saved successfully.";
+                response.responseBody.userBranchMappings = mappingsToKeep.Concat(newMappings).ToList();
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while saving user regulator branch mappings.");
+                return StatusCode(500, ex.Message);
+            }
+        }
 
         [HttpPost("RegulatorUserBranch/FetchByUser/{UserId}")]
         [MenuAuthorize(AuthorisationConstants.ManagerUser)]

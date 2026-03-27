@@ -682,3 +682,28 @@ ALTER TABLE hmsmaster.approval_setting ADD COLUMN is_log bool DEFAULT false;
 alter table hms.agent add column agent_status_code_id int4
 
 alter table hms.tempagentdto  add column agent_status_code_desc varchar(100);
+
+
+-- Custom Fields: dynamic field definitions for UI screens/tabs
+CREATE TABLE IF NOT EXISTS hms.custom_fields (
+    field_id          SERIAL PRIMARY KEY,
+    key               VARCHAR(100)  NOT NULL,
+    label             VARCHAR(255)  NOT NULL,
+    type              VARCHAR(50)   NOT NULL,
+    placeholder       VARCHAR(255),
+    required          BOOLEAN       NOT NULL DEFAULT false,
+    min_length        INTEGER,
+    max_length        INTEGER,
+    pattern           VARCHAR(500),
+    validation_message VARCHAR(500),
+    options           TEXT,
+    target_screen     VARCHAR(100)  NOT NULL,
+    target_tab        VARCHAR(100)  NOT NULL,
+    target_section    VARCHAR(100)  NOT NULL,
+    sort_order        INTEGER       NOT NULL DEFAULT 0,
+    is_active         BOOLEAN       NOT NULL DEFAULT true,
+    created_at        TIMESTAMP     NOT NULL DEFAULT NOW(),
+    orgid             INTEGER
+);
+
+CREATE INDEX IF NOT EXISTS idx_custom_fields_screen_tab ON hms.custom_fields (orgid, target_screen, target_tab, is_active);

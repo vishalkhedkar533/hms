@@ -64,6 +64,7 @@ namespace HMS.Data
         public DbSet<AgentBranchMapping> AgentBranchMappings => Set<AgentBranchMapping>();
         public DbSet<UserAuditTrail> UserAuditTrails => Set<UserAuditTrail>();
         public DbSet<ProductMaster> productMasters => Set<ProductMaster>();
+        public DbSet<CustomField> CustomFields => Set<CustomField>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

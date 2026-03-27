@@ -66,6 +66,8 @@ namespace Models.DTO
         public GraphRevenueCommDto? GraphRevenueCommData { get; set; } = null;
         public List<BranchListDto>? BranchList { get; set; } = null;
         public List<ProductMaster>? products { get; set; } = null;
+        public List<CustomFieldDto>? CustomFields { get; set; } = null;
+        public int? FieldId { get; set; } = null;
     }
 
 
